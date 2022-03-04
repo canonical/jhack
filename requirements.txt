@@ -1,2 +1,2 @@
-python-libjuju
+juju
 typer
