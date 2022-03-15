@@ -1,0 +1,86 @@
+#!/bin/env bash
+
+set -eou pipefail
+readonly user="$(whoami)"
+
+controller_name="mk8scloud"
+model_name="cos"
+juju_channel="stable"
+microk8s_channel="stable"
+
+while getopts "J:M:m:c:" opt; do
+  case "${opt}" in
+    J )
+      juju_channel="${OPTARG}"
+      ;;
+    M)
+      microk8s_channel="${OPTARG}"
+      ;;
+    m)
+      model_name="${OPTARG}"
+      ;;
+    c)
+      controller_name="${OPTARG}"
+      ;;
+   \? )
+     echo "Invalid Option: -${OPTARG}" 1>&2
+     exit 1
+     ;;
+  esac
+done
+
+echo "Installing:
+  * Juju from the '${juju_channel}' channel
+  * MicroK8s from the '${microk8s_channel}' channel
+"
+
+if [ -n "${controller_name}" ]; then
+  echo "Creating:
+  * the Juju controller '${controller_name}'"
+
+  if [ -n "${model_name}" ]; then
+    echo "  * the Juju model '${model_name}' in the controller '${controller_name}'"
+  fi
+
+  echo ""
+fi
+
+shift $((OPTIND -1))
+
+if which juju ; then
+    if juju controllers --format json | jq -r '.controllers | keys[]' 2> /dev/null | grep "${controller_name}" 2>&1 > /dev/null; then
+        echo "Unregistering controller '${controller_name}'"
+        # Unregister the controller from Juju
+        juju unregister "${controller_name}" -y
+    fi
+
+    sudo snap remove juju
+else
+    echo "juju not found on this machine"
+fi
+
+# Purge and reinstall microk8s
+sudo bash -c "snap remove --purge microk8s ; \
+snap install --classic microk8s --channel="${microk8s_channel}" ; \
+microk8s status --wait-ready ; \
+microk8s enable storage dns registry ; \
+usermod -a -G microk8s ${user} ; \
+chown -f -R ${user} ~/.kube"
+
+if [ ! -x juju ]; then
+    echo "juju not found on this machine, installing it ..."
+    sudo snap install juju --classic --channel="${juju_channel}"
+fi
+
+if [ -n "${controller_name}" ]; then
+  sleep 1m
+
+  # Bootstrap the new cluster
+  juju bootstrap microk8s "${controller_name}"
+
+  if [ -n "${model_name}" ]; then
+    # Add a default model and configure the logging
+    juju add-model "${model_name}"
+    juju model-config logging-config="<root>=INFO;unit=DEBUG"
+  fi
+fi
