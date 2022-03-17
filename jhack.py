@@ -3,10 +3,13 @@ import asyncio
 import contextlib
 import logging
 import os
+import shutil
+import tempfile
 import time
+import zipfile
 from pathlib import Path
 from subprocess import Popen, PIPE
-from typing import List
+from typing import List, Union, Tuple
 
 import typer
 from juju import jasyncio
@@ -31,28 +34,41 @@ async def get_current_model() -> Model:
             await model.disconnect()
 
 
-async def clear_model(apps: List[str]):
+async def clear_model(apps: List[str] = None,
+                      keep: List[str] = None,
+                      dry_run: bool = False):
+    """Destroys all applications from a model, or a specified subset of them,
+    while keeping a few.
+    """
+    apps = set(apps)
     async with get_current_model() as model:
         app: Application
-        app_mapping = model.applications
+        existing_apps = model.applications.keys()
 
-        if app_mapping:
-            invalid = {a for a in apps if a not in model.applications}
-            if invalid:
-                logger.error(f"applications {invalid} not found in model.")
-                return
-
-        to_destroy = apps or app_mapping.keys()
-        if not to_destroy:
-            logger.info(f"model clear.")
+        if not existing_apps:
+            logger.info('This model is already empty.')
             return
 
-        logger.info('destroying: \n' + '\n\t'.join(
-            (app for app in to_destroy)))
-        await jasyncio.gather(
-            *(app_mapping[app].destroy() for app in to_destroy))
+        if invalid := apps - existing_apps:
+            logger.error(f"Applications {invalid} not found in model.")
+            return
 
-        logger.info('model clear.')
+        to_destroy = apps or existing_apps - set(keep)
+        if not to_destroy:
+            logger.info(f"Model clear.")
+            return
+
+        destroying = '\n' + '\n\t'.join(to_destroy)
+        if dry_run:
+            print(f"Would destroy: {destroying}.")
+            return
+        else:
+            logger.info(f'Destroying: {destroying}')
+
+        await jasyncio.gather(
+            *(model.applications[app].destroy() for app in to_destroy))
+
+        logger.info('Model cleared.')
         # todo find way to do --force --no-wait
 
 
@@ -80,20 +96,6 @@ def walk(obj, recursive, check_ext) -> List[Path]:
             else:
                 logger.warning(f'skipped {obj_}')
     return walked
-
-
-async def push(file: Path, remote_root: str, app, unit, container_name):
-    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1:]
-    container_opt = f"--container {container_name} " if container_name else ""
-    cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
-    proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
-    retcode = proc.returncode
-    if retcode != None:
-        logger.error(f"{cmd} errored with code {retcode}: "
-                     f"\nstdout={proc.stdout.read()}, "
-                     f"\nstderr={proc.stderr.read()}")
-
-    logger.info(f'synced {file}')
 
 
 async def _remove_model(model_name: str, force=True,
@@ -167,22 +169,116 @@ def rmodel(
     logger.info('Done.')
 
 
+async def push_to_remote_juju_unit(file: Path, remote_root: str,
+                                   app, unit, container_name):
+    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1:]
+    container_opt = f"--container {container_name} " if container_name else ""
+    cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
+    proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+    retcode = proc.returncode
+    if retcode != None:
+        logger.error(f"{cmd} errored with code {retcode}: "
+                     f"\nstdout={proc.stdout.read()}, "
+                     f"\nstderr={proc.stderr.read()}")
+
+    logger.info(f'synced {file}')
+
+
+def update_charm(charm: Path,
+                 src: List[Path] = ('./src', './lib'),
+                 dst: List[Path] = ('src', 'lib'),
+                 dry_run: bool = False):
+    """
+    >>> update_charm('./my_local_charm-amd64.charm',
+    ...              ['./src', './lib'],
+    ...              ['src', 'lib'])
+    """
+
+    assert charm.exists() and charm.is_file()
+    for dir_ in src:
+        assert dir_.exists() and dir_.is_dir()
+    assert len(dst) == len(src)
+
+    logger.info(f"updating charm with args:, {charm}, {src, dst}, {dry_run}")
+
+    build_dir = Path(tempfile.mkdtemp())
+    prefix_len = len(os.getcwd()) + 1
+
+    try:
+        # extract charm to build directory
+        with zipfile.ZipFile(charm, 'r') as zip_read:
+            zip_read.extractall(build_dir)
+            logger.info(
+                f'Extracted {len(zip_read.filelist)} files to build folder.'
+            )
+
+        # remove src and lib
+        for source, destination in zip(src, dst):
+
+            build_dst = build_dir / destination
+            # ensure the destination is **gone**
+            if dry_run:
+                logger.info(f'Would remove {build_dst}...')
+                if source.exists():
+                    logger.info(f'...and replace it with {source}')
+                continue
+
+            # ensure the build_dst is clear
+            shutil.rmtree(build_dst, ignore_errors=True)
+
+            if not source.exists():
+                continue
+
+            shutil.copytree(source, build_dst)
+            if not dry_run:
+                logger.info(f'Copy: {source} --> {build_dst}.')
+
+        if dry_run:
+            logger.info(
+                f'Would unlink {charm} and replace it with {build_dir}.'
+            )
+            return
+
+        # remove old charm
+        os.unlink(charm)
+        # replace it by zipping the build dir
+        shutil.make_archive(str(charm)[:-4], 'zip', build_dir)
+
+    finally:
+        shutil.rmtree(build_dir)
+
+
 def sync(local_folder: str,
          unit: str,
          remote_root: str = None,
          container_name: str = 'charm',
          polling_interval: float = 1,
          recursive: bool = False,
-         exts: List[str] = None):
+         exts: List[str] = None,
+         dry_run: bool = False):
+    """Syncs a local folder to a remote juju unit via juju scp.
+
+    Example:
+      suppose you're developing a tester-charm and the deployed app name is
+      'tester-charm'; you can sync the local src with the remote src by
+      running:
+
+      jhack utils sync ./tests/integration/tester_charm/src tester-charm
+
+      The remote root defaults to whatever juju ssh defaults to; that is
+      / for workload containers but /var/lib/juju for sidecar containers.
+      If you wish to use a different remote root, keep in mind that the path
+      you pass will be interpreted to this relative remote root which we have no
+      control over.
+    """
     path = Path(local_folder).resolve()
     spec = unit.split('/')
+
     if len(spec) == 2:
         app, unit = spec
     else:
         app = spec[0]
         unit = 0
-
-    remote_root = remote_root or f"/var/lib/juju/agents/unit-{app}-{unit}/charm/"
 
     if not path.is_dir():
         logger.error(f'not a directory: {path}')
@@ -219,22 +315,36 @@ def sync(local_folder: str,
                 hashes[file] = os.path.getmtime(file)
 
         if changed_files:
+            if dry_run:
+                print('would sync:', changed_files)
+                continue
+
             loop = asyncio.events.get_event_loop()
+
+            remote_root = remote_root or f"/var/lib/juju/agents/" \
+                                         f"unit-{app}-{unit}/charm/"
             loop.run_until_complete(
                 jasyncio.gather(
-                    *(push(changed, remote_root, app, unit, container_name)
+                    *(push_to_remote_juju_unit(changed, remote_root,
+                                               app, unit, container_name)
                       for changed in changed_files)
                 )
             )
 
-        logger.debug('ping')
         time.sleep(polling_interval)
 
 
 def unfuck_juju(model_name: str = 'foo',
                 controller_name: str = 'mk8scloud',
                 juju_channel: str = 'stable',
-                microk8s_channel: str = 'stable'):
+                microk8s_channel: str = 'stable',
+                dry_run: bool = False):
+    """Unfuck your Juju + Microk8s installation.
+
+    Purge-refresh juju and microk8s snaps, bootstrap a new controller and add a
+    new model to it.
+    Have a good day!
+    """
     unfuck_juju_script = Path(__file__).parent / 'unfuck_juju'
     if not os.access(unfuck_juju_script, os.X_OK):
         raise RuntimeError(
@@ -252,38 +362,40 @@ def unfuck_juju(model_name: str = 'foo',
            '-m', model_name,
            '-c', controller_name]
 
+    if dry_run:
+        print('would run:', cmd)
+
     proc = Popen(cmd)
     proc.wait()
-    if returncode := proc.returncode != 0:
-        logger.error(f"{cmd} failed with return code {returncode}")
+    if return_code := proc.returncode != 0:
+        logger.error(f"{cmd} failed with return code {return_code}")
         logger.error(proc.stdout.read().decode('utf-8'))
         logger.error(proc.stderr.read().decode('utf-8'))
     else:
         print(proc.stdout.read().decode('utf-8'))
 
 
+def sync_clear_model(apps: List[str] = None, dry_run: bool = False):
+    jasyncio.run(clear_model(apps, dry_run=dry_run))
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
     model = typer.Typer(name='model')
-
-
-    @model.command()
-    def clear(apps: List[str] = None):
-        jasyncio.run(clear_model(apps))
-
+    model.command(name='clear')(sync_clear_model)
+    model.command(name='rm')(rmodel)
 
     utils = typer.Typer(name='utils')
+    utils.command(name='sync')(sync)
+    utils.command(name='unfuck-juju')(unfuck_juju)
 
-    sync_cmd = utils.command()(sync)
-    unfuck_juju_cmd = utils.command()(unfuck_juju)
-
-    ctr = typer.Typer(name='ctr')
-    rmodel = ctr.command()(rmodel)
+    charm = typer.Typer(name='charm')
+    charm.command(name='update')(update_charm)
 
     app = typer.Typer(name='jhack')
     app.add_typer(model)
+    app.add_typer(charm)
     app.add_typer(utils)
-    app.add_typer(ctr)
 
     app()
