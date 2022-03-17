@@ -193,6 +193,8 @@ def update_charm(charm: Path,
     ...              ['./src', './lib'],
     ...              ['src', 'lib'])
     """
+    src = tuple(map(Path, src))
+    dst = tuple(map(Path, dst))
 
     assert charm.exists() and charm.is_file()
     for dir_ in src:
