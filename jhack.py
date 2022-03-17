@@ -189,6 +189,11 @@ def update_charm(charm: Path,
                  dst: List[Path] = ('src', 'lib'),
                  dry_run: bool = False):
     """
+    Force-push into a local .charm file one or more directories.
+
+    E.g. `jhack charm update my_charm.charm --src ./foo --dst bar` will grab
+    ./src/* and copy it to [the charm's root]/src/*.
+
     >>> update_charm('./my_local_charm-amd64.charm',
     ...              ['./src', './lib'],
     ...              ['src', 'lib'])
