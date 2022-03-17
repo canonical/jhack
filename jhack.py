@@ -17,7 +17,6 @@ from juju.application import Application
 from juju.model import Model
 
 logger = logging.getLogger('jhack')
-logger.setLevel('INFO')
 
 
 @contextlib.asynccontextmanager
@@ -34,8 +33,8 @@ async def get_current_model() -> Model:
             await model.disconnect()
 
 
-async def clear_model(apps: List[str] = None,
-                      keep: List[str] = None,
+async def clear_model(apps: List[str] = (),
+                      keep: List[str] = (),
                       dry_run: bool = False):
     """Destroys all applications from a model, or a specified subset of them,
     while keeping a few.
@@ -387,8 +386,6 @@ def sync_clear_model(apps: List[str] = None, dry_run: bool = False):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-
     model = typer.Typer(name='model')
     model.command(name='clear')(sync_clear_model)
     model.command(name='rm')(rmodel)
@@ -404,5 +401,11 @@ if __name__ == '__main__':
     app.add_typer(model)
     app.add_typer(charm)
     app.add_typer(utils)
+
+    @app.callback()
+    def main(verbose: bool = False):
+        if verbose:
+            typer.echo("Verbose mode: ON")
+            logger.setLevel('INFO')
 
     app()
