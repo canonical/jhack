@@ -5,6 +5,8 @@ import zipfile
 from pathlib import Path
 
 import pytest
+
+import charm.update
 import jhack
 
 dnttchme = 'don_t_touch_me.txt'
@@ -48,7 +50,7 @@ def mock_baz(tmp_path_factory):
 
 def test_charm_update(tmp_path_factory, packed_charm, mock_baz):
     assert packed_charm.exists()
-    jhack.update_charm(packed_charm, [mock_baz], ['baz'])
+    charm.update.update_charm(packed_charm, [mock_baz], ['baz'])
 
     def check_base(baz_content):
         zf = zipfile.ZipFile(packed_charm)
@@ -70,7 +72,7 @@ def test_charm_update(tmp_path_factory, packed_charm, mock_baz):
     change = 'BAZ IS THE NEW FOO'
     (mock_baz / 'baz_file.py').write_text(change)
 
-    jhack.update_charm(packed_charm, [mock_baz], ['baz'])
+    charm.update.update_charm(packed_charm, [mock_baz], ['baz'])
     check_base(change)
 
 
@@ -94,7 +96,7 @@ def test_charm_update_default(packed_charm, mock_charm_dev_dir):
     (mock_charm_dev_dir / 'lib' / 'libfile.py').write_text('BAR')
 
     with cwd(mock_charm_dev_dir):
-        jhack.update_charm(packed_charm)
+        charm.update.update_charm(packed_charm)
 
     zf = zipfile.ZipFile(packed_charm)
     assert len(zf.filelist) == 5
