@@ -9,6 +9,7 @@ from logger import logger
 
 async def _remove_model(model_name: str, force=True,
                         no_wait=True, destroy_storage=True,
+                        restart=True,
                         dry_run=False):
     cmd = f'juju destroy-model {model_name} ' \
           f'{"--force " if force else ""}' \
@@ -17,10 +18,26 @@ async def _remove_model(model_name: str, force=True,
 
     if dry_run:
         logger.info(f'would destroy model {model_name} with: {cmd!r}')
+        if restart:
+            logger.info(f'would recreate a fresh model called {model_name}')
         return
     else:
         logger.info(f'destroying model {model_name} ({cmd})')
 
+    proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+    logger.info(f'spawned off model destroyer to pid={proc.pid}')
+    proc.wait()
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"{cmd!r} failed with retcode {proc.returncode!r}; "
+            f"\nstdout={proc.stdout.read().decode('utf-8')}"
+            f"\nstderr={proc.stdout.read().decode('utf-8')}"
+        )
+
+    if not restart:
+        return
+
+    cmd = f'juju add-model {model_name}'
     proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
     logger.info(f'spawned off model destroyer to pid={proc.pid}')
     proc.wait()
@@ -38,6 +55,7 @@ def rmodel(
             help='comma-separated list of models to be removed, or single '
                  'globbed name'),
         force: bool = True,
+        restart: bool = True,
         no_wait: bool = True,
         destroy_storage: bool = True,
         dry_run: bool = False):
@@ -70,7 +88,7 @@ def rmodel(
         return
 
     _remove_fn = lambda model: _remove_model(
-        model, force, no_wait, destroy_storage, dry_run)
+        model, force, no_wait, destroy_storage, restart, dry_run)
     logger.info('Preparing to remove\n\t' + '\n\t'.join(to_remove))
     asyncio.get_event_loop().run_until_complete(
         jasyncio.gather(*(_remove_fn(model) for model in to_remove))

@@ -51,6 +51,7 @@ async def clear_model(apps: List[str] = (),
             print(f"Would destroy: {destroying}.")
             return
         else:
+            print(f"Destroying: {destroying}.")
             logger.info(f'Destroying: {destroying}')
 
         await jasyncio.gather(
