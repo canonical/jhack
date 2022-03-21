@@ -73,7 +73,12 @@ def update_charm(charm: Path,
         # remove old charm
         os.unlink(charm)
         # replace it by zipping the build dir
-        shutil.make_archive(str(charm)[:-4], 'zip', build_dir)
+        charm_package_name = str(charm)[:-4]
+        shutil.make_archive(charm_package_name, 'zip', build_dir)
+
+        # rename back to .charm as shutil.make_archive
+        # won't let us override .zip
+        os.rename(charm_package_name + '.zip', charm_package_name + '.charm')
 
     finally:
         shutil.rmtree(build_dir)
