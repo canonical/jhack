@@ -73,7 +73,7 @@ def update_charm(charm: Path,
         # remove old charm
         os.unlink(charm)
         # replace it by zipping the build dir
-        charm_package_name = str(charm)[:-4]
+        charm_package_name = str(charm)[:-6]
         shutil.make_archive(charm_package_name, 'zip', build_dir)
 
         # rename back to .charm as shutil.make_archive
