@@ -12,6 +12,29 @@ under /charm/src/.
 
 Does exactly what it says, and it does it pretty well.
 
+## show-relation 
+
+`jhack utils show-relation prometheus-k8s/0:ingress traefik-k8s/0:ingress-per-unit --watch`
+
+Will pprint:
+
+```bash
+                                          relation data v0.1                                           
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+┃ category         ┃     keys ┃ prometheus-k8s/0                                 ┃ traefik-k8s/0      ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+│ metadata         │ endpoint │ 'ingress'                                        │ 'ingress-per-unit' │
+│                  │   leader │ True                                             │ True               │
+├──────────────────┼──────────┼──────────────────────────────────────────────────┼────────────────────┤
+│ application data │     data │ ingress:                                         │                    │
+│                  │          │   prometheus-k8s/0:                              │                    │
+│                  │          │     url: http://foo.bar:80/test-prometheus-k8s-0 │                    │
+│ unit data        │     data │ host: 10.1.232.174                               │                    │
+│                  │          │ model: test                                      │                    │
+│                  │          │ name: prometheus-k8s/0                           │                    │
+│                  │          │ port: 9090                                       │                    │
+└──────────────────┴──────────┴──────────────────────────────────────────────────┴────────────────────┘
+```
 
 # model
 ## clear
