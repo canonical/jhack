@@ -49,8 +49,10 @@ async def grab_unit_info(unit_name: str) -> dict:
     return data
 
 
-def get_relation_by_endpoint(relations, endpoint):
-    relations = [r for r in relations if r['endpoint'] == endpoint]
+def get_relation_by_endpoint(relations, endpoint, remote_obj):
+    relations = [r for r in relations if
+                 r['endpoint'] == endpoint and
+                 remote_obj in r['related-units']]
     if not relations:
         raise ValueError(f'no relations found with endpoint=='
                          f'{endpoint}')
@@ -63,6 +65,7 @@ def get_relation_by_endpoint(relations, endpoint):
 async def get_content(obj: str, other_obj,
                       include_default_juju_keys: bool = False) -> tuple:
     endpoint = None
+    other_unit_name = other_obj.split(':')[0] if ':' in other_obj else other_obj
     if ':' in obj:
         unit_name, endpoint = obj.split(':')
     else:
@@ -75,12 +78,12 @@ async def get_content(obj: str, other_obj,
         endpoint = relation_data_raw['endpoint']
     else:
         relation_infos = data['relation-info']
-        relation_data_raw = get_relation_by_endpoint(relation_infos, endpoint)
+        relation_data_raw = get_relation_by_endpoint(relation_infos, endpoint,
+                                                     other_unit_name)
 
     metadata = unit_name, endpoint, data['leader']
     application_data = relation_data_raw['application-data']
 
-    other_unit_name = other_obj.split(':')[0] if ':' in other_obj else other_obj
     related_units_data_raw = relation_data_raw['related-units']
     other_unit_data = related_units_data_raw.get(other_unit_name, {})
 
@@ -89,7 +92,8 @@ async def get_content(obj: str, other_obj,
     other_unit_relation_infos = other_unit_info[other_unit_name][
         'relation-info']
     this_unit_data = get_relation_by_endpoint(
-        other_unit_relation_infos, relation_data_raw['related-endpoint'])[
+        other_unit_relation_infos, relation_data_raw['related-endpoint'],
+        unit_name)[
         'related-units'][unit_name]['data']
 
     if not include_default_juju_keys:
@@ -145,23 +149,23 @@ async def pprint_relation(endpoint1: str, endpoint2: str,
     insert_pairwise_dicts('application data', ep1_content[1][0],
                           ep2_content[1][0])
     insert_pairwise_dicts('unit data', ep1_content[1][1], ep2_content[1][1])
-
-    Console().print(table)
+    return table
 
 
 def sync_pprint_relation(endpoint1: str, endpoint2: str,
                          include_default_juju_keys: bool = False,
                          watch: bool = False):
-
     while True:
         start = time.time()
         coro = pprint_relation(endpoint1, endpoint2, include_default_juju_keys)
-        asyncio.run(coro)
-        if not watch:
-            return
-        elapsed = time.time() - start
-        if elapsed < 1:
-            time.sleep(1-elapsed)
-            from rich.console import Console
-            Console().clear()
+
+        from rich.console import Console
+        table = asyncio.run(coro)
+        if watch:
+            elapsed = time.time() - start
+            if elapsed < 1:
+                time.sleep(1.5 - elapsed)
+                _JUJU_DATA_CACHE.clear()
+                Console().clear()
+        Console().print(table)
 
