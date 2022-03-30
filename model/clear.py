@@ -1,34 +1,27 @@
-import contextlib
-from typing import List
+from typing import Set, Optional
 
 from juju import jasyncio
 from juju.application import Application
-from juju.model import Model
 
+from helpers import get_current_model
 from logger import logger
 
 
-@contextlib.asynccontextmanager
-async def get_current_model() -> Model:
-    model = Model()
-    try:
-        # connect to the current model with the current user, per the Juju CLI
-        await model.connect()
-        yield model
-
-    finally:
-        if model.is_connected():
-            print('Disconnecting from model')
-            await model.disconnect()
+def parse_app_or_app_list(s: Optional[str]) -> Set[str]:
+    if s is None:
+        return set()
+    if ',' in s:
+        return set(s.split(','))
+    return {s}
 
 
-async def clear_model(apps: List[str] = (),
-                      keep: List[str] = (),
+async def clear_model(apps: str = (),
+                      keep: str = (),
                       dry_run: bool = False):
     """Destroys all applications from a model, or a specified subset of them,
     while keeping a few.
     """
-    apps = set(apps)
+    apps, keep = map(parse_app_or_app_list, (apps, keep))
     async with get_current_model() as model:
         app: Application
         existing_apps = model.applications.keys()
@@ -41,18 +34,17 @@ async def clear_model(apps: List[str] = (),
             logger.error(f"Applications {invalid} not found in model.")
             return
 
-        to_destroy = apps or existing_apps - set(keep)
+        to_destroy = apps or existing_apps - keep
         if not to_destroy:
             logger.info(f"Model clear.")
             return
 
-        destroying = '\n' + '\n\t'.join(to_destroy)
+        destroying = '\n - ' + '\n - '.join(to_destroy)
         if dry_run:
-            print(f"Would destroy: {destroying}.")
+            print(f"Would destroy: {destroying}")
             return
         else:
-            print(f"Destroying: {destroying}.")
-            logger.info(f'Destroying: {destroying}')
+            print(f"Destroying: {destroying}")
 
         await jasyncio.gather(
             *(model.applications[app].destroy() for app in to_destroy))
@@ -61,5 +53,5 @@ async def clear_model(apps: List[str] = (),
         # todo find way to do --force --no-wait
 
 
-def sync_clear_model(apps: List[str] = None, dry_run: bool = False):
-    jasyncio.run(clear_model(apps, dry_run=dry_run))
+def sync_clear_model(apps: str = None, keep: str = None, dry_run: bool = False):
+    jasyncio.run(clear_model(apps, keep, dry_run=dry_run))
