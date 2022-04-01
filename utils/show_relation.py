@@ -104,16 +104,11 @@ async def get_content(obj: str, other_obj,
     return metadata, relation_data
 
 
-async def pprint_relation(endpoint1: str, endpoint2: str,
+async def render_relation(endpoint1: str, endpoint2: str,
                           include_default_juju_keys: bool = False):
     """Pprints relation databags for a juju relation
-    >>> pprint_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
+    >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
-    try:
-        import rich  # noqa
-    except ImportError:
-        print('using this command requires rich.')
-        return
 
     from rich.console import Console  # noqa
     from rich.pretty import Pretty  # noqa
@@ -152,20 +147,33 @@ async def pprint_relation(endpoint1: str, endpoint2: str,
     return table
 
 
-def sync_pprint_relation(endpoint1: str, endpoint2: str,
-                         include_default_juju_keys: bool = False,
-                         watch: bool = False):
+def sync_show_relation(endpoint1: str, endpoint2: str,
+                       include_default_juju_keys: bool = False,
+                       watch: bool = False):
+    try:
+        import rich  # noqa
+    except ImportError:
+        print('using this command requires rich.')
+        return
+
+    from rich.console import Console
+
     while True:
         start = time.time()
-        coro = pprint_relation(endpoint1, endpoint2, include_default_juju_keys)
 
-        from rich.console import Console
-        table = asyncio.run(coro)
+        table = asyncio.run(
+            render_relation(endpoint1, endpoint2, include_default_juju_keys)
+        )
+
         if watch:
             elapsed = time.time() - start
             if elapsed < 1:
                 time.sleep(1.5 - elapsed)
                 _JUJU_DATA_CACHE.clear()
-                Console().clear()
+            # we clear RIGHT BEFORE printing to prevent flickering
+            Console().clear()
         Console().print(table)
+
+        if not watch:
+            return
 

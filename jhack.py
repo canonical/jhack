@@ -7,8 +7,8 @@ from charm.update import update_charm
 from model.clear import sync_clear_model
 from model.remove import rmodel
 from utils.sync import sync
-from utils.pprint_relation import sync_pprint_relation
-from utils.unfuck_juju import unfuck_juju
+from utils.show_relation import sync_show_relation
+from utils.reset_juju import reset_juju
 
 
 if __name__ == '__main__':
@@ -18,8 +18,8 @@ if __name__ == '__main__':
 
     utils = typer.Typer(name='utils')
     utils.command(name='sync')(sync)
-    utils.command(name='show-relation')(sync_pprint_relation)
-    utils.command(name='unfuck-juju')(unfuck_juju)
+    utils.command(name='show-relation')(sync_show_relation)
+    utils.command(name='reset-juju')(reset_juju)
 
     charm = typer.Typer(name='charm')
     charm.command(name='update')(update_charm)
