@@ -1,6 +1,7 @@
 import asyncio
 import os
 import time
+import typing
 from pathlib import Path
 from subprocess import Popen, PIPE
 from typing import List
@@ -10,16 +11,67 @@ from juju import jasyncio
 from logger import logger
 
 
-def walk(obj, recursive, check_ext) -> List[Path]:
-    walked = []
-    for obj_ in obj.iterdir():
-        if obj_.is_file() and check_ext(obj_):
-            walked.append(obj_)
-        elif recursive:
-            if obj_.is_dir():
-                walked.extend(walk(obj_))
+def watch(paths, on_change: typing.Callable,
+          extensions: typing.Iterable[str] = (),
+          recursive: bool = True,
+          polling_interval: float = 1.):
+    """Watches a directory for changes; on any, calls on_change back with them."""
+
+    resolved = [Path(path).resolve() for path in paths]
+
+    def check_ext(file):
+        if not extensions:
+            return True
+        return str(file).split('.')[-1] in extensions
+
+    watch_list = []
+    for path in resolved:
+        if not path.is_dir():
+            logger.error(f'not a directory: {path}; cannot watch.')
+            continue
+        watch_list += walk(path, recursive, check_ext)
+
+    if not watch_list:
+        logger.error('nothing to watch')
+        return
+
+    logger.info('watching: \n\t%s' % "\n\t".join(map(str, watch_list)))
+    logger.info('Ctrl+C to interrupt')
+
+    hashes = {}
+    while True:
+        # determine which files have changed
+        changed_files = []
+        for file in watch_list:
+            logger.debug(f'checking {file}')
+            if old_tstamp := hashes.get(file, None):
+                new_tstamp = os.path.getmtime(file)
+                if new_tstamp == old_tstamp:
+                    logger.debug(f'timestamp unchanged {old_tstamp}')
+                    continue
+                logger.debug(f'changed: {file}')
+                hashes[file] = new_tstamp
+                changed_files.append(file)
             else:
-                logger.warning(f'skipped {obj_}')
+                hashes[file] = os.path.getmtime(file)
+
+        if changed_files:
+            on_change(changed_files)
+
+        time.sleep(polling_interval)
+
+
+def walk(path: Path, recursive, check_ext) -> List[Path]:
+    """Recursively explore a directory for files matching check_ext"""
+    walked = []
+    for path_ in path.iterdir():
+        if path_.is_file() and check_ext(path_):
+            walked.append(path_)
+        elif recursive:
+            if path_.is_dir():
+                walked.extend(walk(path_, recursive, check_ext))
+            else:
+                logger.warning(f'skipped {path_}')
     return walked
 
 
@@ -46,7 +98,6 @@ def sync(local_folder: str,
       you pass will be interpreted to this relative remote root which we have no
       control over.
     """
-    path = Path(local_folder).resolve()
     spec = unit.split('/')
 
     if len(spec) == 2:
@@ -54,59 +105,27 @@ def sync(local_folder: str,
     else:
         app = spec[0]
         unit = 0
+    remote_root = remote_root or f"/var/lib/juju/agents/" \
+                                 f"unit-{app}-{unit}/charm/"
 
-    if not path.is_dir():
-        logger.error(f'not a directory: {path}')
-        return
+    def on_change(changed_files):
+        if not changed_files:
+            return
+        if dry_run:
+            print('would sync:', changed_files)
+            return
 
-    def check_ext(file):
-        if not exts:
-            return True
-        return str(file).split('.')[-1] in exts
-
-    watch_list = walk(path, recursive, check_ext)
-    if not watch_list:
-        logger.error('nothing to watch')
-        return
-
-    logger.info('watching: \n\t%s' % "\n\t".join(map(str, watch_list)))
-    logger.info('Ctrl+C to interrupt')
-
-    hashes = {}
-    while True:
-        # determine which files have changed
-        changed_files = []
-        for file in watch_list:
-            logger.debug(f'checking {file}')
-            if old_tstamp := hashes.get(file, None):
-                new_tstamp = os.path.getmtime(file)
-                if new_tstamp == old_tstamp:
-                    logger.debug(f'timestamp unchanged {old_tstamp}')
-                    continue
-                logger.debug(f'changed: {file}')
-                hashes[file] = new_tstamp
-                changed_files.append(file)
-            else:
-                hashes[file] = os.path.getmtime(file)
-
-        if changed_files:
-            if dry_run:
-                print('would sync:', changed_files)
-                continue
-
-            loop = asyncio.events.get_event_loop()
-
-            remote_root = remote_root or f"/var/lib/juju/agents/" \
-                                         f"unit-{app}-{unit}/charm/"
-            loop.run_until_complete(
-                jasyncio.gather(
-                    *(push_to_remote_juju_unit(changed, remote_root,
-                                               app, unit, container_name)
-                      for changed in changed_files)
-                )
+        loop = asyncio.events.get_event_loop()
+        loop.run_until_complete(
+            jasyncio.gather(
+                *(push_to_remote_juju_unit(changed, remote_root,
+                                           app, unit, container_name)
+                  for changed in changed_files)
             )
-
+        )
         time.sleep(polling_interval)
+
+    watch((local_folder, ), on_change, exts, recursive, polling_interval)
 
 
 async def push_to_remote_juju_unit(file: Path, remote_root: str,

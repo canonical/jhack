@@ -61,4 +61,9 @@ Updates a packed .charm file by dumping into it any number of directories.
 This will take ./src and recursively copy it into the packed charm's /src dir 
 (it will destroy any existing content).
 
+## sync
+Like update, but keeps watching for changes in the provided directories and 
+pushes them into the packed charm whenever there's one.
+
+`jhack charm sync ./my_charm_file-amd64.charm --src ./src --dst src`
 

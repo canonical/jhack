@@ -8,20 +8,34 @@ from typing import List
 from logger import logger
 
 
-def update_charm(charm: Path,
-                 src: List[Path] = ('./src', './lib'),
-                 dst: List[Path] = ('src', 'lib'),
-                 dry_run: bool = False):
+def get_local_charm() -> Path:
+    is_charm = lambda file: file.suffix == '.charm'
+    try:
+        return next(filter(is_charm, Path(__file__).parent.iterdir()))
+    except StopIteration:
+        raise FileNotFoundError(
+            f'could not find a charm file in {Path(__file__).parent}'
+        )
+
+
+def update(charm: Path = None,
+           src: List[Path] = ('./src', './lib'),
+           dst: List[Path] = ('src', 'lib'),
+           dry_run: bool = False):
     """
     Force-push into a local .charm file one or more directories.
 
     E.g. `jhack charm update my_charm.charm --src ./foo --dst bar` will grab
     ./src/* and copy it to [the charm's root]/src/*.
 
-    >>> update_charm('./my_local_charm-amd64.charm',
-    ...              ['./src', './lib'],
-    ...              ['src', 'lib'])
+    >>> update('./my_local_charm-amd64.charm',
+    ...        ['./src', './lib'],
+    ...        ['src', 'lib'])
+
+    If `charm` is None, it will scan the CWD for the first `*.charm` file
+    and use that.
     """
+    charm = charm or get_local_charm()
     src = tuple(map(Path, src))
     dst = tuple(map(Path, dst))
 
