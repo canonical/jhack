@@ -1,8 +1,6 @@
 import asyncio
-import json
 import time
 from subprocess import Popen, PIPE
-from textwrap import dedent
 
 import yaml
 
@@ -44,7 +42,14 @@ async def grab_unit_info(unit_name: str) -> dict:
         return cached_data
 
     proc = Popen(f'juju show-unit {unit_name}'.split(' '), stdout=PIPE)
-    data = yaml.safe_load(proc.stdout.read().decode('utf-8'))
+    raw_data = proc.stdout.read().decode('utf-8').strip()
+    if not raw_data:
+        raise ValueError(
+            f"no unit info could be grabbed for {unit_name}; "
+            f"are you sure it's a valid unit name?"
+        )
+
+    data = yaml.safe_load(raw_data)
     _JUJU_DATA_CACHE[unit_name] = data
     return data
 
@@ -71,13 +76,15 @@ async def get_content(obj: str, other_obj,
     else:
         unit_name = obj
     data = (await grab_unit_info(unit_name))[unit_name]
-    # print(json.dumps(data, indent=2))
+
+    relation_infos = data.get('relation-info')
+    if not relation_infos:
+        raise RuntimeError(f'{unit_name} has no relations')
 
     if not endpoint:
-        relation_data_raw = data['relation-info'][0]
+        relation_data_raw = relation_infos[0]
         endpoint = relation_data_raw['endpoint']
     else:
-        relation_infos = data['relation-info']
         relation_data_raw = get_relation_by_endpoint(relation_infos, endpoint,
                                                      other_unit_name)
 
@@ -176,4 +183,3 @@ def sync_show_relation(endpoint1: str, endpoint2: str,
 
         if not watch:
             return
-

@@ -5,17 +5,8 @@ import zipfile
 from pathlib import Path
 from typing import List
 
+from helpers import get_local_charm
 from logger import logger
-
-
-def get_local_charm() -> Path:
-    is_charm = lambda file: file.suffix == '.charm'
-    try:
-        return next(filter(is_charm, Path(__file__).parent.iterdir()))
-    except StopIteration:
-        raise FileNotFoundError(
-            f'could not find a charm file in {Path(__file__).parent}'
-        )
 
 
 def update(charm: Path = None,

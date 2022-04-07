@@ -67,3 +67,14 @@ pushes them into the packed charm whenever there's one.
 
 `jhack charm sync ./my_charm_file-amd64.charm --src ./src --dst src`
 
+## repack
+Used to pack a charm and refresh it in a juju model. Useful when developing.
+If used without arguments, it will assume the cwd is the charm's root, will run 
+`charmcraft pack`, and grab the application name from the charm's name.
+
+`jhack charm repack`
+
+Otherwise, you can specify a folder where the packing should be done, and an 
+application name to target with the refresh.
+
+`jhack charm repack --root /where/my/charm/root/is --name juju-app-name`

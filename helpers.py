@@ -1,4 +1,6 @@
 import contextlib
+import os
+from pathlib import Path
 
 from juju.model import Model
 
@@ -15,3 +17,14 @@ async def get_current_model() -> Model:
         if model.is_connected():
             print('Disconnecting from model')
             await model.disconnect()
+
+
+def get_local_charm() -> Path:
+    is_charm = lambda file: file.suffix == '.charm'
+    cwd = Path(os.getcwd())
+    try:
+        return next(filter(is_charm, cwd.iterdir()))
+    except StopIteration:
+        raise FileNotFoundError(
+            f'could not find a charm file in {cwd}'
+        )

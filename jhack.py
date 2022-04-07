@@ -4,11 +4,13 @@ import typer
 
 from logger import logger
 from charm.update import update
+from charm.repack import repack
 from charm.sync import sync as sync_packed_charm
 from model.clear import sync_clear_model
 from model.remove import rmodel
 from utils.sync import sync as sync_deployed_charm
 from utils.show_relation import sync_show_relation
+from utils.tail_charms import tail_events
 from utils.reset_juju import reset_juju
 
 
@@ -20,10 +22,12 @@ if __name__ == '__main__':
     utils = typer.Typer(name='utils')
     utils.command(name='sync')(sync_deployed_charm)
     utils.command(name='show-relation')(sync_show_relation)
+    utils.command(name='tail')(tail_events)
     utils.command(name='reset-juju')(reset_juju)
 
     charm = typer.Typer(name='charm')
     charm.command(name='update')(update)
+    charm.command(name='repack')(repack)
     charm.command(name='sync')(sync_packed_charm)
 
     app = typer.Typer(name='jhack')

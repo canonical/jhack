@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import List, Optional
 
-from charm.update import get_local_charm, update as update_charm
+from charm.update import update as update_charm
+from helpers import get_local_charm
 from utils.sync import watch
 
 
