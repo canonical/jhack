@@ -1,13 +1,22 @@
 import asyncio
 import enum
+import logging
 import time
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from itertools import chain
 from subprocess import Popen, PIPE, STDOUT
-from typing import Sequence, Literal
+from typing import Sequence, Literal, Optional, Iterable
 
-import rich
+import parse
+from rich.console import Console
+from rich.align import Align
+from rich.live import Live
+from rich.table import Table
+
+
+logger = logging.getLogger(__file__)
 
 
 @dataclass
@@ -23,7 +32,8 @@ class Target:
         unit = unit_.strip('*')
         return Target(app, unit, leader=leader)
 
-    def as_include(self):
+    @property
+    def unit_name(self):
         return f"{self.app}/{self.unit}"
 
 
@@ -76,14 +86,104 @@ class LEVELS(enum.Enum):
     ERROR = 'ERROR'
 
 
+@dataclass
+class EventLogMsg:
+    pod_name: str
+    timestamp: str
+    loglevel: str
+    unit: str
+    event: str
+    relation: str = None
+    relation_id: str = None
+
+
+class Processor:
+    def __init__(self, targets: Iterable[Target],
+                 add_new_targets:bool=True,
+                 history_length:int=10):
+        self.targets = list(targets)
+        self.add_new_targets = add_new_targets
+        self.history_length = history_length
+        self.messages = {t.unit_name: [] for t in targets}
+        self.console = console = Console()
+        self.table = table = Table(show_footer=False)
+        table.add_column(header="timestamp")
+        for target in targets:
+            table.add_column(header=target.unit_name)
+        self.table_centered = table_centered = Align.center(table)
+        self.live = Live(table_centered, console=console,
+                         screen=False, refresh_per_second=20)
+
+    def __enter__(self):
+        self.live.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.live.__exit__(exc_type, exc_val, exc_tb)
+
+    def process(self, log: str) -> Optional[EventLogMsg]:
+        # log format =
+        # unit-traefik-k8s-0: 10:36:19 DEBUG unit.traefik-k8s/0.juju-log ingress-per-unit:38: Emitting Juju event ingress_per_unit_relation_changed.
+        # unit-prometheus-k8s-0: 13:06:09 DEBUG unit.prometheus-k8s/0.juju-log ingress:44: Emitting Juju event ingress_relation_changed.
+        event = parse.compile("{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
+        relation_event = parse.compile("{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {relation}:{relation_id}: Emitting Juju event {event}.")
+        uniter_event = parse.compile('{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
+
+        match=event.parse(log) or relation_event.parse(log)
+        if not match:
+            if match := uniter_event.parse(log):
+                unit = parse.compile("unit-{}").parse(match.named['pod_name'])
+                params = match.named
+                *names, number = unit.fixed[0].split('-')
+                name = '-'.join(names)
+                params['unit'] = '/'.join([name, number])
+            else:
+                return
+        else:
+            params = match.named
+        msg = EventLogMsg(**match.named)
+
+        if self.add_new_targets and msg.unit not in self.messages:
+            logger.info(f"adding new unit {msg.unit}")
+            new_target = Target.from_name(msg.unit)
+
+            self.messages[msg.unit] = []
+            self.targets.append(new_target)
+            self.table.add_column(header=new_target.unit_name)
+
+        self.messages[msg.unit].append(msg)
+        self.update(msg)
+
+    def update(self, msg: EventLogMsg):
+        # delete current line
+        for idx, col in enumerate(self.table.columns):
+            if col.header == msg.unit:
+                row = [(msg.event if idx == i else None) for i in range(1, len(self.table.columns))]
+
+                self.table.add_row(msg.timestamp, *row)
+                # move last to first
+                for column in self.table.columns:
+                    column._cells.insert(0, column._cells.pop())
+
+                # crop
+                # if len(self.table.rows) > self.history_length:
+                #     logger.info('popping a row...')
+                #     for column in self.table.columns:
+                #         column._cells.pop() # pop last
+                #     self.table.rows.pop()
+
+                return
+        raise ValueError(f"no column found for {msg.unit}")
+
+
 def tail_events(targets: str = None,
+                add_new_targets:bool = True,
                 # semicolon-separated list of targets to follow
                 level: LEVELS = 'DEBUG',
                 replay: bool = True,  # listen from beginning of time?
                 dry_run: bool = False,
                 framerate: float = .5
                 ):
-    print("initializing...")
 
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -98,42 +198,39 @@ def tail_events(targets: str = None,
 
     targets = parse_targets(targets)
 
-    cmd = (['juju', 'debug-log'] +
+    cmd = (['juju', 'debug-log', '--tail'] +
            (['--replay'] if replay else []) +
-           ['--level', level.value] +
-           list(chain(*[
-               ['--include', target.as_include()]
-               for target in targets]))
-           )
+           ['--level', level.value])
 
     if dry_run:
         print(' '.join(cmd))
         return
 
     try:
-        proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-        # when we're in replay mode we're catching up with the replayed logs
-        # so we won't limit the framerate and just flush the output
-        replay_mode = True
-        while True:
-            start = time.time()
+        with Processor(targets, add_new_targets) as processor:
+            proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+            # when we're in replay mode we're catching up with the replayed logs
+            # so we won't limit the framerate and just flush the output
+            replay_mode = True
+            while True:
+                start = time.time()
 
-            line = proc.stdout.readline()
-            if not line:
-                if proc.poll() is not None:
-                    # process terminated FIXME: this shouldn't happen
-                    break
+                line = proc.stdout.readline()
+                if not line:
+                    if proc.poll() is not None:
+                        # process terminated FIXME: this shouldn't happen
+                        break
 
-                replay_mode = False
-                continue
+                    replay_mode = False
+                    continue
 
-            if line:
-                print(line.decode('utf-8').strip())
+                if line:
+                    msg = line.decode('utf-8').strip()
+                    processor.process(msg)
 
-            if not replay_mode and (elapsed := time.time() - start) < framerate:
-                time.sleep(framerate - elapsed)
-                print(f"sleeping {framerate - elapsed}")
-
+                if not replay_mode and (elapsed := time.time() - start) < framerate:
+                    time.sleep(framerate - elapsed)
+                    print(f"sleeping {framerate - elapsed}")
 
     except KeyboardInterrupt:
         print('exiting...')

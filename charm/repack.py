@@ -1,3 +1,4 @@
+import contextlib
 from pathlib import Path
 import os
 from subprocess import call
@@ -5,25 +6,41 @@ from time import time
 
 from helpers import get_local_charm
 
-
-def pack(root: Path, dry_run: bool = False):
+@contextlib.contextmanager
+def cwd(dir_):
     old_cwd = os.getcwd()
-    os.chdir(root)
-    print('packing charm')
-    start = time()
-    cmd = 'charmcraft pack'
-    if dry_run:
-        print(f'would run: {cmd} (in {os.getcwd()})')
-    else:
-        call(cmd.split(' '))
-    print(f'done in {time() - start:4}s')
+    os.chdir(dir_)
+    yield
     os.chdir(old_cwd)
 
 
-def refresh(root: Path, name: str = None, dry_run: bool = False):
-    name = name or '_'.join(root.name.split('_')[:-1])
-    print('refreshing charm...')
-    cmd = f'juju refresh {name} --path={root.absolute()}'
+def pack(root: Path, dry_run: bool = False):
+    with cwd(root):
+        print('packing charm')
+        start = time()
+        cmd = 'charmcraft pack'
+        if dry_run:
+            print(f'would run: {cmd} (in {os.getcwd()})')
+        else:
+            call(cmd.split(' '))
+        print(f'done in {time() - start:4}s')
+
+
+def refresh(root: Path, charm_name: str = None,
+            app_name: str = None, dry_run: bool = False):
+    if not charm_name:
+        with cwd(root):
+            charm_name = get_local_charm()
+    else:
+        charm_name = Path(charm_name)
+
+    path_to_charm = root / charm_name
+
+    # we guess the app_name from the charm name, assuming it's of the form
+    # charm_name_ubuntu-foo-amd64.charm
+    app_name = app_name or '_'.join(charm_name.name.split('_')[:-1])
+    print(f'refreshing {app_name} --> {charm_name}...')
+    cmd = f'juju refresh {app_name} --path={path_to_charm}'
     if dry_run:
         print(f'would run: {cmd}')
     else:
@@ -32,11 +49,13 @@ def refresh(root: Path, name: str = None, dry_run: bool = False):
 
 
 def repack(root: Path = None,
-           name: str = None,
+           charm_name: str = None,
+           app_name: str = None,
            dry_run: bool = False):
     """Packs and refreshes a single charm.
     Based on cwd if no arguments are supplied.
     """
-    root = root or get_local_charm()
+    root = root or Path(os.getcwd())
     pack(root, dry_run=dry_run)
-    refresh(root, name=name, dry_run=dry_run)
+    refresh(root, app_name=app_name, charm_name=charm_name, dry_run=dry_run)
+
