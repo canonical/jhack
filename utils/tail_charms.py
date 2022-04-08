@@ -15,7 +15,6 @@ from rich.align import Align
 from rich.live import Live
 from rich.table import Table
 
-
 logger = logging.getLogger(__file__)
 
 
@@ -98,9 +97,18 @@ class EventLogMsg:
 
 
 class Processor:
+    # FIXME: why does sometime event/relation_event work, and sometimes
+    #  uniter_event does? OF Version?
+    event = parse.compile(
+        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
+    relation_event = parse.compile(
+        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {relation}:{relation_id}: Emitting Juju event {event}.")
+    uniter_event = parse.compile(
+        '{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
+
     def __init__(self, targets: Iterable[Target],
-                 add_new_targets:bool=True,
-                 history_length:int=10):
+                 add_new_targets: bool = True,
+                 history_length: int = 10):
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
         self.history_length = history_length
@@ -125,13 +133,11 @@ class Processor:
         # log format =
         # unit-traefik-k8s-0: 10:36:19 DEBUG unit.traefik-k8s/0.juju-log ingress-per-unit:38: Emitting Juju event ingress_per_unit_relation_changed.
         # unit-prometheus-k8s-0: 13:06:09 DEBUG unit.prometheus-k8s/0.juju-log ingress:44: Emitting Juju event ingress_relation_changed.
-        event = parse.compile("{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-        relation_event = parse.compile("{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {relation}:{relation_id}: Emitting Juju event {event}.")
-        uniter_event = parse.compile('{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
 
-        match=event.parse(log) or relation_event.parse(log)
+        match = self.event.parse(log) or self.relation_event.parse(log)
         if not match:
-            if match := uniter_event.parse(log):
+            # fallback
+            if match := self.uniter_event.parse(log):
                 unit = parse.compile("unit-{}").parse(match.named['pod_name'])
                 params = match.named
                 *names, number = unit.fixed[0].split('-')
@@ -151,6 +157,12 @@ class Processor:
             self.targets.append(new_target)
             self.table.add_column(header=new_target.unit_name)
 
+            # fill the new column with empty cells, else it will
+            # crop all other columns
+            prev, col = self.table.columns[-2:]
+            for _ in range(len(prev._cells)):
+                col._cells.append('')
+
         self.messages[msg.unit].append(msg)
         self.update(msg)
 
@@ -158,33 +170,34 @@ class Processor:
         # delete current line
         for idx, col in enumerate(self.table.columns):
             if col.header == msg.unit:
-                row = [(msg.event if idx == i else None) for i in range(1, len(self.table.columns))]
+                row = [(msg.event if idx == i else None) for i in
+                       range(1, len(self.table.columns))]
 
                 self.table.add_row(msg.timestamp, *row)
                 # move last to first
                 for column in self.table.columns:
-                    column._cells.insert(0, column._cells.pop())
+                    last = column._cells.pop()
+                    column._cells.insert(0, last)
 
                 # crop
-                # if len(self.table.rows) > self.history_length:
-                #     logger.info('popping a row...')
-                #     for column in self.table.columns:
-                #         column._cells.pop() # pop last
-                #     self.table.rows.pop()
-
+                if len(self.table.rows) > self.history_length:
+                    logger.info('popping a row...')
+                    for column in self.table.columns:
+                        column._cells.pop() # pop last
+                    self.table.rows.pop()
                 return
+
         raise ValueError(f"no column found for {msg.unit}")
 
 
 def tail_events(targets: str = None,
-                add_new_targets:bool = True,
+                add_new_targets: bool = True,
                 # semicolon-separated list of targets to follow
                 level: LEVELS = 'DEBUG',
                 replay: bool = True,  # listen from beginning of time?
                 dry_run: bool = False,
                 framerate: float = .5
                 ):
-
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
 
@@ -228,7 +241,8 @@ def tail_events(targets: str = None,
                     msg = line.decode('utf-8').strip()
                     processor.process(msg)
 
-                if not replay_mode and (elapsed := time.time() - start) < framerate:
+                if not replay_mode and (
+                elapsed := time.time() - start) < framerate:
                     time.sleep(framerate - elapsed)
                     print(f"sleeping {framerate - elapsed}")
 
