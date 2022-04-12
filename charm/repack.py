@@ -6,6 +6,7 @@ from time import time
 
 from helpers import get_local_charm
 
+
 @contextlib.contextmanager
 def cwd(dir_):
     old_cwd = os.getcwd()
@@ -14,8 +15,18 @@ def cwd(dir_):
     os.chdir(old_cwd)
 
 
-def pack(root: Path, dry_run: bool = False):
+def pack(root: Path, clean=False, dry_run: bool = False):
     with cwd(root):
+        if clean:
+            start = time()
+            print('cleaning charmcraft project')
+            cmd = 'charmcraft clean'
+            if dry_run:
+                print(f'would run: {cmd} (in {os.getcwd()})')
+            else:
+                call(cmd.split(' '))
+            print(f'done in {time() - start:4}s')
+
         print('packing charm')
         start = time()
         cmd = 'charmcraft pack'
@@ -50,12 +61,12 @@ def refresh(root: Path, charm_name: str = None,
 
 def repack(root: Path = None,
            charm_name: str = None,
+           clean: bool = False,
            app_name: str = None,
            dry_run: bool = False):
     """Packs and refreshes a single charm.
     Based on cwd if no arguments are supplied.
     """
     root = root or Path(os.getcwd())
-    pack(root, dry_run=dry_run)
+    pack(root, dry_run=dry_run, clean=clean)
     refresh(root, app_name=app_name, charm_name=charm_name, dry_run=dry_run)
-
