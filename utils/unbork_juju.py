@@ -5,7 +5,7 @@ from subprocess import Popen
 from logger import logger
 
 
-def reset_juju(model_name: str = 'foo',
+def unbork_juju(model_name: str = 'foo',
                 controller_name: str = 'mk8scloud',
                 juju_channel: str = 'stable',
                 microk8s_channel: str = 'stable',
@@ -16,18 +16,23 @@ def reset_juju(model_name: str = 'foo',
     new model to it.
     Have a good day!
     """
-    reset_juju_script = Path(__file__).parent / 'reset_juju'
-    if not os.access(reset_juju_script, os.X_OK):
+    unbork_juju_script = Path(__file__).parent / 'unbork_juju'
+    if not unbork_juju_script.exists():
         raise RuntimeError(
-            'reset_juju script is not executable. Ensure it has X permissions.'
+            f'unbork_juju script not found. Is it where it should be? '
+            f'{unbork_juju_script}'
         )
-    if not reset_juju_script.exists():
+    if not os.access(unbork_juju_script, os.X_OK):
         raise RuntimeError(
-            f'unable to locate reset_juju shell script '
-            f'({reset_juju_script!r})'
+            'unbork_juju script is not executable. Ensure it has X permissions.'
+        )
+    if not unbork_juju_script.exists():
+        raise RuntimeError(
+            f'unable to locate unbork_juju shell script '
+            f'({unbork_juju_script!r})'
         )
 
-    cmd = [str(reset_juju_script),
+    cmd = [str(unbork_juju_script),
            '-J', juju_channel,
            '-M', microk8s_channel,
            '-m', model_name,

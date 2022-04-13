@@ -11,7 +11,7 @@ from model.remove import rmodel
 from utils.sync import sync as sync_deployed_charm
 from utils.show_relation import sync_show_relation
 from utils.tail_charms import tail_events
-from utils.reset_juju import reset_juju
+from utils.unbork_juju import unbork_juju
 
 
 if __name__ == '__main__':
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     utils.command(name='sync')(sync_deployed_charm)
     utils.command(name='show-relation')(sync_show_relation)
     utils.command(name='tail')(tail_events)
-    utils.command(name='reset-juju')(reset_juju)
+    utils.command(name='unbork-juju')(unbork_juju)
 
     charm = typer.Typer(name='charm')
     charm.command(name='update')(update)
