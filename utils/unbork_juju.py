@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
 from logger import logger
 
@@ -41,7 +41,7 @@ def unbork_juju(model_name: str = 'foo',
     if dry_run:
         print('would run:', cmd)
 
-    proc = Popen(cmd)
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     proc.wait()
     if return_code := proc.returncode != 0:
         logger.error(f"{cmd} failed with return code {return_code}")
