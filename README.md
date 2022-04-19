@@ -6,9 +6,9 @@
 Will watch the ./src folder for changes and push any to application-name/0 
 under /charm/src/.
 
-## reset-juju
+## unbork-juju
 
-`jhack utils reset-juju`
+`jhack utils unbork-juju`
 
 Does exactly what it says, and it does it pretty well.
 
