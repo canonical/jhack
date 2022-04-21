@@ -41,11 +41,5 @@ def unbork_juju(model_name: str = 'foo',
     if dry_run:
         print('would run:', cmd)
 
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    proc = Popen(cmd)
     proc.wait()
-    if return_code := proc.returncode != 0:
-        logger.error(f"{cmd} failed with return code {return_code}")
-        logger.error(proc.stdout.read().decode('utf-8'))
-        logger.error(proc.stderr.read().decode('utf-8'))
-    else:
-        print(proc.stdout.read().decode('utf-8'))
