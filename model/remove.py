@@ -28,16 +28,15 @@ async def _remove_model(model_name: str, force=True,
 
     nuking = not restart
     if nuking:
-        # if we're nuking, we can avoid the wait
-        cmd += ' &'
+        # if we're nuking, we can avoid the wait and
+        # redirect the cmd output into the void
+        cmd += ' &>/dev/null &'
 
     if dry_run:
-        logger.info(f'would destroy model {model_name} with: {cmd!r}')
+        print(f'would destroy model {model_name} with: {cmd!r}')
         if restart:
-            logger.info(f'would recreate a fresh model called {model_name}')
+            print(f'would recreate a fresh model called {model_name}')
         return
-    else:
-        logger.info(f'destroying model {model_name} ({cmd})')
 
     print(f'{"nuking" if nuking else "shutting down"} :: {model_name} {"⚛" if nuking else "✞"}')
 

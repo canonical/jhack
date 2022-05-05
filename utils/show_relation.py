@@ -1,5 +1,6 @@
 import asyncio
 import time
+from dataclasses import dataclass
 from subprocess import Popen, PIPE
 
 import yaml
@@ -67,8 +68,18 @@ def get_relation_by_endpoint(relations, endpoint, remote_obj):
     return relations[0]
 
 
+@dataclass
+class RelationData:
+    unit_name: str
+    endpoint: str
+    leader: bool
+    application_data: dict
+    unit_data: dict
+
+
 async def get_content(obj: str, other_obj,
-                      include_default_juju_keys: bool = False) -> tuple:
+                      include_default_juju_keys: bool = False) -> RelationData:
+    """Get the content of the databag of `obj`, relative to `other_obj`."""
     endpoint = None
     other_unit_name = other_obj.split(':')[0] if ':' in other_obj else other_obj
     if ':' in obj:
@@ -76,6 +87,7 @@ async def get_content(obj: str, other_obj,
     else:
         unit_name = obj
     data = (await grab_unit_info(unit_name))[unit_name]
+    is_leader = data['leader']
 
     relation_infos = data.get('relation-info')
     if not relation_infos:
@@ -88,27 +100,25 @@ async def get_content(obj: str, other_obj,
         relation_data_raw = get_relation_by_endpoint(relation_infos, endpoint,
                                                      other_unit_name)
 
-    metadata = unit_name, endpoint, data['leader']
-    application_data = relation_data_raw['application-data']
-
     related_units_data_raw = relation_data_raw['related-units']
-    other_unit_data = related_units_data_raw.get(other_unit_name, {})
 
     other_unit_name = next(iter(related_units_data_raw.keys()))
     other_unit_info = await grab_unit_info(other_unit_name)
     other_unit_relation_infos = other_unit_info[other_unit_name][
         'relation-info']
-    this_unit_data = get_relation_by_endpoint(
+    remote_data_raw = get_relation_by_endpoint(
         other_unit_relation_infos, relation_data_raw['related-endpoint'],
-        unit_name)[
-        'related-units'][unit_name]['data']
+        unit_name)
+    this_unit_data = remote_data_raw['related-units'][unit_name]['data']
+    this_app_data = remote_data_raw['application-data']
 
     if not include_default_juju_keys:
         purge(this_unit_data)
-        purge(other_unit_data)
 
-    relation_data = (application_data, this_unit_data, other_unit_data)
-    return metadata, relation_data
+    return RelationData(
+        unit_name, endpoint, is_leader,
+        this_app_data, this_unit_data
+    )
 
 
 async def render_relation(endpoint1: str, endpoint2: str,
@@ -121,23 +131,17 @@ async def render_relation(endpoint1: str, endpoint2: str,
     from rich.pretty import Pretty  # noqa
     from rich.table import Table  # noqa
 
-    ep1_content = await get_content(endpoint1, endpoint2,
-                                    include_default_juju_keys)
-    ep2_content = await get_content(endpoint2, endpoint1,
-                                    include_default_juju_keys)
-    # content: metadata, (application_data, this_unit_data, other_unit_data)
+    data1 = await get_content(endpoint1, endpoint2, include_default_juju_keys)
+    data2 = await get_content(endpoint2, endpoint1, include_default_juju_keys)
 
     table = Table(title="relation data v0.1")
     table.add_column(justify='left', header='category', style='cyan')
     table.add_column(justify='right', header='keys', style='blue')
-    table.add_column(justify='left', header=ep1_content[0][0])  # meta/unit_name
-    table.add_column(justify='left', header=ep2_content[0][0])
+    table.add_column(justify='left', header=data1.unit_name)  # meta/unit_name
+    table.add_column(justify='left', header=data2.unit_name)
 
-    meta1 = ep1_content[0]
-    meta2 = ep2_content[0]
-    table.add_row('metadata', 'endpoint', Pretty(meta1[1]), Pretty(meta2[1]))
-    table.add_row('', 'leader', Pretty(meta1[2]), Pretty(meta2[2]),
-                  end_section=True)
+    table.add_row('metadata', 'endpoint', Pretty(data1.endpoint), Pretty(data2.endpoint))
+    table.add_row('', 'leader', Pretty(data1.leader), Pretty(data2.leader), end_section=True)
 
     def insert_pairwise_dicts(category, dict1, dict2):
         first = True
@@ -148,9 +152,8 @@ async def render_relation(endpoint1: str, endpoint2: str,
                           dict2[key] if key in dict2 else '')
             first = False
 
-    insert_pairwise_dicts('application data', ep1_content[1][0],
-                          ep2_content[1][0])
-    insert_pairwise_dicts('unit data', ep1_content[1][1], ep2_content[1][1])
+    insert_pairwise_dicts('application data', data1.application_data, data2.application_data)
+    insert_pairwise_dicts('unit data', data1.unit_data, data2.unit_data)
     return table
 
 
