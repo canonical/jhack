@@ -10,6 +10,7 @@ from subprocess import Popen, PIPE, STDOUT
 from typing import Sequence, Literal, Optional, Iterable
 
 import parse
+import typer
 from rich.console import Console
 from rich.align import Align
 from rich.live import Live
@@ -196,7 +197,8 @@ def tail_events(targets: str = None,
                 level: LEVELS = 'DEBUG',
                 replay: bool = True,  # listen from beginning of time?
                 dry_run: bool = False,
-                framerate: float = .5
+                framerate: float = .5,
+                length: int = typer.Option(10, '-n', '--length'),
                 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -220,7 +222,7 @@ def tail_events(targets: str = None,
         return
 
     try:
-        with Processor(targets, add_new_targets) as processor:
+        with Processor(targets, add_new_targets, history_length=length) as processor:
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
             # when we're in replay mode we're catching up with the replayed logs
             # so we won't limit the framerate and just flush the output
