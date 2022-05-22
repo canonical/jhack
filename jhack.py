@@ -2,6 +2,7 @@
 
 import typer
 
+from charm.init import init
 from logger import logger
 from charm.update import update
 from charm.repack import repack
@@ -28,6 +29,7 @@ if __name__ == '__main__':
     charm = typer.Typer(name='charm')
     charm.command(name='update')(update)
     charm.command(name='repack')(repack)
+    charm.command(name='init')(init)
     charm.command(name='sync')(sync_packed_charm)
 
     app = typer.Typer(name='jhack')
