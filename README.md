@@ -1,3 +1,19 @@
+# jhack
+
+This is a homegrown collection of opinionated scripts and utilities to make the 
+charm dev's life a somewhat easier.
+
+Usage:
+
+    $ pip install -r requirements.txt
+    jhack [category] [command]
+
+for example:
+
+    $ jhack utils tail
+
+Happy hacking!
+
 # utils
 ## sync
 
