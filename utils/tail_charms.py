@@ -36,6 +36,9 @@ class Target:
     def unit_name(self):
         return f"{self.app}/{self.unit}"
 
+    def __hash__(self):
+        return hash((self.app, self.unit, self.leader))
+
 
 def get_all_units() -> Sequence[Target]:
     cmd = Popen("juju status".split(' '), stdout=PIPE)
@@ -164,8 +167,9 @@ class Processor:
             for _ in range(len(prev._cells)):
                 col._cells.append('')
 
-        self.messages[msg.unit].append(msg)
-        self.update(msg)
+        if msg.unit in self.messages:  # target tracked
+            self.messages[msg.unit].append(msg)
+            self.update(msg)
 
     def update(self, msg: EventLogMsg):
         # delete current line
@@ -184,22 +188,25 @@ class Processor:
                 if len(self.table.rows) > self.history_length:
                     logger.info('popping a row...')
                     for column in self.table.columns:
-                        column._cells.pop() # pop last
+                        column._cells.pop()  # pop last
                     self.table.rows.pop()
                 return
 
         raise ValueError(f"no column found for {msg.unit}")
 
 
-def tail_events(targets: str = None,
-                add_new_targets: bool = True,
-                # semicolon-separated list of targets to follow
-                level: LEVELS = 'DEBUG',
-                replay: bool = True,  # listen from beginning of time?
-                dry_run: bool = False,
-                framerate: float = .5,
-                length: int = typer.Option(10, '-n', '--length'),
-                ):
+def tail_events(
+        targets: str = typer.Argument(
+            None,
+            help="Semicolon-separated list of targets to follow. "
+                 "Example: 'foo/0;foo/1;bar/2'"),
+        add_new_targets: bool = True,
+        level: LEVELS = 'DEBUG',
+        replay: bool = True,  # listen from beginning of time?
+        dry_run: bool = False,
+        framerate: float = .5,
+        length: int = typer.Option(10, '-n', '--length'),
+):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
 
@@ -210,6 +217,10 @@ def tail_events(targets: str = None,
     if level not in {LEVELS.DEBUG, LEVELS.TRACE}:
         print(f"we won't be able to track events with level={level}")
         track_events = False
+
+    if targets and add_new_targets:
+        print('targets provided; overruling add_new_targets param.')
+        add_new_targets = False
 
     targets = parse_targets(targets)
 
@@ -222,7 +233,8 @@ def tail_events(targets: str = None,
         return
 
     try:
-        with Processor(targets, add_new_targets, history_length=length) as processor:
+        with Processor(targets, add_new_targets,
+                       history_length=length) as processor:
             proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
             # when we're in replay mode we're catching up with the replayed logs
             # so we won't limit the framerate and just flush the output
@@ -244,7 +256,7 @@ def tail_events(targets: str = None,
                     processor.process(msg)
 
                 if not replay_mode and (
-                elapsed := time.time() - start) < framerate:
+                        elapsed := time.time() - start) < framerate:
                     time.sleep(framerate - elapsed)
                     print(f"sleeping {framerate - elapsed}")
 
@@ -254,4 +266,4 @@ def tail_events(targets: str = None,
 
 
 if __name__ == '__main__':
-    tail_events()
+    tail_events(targets='database/0', length=100)
