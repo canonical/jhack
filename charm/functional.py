@@ -127,8 +127,13 @@ def run(file: str,
         import astunparse
     except ModuleNotFoundError:
         logger.info(f'this function requires the `astunparse` module. '
-              f'To solve: `pip install astunparse`')
+                    f'To solve: `pip install astunparse`')
         return
+
+    if not Path(built_charm_template).exists():
+        print(f'charm template {built_charm_template} not found')
+        if built_charm_template == DEFAULT_PACKED_CHARM_TEMPLATE:
+            print('you might need to fetch it with git lfs')
 
     try:
         charm_fn, ori_name = _get_charm_function(file, name)
