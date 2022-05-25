@@ -3,7 +3,10 @@
 This is a homegrown collection of opinionated scripts and utilities to make the 
 charm dev's life a somewhat easier.
 
-Usage:
+#### Installation:
+Clone the repo; symlink 'jhack.py' as 'jhack' to ~/bin or somewhere under PATH. 
+
+#### Usage:
 
     $ pip install -r requirements.txt
     jhack [category] [command]
