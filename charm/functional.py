@@ -134,6 +134,7 @@ def run(file: str,
         print(f'charm template {built_charm_template} not found')
         if built_charm_template == DEFAULT_PACKED_CHARM_TEMPLATE:
             print('you might need to fetch it with git lfs')
+        return
 
     try:
         charm_fn, ori_name = _get_charm_function(file, name)
