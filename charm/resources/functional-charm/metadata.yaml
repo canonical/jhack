@@ -1,0 +1,7 @@
+# Copyright 2022 pietro
+# See LICENSE file for licensing details.
+
+name: functional-charm
+display-name: functional-charm
+description: a functional charm
+summary: a functional charm

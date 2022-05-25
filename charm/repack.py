@@ -1,18 +1,10 @@
-import contextlib
 from pathlib import Path
 import os
 from subprocess import call
 from time import time
 
+from charm.utilities import cwd
 from helpers import get_local_charm
-
-
-@contextlib.contextmanager
-def cwd(dir_):
-    old_cwd = os.getcwd()
-    os.chdir(dir_)
-    yield
-    os.chdir(old_cwd)
 
 
 def pack(root: Path, clean=False, dry_run: bool = False):

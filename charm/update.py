@@ -1,5 +1,6 @@
 import os
 import shutil
+import stat
 import tempfile
 import zipfile
 from pathlib import Path
@@ -7,6 +8,8 @@ from typing import List
 
 from helpers import get_local_charm
 from logger import logger
+
+chmod_plusx = lambda file: os.chmod(file, os.stat(file).st_mode | stat.S_IEXEC)
 
 
 def update(charm: Path = None,
@@ -26,7 +29,7 @@ def update(charm: Path = None,
     If `charm` is None, it will scan the CWD for the first `*.charm` file
     and use that.
     """
-    charm = charm or get_local_charm()
+    charm = Path(charm) or get_local_charm()
     src = tuple(map(Path, src))
     dst = tuple(map(Path, dst))
 
@@ -65,7 +68,7 @@ def update(charm: Path = None,
             if not source.exists():
                 continue
 
-            shutil.copytree(source, build_dst)
+            shutil.copytree(source, build_dst, copy_function=shutil.copy)
             if not dry_run:
                 logger.info(f'Copy: {source} --> {build_dst}.')
 
@@ -79,6 +82,11 @@ def update(charm: Path = None,
         os.unlink(charm)
         # replace it by zipping the build dir
         charm_package_name = str(charm)[:-6]
+
+        # for some reason copytree breaks permissions...
+        chmod_plusx(build_dir / 'dispatch')
+        chmod_plusx(build_dir / 'src' / 'charm.py')
+
         shutil.make_archive(charm_package_name, 'zip', build_dir)
 
         # rename back to .charm as shutil.make_archive
