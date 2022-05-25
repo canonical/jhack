@@ -1,4 +1,5 @@
 juju
+ops
 typer
 rich
 parse
