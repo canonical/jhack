@@ -123,6 +123,14 @@ def run(file: str,
             help='App name under which to deploy the charm; '
                  'if left blank, the charm will not be deployed')
         ):
+    """Scan a file for an `@functional.charm`-decorated function and runs it
+    like a charm.
+
+    NB: at the moment we don't support metadata/action injection yet, so if
+    you wish to access any event except the core lifecycle ones (e.g. relation
+    events, actions, pebble-ready) you'll have to get the necessary yaml specs
+    manually in place in the running unit or the packed charm.
+    """
     try:
         import astunparse
     except ModuleNotFoundError:

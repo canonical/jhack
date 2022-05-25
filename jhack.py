@@ -2,6 +2,7 @@
 
 import typer
 
+from charm import functional
 from charm.init import init
 from logger import logger
 from charm.update import update
@@ -30,6 +31,7 @@ if __name__ == '__main__':
     charm.command(name='update')(update)
     charm.command(name='repack')(repack)
     charm.command(name='init')(init)
+    charm.command(name='func')(functional.run)
     charm.command(name='sync')(sync_packed_charm)
 
     app = typer.Typer(name='jhack')
