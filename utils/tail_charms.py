@@ -1,18 +1,15 @@
-import asyncio
+import enum
 import enum
 import logging
 import time
-from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
-from itertools import chain
 from subprocess import Popen, PIPE, STDOUT
-from typing import Sequence, Literal, Optional, Iterable
+from typing import Sequence, Optional, Iterable
 
 import parse
 import typer
-from rich.console import Console
 from rich.align import Align
+from rich.console import Console
 from rich.live import Live
 from rich.table import Table
 
