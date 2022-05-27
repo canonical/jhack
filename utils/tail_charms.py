@@ -118,7 +118,7 @@ class Processor:
         self.history_length = history_length
         self.messages = {t.unit_name: [] for t in targets}
         self.console = console = Console()
-        self.table = table = Table(show_footer=False)
+        self.table = table = Table(show_footer=False, expand=True)
         table.add_column(header="timestamp")
         for target in targets:
             table.add_column(header=target.unit_name)
