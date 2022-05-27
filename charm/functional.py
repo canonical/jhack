@@ -117,7 +117,9 @@ def _update_built_charm(source: str, template, dry_run):
 def run(file: str,
         name: str = None,
         dry_run: bool = False,
-        built_charm_template=DEFAULT_PACKED_CHARM_TEMPLATE,
+        built_charm_template=Option(
+            DEFAULT_PACKED_CHARM_TEMPLATE, '--template', '-t',
+            help="The packed charm you wish to use as a template."),
         deploy: str = Option(
             None, '-d', '--deploy-name',
             help='App name under which to deploy the charm; '
@@ -134,8 +136,8 @@ def run(file: str,
     try:
         import astunparse
     except ModuleNotFoundError:
-        logger.info(f'this function requires the `astunparse` module. '
-                    f'To solve: `pip install astunparse`')
+        print(f'this function requires the `astunparse` module. '
+              f'To solve: `pip install astunparse`')
         return
 
     if not Path(built_charm_template).exists():
@@ -173,7 +175,7 @@ def run(file: str,
 
     print(f'charm ready at {charm_package.absolute()}')
     if deploy:
-        cmd = f"juju deploy ./{charm_name}"
+        cmd = f"juju deploy ./{charm_name} {deploy}"
         if dry_run:
             print(f'would run: {cmd}')
             return
