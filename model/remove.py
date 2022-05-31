@@ -30,7 +30,7 @@ async def _remove_model(model_name: str, force=True,
     if nuking:
         # if we're nuking, we can avoid the wait and
         # redirect the cmd output into the void
-        cmd += ' &>/dev/null &'
+        cmd = 'nohup ' + cmd + ' > /dev/null 2>&1 &'
 
     if dry_run:
         print(f'would destroy model {model_name} with: {cmd!r}')
