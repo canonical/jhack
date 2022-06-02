@@ -130,3 +130,25 @@ Otherwise, you can specify a folder where the packing should be done, and an
 application name to target with the refresh.
 
 `jhack charm repack --root /where/my/charm/root/is --name juju-app-name`
+
+
+# jinx
+Used to play around with [jinx (YAMLess Charms)](https://github.com/PietroPasotti/jinx)
+
+## install
+
+`jhack jinx install`
+
+Downloads the jinx source.
+
+## init
+
+`jhack jinx init`
+
+Basically `jinxcraft init`.
+
+## pack
+
+`jhack jinx pack`
+
+Basically `jinxcraft pack`.
