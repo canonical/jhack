@@ -19,30 +19,32 @@ from jinx.init import init_jinx as jinx_init
 from jinx.pack import pack_jinx as jinx_pack
 
 if __name__ == '__main__':
-    model = typer.Typer(name='model')
+    model = typer.Typer(name='model', help='Juju model utilities.')
     model.command(name='clear')(sync_clear_model)
     model.command(name='rm')(rmodel)
 
-    utils = typer.Typer(name='utils')
+    utils = typer.Typer(name='utils', help='Charming utilities.')
     utils.command(name='sync')(sync_deployed_charm)
     utils.command(name='show-relation')(sync_show_relation)
     utils.command(name='tail')(tail_events)
     utils.command(name='unbork-juju')(unbork_juju)
 
-    jinx = typer.Typer(name='jinx', help="Jinx commands. See ")
+    jinx = typer.Typer(name='jinx',
+                       help="Jinx commands. See https://github.com/PietroPasotti/jinx for more.")
     jinx.command(name='install')(jinx_install)
     jinx.command(name='init')(jinx_init)
     jinx.command(name='pack')(jinx_pack)
 
-    charm = typer.Typer(name='charm')
+    charm = typer.Typer(name='charm', help='Charmcrafting utilities.')
     charm.command(name='update')(update)
     charm.command(name='repack')(repack)
     charm.command(name='init')(init)
     charm.command(name='func')(functional.run)
     charm.command(name='sync')(sync_packed_charm)
 
-    app = typer.Typer(name='jhack')
+    app = typer.Typer(name='jhack', help='Charming, hacky, wacky.')
     app.add_typer(model)
+    app.add_typer(jinx)
     app.add_typer(charm)
     app.add_typer(utils)
 
