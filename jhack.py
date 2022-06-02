@@ -14,7 +14,9 @@ from utils.sync import sync as sync_deployed_charm
 from utils.show_relation import sync_show_relation
 from utils.tail_charms import tail_events
 from utils.unbork_juju import unbork_juju
-
+from jinx.install import install as jinx_install
+from jinx.init import init_jinx as jinx_init
+from jinx.pack import pack_jinx as jinx_pack
 
 if __name__ == '__main__':
     model = typer.Typer(name='model')
@@ -26,6 +28,11 @@ if __name__ == '__main__':
     utils.command(name='show-relation')(sync_show_relation)
     utils.command(name='tail')(tail_events)
     utils.command(name='unbork-juju')(unbork_juju)
+
+    jinx = typer.Typer(name='jinx', help="Jinx commands. See ")
+    jinx.command(name='install')(jinx_install)
+    jinx.command(name='init')(jinx_init)
+    jinx.command(name='pack')(jinx_pack)
 
     charm = typer.Typer(name='charm')
     charm.command(name='update')(update)
