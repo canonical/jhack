@@ -16,7 +16,6 @@ from ops.charm import CharmBase
 from ops.model import StatusBase
 
 from charm.update import update
-from charm.utilities import cwd
 
 RESOURCE_ROOT = Path(__file__).parent / 'resources' / 'functional-charm'
 DEFAULT_PACKED_CHARM_TEMPLATE = (
