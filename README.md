@@ -31,6 +31,21 @@ under /charm/src/.
 
 Does exactly what it says, and it does it pretty well.
 
+## ffwd
+
+`jhack utils ffwd`
+
+Fast-forwards the firing of `update-status` hooks, and restores it to a 'slow' firing rate after the process is killed or after a given timeout.
+
+Self-explanation:
+```bash
+jhack utils ffwd 
+  --timeout 10 # exits after 10 seconds
+  --fast-interval 5 # update-status fires each 5 seconds
+  --slow-interval 50m # when done, set update-status firing rate to 50 minutes. 
+  ```
+
+
 ## tail
 
 Monitors the logs and gathers all logs concerning events being fired on the units.
@@ -146,9 +161,3 @@ Downloads the jinx source.
 `jhack jinx init`
 
 Basically `jinxcraft init`.
-
-## pack
-
-`jhack jinx pack`
-
-Basically `jinxcraft pack`.
