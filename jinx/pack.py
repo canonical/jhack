@@ -30,7 +30,7 @@ def pack(charm_source: Path = Argument(
     begin = datetime.now()
     env = os.environ
     cmd = Popen(
-        f'{PATH_TO_JINX_PACKAGE}/unpack.py ./src/charm.py'.split(),
+        f'{PATH_TO_JINX_PACKAGE}/unpack.py --overwrite ./src/charm.py'.split(),
         cwd=charm_source.parent.parent)
     cmd.wait()
 
