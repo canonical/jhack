@@ -1,5 +1,6 @@
 import os
 import shutil
+import stat
 from pathlib import Path
 from subprocess import Popen
 from time import sleep
@@ -33,7 +34,12 @@ def init_jinx(force: bool = False):
     cleanup()
 
     # copy template to src/charm.py
+    charm = Path() / 'src' / 'charm.py'
     shutil.copy(path_to_jinx / 'resources' / 'template_jinx.py',
-                Path() / 'src' / 'charm.py')
+                charm)
+
+    # chmod +x
+    st = os.stat(charm)
+    os.chmod(charm, st.st_mode | stat.S_IEXEC)
 
     print('all clear! Happy jinxing.')
