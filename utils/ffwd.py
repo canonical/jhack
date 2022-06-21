@@ -12,8 +12,8 @@ def fast_forward(
         fast_interval: int = typer.Option(
             5, help="Time in seconds for the speed up."),
         slow_interval: str = typer.Option(
-            '60m', help="Time (as a string) at which the speed will be reset"
-                        "when ffwd terminates. Examples: 5m, 10m, 2h, 20s.")):
+            '5m', help="Time (as a string) at which the speed will be reset"
+                       "when ffwd terminates. Examples: 5m, 10m, 2h, 20s.")):
     """Utility to speed up update-status hook intervals."""
     cmd = Popen(
         f"juju model-config update-status-hook-interval={fast_interval}s".split(
