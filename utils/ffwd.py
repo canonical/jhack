@@ -50,7 +50,6 @@ def fast_forward(
     except KeyboardInterrupt:
         print('(aborted)')
 
-    finally:
-        cmd = Popen(f"juju model-config "
-                    f"update-status-hook-interval={slow_interval}s".split(' '))
-        cmd.wait()
+    cmd = Popen(f"juju model-config "
+                f"update-status-hook-interval={slow_interval}".split(' '))
+    cmd.wait()
