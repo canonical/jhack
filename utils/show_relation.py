@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass
 from subprocess import Popen, PIPE
 
+import typer
 import yaml
 
 _JUJU_DATA_CACHE = {}
@@ -59,20 +60,23 @@ def get_unit_info(unit_name: str) -> dict:
     return unit_data
 
 
-def get_relation_by_endpoint(relations, endpoint, remote_obj):
+def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint, remote_obj):
     relations = [
-        r for r in relations if r["endpoint"] == endpoint and remote_obj in r["related-units"]
+        r for r in relations if
+        r["endpoint"] == remote_endpoint and
+        r["related-endpoint"] == remote_endpoint and
+        remote_obj in r["related-units"]
     ]
     if not relations:
         raise ValueError(
-            f"no relations found with endpoint=="
-            f"{endpoint} "
+            f"no relations found with remote endpoint=="
+            f"{remote_endpoint} and local endpoint == {local_endpoint}"
             f"in {remote_obj} (relations={relations})"
         )
     if len(relations) > 1:
         raise ValueError(
-            "multiple relations found with endpoint=="
-            f"{endpoint} "
+            "multiple relations found with remote endpoint=="
+            f"{remote_endpoint} and local endpoint == {local_endpoint}"
             f"in {remote_obj} (relations={relations})"
         )
     return relations[0]
@@ -87,12 +91,14 @@ class UnitRelationData:
     unit_data: dict
 
 
-def get_content(obj: str, other_obj, include_default_juju_keys: bool = False) -> UnitRelationData:
+def get_content(obj: str, other_obj,
+                include_default_juju_keys: bool = False) -> UnitRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     unit_name, endpoint = obj.split(":")
     other_unit_name, other_endpoint = other_obj.split(":")
 
-    unit_data, app_data, leader = get_databags(unit_name, other_unit_name, other_endpoint)
+    unit_data, app_data, leader = get_databags(unit_name, other_unit_name,
+                                               endpoint, other_endpoint)
 
     if not include_default_juju_keys:
         purge(unit_data)
@@ -100,7 +106,7 @@ def get_content(obj: str, other_obj, include_default_juju_keys: bool = False) ->
     return UnitRelationData(unit_name, endpoint, leader, app_data, unit_data)
 
 
-def get_databags(local_unit, remote_unit, remote_endpoint):
+def get_databags(local_unit, remote_unit, local_endpoint, remote_endpoint):
     """Gets the databags of local unit and its leadership status.
 
     Given a remote unit and the remote endpoint name.
@@ -113,7 +119,8 @@ def get_databags(local_unit, remote_unit, remote_endpoint):
     if not relation_info:
         raise RuntimeError(f"{remote_unit} has no relations")
 
-    raw_data = get_relation_by_endpoint(relation_info, remote_endpoint, local_unit)
+    raw_data = get_relation_by_endpoint(relation_info, local_endpoint,
+                                        remote_endpoint, local_unit)
     unit_data = raw_data["related-units"][local_unit]["data"]
     app_data = raw_data["application-data"]
     return unit_data, app_data, leader
@@ -126,14 +133,17 @@ class RelationData:
 
 
 def get_relation_data(
-    *, provider_endpoint: str, requirer_endpoint: str, include_default_juju_keys: bool = False
+        *, provider_endpoint: str, requirer_endpoint: str,
+        include_default_juju_keys: bool = False
 ):
     """Get relation databags for a juju relation.
 
     >>> get_relation_data('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
-    provider_data = get_content(provider_endpoint, requirer_endpoint, include_default_juju_keys)
-    requirer_data = get_content(requirer_endpoint, provider_endpoint, include_default_juju_keys)
+    provider_data = get_content(provider_endpoint, requirer_endpoint,
+                                include_default_juju_keys)
+    requirer_data = get_content(requirer_endpoint, provider_endpoint,
+                                include_default_juju_keys)
     return RelationData(provider=provider_data, requirer=requirer_data)
 
 
@@ -156,8 +166,10 @@ async def render_relation(endpoint1: str, endpoint2: str,
     table.add_column(justify='left', header=data1.unit_name)  # meta/unit_name
     table.add_column(justify='left', header=data2.unit_name)
 
-    table.add_row('metadata', 'endpoint', Pretty(data1.endpoint), Pretty(data2.endpoint))
-    table.add_row('', 'leader', Pretty(data1.leader), Pretty(data2.leader), end_section=True)
+    table.add_row('metadata', 'endpoint', Pretty(data1.endpoint),
+                  Pretty(data2.endpoint))
+    table.add_row('', 'leader', Pretty(data1.leader), Pretty(data2.leader),
+                  end_section=True)
 
     def insert_pairwise_dicts(category, dict1, dict2):
         first = True
@@ -168,14 +180,28 @@ async def render_relation(endpoint1: str, endpoint2: str,
                           dict2[key] if key in dict2 else '')
             first = False
 
-    insert_pairwise_dicts('application data', data1.application_data, data2.application_data)
+    insert_pairwise_dicts('application data', data1.application_data,
+                          data2.application_data)
     insert_pairwise_dicts('unit data', data1.unit_data, data2.unit_data)
     return table
 
 
-def sync_show_relation(endpoint1: str, endpoint2: str,
-                       include_default_juju_keys: bool = False,
-                       watch: bool = False):
+def sync_show_relation(
+        endpoint1: str = typer.Argument(
+            ...,
+            help="First endpoint. It's a string in the format "
+                 "<unit_name>:<relation_name>; example: mongodb/1:ingress."),
+        endpoint2: str = typer.Argument(
+            ...,
+            help="Second endpoint. It's a string in the format "
+                 "<unit_name>:<relation_name>; example: traefik/3:ingress."),
+        include_default_juju_keys: bool = False,
+        watch: bool = False):
+    """Displays the databags of two units involved in a relation.
+
+    Example:
+        jhack utils show-relation my_app/0:relation_name other_app/2:other_name
+    """
     try:
         import rich  # noqa
     except ImportError:
@@ -202,3 +228,7 @@ def sync_show_relation(endpoint1: str, endpoint2: str,
 
         if not watch:
             return
+
+
+if __name__ == '__main__':
+    sync_show_relation("traefik-k8s/0:ingress-per-unit", "ipun/0:ingress-per-unit")
