@@ -79,6 +79,7 @@ def sync(local_folder: str,
          unit: str,
          remote_root: str = None,
          container_name: str = 'charm',
+         machine_charm: bool = False,
          polling_interval: float = 1,
          recursive: bool = False,
          exts: List[str] = None,
@@ -119,7 +120,7 @@ def sync(local_folder: str,
         loop.run_until_complete(
             jasyncio.gather(
                 *(push_to_remote_juju_unit(changed, remote_root,
-                                           app, unit, container_name)
+                                           app, unit, container_name, machine_charm)
                   for changed in changed_files)
             )
         )
@@ -129,11 +130,17 @@ def sync(local_folder: str,
 
 
 async def push_to_remote_juju_unit(file: Path, remote_root: str,
-                                   app, unit, container_name):
+                                   app, unit, container_name, machine_charm):
     remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1:]
-    container_opt = f"--container {container_name} " if container_name else ""
-    cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
-    proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+
+    if not machine_charm:
+        container_opt = f"--container {container_name} " if container_name else ""
+        cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
+        proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+    else:
+        cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
+        proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+
     retcode = proc.returncode
     if retcode != None:
         logger.error(f"{cmd} errored with code {retcode}: "
