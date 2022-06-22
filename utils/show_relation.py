@@ -63,21 +63,21 @@ def get_unit_info(unit_name: str) -> dict:
 def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint, remote_obj):
     relations = [
         r for r in relations if
-        r["endpoint"] == remote_endpoint and
+        r["endpoint"] == local_endpoint and
         r["related-endpoint"] == remote_endpoint and
         remote_obj in r["related-units"]
     ]
     if not relations:
         raise ValueError(
-            f"no relations found with remote endpoint=="
-            f"{remote_endpoint} and local endpoint == {local_endpoint}"
-            f"in {remote_obj} (relations={relations})"
+            f"no relations found with remote endpoint={remote_endpoint!r} "
+            f"and local endpoint={local_endpoint!r} "
+            f"in {remote_obj!r}"
         )
     if len(relations) > 1:
         raise ValueError(
-            "multiple relations found with remote endpoint=="
-            f"{remote_endpoint} and local endpoint == {local_endpoint}"
-            f"in {remote_obj} (relations={relations})"
+            f"multiple relations found with remote endpoint={remote_endpoint!r} "
+            f"and local endpoint={local_endpoint!r} "
+            f"in {remote_obj!r} (relations={relations})"
         )
     return relations[0]
 
