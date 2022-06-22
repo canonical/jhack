@@ -139,7 +139,7 @@ async def push_to_remote_juju_unit(file: Path, remote_root: str,
         proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
     else:
         cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
-        proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+        proc = Popen([cmd], stdout=PIPE, stderr=PIPE, shell=True)
 
     retcode = proc.returncode
     if retcode != None:
