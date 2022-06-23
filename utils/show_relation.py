@@ -1,7 +1,10 @@
 import asyncio
+import re
 import time
 from dataclasses import dataclass
+from itertools import zip_longest
 from subprocess import Popen, PIPE
+from typing import Dict, Optional, Tuple
 
 import typer
 import yaml
@@ -60,7 +63,8 @@ def get_unit_info(unit_name: str) -> dict:
     return unit_data
 
 
-def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint, remote_obj):
+def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint,
+                             remote_obj):
     relations = [
         r for r in relations if
         r["endpoint"] == local_endpoint and
@@ -83,27 +87,87 @@ def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint, remote_
 
 
 @dataclass
-class UnitRelationData:
-    unit_name: str
+class Metadata:
+    scale: int
+    leader_id: int
+    interface: str
+
+
+@dataclass
+class AppRelationData:
+    app_name: str
+    meta: Metadata
     endpoint: str
-    leader: bool
     application_data: dict
-    unit_data: dict
+    units_data: Dict[int, dict]
+
+
+def get_metadata_from_status(app_name, relation_name, other_app_name, other_relation_name):
+    # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
+    proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
+    status = proc.stdout.read().decode('utf-8')
+    if '-' in app_name:
+        # escape dashes
+        app_name = app_name.replace('-', r'\-')
+
+    # even if the scale is "4/5" this will match the first digit, i.e. the current scale
+    scale = re.compile(fr"^{app_name}(?!/)(\s+)?(\d+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
+                       re.MULTILINE).findall(status)
+    if not scale:
+        raise RuntimeError(f'failed to parse output of {proc.args}; is '
+                           f'{app_name!r} correct?')
+
+    leader_id = re.compile(fr"^{app_name}\/(\d+)\*", re.MULTILINE).findall(status)[0][-1]
+    intf_re = fr"(({app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
+    interface = re.compile(intf_re).findall(status)[0][-1]
+    return Metadata(int(scale[0][-1]), int(leader_id), interface)
+
+
+def get_app_name_and_units(url, relation_name,
+                           other_app_name, other_relation_name):
+    """Get app name and unit count from url; url is either `app_name/0` or `app_name`."""
+    app_name, unit_id = url.split('/') if '/' in url else (url, None)
+
+    meta = get_metadata_from_status(app_name, relation_name, other_app_name, other_relation_name)
+    if unit_id:
+        units = (int(unit_id), )
+    else:
+        units = tuple(range(0, meta.scale))
+    return app_name, units, meta
 
 
 def get_content(obj: str, other_obj,
-                include_default_juju_keys: bool = False) -> UnitRelationData:
+                include_default_juju_keys: bool = False) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
-    unit_name, endpoint = obj.split(":")
-    other_unit_name, other_endpoint = other_obj.split(":")
+    url, endpoint = obj.split(":")
+    other_url, other_endpoint = other_obj.split(":")
 
-    unit_data, app_data, leader = get_databags(unit_name, other_unit_name,
-                                               endpoint, other_endpoint)
+    other_app_name, _ = other_url.split('/') if '/' in other_url else (other_url, None)
 
-    if not include_default_juju_keys:
-        purge(unit_data)
+    app_name, units, meta = get_app_name_and_units(
+        url, endpoint, other_app_name, other_endpoint)
 
-    return UnitRelationData(unit_name, endpoint, leader, app_data, unit_data)
+    # we might have a different number of units and other units, and it doesn't
+    # matter which 'other' we pass to get the databags for 'this', so:
+    other_unit_name = f"{other_app_name}/0"
+
+    leader_unit_data = None
+    app_data = None
+    units_data = {}
+    for unit_id in units:
+        unit_name = f"{app_name}/{unit_id}"
+        unit_data, app_data = get_databags(unit_name, other_unit_name,
+                                            endpoint, other_endpoint)
+        if not include_default_juju_keys:
+            purge(unit_data)
+        units_data[unit_id] = unit_data
+
+    return AppRelationData(
+        app_name=app_name,
+        meta=meta,
+        endpoint=endpoint,
+        application_data=app_data,
+        units_data=units_data)
 
 
 def get_databags(local_unit, remote_unit, local_endpoint, remote_endpoint):
@@ -123,13 +187,13 @@ def get_databags(local_unit, remote_unit, local_endpoint, remote_endpoint):
                                         remote_endpoint, local_unit)
     unit_data = raw_data["related-units"][local_unit]["data"]
     app_data = raw_data["application-data"]
-    return unit_data, app_data, leader
+    return unit_data, app_data
 
 
 @dataclass
 class RelationData:
-    provider: UnitRelationData
-    requirer: UnitRelationData
+    provider: AppRelationData
+    requirer: AppRelationData
 
 
 def get_relation_data(
@@ -155,34 +219,68 @@ async def render_relation(endpoint1: str, endpoint2: str,
 
     from rich.console import Console  # noqa
     from rich.pretty import Pretty  # noqa
+    from rich.text import Text  # noqa
     from rich.table import Table  # noqa
+    from rich.panel import Panel  # noqa
+    from rich.columns import Columns  # noqa
 
     data1 = get_content(endpoint1, endpoint2, include_default_juju_keys)
     data2 = get_content(endpoint2, endpoint1, include_default_juju_keys)
 
-    table = Table(title="relation data v0.1")
-    table.add_column(justify='left', header='category', style='cyan')
-    table.add_column(justify='right', header='keys', style='blue')
-    table.add_column(justify='left', header=data1.unit_name)  # meta/unit_name
-    table.add_column(justify='left', header=data2.unit_name)
+    table = Table(title="relation data v0.2")
+    table.add_column(justify='left', header='category', style='rgb(54,176,224) bold')
+    table.add_column(justify='left', header=data1.app_name)  # meta/app_name
+    table.add_column(justify='left', header=data2.app_name)
 
-    table.add_row('metadata', 'endpoint', Pretty(data1.endpoint),
-                  Pretty(data2.endpoint))
-    table.add_row('', 'leader', Pretty(data1.leader), Pretty(data2.leader),
-                  end_section=True)
+    table.add_row('relation name', Text(data1.endpoint, style='green'), Text(data2.endpoint, style='green'))
+    table.add_row('interface', Text(data1.meta.interface, style='blue bold'), Text(data2.meta.interface, style='blue bold'))
 
-    def insert_pairwise_dicts(category, dict1, dict2):
-        first = True
-        for key in sorted(dict1.keys() | dict2.keys()):
-            table.add_row(category if first else '',
-                          key,
-                          dict1[key] if key in dict1 else '',
-                          dict2[key] if key in dict2 else '')
-            first = False
+    leader_id_1 = data1.meta.leader_id
+    leader_id_2 = data2.meta.leader_id
+    table.add_row('leader unit', Text(str(leader_id_1), style='red'),
+                  Text(str(leader_id_2), style='red'), end_section=True)
 
-    insert_pairwise_dicts('application data', data1.application_data,
-                          data2.application_data)
-    insert_pairwise_dicts('unit data', data1.unit_data, data2.unit_data)
+    def render_databag(unit_name, dct, leader=False):
+        if not dct:
+            t = Text('<empty>', style='rgb(255,198,99)')
+        else:
+            t = Table(box=None)
+            t.add_column(style='cyan not bold')  # keys
+            t.add_column(style='white not bold')  # values
+            for key in sorted(dct.keys()):
+                t.add_row(key, dct[key])
+
+        if leader:
+            title = unit_name + '*'
+            style = "rgb(54,176,224) bold"
+        else:
+            title = unit_name
+            style = "white"
+
+        p = Panel(t, title=title, title_align='left', style=style, border_style="white")
+        return p
+
+    app_databag = render_databag('', data1.application_data)
+    other_app_databag = render_databag('', data2.application_data)
+    table.add_row('application data', app_databag, other_app_databag)
+
+    unit_databags = []
+    other_unit_databags = []
+
+    def render(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
+        unit_id, unit_data = obj
+        unit_name = f"{source.app_name}/{unit_id}"
+        return render_databag(unit_name, unit_data,
+                              leader=(unit_id == source.meta.leader_id))
+
+    for unit, other_unit in zip_longest(data1.units_data.items(),
+                                        data2.units_data.items()):
+        if unit:
+            unit_databags.append(render(unit, data1))
+        if other_unit:
+            other_unit_databags.append(render(other_unit, data2))
+
+    table.add_row('unit data', Columns(unit_databags), Columns(other_unit_databags))
     return table
 
 
@@ -197,10 +295,12 @@ def sync_show_relation(
                  "<unit_name>:<relation_name>; example: traefik/3:ingress."),
         include_default_juju_keys: bool = False,
         watch: bool = False):
-    """Displays the databags of two units involved in a relation.
+    """Displays the databags of two applications or units involved in a relation.
 
     Example:
         jhack utils show-relation my_app/0:relation_name other_app/2:other_name
+        jhack utils show-relation my_app:relation_name other_app/2:other_name
+        jhack utils show-relation my_app:relation_name other_app:other_name
     """
     try:
         import rich  # noqa
@@ -231,4 +331,4 @@ def sync_show_relation(
 
 
 if __name__ == '__main__':
-    sync_show_relation("traefik-k8s/0:ingress-per-unit", "ipun/0:ingress-per-unit")
+    sync_show_relation("traefik-k8s:ingress-per-unit", "ipun/0:ingress-per-unit")

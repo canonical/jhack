@@ -81,26 +81,61 @@ background as new units are added.
 
 ## show-relation 
 
-`jhack utils show-relation prometheus-k8s/0:ingress traefik-k8s/0:ingress-per-unit --watch`
+Displays the databags of units involved in a relation.
+if the endpoint is of the form `app-name/id:relation-name`: it will display the application databag and the one for the unit with id=`id`.
+If the endpoint is of the form `app-name:relation-name`: it will display the application databag and the databags for all units.
+Examples:
 
-Will pprint:
+`jhack utils show-relation ipu:ingress-per-unit traefik-k8s:ingress-per-unit`
 
+`jhack utils show-relation ipu/0:ingress-per-unit traefik-k8s:ingress-per-unit`
+
+`jhack utils show-relation ipu/0:ingress-per-unit traefik-k8s/2:ingress-per-unit`
+
+Example output:
 ```bash
-                                          relation data v0.1                                           
-┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
-┃ category         ┃     keys ┃ prometheus-k8s/0                                 ┃ traefik-k8s/0      ┃
-┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
-│ metadata         │ endpoint │ 'ingress'                                        │ 'ingress-per-unit' │
-│                  │   leader │ True                                             │ True               │
-├──────────────────┼──────────┼──────────────────────────────────────────────────┼────────────────────┤
-│ application data │     data │ ingress:                                         │                    │
-│                  │          │   prometheus-k8s/0:                              │                    │
-│                  │          │     url: http://foo.bar:80/test-prometheus-k8s-0 │                    │
-│ unit data        │     data │ host: 10.1.232.174                               │                    │
-│                  │          │ model: test                                      │                    │
-│                  │          │ name: prometheus-k8s/0                           │                    │
-│                  │          │ port: 9090                                       │                    │
-└──────────────────┴──────────┴──────────────────────────────────────────────────┴────────────────────┘
+                                                      relation data v0.2                                                       
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ category         ┃ traefik-k8s                                         ┃ ipu                                                ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ relation name    │ ingress-per-unit                                    │ ingress-per-unit                                   │
+│ interface        │ ingress_per_unit                                    │ ingress_per_unit                                   │
+│ leader unit      │ 0                                                   │ 0                                                  │
+├──────────────────┼─────────────────────────────────────────────────────┼────────────────────────────────────────────────────┤
+│ application data │ ╭─────────────────────────────────────────────────╮ │ ╭────────────────────────────────────────────────╮ │
+│                  │ │                                                 │ │ │ <empty>                                        │ │
+│                  │ │  ingress  ipu/0:                                │ │ ╰────────────────────────────────────────────────╯ │
+│                  │ │             url:                                │ │                                                    │
+│                  │ │           http://my.it:80/test-charm-ipu-9dg8…  │ │                                                    │
+│                  │ │           ipu/1:                                │ │                                                    │
+│                  │ │             url:                                │ │                                                    │
+│                  │ │           http://my.it:80/test-charm-ipu-9dg8…  │ │                                                    │
+│                  │ │           ipu/2:                                │ │                                                    │
+│                  │ │             url:                                │ │                                                    │
+│                  │ │           http://my.it:80/test-charm-ipu-9dg8…  │ │                                                    │
+│                  │ ╰─────────────────────────────────────────────────╯ │                                                    │
+│ unit data        │ ╭─ traefik-k8s/0* ─╮ ╭─ traefik-k8s/1 ─╮            │ ╭─ ipu/0*  ────────────────────╮                   │
+│                  │ │ <empty>          │ │ <empty>         │            │ │                              │                   │
+│                  │ ╰──────────────────╯ ╰─────────────────╯            │ │  host   foo.bar              │                   │
+│                  │ ╭─ traefik-k8s/2 ──╮ ╭─ traefik-k8s/3 ─╮            │ │  model  test-charm-ipu-9dg8  │                   │
+│                  │ │ <empty>          │ │ <empty>         │            │ │  name   ipu/0                │                   │
+│                  │ ╰──────────────────╯ ╰─────────────────╯            │ │  port   80                   │                   │
+│                  │                                                     │ ╰──────────────────────────────╯                   │
+│                  │                                                     │ ╭─ ipu/1  ─────────────────────╮                   │
+│                  │                                                     │ │                              │                   │
+│                  │                                                     │ │  host   foo.bar              │                   │
+│                  │                                                     │ │  model  test-charm-ipu-9dg8  │                   │
+│                  │                                                     │ │  name   ipu/1                │                   │
+│                  │                                                     │ │  port   80                   │                   │
+│                  │                                                     │ ╰──────────────────────────────╯                   │
+│                  │                                                     │ ╭─ ipu/2  ─────────────────────╮                   │
+│                  │                                                     │ │                              │                   │
+│                  │                                                     │ │  host   foo.bar              │                   │
+│                  │                                                     │ │  model  test-charm-ipu-9dg8  │                   │
+│                  │                                                     │ │  name   ipu/2                │                   │
+│                  │                                                     │ │  port   80                   │                   │
+│                  │                                                     │ ╰──────────────────────────────╯                   │
+└──────────────────┴─────────────────────────────────────────────────────┴────────────────────────────────────────────────────┘
 ```
 
 # model
