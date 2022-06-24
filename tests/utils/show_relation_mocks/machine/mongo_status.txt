@@ -1,0 +1,16 @@
+Model  Controller  Cloud/Region         Version  SLA          Timestamp
+foo    lxdcloud    localhost/localhost  2.9.25   unsupported  16:15:32+02:00
+
+App    Version  Status  Scale  Charm    Channel  Rev  Exposed  Message
+mongo  3.6.8    active      1  mongodb  stable    67  no       Unit is ready
+
+Unit      Workload  Agent  Machine  Public address  Ports                                    Message
+mongo/0*  active    idle   2        10.1.70.128     27017/tcp,27019/tcp,27021/tcp,28017/tcp  Unit is ready
+
+Machine  State    DNS          Inst id        Series  AZ  Message
+2        started  10.1.70.128  juju-dae2cd-2  focal       Running
+
+Relation provider  Requirer              Interface            Type     Message
+mongo:database     ceilometer:shared-db  mongodb              regular  
+mongo:replica-set  mongo:replica-set     mongodb-replica-set  peer     
+
