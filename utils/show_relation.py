@@ -65,25 +65,27 @@ def get_unit_info(unit_name: str) -> dict:
 
 def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint,
                              remote_obj):
-    relations = [
+    matches = [
         r for r in relations if
-        r["endpoint"] == local_endpoint and
-        r["related-endpoint"] == remote_endpoint and
+        ((r["endpoint"] == local_endpoint and
+          r["related-endpoint"] == remote_endpoint) or
+         (r["endpoint"] == remote_endpoint and
+          r["related-endpoint"] == local_endpoint)) and
         remote_obj in r["related-units"]
     ]
-    if not relations:
+    if not matches:
         raise ValueError(
             f"no relations found with remote endpoint={remote_endpoint!r} "
             f"and local endpoint={local_endpoint!r} "
             f"in {remote_obj!r}"
         )
-    if len(relations) > 1:
+    if len(matches) > 1:
         raise ValueError(
             f"multiple relations found with remote endpoint={remote_endpoint!r} "
             f"and local endpoint={local_endpoint!r} "
-            f"in {remote_obj!r} (relations={relations})"
+            f"in {remote_obj!r} (relations={matches})"
         )
-    return relations[0]
+    return matches[0]
 
 
 @dataclass
@@ -102,7 +104,8 @@ class AppRelationData:
     units_data: Dict[int, dict]
 
 
-def get_metadata_from_status(app_name, relation_name, other_app_name, other_relation_name):
+def get_metadata_from_status(app_name, relation_name, other_app_name,
+                             other_relation_name):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
     proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
     status = proc.stdout.read().decode('utf-8')
@@ -111,13 +114,15 @@ def get_metadata_from_status(app_name, relation_name, other_app_name, other_rela
         app_name = app_name.replace('-', r'\-')
 
     # even if the scale is "4/5" this will match the first digit, i.e. the current scale
-    scale = re.compile(fr"^{app_name}(?!/)(\s+)?(\d+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
-                       re.MULTILINE).findall(status)
+    scale = re.compile(
+        fr"^{app_name}(?!/)(\s+)?(\d+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
+        re.MULTILINE).findall(status)
     if not scale:
         raise RuntimeError(f'failed to parse output of {proc.args}; is '
                            f'{app_name!r} correct?')
 
-    leader_id = re.compile(fr"^{app_name}\/(\d+)\*", re.MULTILINE).findall(status)[0][-1]
+    leader_id = \
+    re.compile(fr"^{app_name}\/(\d+)\*", re.MULTILINE).findall(status)[0][-1]
     intf_re = fr"(({app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
     interface = re.compile(intf_re).findall(status)[0][-1]
     return Metadata(int(scale[0][-1]), int(leader_id), interface)
@@ -128,9 +133,10 @@ def get_app_name_and_units(url, relation_name,
     """Get app name and unit count from url; url is either `app_name/0` or `app_name`."""
     app_name, unit_id = url.split('/') if '/' in url else (url, None)
 
-    meta = get_metadata_from_status(app_name, relation_name, other_app_name, other_relation_name)
+    meta = get_metadata_from_status(app_name, relation_name, other_app_name,
+                                    other_relation_name)
     if unit_id:
-        units = (int(unit_id), )
+        units = (int(unit_id),)
     else:
         units = tuple(range(0, meta.scale))
     return app_name, units, meta
@@ -142,7 +148,8 @@ def get_content(obj: str, other_obj,
     url, endpoint = obj.split(":")
     other_url, other_endpoint = other_obj.split(":")
 
-    other_app_name, _ = other_url.split('/') if '/' in other_url else (other_url, None)
+    other_app_name, _ = other_url.split('/') if '/' in other_url else (
+    other_url, None)
 
     app_name, units, meta = get_app_name_and_units(
         url, endpoint, other_app_name, other_endpoint)
@@ -157,7 +164,7 @@ def get_content(obj: str, other_obj,
     for unit_id in units:
         unit_name = f"{app_name}/{unit_id}"
         unit_data, app_data = get_databags(unit_name, other_unit_name,
-                                            endpoint, other_endpoint)
+                                           endpoint, other_endpoint)
         if not include_default_juju_keys:
             purge(unit_data)
         units_data[unit_id] = unit_data
@@ -228,12 +235,15 @@ async def render_relation(endpoint1: str, endpoint2: str,
     data2 = get_content(endpoint2, endpoint1, include_default_juju_keys)
 
     table = Table(title="relation data v0.2")
-    table.add_column(justify='left', header='category', style='rgb(54,176,224) bold')
+    table.add_column(justify='left', header='category',
+                     style='rgb(54,176,224) bold')
     table.add_column(justify='left', header=data1.app_name)  # meta/app_name
     table.add_column(justify='left', header=data2.app_name)
 
-    table.add_row('relation name', Text(data1.endpoint, style='green'), Text(data2.endpoint, style='green'))
-    table.add_row('interface', Text(data1.meta.interface, style='blue bold'), Text(data2.meta.interface, style='blue bold'))
+    table.add_row('relation name', Text(data1.endpoint, style='green'),
+                  Text(data2.endpoint, style='green'))
+    table.add_row('interface', Text(data1.meta.interface, style='blue bold'),
+                  Text(data2.meta.interface, style='blue bold'))
 
     leader_id_1 = data1.meta.leader_id
     leader_id_2 = data2.meta.leader_id
@@ -257,7 +267,8 @@ async def render_relation(endpoint1: str, endpoint2: str,
             title = unit_name
             style = "white"
 
-        p = Panel(t, title=title, title_align='left', style=style, border_style="white")
+        p = Panel(t, title=title, title_align='left', style=style,
+                  border_style="white")
         return p
 
     app_databag = render_databag('', data1.application_data)
@@ -280,7 +291,8 @@ async def render_relation(endpoint1: str, endpoint2: str,
         if other_unit:
             other_unit_databags.append(render(other_unit, data2))
 
-    table.add_row('unit data', Columns(unit_databags), Columns(other_unit_databags))
+    table.add_row('unit data', Columns(unit_databags),
+                  Columns(other_unit_databags))
     return table
 
 
@@ -331,4 +343,4 @@ def sync_show_relation(
 
 
 if __name__ == '__main__':
-    sync_show_relation("traefik-k8s:ingress-per-unit", "ipun/0:ingress-per-unit")
+    sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
