@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass
 from itertools import zip_longest
 from subprocess import Popen, PIPE
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 
 import typer
 import yaml
@@ -17,6 +17,11 @@ def purge(data: dict):
     for key in _JUJU_KEYS:
         if key in data:
             del data[key]
+
+
+def _show_unit(unit_name):
+    proc = Popen(f"juju show-unit {unit_name}".split(" "), stdout=PIPE)
+    return proc.stdout.read().decode("utf-8").strip()
 
 
 def get_unit_info(unit_name: str) -> dict:
@@ -46,8 +51,7 @@ def get_unit_info(unit_name: str) -> dict:
     if cached_data := _JUJU_DATA_CACHE.get(unit_name):
         return cached_data
 
-    proc = Popen(f"juju show-unit {unit_name}".split(" "), stdout=PIPE)
-    raw_data = proc.stdout.read().decode("utf-8").strip()
+    raw_data = _show_unit(unit_name)
     if not raw_data:
         raise ValueError(
             f"no unit info could be grabbed for {unit_name}; "
@@ -91,6 +95,7 @@ def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint,
 @dataclass
 class Metadata:
     scale: int
+    units: Tuple[int, ...]
     leader_id: int
     interface: str
 
@@ -104,28 +109,48 @@ class AppRelationData:
     units_data: Dict[int, dict]
 
 
+def _juju_status(app_name):
+    proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
+    return proc.stdout.read().decode('utf-8'), proc
+
+
 def get_metadata_from_status(app_name, relation_name, other_app_name,
                              other_relation_name):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
-    status = proc.stdout.read().decode('utf-8')
-    if '-' in app_name:
-        # escape dashes
-        app_name = app_name.replace('-', r'\-')
+    status, proc = _juju_status(app_name)
+    # escape dashes
+    re_safe_app_name = app_name.replace('-', r'\-')
 
     # even if the scale is "4/5" this will match the first digit, i.e. the current scale
-    scale = re.compile(
-        fr"^{app_name}(?!/)(\s+)?(\d+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
+    raw_scale = re.compile(
+        fr"^{re_safe_app_name}(?!\/)(\s+)?((\d|\.)+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
         re.MULTILINE).findall(status)
-    if not scale:
+    if not raw_scale:
         raise RuntimeError(f'failed to parse output of {proc.args}; is '
                            f'{app_name!r} correct?')
+    scale = raw_scale[0][-1]
 
-    leader_id = \
-    re.compile(fr"^{app_name}\/(\d+)\*", re.MULTILINE).findall(status)[0][-1]
-    intf_re = fr"(({app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
+    leader_id = re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(status)[0][-1]
+    intf_re = fr"(({re_safe_app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
     interface = re.compile(intf_re).findall(status)[0][-1]
-    return Metadata(int(scale[0][-1]), int(leader_id), interface)
+
+    # parse status to enumerate the existing units for app_name.
+    status_lines = status.split('\n')
+    units_header = next((line for line in status_lines if line.startswith('Unit ')))
+    unit_lines = status_lines[status_lines.index(units_header):]
+    units: List[int] = []
+    for unit_line in unit_lines:
+        if not unit_line.strip():
+            # first newline is end of section.
+            break
+        if unit_line.startswith(app_name):
+            app_name_, unit_id_ = unit_line.split(' ')[0].split('/')
+            if app_name_ == app_name:
+                # this unit belongs to our app
+                unit_id = int(unit_id_.strip('*'))
+                units.append(unit_id)
+
+    return Metadata(int(scale), tuple(units), int(leader_id), interface)
 
 
 def get_app_name_and_units(url, relation_name,
@@ -138,7 +163,7 @@ def get_app_name_and_units(url, relation_name,
     if unit_id:
         units = (int(unit_id),)
     else:
-        units = tuple(range(0, meta.scale))
+        units = meta.units
     return app_name, units, meta
 
 
@@ -343,4 +368,5 @@ def sync_show_relation(
 
 
 if __name__ == '__main__':
+    # sync_show_relation("ceilometer:shared-db", "mongo:database")
     sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
