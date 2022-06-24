@@ -1,0 +1,33 @@
+ceilometer/0:
+  workload-version: 14.1.0
+  machine: "0"
+  opened-ports: []
+  public-address: 10.1.70.125
+  charm: ch:amd64/focal/ceilometer-489
+  leader: true
+  relation-info:
+  - relation-id: 0
+    endpoint: cluster
+    related-endpoint: cluster
+    application-data: {}
+    local-unit:
+      in-scope: true
+      data:
+        egress-subnets: 10.1.70.125/32
+        ingress-address: 10.1.70.125
+        private-address: 10.1.70.125
+  - relation-id: 0
+    endpoint: shared-db
+    related-endpoint: database
+    application-data: {}
+    related-units:
+      mongo/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.1.70.128/32
+          hostname: 10.1.70.128
+          ingress-address: 10.1.70.128
+          port: "27017"
+          private-address: 10.1.70.128
+          type: database
+          version: 3.6.8
