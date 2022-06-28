@@ -15,6 +15,7 @@ from logger import logger
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 
+
 def purge(data: dict):
     for key in _JUJU_KEYS:
         if key in data:
@@ -143,8 +144,9 @@ def get_metadata_from_status(app_name, relation_name, other_app_name,
     scale = raw_scale[0][-1]
 
     leader_id = \
-    re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(status)[
-        0][-1]
+        re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(
+            status)[
+            0][-1]
     intf_re = fr"(({re_safe_app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
     interface = re.compile(intf_re).findall(status)[0][-1]
 
@@ -185,7 +187,8 @@ def get_app_name_and_units(url, relation_name,
 
 def get_content(obj: str, other_obj,
                 include_default_juju_keys: bool = False,
-                model: str = None) -> AppRelationData:
+                model: str = None,
+                peer: bool = False) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     url, endpoint = obj.split(":")
     other_url, other_endpoint = other_obj.split(":")
@@ -197,9 +200,21 @@ def get_content(obj: str, other_obj,
         url, endpoint, other_app_name, other_endpoint,
         model)
 
-    # we might have a different number of units and other units, and it doesn't
-    # matter which 'other' we pass to get the databags for 'this', so:
-    other_unit_name = f"{other_app_name}/0"
+    if peer:
+        if len(meta.units) <= 1:
+            raise RuntimeError("Can't show peer relations with n<2 now, can we?")  # can we?
+        alt1, alt2, *_ = meta.units
+        def _get_other_unit(current):
+            # Ensure we flip between two alternatives, so other is never self.
+            if current == alt1:
+                return alt2
+            return alt1
+
+    else:
+        def _get_other_unit(current):
+            # we might have a different number of units and other units, and it doesn't
+            # matter which 'other' we pass to get the databags for 'this', so:
+            return 0
 
     leader_unit_data = None
     app_data = None
@@ -207,8 +222,9 @@ def get_content(obj: str, other_obj,
     r_id = None
     for unit_id in units:
         unit_name = f"{app_name}/{unit_id}"
+        other_unit_name = f"{other_app_name}/{_get_other_unit(unit_id)}"
         unit_data, app_data, r_id_ = get_databags(unit_name, other_unit_name,
-                                           endpoint, other_endpoint)
+                                                  endpoint, other_endpoint)
 
         if r_id is not None:
             assert r_id == r_id_, f'mismatching relation IDs: {r_id, r_id_}'
@@ -254,6 +270,15 @@ class RelationData:
     requirer: AppRelationData
 
 
+def get_peer_relation_data(
+        *, endpoint: str,
+        include_default_juju_keys: bool = False, model: str = None
+):
+    return get_content(endpoint, endpoint,
+                       include_default_juju_keys, model=model,
+                       peer=True)
+
+
 def get_relation_data(
         *, provider_endpoint: str, requirer_endpoint: str,
         include_default_juju_keys: bool = False, model: str = None
@@ -266,6 +291,13 @@ def get_relation_data(
                                 include_default_juju_keys, model=model)
     requirer_data = get_content(requirer_endpoint, provider_endpoint,
                                 include_default_juju_keys, model=model)
+
+    # sanity check: the two IDs should be identical
+    if not provider_data.relation_id == requirer_data.relation_id:
+        logger.warning(
+            f"provider relation id {provider_data.relation_id} "
+            f"not the same as requirer relation id: {requirer_data.relation_id}")
+
     return RelationData(provider=provider_data, requirer=requirer_data)
 
 
@@ -288,8 +320,44 @@ def get_relations(model: str = None) -> List[Relation]:
         if relations is not None:
             if not line.strip():
                 break  # end of list
-            relations.append(Relation(*(x.strip() for x in line.split(' ') if x)))
+            relations.append(
+                Relation(*(x.strip() for x in line.split(' ') if x)))
     return relations
+
+
+def _render_unit(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
+    unit_id, unit_data = obj
+    unit_name = f"{source.app_name}/{unit_id}"
+    return _render_databag(unit_name, unit_data,
+                           leader=(unit_id == source.meta.leader_id))
+
+
+def _render_databag(unit_name, dct, leader=False,
+                    hide_empty_databags: bool = False):
+    from rich.text import Text  # noqa
+    from rich.table import Table  # noqa
+    from rich.panel import Panel  # noqa
+    if not dct:
+        if hide_empty_databags:
+            return ''
+        t = Text('<empty>', style='rgb(255,198,99)')
+    else:
+        t = Table(box=None)
+        t.add_column(style='cyan not bold')  # keys
+        t.add_column(style='white not bold')  # values
+        for key in sorted(dct.keys()):
+            t.add_row(key, dct[key])
+
+    if leader:
+        title = unit_name + '*'
+        style = "rgb(54,176,224) bold"
+    else:
+        title = unit_name
+        style = "white"
+
+    p = Panel(t, title=title, title_align='left', style=style,
+              border_style="white")
+    return p
 
 
 async def render_relation(endpoint1: str = None, endpoint2: str = None,
@@ -304,93 +372,83 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
     if n is not None and (endpoint1 or endpoint2):
         raise RuntimeError('Invalid usage: provide `n` or '
                            '(`endpoint1` + `endpoint2`).')
+
+    is_peer = False
+
     if n is not None:
         relations = get_relations(model)
         relation = relations[n]
         endpoint1 = relation.provider
         endpoint2 = relation.requirer
+    elif endpoint1 and endpoint2 is None:
+        is_peer = True
+
+        data = get_peer_relation_data(
+            endpoint=endpoint1,
+            include_default_juju_keys=include_default_juju_keys,
+            model=model)
+        relation_id = data.relation_id
+        entities = (data, )
+
+    else:
+        if not (endpoint1 and endpoint2):
+            raise RuntimeError('invalid usage: provide two endpoints.')
+
+        data = get_relation_data(
+            provider_endpoint=endpoint1,
+            requirer_endpoint=endpoint2,
+            include_default_juju_keys=include_default_juju_keys,
+            model=model)
+
+        # same as provider's
+        relation_id = data.requirer.relation_id
+        entities = (data.requirer, data.provider)
 
     from rich.console import Console  # noqa
-    from rich.pretty import Pretty  # noqa
     from rich.text import Text  # noqa
     from rich.table import Table  # noqa
-    from rich.panel import Panel  # noqa
     from rich.columns import Columns  # noqa
 
-    data = get_relation_data(
-        provider_endpoint=endpoint1,
-        requirer_endpoint=endpoint2,
-        include_default_juju_keys=include_default_juju_keys,
-        model=model)
+    table = Table(title="relation data v0.3")
 
-    table = Table(title="relation data v0.2")
-
-    # sanity check: the two IDs should be identical
-    if not data.provider.relation_id == data.requirer.relation_id:
-        logger.warning(f"provider relation id {data.provider.relation_id} "
-                       f"not the same as requirer relation id: {data.requirer.relation_id}")
-
-    table.add_column(justify='left', header=f'relation (id: {data.provider.relation_id})',
+    table.add_column(justify='left',
+                     header=f'relation (id: {relation_id})',
                      style='rgb(54,176,224) bold')
-    table.add_column(justify='left', header=data.requirer.app_name)  # meta/app_name
-    table.add_column(justify='left', header=data.provider.app_name)
+    for entity in entities:
+        table.add_column(justify='left',
+                         header=entity.app_name)  # meta/app_name
 
-    table.add_row('relation name', Text(data.provider.endpoint, style='green'),
-                  Text(data.requirer.endpoint, style='green'))
-    table.add_row('interface', Text(data.provider.meta.interface, style='blue bold'),
-                  Text(data.requirer.meta.interface, style='blue bold'))
+    table.add_row(
+        'relation name',
+        *(Text(entity.endpoint, style='green') for entity in entities))
+    table.add_row(
+        'interface',
+        *(Text(entity.meta.interface, style='blue bold') for entity in entities))
+    table.add_row(
+        'leader unit',
+        *(Text(str(entity.meta.leader_id), style='red') for entity in entities))
+    if is_peer:
+        table.add_row(Text('type', style='pink'), Text("peer", style='bold cyan'))
+    table.rows[-1].end_section = True
 
-    leader_id_1 = data.provider.meta.leader_id
-    leader_id_2 = data.requirer.meta.leader_id
-    table.add_row('leader unit', Text(str(leader_id_1), style='red'),
-                  Text(str(leader_id_2), style='red'), end_section=True)
-
-    def render_databag(unit_name, dct, leader=False):
-        if not dct:
-            if hide_empty_databags:
-                return ''
-            t = Text('<empty>', style='rgb(255,198,99)')
-        else:
-            t = Table(box=None)
-            t.add_column(style='cyan not bold')  # keys
-            t.add_column(style='white not bold')  # values
-            for key in sorted(dct.keys()):
-                t.add_row(key, dct[key])
-
-        if leader:
-            title = unit_name + '*'
-            style = "rgb(54,176,224) bold"
-        else:
-            title = unit_name
-            style = "white"
-
-        p = Panel(t, title=title, title_align='left', style=style,
-                  border_style="white")
-        return p
-
-    app_databag = render_databag('', data.provider.application_data)
-    other_app_databag = render_databag('', data.requirer.application_data)
-    table.add_row('application data', app_databag, other_app_databag)
+    table.add_row(
+        'application data',
+        *(_render_databag('', entity.application_data) for entity in entities))
 
     unit_databags = []
-    other_unit_databags = []
 
-    def render(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
-        unit_id, unit_data = obj
-        unit_name = f"{source.app_name}/{unit_id}"
-        return render_databag(unit_name, unit_data,
-                              leader=(unit_id == source.meta.leader_id))
+    for i, entity in enumerate(entities):
+        units = entity.units_data.items()
+        if len(unit_databags) < (i + 1):
+            unit_databags.append([])
+        bucket = unit_databags[i]
+        for _, (unit, data) in enumerate(units):
+            # if unit:
+            bucket.append(_render_unit((unit, data), entity))
 
-    for unit, other_unit in zip_longest(data.provider.units_data.items(),
-                                        data.requirer.units_data.items()):
-        if unit:
-            unit_databags.append(render(unit, data.provider))
-        if other_unit:
-            other_unit_databags.append(render(other_unit, data.requirer))
+    if any(any(x) for x in unit_databags):
+        table.add_row('unit data', *(Columns(x) for x in unit_databags))
 
-    if any(unit_databags) or any(other_unit_databags):
-        table.add_row('unit data', Columns(unit_databags),
-                      Columns(other_unit_databags))
     return table
 
 
@@ -402,12 +460,13 @@ def sync_show_relation(
         endpoint2: str = typer.Argument(
             None,
             help="Second endpoint. It's a string in the format "
-                 "<unit_name>:<relation_name>; example: traefik/3:ingress."),
+                 "<unit_name>:<relation_name>; example: traefik/3:ingress."
+                 "Can be omitted for peer relations."),
         n: int = typer.Option(
             None, '-n',
             help="Relation number. "
                  "An ID corresponding to the row in juj status --relations."
-                 "Alternative to passing endpoint1+endpoint2."),
+                 "Alternative to passing endpoint1(+endpoint2)."),
         show_juju_keys: bool = typer.Option(
             False, "--show-juju-keys", "-s",
             help="Show from the unit databags the data provided by juju: "
@@ -463,5 +522,10 @@ def sync_show_relation(
 
 
 if __name__ == '__main__':
-    sync_show_relation("ceilometer:shared-db", "mongo:database")
-    sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
+    _defaults = dict(n=None,
+                     model=None,
+                     show_juju_keys=True,
+                     hide_empty_databags=False)
+    sync_show_relation("rolling-ops:restart", endpoint2=None, **_defaults)
+    # sync_show_relation("ceilometer:shared-db", "mongo:database")
+    # sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
