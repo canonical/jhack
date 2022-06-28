@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 import time
 from dataclasses import dataclass
@@ -9,9 +10,10 @@ from typing import Dict, Optional, Tuple, List
 import typer
 import yaml
 
+from logger import logger
+
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
-
 
 def purge(data: dict):
     for key in _JUJU_KEYS:
@@ -19,17 +21,25 @@ def purge(data: dict):
             del data[key]
 
 
-def _show_unit(unit_name):
-    proc = Popen(f"juju show-unit {unit_name}".split(), stdout=PIPE)
+def _show_unit(unit_name, model: str = None):
+    if model:
+        proc = Popen(f"juju show-unit -m {model} {unit_name}".split(),
+                     stdout=PIPE)
+    else:
+        proc = Popen(f"juju show-unit {unit_name}".split(), stdout=PIPE)
     return proc.stdout.read().decode("utf-8").strip()
 
 
-def _juju_status(app_name):
-    proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
+def _juju_status(app_name, model: str = None):
+    if model:
+        proc = Popen(f'juju status -m {model} {app_name} --relations'.split(),
+                     stdout=PIPE)
+    else:
+        proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
     return proc.stdout.read().decode('utf-8')
 
 
-def get_unit_info(unit_name: str) -> dict:
+def get_unit_info(unit_name: str, model: str = None) -> dict:
     """Returns unit-info data structure.
 
      for example:
@@ -56,7 +66,7 @@ def get_unit_info(unit_name: str) -> dict:
     if cached_data := _JUJU_DATA_CACHE.get(unit_name):
         return cached_data
 
-    raw_data = _show_unit(unit_name)
+    raw_data = _show_unit(unit_name, model=model)
     if not raw_data:
         raise ValueError(
             f"no unit info could be grabbed for {unit_name}; "
@@ -108,6 +118,7 @@ class Metadata:
 @dataclass
 class AppRelationData:
     app_name: str
+    relation_id: int
     meta: Metadata
     endpoint: str
     application_data: dict
@@ -115,9 +126,9 @@ class AppRelationData:
 
 
 def get_metadata_from_status(app_name, relation_name, other_app_name,
-                             other_relation_name):
+                             other_relation_name, model: str = None):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status = _juju_status(app_name)
+    status = _juju_status(app_name, model=model)
     # escape dashes
     re_safe_app_name = app_name.replace('-', r'\-')
 
@@ -126,17 +137,21 @@ def get_metadata_from_status(app_name, relation_name, other_app_name,
         fr"^{re_safe_app_name}(?!\/)(\s+)?((\d|\.)+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
         re.MULTILINE).findall(status)
     if not raw_scale:
-        raise RuntimeError(f'failed to parse output of juju status {app_name!r}; '
-                           f'is the app name correct?')
+        raise RuntimeError(
+            f'failed to parse output of juju status {app_name!r}; '
+            f'is the app name correct?')
     scale = raw_scale[0][-1]
 
-    leader_id = re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(status)[0][-1]
+    leader_id = \
+    re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(status)[
+        0][-1]
     intf_re = fr"(({re_safe_app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
     interface = re.compile(intf_re).findall(status)[0][-1]
 
     # parse status to enumerate the existing units for app_name.
     status_lines = status.split('\n')
-    units_header = next((line for line in status_lines if line.startswith('Unit ')))
+    units_header = next(
+        (line for line in status_lines if line.startswith('Unit ')))
     unit_lines = status_lines[status_lines.index(units_header):]
     units: List[int] = []
     for unit_line in unit_lines:
@@ -154,12 +169,13 @@ def get_metadata_from_status(app_name, relation_name, other_app_name,
 
 
 def get_app_name_and_units(url, relation_name,
-                           other_app_name, other_relation_name):
+                           other_app_name, other_relation_name,
+                           model: str = None):
     """Get app name and unit count from url; url is either `app_name/0` or `app_name`."""
     app_name, unit_id = url.split('/') if '/' in url else (url, None)
 
     meta = get_metadata_from_status(app_name, relation_name, other_app_name,
-                                    other_relation_name)
+                                    other_relation_name, model=model)
     if unit_id:
         units = (int(unit_id),)
     else:
@@ -168,16 +184,18 @@ def get_app_name_and_units(url, relation_name,
 
 
 def get_content(obj: str, other_obj,
-                include_default_juju_keys: bool = False) -> AppRelationData:
+                include_default_juju_keys: bool = False,
+                model: str = None) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     url, endpoint = obj.split(":")
     other_url, other_endpoint = other_obj.split(":")
 
     other_app_name, _ = other_url.split('/') if '/' in other_url else (
-    other_url, None)
+        other_url, None)
 
     app_name, units, meta = get_app_name_and_units(
-        url, endpoint, other_app_name, other_endpoint)
+        url, endpoint, other_app_name, other_endpoint,
+        model)
 
     # we might have a different number of units and other units, and it doesn't
     # matter which 'other' we pass to get the databags for 'this', so:
@@ -186,10 +204,16 @@ def get_content(obj: str, other_obj,
     leader_unit_data = None
     app_data = None
     units_data = {}
+    r_id = None
     for unit_id in units:
         unit_name = f"{app_name}/{unit_id}"
-        unit_data, app_data = get_databags(unit_name, other_unit_name,
+        unit_data, app_data, r_id_ = get_databags(unit_name, other_unit_name,
                                            endpoint, other_endpoint)
+
+        if r_id is not None:
+            assert r_id == r_id_, f'mismatching relation IDs: {r_id, r_id_}'
+        r_id = r_id_
+
         if not include_default_juju_keys:
             purge(unit_data)
         units_data[unit_id] = unit_data
@@ -199,18 +223,20 @@ def get_content(obj: str, other_obj,
         meta=meta,
         endpoint=endpoint,
         application_data=app_data,
-        units_data=units_data)
+        units_data=units_data,
+        relation_id=r_id)
 
 
-def get_databags(local_unit, remote_unit, local_endpoint, remote_endpoint):
+def get_databags(local_unit, remote_unit, local_endpoint, remote_endpoint,
+                 model: str = None):
     """Gets the databags of local unit and its leadership status.
 
     Given a remote unit and the remote endpoint name.
     """
-    local_data = get_unit_info(local_unit)
+    local_data = get_unit_info(local_unit, model=model)
     leader = local_data["leader"]
 
-    data = get_unit_info(remote_unit)
+    data = get_unit_info(remote_unit, model=model)
     relation_info = data.get("relation-info")
     if not relation_info:
         raise RuntimeError(f"{remote_unit} has no relations")
@@ -219,7 +245,7 @@ def get_databags(local_unit, remote_unit, local_endpoint, remote_endpoint):
                                         remote_endpoint, local_unit)
     unit_data = raw_data["related-units"][local_unit]["data"]
     app_data = raw_data["application-data"]
-    return unit_data, app_data
+    return unit_data, app_data, raw_data['relation-id']
 
 
 @dataclass
@@ -230,25 +256,59 @@ class RelationData:
 
 def get_relation_data(
         *, provider_endpoint: str, requirer_endpoint: str,
-        include_default_juju_keys: bool = False
+        include_default_juju_keys: bool = False, model: str = None
 ):
     """Get relation databags for a juju relation.
 
     >>> get_relation_data('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
     provider_data = get_content(provider_endpoint, requirer_endpoint,
-                                include_default_juju_keys)
+                                include_default_juju_keys, model=model)
     requirer_data = get_content(requirer_endpoint, provider_endpoint,
-                                include_default_juju_keys)
+                                include_default_juju_keys, model=model)
     return RelationData(provider=provider_data, requirer=requirer_data)
 
 
-async def render_relation(endpoint1: str, endpoint2: str,
+@dataclass
+class Relation:
+    provider: str
+    requirer: str
+    interface: str
+    type: str
+    message: str = None
+
+
+def get_relations(model: str = None) -> List[Relation]:
+    status = _juju_status('', model=model)
+    relations = None
+    for line in status.split('\n'):
+        if line.startswith('Relation provider'):
+            relations = []
+            continue
+        if relations is not None:
+            if not line.strip():
+                break  # end of list
+            relations.append(Relation(*(x.strip() for x in line.split(' ') if x)))
+    return relations
+
+
+async def render_relation(endpoint1: str = None, endpoint2: str = None,
+                          n: int = None,
                           include_default_juju_keys: bool = False,
-                          hide_empty_databags: bool = False):
+                          hide_empty_databags: bool = False,
+                          model: str = None):
     """Pprints relation databags for a juju relation
     >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
+
+    if n is not None and (endpoint1 or endpoint2):
+        raise RuntimeError('Invalid usage: provide `n` or '
+                           '(`endpoint1` + `endpoint2`).')
+    if n is not None:
+        relations = get_relations(model)
+        relation = relations[n]
+        endpoint1 = relation.provider
+        endpoint2 = relation.requirer
 
     from rich.console import Console  # noqa
     from rich.pretty import Pretty  # noqa
@@ -257,22 +317,31 @@ async def render_relation(endpoint1: str, endpoint2: str,
     from rich.panel import Panel  # noqa
     from rich.columns import Columns  # noqa
 
-    data1 = get_content(endpoint1, endpoint2, include_default_juju_keys)
-    data2 = get_content(endpoint2, endpoint1, include_default_juju_keys)
+    data = get_relation_data(
+        provider_endpoint=endpoint1,
+        requirer_endpoint=endpoint2,
+        include_default_juju_keys=include_default_juju_keys,
+        model=model)
 
     table = Table(title="relation data v0.2")
-    table.add_column(justify='left', header='category',
+
+    # sanity check: the two IDs should be identical
+    if not data.provider.relation_id == data.requirer.relation_id:
+        logger.warning(f"provider relation id {data.provider.relation_id} "
+                       f"not the same as requirer relation id: {data.requirer.relation_id}")
+
+    table.add_column(justify='left', header=f'relation (id: {data.provider.relation_id})',
                      style='rgb(54,176,224) bold')
-    table.add_column(justify='left', header=data1.app_name)  # meta/app_name
-    table.add_column(justify='left', header=data2.app_name)
+    table.add_column(justify='left', header=data.requirer.app_name)  # meta/app_name
+    table.add_column(justify='left', header=data.provider.app_name)
 
-    table.add_row('relation name', Text(data1.endpoint, style='green'),
-                  Text(data2.endpoint, style='green'))
-    table.add_row('interface', Text(data1.meta.interface, style='blue bold'),
-                  Text(data2.meta.interface, style='blue bold'))
+    table.add_row('relation name', Text(data.provider.endpoint, style='green'),
+                  Text(data.requirer.endpoint, style='green'))
+    table.add_row('interface', Text(data.provider.meta.interface, style='blue bold'),
+                  Text(data.requirer.meta.interface, style='blue bold'))
 
-    leader_id_1 = data1.meta.leader_id
-    leader_id_2 = data2.meta.leader_id
+    leader_id_1 = data.provider.meta.leader_id
+    leader_id_2 = data.requirer.meta.leader_id
     table.add_row('leader unit', Text(str(leader_id_1), style='red'),
                   Text(str(leader_id_2), style='red'), end_section=True)
 
@@ -299,8 +368,8 @@ async def render_relation(endpoint1: str, endpoint2: str,
                   border_style="white")
         return p
 
-    app_databag = render_databag('', data1.application_data)
-    other_app_databag = render_databag('', data2.application_data)
+    app_databag = render_databag('', data.provider.application_data)
+    other_app_databag = render_databag('', data.requirer.application_data)
     table.add_row('application data', app_databag, other_app_databag)
 
     unit_databags = []
@@ -312,12 +381,12 @@ async def render_relation(endpoint1: str, endpoint2: str,
         return render_databag(unit_name, unit_data,
                               leader=(unit_id == source.meta.leader_id))
 
-    for unit, other_unit in zip_longest(data1.units_data.items(),
-                                        data2.units_data.items()):
+    for unit, other_unit in zip_longest(data.provider.units_data.items(),
+                                        data.requirer.units_data.items()):
         if unit:
-            unit_databags.append(render(unit, data1))
+            unit_databags.append(render(unit, data.provider))
         if other_unit:
-            other_unit_databags.append(render(other_unit, data2))
+            other_unit_databags.append(render(other_unit, data.requirer))
 
     if any(unit_databags) or any(other_unit_databags):
         table.add_row('unit data', Columns(unit_databags),
@@ -327,13 +396,18 @@ async def render_relation(endpoint1: str, endpoint2: str,
 
 def sync_show_relation(
         endpoint1: str = typer.Argument(
-            ...,
+            None,
             help="First endpoint. It's a string in the format "
                  "<unit_name>:<relation_name>; example: mongodb/1:ingress."),
         endpoint2: str = typer.Argument(
-            ...,
+            None,
             help="Second endpoint. It's a string in the format "
                  "<unit_name>:<relation_name>; example: traefik/3:ingress."),
+        n: int = typer.Option(
+            None, '-n',
+            help="Relation number. "
+                 "An ID corresponding to the row in juj status --relations."
+                 "Alternative to passing endpoint1+endpoint2."),
         show_juju_keys: bool = typer.Option(
             False, "--show-juju-keys", "-s",
             help="Show from the unit databags the data provided by juju: "
@@ -341,7 +415,11 @@ def sync_show_relation(
         hide_empty_databags: bool = typer.Option(
             False, "--hide-empty", "-h",
             help="Do not show empty databags."),
-        watch: bool = False):
+        watch: bool = False,
+        model: str = typer.Option(
+            None, "-m",
+            help="Which model to look into."),
+):
     """Displays the databags of two applications or units involved in a relation.
 
     Examples:
@@ -364,7 +442,11 @@ def sync_show_relation(
         start = time.time()
 
         table = asyncio.run(
-            render_relation(endpoint1, endpoint2, show_juju_keys, hide_empty_databags)
+            render_relation(endpoint1, endpoint2,
+                            n=n,
+                            include_default_juju_keys=show_juju_keys,
+                            hide_empty_databags=hide_empty_databags,
+                            model=model)
         )
 
         if watch:
