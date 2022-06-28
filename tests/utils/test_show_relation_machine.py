@@ -1,51 +1,66 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-from mock import mock
 
-from utils.show_relation import sync_show_relation
-
-cmd_to_output_mocks = {
-    'machine':
-        {['juju', 'show-unit', 'ceilometer/0']: 'ceil0_show.txt',
-         ['juju', 'show-unit', 'mongo/0']: 'mongo0_show.txt',
-         ['juju', 'status', 'ceilometer', '--relations']: 'ceil_status.txt',
-         ['juju', 'status', 'mongo', '--relations']: 'mongo_status.txt'},
-    'k8s':
-        {['juju', 'show-unit', 'traefik-k8s/0']: 'traefik0_show.txt',
-         ['juju', 'show-unit', 'prometheus-k8s/0']: 'prom0_show.txt',
-         ['juju', 'status', 'traefik-k8s', '--relations']: 'traefik_status.txt',
-         ['juju', 'status', 'prometheus-k8s', '--relations']: 'prom_status.txt'},
-
-}
+from utils.show_relation import sync_show_relation, get_content
 
 
-@mock.patch("subprocess.Popen")
-@pytest.fixture(params=['machine', 'k8s'])
-def env(request):
-    return request.param
+def fake_juju_status(app_name):
+    if app_name == 'ceilometer':
+        source = 'ceil_status.txt'
+    elif app_name == 'mongo':
+        source = 'mongo_status.txt'
+    else:
+        raise ValueError(app_name)
+    mock_file = Path(
+        __file__).parent / 'show_relation_mocks' / 'machine' / source
+    return mock_file.read_text()
+
+
+def fake_juju_show_unit(app_name):
+    if app_name == 'ceilometer/0':
+        source = 'ceil0_show.txt'
+    elif app_name == 'mongo/0':
+        source = 'mongo0_show.txt'
+    else:
+        raise ValueError(app_name)
+    mock_file = Path(
+        __file__).parent / 'show_relation_mocks' / 'machine' / source
+    return mock_file.read_text()
 
 
 @pytest.fixture(autouse=True)
-def mock_stdout(mock_subproc_popen, request, env):
-    class StdoutMock:
-        def read(self) -> bytes:
-            args = mock_subproc_popen.args
-            mock_file_name = cmd_to_output_mocks[request.param][args]
-            mock_file = Path(__file__).parent / 'show_relation_mocks' / request.param / mock_file_name
-            return mock_file.read_text().encode('utf-8')
-
-    stdout = mock_subproc_popen.stdout
-    mock_subproc_popen.stdout = StdoutMock()
-
-    yield
-
-    mock_subproc_popen.stdout = stdout
+def mock_stdout():
+    with patch("utils.show_relation._juju_status",
+               wraps=fake_juju_status) as mock_status:
+        with patch("utils.show_relation._show_unit",
+                   wraps=fake_juju_show_unit) as mock_show_unit:
+            yield
 
 
-def est_show_unit_works(env):
-    if env == 'k8s':
-        sync_show_relation("traefik-k8s:ingress-per-unit",
-                           "prometheus-k8s:ingress")
-    else:
-        sync_show_relation("ceilometer:shared-db", "mongo:database")
+def test_show_unit_works():
+    sync_show_relation("ceilometer:shared-db", "mongo:database")
+
+
+def test_databag_shape_ceil():
+    content = get_content("ceilometer:shared-db", "mongo:database", False)
+    assert content.app_name == 'ceilometer'
+    assert content.endpoint == 'shared-db'
+    assert content.application_data == {}
+    assert content.units_data == {0: {'ceilometer_database': 'ceilometer'}}
+    assert content.meta.leader_id == 0
+
+
+def test_databag_shape_mongo():
+    content = get_content("mongo:database", "ceilometer:shared-db", False)
+    assert content.app_name == 'mongo'
+    assert content.endpoint == 'database'
+    assert content.application_data == {}
+    assert content.units_data == {
+        0: {'hostname': '10.1.70.128',
+            'port': '27017',
+            'type': 'database',
+            'version': '3.6.8'}} != {
+               0: {'ceilometer_database': 'ceilometer'}}
+    assert content.meta.leader_id == 0

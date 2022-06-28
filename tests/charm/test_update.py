@@ -3,14 +3,18 @@ import os
 import shutil
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-
-import charm.update
-import jhack
+from charm.update import update
 
 dnttchme = 'don_t_touch_me.txt'
 untouched = 'untouched'
+
+
+def update_charm(*args, **kwargs):
+    with patch('charm.update.chmod_plusx', wraps=lambda file: None):
+        yield update(*args, **kwargs)
 
 
 @pytest.fixture
@@ -48,32 +52,32 @@ def mock_baz(tmp_path_factory):
     return baz_dir
 
 
+def check_base(baz_content, packed_charm):
+    zf = zipfile.ZipFile(packed_charm)
+    assert len(zf.filelist) == 7
+    charm_file = zf.open('src/charm.py').read().decode('utf-8').strip()
+    assert charm_file == 'charm'  # unchanged
+    lib_file = zf.open('lib/libfile.py').read().decode('utf-8').strip()
+    assert lib_file == 'libfile'  # unchanged
+    untouched_zf = zf.open(dnttchme).read().decode('utf-8').strip()
+    assert untouched_zf == untouched
+
+    baz_file = zf.open('baz/baz_file.py').read().decode('utf-8').strip()
+    assert baz_file == baz_content
+
+
 def test_charm_update(tmp_path_factory, packed_charm, mock_baz):
     assert packed_charm.exists()
-    charm.update.update_charm(packed_charm, [mock_baz], ['baz'])
+    update_charm(packed_charm, [mock_baz], ['baz'])
 
-    def check_base(baz_content):
-        zf = zipfile.ZipFile(packed_charm)
-        assert len(zf.filelist) == 7
-        charm_file = zf.open('src/charm.py').read().decode('utf-8').strip()
-        assert charm_file == 'charm'  # unchanged
-        lib_file = zf.open('lib/libfile.py').read().decode('utf-8').strip()
-        assert lib_file == 'libfile'  # unchanged
-        untouched_zf = zf.open(dnttchme).read().decode('utf-8').strip()
-        assert untouched_zf == untouched
-
-        baz_file = zf.open('baz/baz_file.py').read().decode('utf-8').strip()
-        assert baz_file == baz_content
-
-    check_base('BAZ')
+    check_base('BAZ', packed_charm)
 
     # now let's touch baz
-
     change = 'BAZ IS THE NEW FOO'
     (mock_baz / 'baz_file.py').write_text(change)
 
-    charm.update.update_charm(packed_charm, [mock_baz], ['baz'])
-    check_base(change)
+    update_charm(packed_charm, [mock_baz], ['baz'])
+    check_base(change, packed_charm)
 
 
 @contextlib.contextmanager
@@ -96,7 +100,7 @@ def test_charm_update_default(packed_charm, mock_charm_dev_dir):
     (mock_charm_dev_dir / 'lib' / 'libfile.py').write_text('BAR')
 
     with cwd(mock_charm_dev_dir):
-        charm.update.update_charm(packed_charm)
+        update_charm(packed_charm)
 
     zf = zipfile.ZipFile(packed_charm)
     assert len(zf.filelist) == 5

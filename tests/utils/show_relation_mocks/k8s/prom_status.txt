@@ -1,0 +1,13 @@
+Model  Controller  Cloud/Region        Version  SLA          Timestamp
+bar    mk8scloud   microk8s/localhost  2.9.31   unsupported  16:27:25+02:00
+
+App             Version  Status  Scale  Charm           Channel  Rev  Address         Exposed  Message
+prometheus-k8s           active      1  prometheus-k8s  beta      20  10.152.183.101  no       
+
+Unit               Workload  Agent  Address       Ports  Message
+prometheus-k8s/0*  active    idle   10.1.232.188         
+
+Relation provider                Requirer                         Interface         Type     Message
+prometheus-k8s:prometheus-peers  prometheus-k8s:prometheus-peers  prometheus_peers  peer     
+traefik-k8s:ingress-per-unit     prometheus-k8s:ingress           ingress_per_unit  regular  
+
