@@ -21,5 +21,16 @@ traefik-k8s/0:
           egress-subnets: 10.152.183.101/32
           ingress-address: 10.152.183.101
           private-address: 10.152.183.101
+      prometheus-k8s/1:
+        in-scope: true
+        data:
+          data: |-
+            host: 10.1.232.188
+            model: bar
+            name: prometheus-k8s/1
+            port: 9090
+          egress-subnets: 10.152.183.101/32
+          ingress-address: 10.152.183.101
+          private-address: 10.152.183.101
   provider-id: traefik-k8s-0
   address: 10.1.232.158
