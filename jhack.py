@@ -48,6 +48,12 @@ if __name__ == '__main__':
     charm.command(name='sync')(sync_packed_charm)
 
     app = typer.Typer(name='jhack', help='Hacky, wacky, but ultimately charming.')
+    app.command(name='sync')(sync_deployed_charm)
+    app.command(name='show-relation')(sync_show_relation)
+    app.command(name='tail')(tail_events)
+    app.command(name='ffwd')(fast_forward)
+    app.command(name='unbork-juju')(unbork_juju)
+
     app.add_typer(model)
     app.add_typer(jinx)
     app.add_typer(charm)
