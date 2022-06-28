@@ -1,0 +1,36 @@
+prometheus-k8s/0:
+  opened-ports: []
+  charm: ch:amd64/focal/prometheus-k8s-20
+  leader: true
+  life: alive
+  relation-info:
+  - relation-id: 0
+    endpoint: prometheus-peers
+    related-endpoint: prometheus-peers
+    application-data: {}
+    local-unit:
+      in-scope: true
+      data:
+        egress-subnets: 10.152.183.101/32
+        ingress-address: 10.152.183.101
+        private-address: 10.152.183.101
+  - relation-id: 1
+    endpoint: ingress
+    related-endpoint: ingress-per-unit
+    application-data:
+      _supported_versions: '- v1'
+      data: |-
+        ingress:
+          prometheus-k8s/0:
+            url: http://13.2:80/bar-prometheus-k8s-0
+    related-units:
+      traefik-k8s/0:
+        in-scope: true
+        data:
+          "2": "10"
+          egress-subnets: 10.152.183.44/32
+          foo: bar
+          ingress-address: 10.152.183.44
+          private-address: 10.152.183.44
+  provider-id: prometheus-k8s-0
+  address: 10.1.232.188

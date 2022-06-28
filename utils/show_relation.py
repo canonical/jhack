@@ -20,8 +20,13 @@ def purge(data: dict):
 
 
 def _show_unit(unit_name):
-    proc = Popen(f"juju show-unit {unit_name}".split(" "), stdout=PIPE)
+    proc = Popen(f"juju show-unit {unit_name}".split(), stdout=PIPE)
     return proc.stdout.read().decode("utf-8").strip()
+
+
+def _juju_status(app_name):
+    proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
+    return proc.stdout.read().decode('utf-8')
 
 
 def get_unit_info(unit_name: str) -> dict:
@@ -109,15 +114,10 @@ class AppRelationData:
     units_data: Dict[int, dict]
 
 
-def _juju_status(app_name):
-    proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
-    return proc.stdout.read().decode('utf-8'), proc
-
-
 def get_metadata_from_status(app_name, relation_name, other_app_name,
                              other_relation_name):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status, proc = _juju_status(app_name)
+    status = _juju_status(app_name)
     # escape dashes
     re_safe_app_name = app_name.replace('-', r'\-')
 
@@ -126,8 +126,8 @@ def get_metadata_from_status(app_name, relation_name, other_app_name,
         fr"^{re_safe_app_name}(?!\/)(\s+)?((\d|\.)+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
         re.MULTILINE).findall(status)
     if not raw_scale:
-        raise RuntimeError(f'failed to parse output of {proc.args}; is '
-                           f'{app_name!r} correct?')
+        raise RuntimeError(f'failed to parse output of juju status {app_name!r}; '
+                           f'is the app name correct?')
     scale = raw_scale[0][-1]
 
     leader_id = re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(status)[0][-1]
@@ -244,7 +244,8 @@ def get_relation_data(
 
 
 async def render_relation(endpoint1: str, endpoint2: str,
-                          include_default_juju_keys: bool = False):
+                          include_default_juju_keys: bool = False,
+                          hide_empty_databags: bool = False):
     """Pprints relation databags for a juju relation
     >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
@@ -277,6 +278,8 @@ async def render_relation(endpoint1: str, endpoint2: str,
 
     def render_databag(unit_name, dct, leader=False):
         if not dct:
+            if hide_empty_databags:
+                return ''
             t = Text('<empty>', style='rgb(255,198,99)')
         else:
             t = Table(box=None)
@@ -316,8 +319,9 @@ async def render_relation(endpoint1: str, endpoint2: str,
         if other_unit:
             other_unit_databags.append(render(other_unit, data2))
 
-    table.add_row('unit data', Columns(unit_databags),
-                  Columns(other_unit_databags))
+    if any(unit_databags) or any(other_unit_databags):
+        table.add_row('unit data', Columns(unit_databags),
+                      Columns(other_unit_databags))
     return table
 
 
@@ -330,14 +334,23 @@ def sync_show_relation(
             ...,
             help="Second endpoint. It's a string in the format "
                  "<unit_name>:<relation_name>; example: traefik/3:ingress."),
-        include_default_juju_keys: bool = False,
+        show_juju_keys: bool = typer.Option(
+            False, "--show-juju-keys", "-s",
+            help="Show from the unit databags the data provided by juju: "
+                 "ingress-address, private-address, egress-subnets."),
+        hide_empty_databags: bool = typer.Option(
+            False, "--hide-empty", "-h",
+            help="Do not show empty databags."),
         watch: bool = False):
     """Displays the databags of two applications or units involved in a relation.
 
-    Example:
-        jhack utils show-relation my_app/0:relation_name other_app/2:other_name
-        jhack utils show-relation my_app:relation_name other_app/2:other_name
-        jhack utils show-relation my_app:relation_name other_app:other_name
+    Examples:
+
+    $ jhack utils show-relation my_app/0:relation_name other_app/2:other_name
+
+    $ jhack utils show-relation my_app:relation_name other_app/2:other_name
+
+    $ jhack utils show-relation my_app:relation_name other_app:other_name
     """
     try:
         import rich  # noqa
@@ -351,7 +364,7 @@ def sync_show_relation(
         start = time.time()
 
         table = asyncio.run(
-            render_relation(endpoint1, endpoint2, include_default_juju_keys)
+            render_relation(endpoint1, endpoint2, show_juju_keys, hide_empty_databags)
         )
 
         if watch:
@@ -368,5 +381,5 @@ def sync_show_relation(
 
 
 if __name__ == '__main__':
-    # sync_show_relation("ceilometer:shared-db", "mongo:database")
+    sync_show_relation("ceilometer:shared-db", "mongo:database")
     sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
