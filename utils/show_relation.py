@@ -76,7 +76,7 @@ def get_unit_info(unit_name: str, model: str = None) -> dict:
 
     data = yaml.safe_load(raw_data)
     if unit_name not in data:
-        raise KeyError(unit_name, f"not in {data!r}")
+        raise KeyError(f"{unit_name} not in {data!r}")
 
     unit_data = data[unit_name]
     _JUJU_DATA_CACHE[unit_name] = unit_data
@@ -84,15 +84,17 @@ def get_unit_info(unit_name: str, model: str = None) -> dict:
 
 
 def get_relation_by_endpoint(relations, local_endpoint, remote_endpoint,
-                             remote_obj):
+                             remote_obj, peer: bool):
     matches = [
         r for r in relations if
         ((r["endpoint"] == local_endpoint and
           r["related-endpoint"] == remote_endpoint) or
          (r["endpoint"] == remote_endpoint and
-          r["related-endpoint"] == local_endpoint)) and
-        remote_obj in r["related-units"]
+          r["related-endpoint"] == local_endpoint))
     ]
+    if not peer:
+        matches = [r for r in matches if remote_obj in r["related-units"]]
+
     if not matches:
         raise ValueError(
             f"no relations found with remote endpoint={remote_endpoint!r} "
@@ -200,21 +202,10 @@ def get_content(obj: str, other_obj,
         url, endpoint, other_app_name, other_endpoint,
         model)
 
-    if peer:
-        if len(meta.units) <= 1:
-            raise RuntimeError("Can't show peer relations with n<2 now, can we?")  # can we?
-        alt1, alt2, *_ = meta.units
-        def _get_other_unit(current):
-            # Ensure we flip between two alternatives, so other is never self.
-            if current == alt1:
-                return alt2
-            return alt1
-
-    else:
-        def _get_other_unit(current):
-            # we might have a different number of units and other units, and it doesn't
-            # matter which 'other' we pass to get the databags for 'this', so:
-            return 0
+    other_unit_id = 0
+    # we might have a different number of units and other units, and it doesn't
+    # matter which 'other' we pass to get the databags for 'this one'.
+    # in peer relations, show-unit luckily reports 'local-unit', so we're good.
 
     leader_unit_data = None
     app_data = None
@@ -222,9 +213,11 @@ def get_content(obj: str, other_obj,
     r_id = None
     for unit_id in units:
         unit_name = f"{app_name}/{unit_id}"
-        other_unit_name = f"{other_app_name}/{_get_other_unit(unit_id)}"
-        unit_data, app_data, r_id_ = get_databags(unit_name, other_unit_name,
-                                                  endpoint, other_endpoint)
+        other_unit_name = f"{other_app_name}/{other_unit_id}"
+        unit_data, app_data, r_id_ = get_databags(
+            unit_name, other_unit_name,
+            endpoint, other_endpoint,
+            model=model, peer=peer)
 
         if r_id is not None:
             assert r_id == r_id_, f'mismatching relation IDs: {r_id, r_id_}'
@@ -244,22 +237,23 @@ def get_content(obj: str, other_obj,
 
 
 def get_databags(local_unit, remote_unit, local_endpoint, remote_endpoint,
-                 model: str = None):
+                 model: str = None, peer: bool = False):
     """Gets the databags of local unit and its leadership status.
 
     Given a remote unit and the remote endpoint name.
     """
     local_data = get_unit_info(local_unit, model=model)
-    leader = local_data["leader"]
-
     data = get_unit_info(remote_unit, model=model)
     relation_info = data.get("relation-info")
     if not relation_info:
         raise RuntimeError(f"{remote_unit} has no relations")
 
     raw_data = get_relation_by_endpoint(relation_info, local_endpoint,
-                                        remote_endpoint, local_unit)
-    unit_data = raw_data["related-units"][local_unit]["data"]
+                                        remote_endpoint, local_unit, peer=peer)
+    if peer:
+        unit_data = raw_data["local-unit"]["data"]
+    else:
+        unit_data = raw_data["related-units"][local_unit]["data"]
     app_data = raw_data["application-data"]
     return unit_data, app_data, raw_data['relation-id']
 
@@ -377,10 +371,21 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
 
     if n is not None:
         relations = get_relations(model)
-        relation = relations[n]
+        if not relations:
+            print('No relations found.')
+        try:
+            relation = relations[n]
+        except IndexError:
+            raise RuntimeError(
+                f"There are only {len(relations)} relations."
+                f"Can't show the {n}th."
+            )
         endpoint1 = relation.provider
-        endpoint2 = relation.requirer
-    elif endpoint1 and endpoint2 is None:
+
+        if relation.type != 'peer':
+            endpoint2 = relation.requirer
+
+    if endpoint1 and endpoint2 is None:
         is_peer = True
 
         data = get_peer_relation_data(
@@ -476,7 +481,7 @@ def sync_show_relation(
             help="Do not show empty databags."),
         watch: bool = False,
         model: str = typer.Option(
-            None, "-m",
+            None, "-m", "--model",
             help="Which model to look into."),
 ):
     """Displays the databags of two applications or units involved in a relation.

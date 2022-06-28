@@ -6,7 +6,7 @@ import pytest
 from utils.show_relation import sync_show_relation, get_content
 
 
-def fake_juju_status(app_name):
+def fake_juju_status(app_name, model=None):
     if app_name == 'ceilometer':
         source = 'ceil_status.txt'
     elif app_name == 'mongo':
@@ -18,7 +18,7 @@ def fake_juju_status(app_name):
     return mock_file.read_text()
 
 
-def fake_juju_show_unit(app_name):
+def fake_juju_show_unit(app_name, model=None):
     if app_name == 'ceilometer/0':
         source = 'ceil0_show.txt'
     elif app_name == 'mongo/0':
@@ -40,7 +40,9 @@ def mock_stdout():
 
 
 def test_show_unit_works():
-    sync_show_relation("ceilometer:shared-db", "mongo:database")
+    sync_show_relation("ceilometer:shared-db", "mongo:database",
+                       n=None, model=None, show_juju_keys=False,
+                       hide_empty_databags=False)
 
 
 def test_databag_shape_ceil():
