@@ -1,7 +1,10 @@
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from jhack.utils.show_relation import sync_show_relation, get_content
 

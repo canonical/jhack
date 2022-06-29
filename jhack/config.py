@@ -1,12 +1,13 @@
 import os
 from pathlib import Path
-from subprocess import check_call, CalledProcessError
+from subprocess import CalledProcessError, check_output
 
-is_snapped = False
-if config_dir := os.environ.get('SNAP_DATA'):
-    is_snapped = True
+try:
+    check_output(['which', 'juju'])
+except CalledProcessError:
+    # we're snapped!
 
-if is_snapped:
+    config_dir = os.environ.get('SNAP_DATA')
     config_file = Path(config_dir) / 'config'
 
     try:
@@ -22,13 +23,10 @@ else:
     JUJU_COMMAND = "/snap/bin/juju"
 
 try:
-    check_call(['which', JUJU_COMMAND])
+    check_output(['which', JUJU_COMMAND])
 except CalledProcessError:
     print('juju command not found. '
-          'All jhacks depending on juju calls will bork.')
-
-    if is_snapped:
-        print('configure jhack by running '
-              '`snap set jhack juju /path/to/juju`.')
-    else:
-        print('install juju to proceed.')
+          'All jhacks depending on juju calls will bork.' 
+          'if this is a snap, configure jhack by running '
+          '`snap set jhack juju /path/to/juju`;'
+          'else ensure the `juju` command is available.')
