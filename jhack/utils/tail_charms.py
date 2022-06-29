@@ -203,6 +203,9 @@ def tail_events(
         framerate: float = .5,
         length: int = typer.Option(10, '-n', '--length'),
 ):
+    """Pretty-prints a table with the events that are fired on all juju units
+    in the current model.
+    """
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
 
