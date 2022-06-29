@@ -16,8 +16,8 @@ description: |
   An opinionated collection of scripts and utilities to make 
   charming charming again.
 
-grade: devel
-confinement: devmode
+grade: stable
+confinement: classic
 
 parts:
   jhack:
