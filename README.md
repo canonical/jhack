@@ -4,8 +4,9 @@ This is a homegrown collection of opinionated scripts and utilities to make the
 charm dev's life a somewhat easier.
 
 #### Installation:
-##### from sources:
-Clone the repo; symlink 'jhack.py' as 'jhack' to ~/bin or somewhere under PATH. 
+##### from sources (dev setup):
+Clone the repo; alias '/path/to/jhack/main.py' as 'jhack', or something. 
+Ensure the requirements are installed:
 
     $ pip install -r requirements.txt
 
