@@ -17,7 +17,7 @@ Ensure the requirements are installed:
 
 ##### as snap (!):
     
-    $ sudo snap install jhack
+    $ sudo snap install --edge --devmode jhack
 
 #### Usage:
 
