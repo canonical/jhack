@@ -1,0 +1,26 @@
+name: jhack
+base: core20
+version: '0.1'
+summary: Cli tool packed with juju hacks.
+description: |
+  An opinionated collection of scripts and utilities to make 
+  charming charming again.
+
+grade: devel
+confinement: devmode
+
+parts:
+  jhack:
+    plugin: python
+    source: https://github.com/PietroPasotti/jhack.git
+    source-branch: j-command-config  # not master yet
+    python-packages:
+      - typer==0.4.1
+      - ops==1.4.0
+      - rich==12.0.1
+      - parse==1.19.0
+      - juju==2.9.7
+
+apps:
+  jhack:
+    command: bin/jhack
