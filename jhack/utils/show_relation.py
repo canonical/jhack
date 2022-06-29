@@ -136,8 +136,9 @@ def get_metadata_from_status(app_name, relation_name, other_app_name,
 
     # even if the scale is "4/5" this will match the first digit, i.e. the current scale
     raw_scale = re.compile(
-        fr"^{re_safe_app_name}(?!\/)(\s+)?((\d|\.)+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
+        fr"^{re_safe_app_name}(?!\/)(\s+)?((\w|\/|\:|\@|\-|\d|\.)+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
         re.MULTILINE).findall(status)
+
     if not raw_scale:
         raise RuntimeError(
             f'failed to parse output of juju status {app_name!r}; '
@@ -532,6 +533,6 @@ if __name__ == '__main__':
                      model=None,
                      show_juju_keys=True,
                      hide_empty_databags=False)
-    sync_show_relation("rolling-ops:restart", endpoint2=None, **_defaults)
+    # sync_show_relation("rolling-ops:restart", endpoint2=None, **_defaults)
     # sync_show_relation("ceilometer:shared-db", "mongo:database")
-    # sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
+    sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress", **_defaults)

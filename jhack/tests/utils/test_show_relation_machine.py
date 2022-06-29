@@ -35,9 +35,9 @@ def fake_juju_show_unit(app_name, model=None):
 
 @pytest.fixture(autouse=True)
 def mock_stdout():
-    with patch("utils.show_relation._juju_status",
+    with patch("jhack.utils.show_relation._juju_status",
                wraps=fake_juju_status) as mock_status:
-        with patch("utils.show_relation._show_unit",
+        with patch("jhack.utils.show_relation._show_unit",
                    wraps=fake_juju_show_unit) as mock_show_unit:
             yield
 
