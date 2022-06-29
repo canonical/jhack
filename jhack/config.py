@@ -10,11 +10,12 @@ if is_snapped:
     config_file = Path(config_dir) / 'config'
 
     try:
-        juju, jujudata = config_file.read_text().strip().split('/n')
+        juju, jujudata = config_file.read_text().strip().split('\n')
         JUJU_COMMAND = juju.split('=')[1]
         JUJU_DATA = jujudata.split('=')[1]
         os.environ["JUJU_DATA"] = JUJU_DATA
-    except:
+    except (KeyError, FileNotFoundError, Exception) as e:
+        print(e)
         JUJU_COMMAND = "BORK"
 
 else:
