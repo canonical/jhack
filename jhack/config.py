@@ -7,20 +7,23 @@ if config_dir := os.environ.get('SNAP_DATA'):
     is_snapped = True
 
 if is_snapped:
-    config_file = Path(config_dir) / 'config' / 'juju.txt'
-    if not config_file.exists():
-        JUJU_COMMAND = "bork"
-    else:
-        JUJU_COMMAND = config_file.read_text().strip()
+    config_file = Path(config_dir) / 'config'
 else:
-    JUJU_COMMAND = "juju"
+    config_file = Path(__file__).parent / 'config'
+
+try:
+    JUJU_COMMAND = config_file.read_text().strip().split('=')[1]
+except:
+    JUJU_COMMAND = "BORK"
 
 try:
     check_call(['which', JUJU_COMMAND])
 except CalledProcessError:
     print('juju command not found. '
-          'All jhacks depending on juju calls will not work.')
+          'All jhacks depending on juju calls will bork.')
+
     if is_snapped:
-        print('configure jhack by executing `snap set jhack juju /path/to/juju`.')
+        print('configure jhack by running '
+              '`snap set jhack juju /path/to/juju`.')
     else:
         print('install juju to proceed.')
