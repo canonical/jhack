@@ -12,7 +12,7 @@ else:
     config_file = Path(__file__).parent / 'config'
 
 try:
-    JUJU_COMMAND = config_file.read_text().strip().split('=')[1]
+    JUJU_COMMAND = config_file.read_text().strip()
 except:
     JUJU_COMMAND = "BORK"
 
