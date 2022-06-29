@@ -8,13 +8,17 @@ if config_dir := os.environ.get('SNAP_DATA'):
 
 if is_snapped:
     config_file = Path(config_dir) / 'config'
-else:
-    config_file = Path(__file__).parent / 'config'
+    print(f'loaded config file {config_file}')
 
-try:
-    JUJU_COMMAND = config_file.read_text().strip()
-except:
-    JUJU_COMMAND = "BORK"
+    try:
+        JUJU_COMMAND = config_file.read_text().strip()
+    except:
+        JUJU_COMMAND = "BORK"
+
+    print(f'juju cmd = {JUJU_COMMAND}')
+
+else:
+    JUJU_COMMAND = "/snap/bin/juju"
 
 try:
     check_call(['which', JUJU_COMMAND])
