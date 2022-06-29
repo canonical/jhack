@@ -1,7 +1,17 @@
 name: jhack
 base: core20
-version: '0.1'
+
+architectures:
+#  - build-on: s390x
+#  - build-on: ppc64el
+  - build-on: arm64
+#  - build-on: armhf
+  - build-on: amd64
+  - build-on: i386
+
+version: '0.2'
 summary: Cli tool packed with juju hacks.
+
 description: |
   An opinionated collection of scripts and utilities to make 
   charming charming again.
