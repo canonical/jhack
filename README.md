@@ -15,7 +15,7 @@ Ensure the requirements are installed:
     $ python setup.py bdist_wheel
     $ pip install ./dist/jhack-v...whl
 
-##### as snap (!):
+##### as snap (coming soon!):
     
     $ sudo snap install --edge --devmode jhack
 

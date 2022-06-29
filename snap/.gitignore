@@ -1,7 +1,0 @@
-.idea
-*.py[cdi]
-__pycache__
-*.charm
-*.snap
-build
-*.egg-info
