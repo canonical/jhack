@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from charm.update import update
+from jhack.charm.update import update
 
 dnttchme = 'don_t_touch_me.txt'
 untouched = 'untouched'

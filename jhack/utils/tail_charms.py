@@ -1,5 +1,4 @@
 import enum
-import enum
 import logging
 import time
 from dataclasses import dataclass

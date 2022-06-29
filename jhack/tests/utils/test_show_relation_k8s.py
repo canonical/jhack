@@ -2,9 +2,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from unittest import mock
 
-from utils.show_relation import sync_show_relation
+from jhack.utils.show_relation import sync_show_relation
 
 
 def fake_juju_status(app_name, model=None):

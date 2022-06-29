@@ -1,16 +1,14 @@
 import asyncio
-import logging
 import re
 import time
 from dataclasses import dataclass
-from itertools import zip_longest
 from subprocess import Popen, PIPE
 from typing import Dict, Optional, Tuple, List
 
 import typer
 import yaml
 
-from logger import logger
+from jhack.logger import logger
 
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
@@ -393,7 +391,7 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
             include_default_juju_keys=include_default_juju_keys,
             model=model)
         relation_id = data.relation_id
-        entities = (data, )
+        entities = (data,)
 
     else:
         if not (endpoint1 and endpoint2):
@@ -428,12 +426,14 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
         *(Text(entity.endpoint, style='green') for entity in entities))
     table.add_row(
         'interface',
-        *(Text(entity.meta.interface, style='blue bold') for entity in entities))
+        *(Text(entity.meta.interface, style='blue bold') for entity in
+          entities))
     table.add_row(
         'leader unit',
         *(Text(str(entity.meta.leader_id), style='red') for entity in entities))
     if is_peer:
-        table.add_row(Text('type', style='pink'), Text("peer", style='bold cyan'))
+        table.add_row(Text('type', style='pink'),
+                      Text("peer", style='bold cyan'))
     table.rows[-1].end_section = True
 
     table.add_row(

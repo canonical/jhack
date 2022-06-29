@@ -6,8 +6,8 @@ import zipfile
 from pathlib import Path
 from typing import List
 
-from helpers import get_local_charm
-from logger import logger
+from jhack.helpers import get_local_charm
+from jhack.logger import logger
 
 chmod_plusx = lambda file: os.chmod(file, os.stat(file).st_mode | stat.S_IEXEC)
 
