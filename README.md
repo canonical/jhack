@@ -4,16 +4,28 @@ This is a homegrown collection of opinionated scripts and utilities to make the
 charm dev's life a somewhat easier.
 
 #### Installation:
+##### from sources:
 Clone the repo; symlink 'jhack.py' as 'jhack' to ~/bin or somewhere under PATH. 
+
+    $ pip install -r requirements.txt
+
+##### as package:
+
+    $ python setup.py bdist_wheel
+    $ pip install ./dist/jhack-v...whl
+
+##### as snap (!):
+    
+    $ sudo snap install jhack
 
 #### Usage:
 
-    $ pip install -r requirements.txt
     jhack [category] [command]
 
 for example:
 
     $ jhack utils tail
+    $ jhack model rm
 
 Happy hacking!
 
@@ -137,6 +149,9 @@ Example output:
 │                  │                                                     │ ╰──────────────────────────────╯                   │
 └──────────────────┴─────────────────────────────────────────────────────┴────────────────────────────────────────────────────┘
 ```
+
+Since v0.3, also peer relations are supported.
+Additionally, it supports “show me the nth relation” instead of having to type out the whole app-name:endpoint thing: if you have 3 relations in your model, you can simply do jhack show-relation -n 1 and jhack will print out the 2nd relation from the top (of the same list appearing when you do juju status --relations, that is.
 
 # model
 ## clear
