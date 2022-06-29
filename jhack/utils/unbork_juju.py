@@ -10,7 +10,7 @@ def unbork_juju(model_name: str = 'foo',
                 juju_channel: str = 'stable',
                 microk8s_channel: str = 'stable',
                 dry_run: bool = False):
-    """reset your Juju + Microk8s installation.
+    """Unbork your Juju + Microk8s installation.
 
     Purge-refresh juju and microk8s snaps, bootstrap a new controller and add a
     new model to it.
