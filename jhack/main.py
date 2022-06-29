@@ -2,26 +2,26 @@
 
 import typer
 
-from charm import functional
-from charm.init import init
-from logger import logger
-from charm.update import update
-from charm.repack import repack
-from charm.sync import sync as sync_packed_charm
-from model.clear import sync_clear_model
-from model.remove import rmodel
-from utils.ffwd import fast_forward
-from utils.sync import sync as sync_deployed_charm
-from utils.show_relation import sync_show_relation
-from utils.tail_charms import tail_events
-from utils.unbork_juju import unbork_juju
-from jinx.install import install as jinx_install
-from jinx.init import init_jinx as jinx_init
-from jinx.pack import pack as jinx_pack
-from jinx.cleanup import cleanup as jinx_cleanup
+from jhack.charm import functional
+from jhack.charm.init import init
+from jhack.logger import logger
+from jhack.charm.update import update
+from jhack.charm.repack import repack
+from jhack.charm.sync import sync as sync_packed_charm
+from jhack.model.clear import sync_clear_model
+from jhack.model.remove import rmodel
+from jhack.utils.ffwd import fast_forward
+from jhack.utils.sync import sync as sync_deployed_charm
+from jhack.utils.show_relation import sync_show_relation
+from jhack.utils.tail_charms import tail_events
+from jhack.utils.unbork_juju import unbork_juju
+from jhack.jinx.install import install as jinx_install
+from jhack.jinx.init import init_jinx as jinx_init
+from jhack.jinx.pack import pack as jinx_pack
+from jhack.jinx.cleanup import cleanup as jinx_cleanup
 
 
-if __name__ == '__main__':
+def main():
     model = typer.Typer(name='model', help='Juju model utilities.')
     model.command(name='clear')(sync_clear_model)
     model.command(name='rm')(rmodel)
@@ -47,7 +47,8 @@ if __name__ == '__main__':
     charm.command(name='func')(functional.run)
     charm.command(name='sync')(sync_packed_charm)
 
-    app = typer.Typer(name='jhack', help='Hacky, wacky, but ultimately charming.')
+    app = typer.Typer(name='jhack',
+                      help='Hacky, wacky, but ultimately charming.')
     app.command(name='sync')(sync_deployed_charm)
     app.command(name='show-relation')(sync_show_relation)
     app.command(name='tail')(tail_events)
@@ -60,9 +61,13 @@ if __name__ == '__main__':
     app.add_typer(utils)
 
     @app.callback()
-    def main(verbose: bool = False):
+    def set_verbose(verbose: bool = False):
         if verbose:
             typer.echo("::= Verbose mode. =::")
             logger.setLevel('INFO')
 
     app()
+
+
+if __name__ == '__main__':
+    main()

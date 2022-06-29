@@ -3,7 +3,7 @@ from pathlib import Path
 from subprocess import call
 from tempfile import tempdir, mkdtemp
 
-from charm.utilities import cwd
+from jhack.charm.utilities import cwd
 
 
 def init(name: str,

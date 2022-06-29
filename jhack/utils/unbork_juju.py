@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from subprocess import Popen, PIPE
 
-from logger import logger
+from jhack.logger import logger
 
 
 def unbork_juju(model_name: str = 'foo',

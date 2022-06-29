@@ -3,8 +3,8 @@ import os
 from subprocess import call
 from time import time
 
-from charm.utilities import cwd
-from helpers import get_local_charm
+from jhack.charm.utilities import cwd
+from jhack.helpers import get_local_charm
 
 
 def pack(root: Path, clean=False, dry_run: bool = False):

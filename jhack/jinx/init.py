@@ -5,8 +5,8 @@ from pathlib import Path
 from subprocess import Popen
 from time import sleep
 
-from jinx.install import jinx_installed, path_to_jinx
-from jinx.cleanup import cleanup
+from jhack.jinx.install import jinx_installed, path_to_jinx
+from jhack.jinx.cleanup import cleanup
 
 
 def init_jinx(force: bool = False):

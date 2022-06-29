@@ -3,8 +3,8 @@ from typing import Set, Optional
 from juju import jasyncio
 from juju.application import Application
 
-from helpers import get_current_model
-from logger import logger
+from jhack.helpers import get_current_model
+from jhack.logger import logger
 
 
 def parse_app_or_app_list(s: Optional[str]) -> Set[str]:

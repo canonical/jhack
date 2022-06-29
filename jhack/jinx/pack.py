@@ -6,8 +6,8 @@ from time import sleep
 
 from typer import Argument
 
-from jinx.cleanup import cleanup
-from jinx.install import jinx_installed
+from jhack.jinx.cleanup import cleanup
+from jhack.jinx.install import jinx_installed
 
 PATH_TO_JINX_PACKAGE = Path(__file__).parent / 'jinx'
 

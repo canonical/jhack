@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from utils.show_relation import sync_show_relation, get_content
+from jhack.utils.show_relation import sync_show_relation, get_content
 
 
 def fake_juju_status(app_name, model=None):

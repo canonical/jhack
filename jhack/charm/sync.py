@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import List, Optional
 
-from charm.update import update as update_charm
-from helpers import get_local_charm
-from utils.sync import watch
+from jhack.charm.update import update as update_charm
+from jhack.helpers import get_local_charm
+from jhack.utils.sync import watch
 
 
 def sync(charm: Path = None,

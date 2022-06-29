@@ -8,7 +8,7 @@ from typing import List
 
 from juju import jasyncio
 
-from logger import logger
+from jhack.logger import logger
 
 
 def watch(paths, on_change: typing.Callable,

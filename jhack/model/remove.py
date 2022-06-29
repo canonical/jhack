@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 import typer
 from juju import jasyncio
 
-from logger import logger
+from jhack.logger import logger
 
 
 def _exec(cmd):
