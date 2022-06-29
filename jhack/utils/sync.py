@@ -8,6 +8,7 @@ from typing import List
 
 from juju import jasyncio
 
+from jhack.config import JUJU_COMMAND
 from jhack.logger import logger
 
 
@@ -135,10 +136,10 @@ async def push_to_remote_juju_unit(file: Path, remote_root: str,
 
     if not machine_charm:
         container_opt = f"--container {container_name} " if container_name else ""
-        cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
+        cmd = f"{JUJU_COMMAND} scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
         proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
     else:
-        cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
+        cmd = f"cat {file} | {JUJU_COMMAND} ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
         proc = Popen([cmd], stdout=PIPE, stderr=PIPE, shell=True)
 
     retcode = proc.returncode

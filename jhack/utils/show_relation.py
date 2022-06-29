@@ -8,6 +8,7 @@ from typing import Dict, Optional, Tuple, List
 import typer
 import yaml
 
+from jhack.config import JUJU_COMMAND
 from jhack.logger import logger
 
 _JUJU_DATA_CACHE = {}
@@ -22,19 +23,19 @@ def purge(data: dict):
 
 def _show_unit(unit_name, model: str = None):
     if model:
-        proc = Popen(f"juju show-unit -m {model} {unit_name}".split(),
+        proc = Popen(f"{JUJU_COMMAND} show-unit -m {model} {unit_name}".split(),
                      stdout=PIPE)
     else:
-        proc = Popen(f"juju show-unit {unit_name}".split(), stdout=PIPE)
+        proc = Popen(f"{JUJU_COMMAND} show-unit {unit_name}".split(), stdout=PIPE)
     return proc.stdout.read().decode("utf-8").strip()
 
 
 def _juju_status(app_name, model: str = None):
     if model:
-        proc = Popen(f'juju status -m {model} {app_name} --relations'.split(),
+        proc = Popen(f'{JUJU_COMMAND} status -m {model} {app_name} --relations'.split(),
                      stdout=PIPE)
     else:
-        proc = Popen(f'juju status {app_name} --relations'.split(), stdout=PIPE)
+        proc = Popen(f'{JUJU_COMMAND} status {app_name} --relations'.split(), stdout=PIPE)
     return proc.stdout.read().decode('utf-8')
 
 
