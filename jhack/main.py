@@ -1,6 +1,16 @@
 #!/bin/python3
+import sys
+from pathlib import Path
 
 import typer
+
+# this will make jhack find its modules if you call it directly (i.e. no symlinks)
+# aliases are OK
+sys.path.append(str(Path(__file__).parent.parent))
+try:
+    import jhack
+except ModuleNotFoundError:
+    raise RuntimeError('cannot find jhack modules; check your PATH.')
 
 from jhack.charm import functional
 from jhack.charm.init import init
