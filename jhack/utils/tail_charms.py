@@ -12,6 +12,8 @@ from rich.console import Console
 from rich.live import Live
 from rich.table import Table
 
+from jhack.config import JUJU_COMMAND
+
 logger = logging.getLogger(__file__)
 
 
@@ -37,7 +39,7 @@ class Target:
 
 
 def get_all_units() -> Sequence[Target]:
-    cmd = Popen("juju status".split(' '), stdout=PIPE)
+    cmd = Popen(f"{JUJU_COMMAND} status".split(' '), stdout=PIPE)
     output = cmd.stdout.read().decode('utf-8')
 
     units = []
@@ -223,7 +225,7 @@ def tail_events(
 
     targets = parse_targets(targets)
 
-    cmd = (['juju', 'debug-log', '--tail'] +
+    cmd = ([JUJU_COMMAND, 'debug-log', '--tail'] +
            (['--replay'] if replay else []) +
            ['--level', level.value])
 
