@@ -20,11 +20,10 @@ async def get_current_model() -> Model:
 
 
 def get_local_charm() -> Path:
-    is_charm = lambda file: file.suffix == '.charm'
     cwd = Path(os.getcwd())
     try:
-        return next(filter(is_charm, cwd.iterdir()))
+        return next(cwd.glob("*.charm"))
     except StopIteration:
         raise FileNotFoundError(
-            f'could not find a charm file in {cwd}'
+            f'could not find a .charm file in {cwd}'
         )
