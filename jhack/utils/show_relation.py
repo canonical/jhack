@@ -373,6 +373,7 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
         relations = get_relations(model)
         if not relations:
             print('No relations found.')
+            return
         try:
             relation = relations[n]
         except IndexError:
@@ -440,7 +441,9 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
 
     table.add_row(
         'application data',
-        *(_render_databag('', entity.application_data) for entity in entities))
+        *(_render_databag('', entity.application_data,
+                          hide_empty_databags=hide_empty_databags
+                          ) for entity in entities))
 
     unit_databags = []
 
@@ -514,6 +517,9 @@ def sync_show_relation(
                             hide_empty_databags=hide_empty_databags,
                             model=model)
         )
+
+        if table is None:
+            return
 
         if watch:
             elapsed = time.time() - start
