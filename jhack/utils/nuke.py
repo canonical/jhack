@@ -33,11 +33,15 @@ def _get_models(filter_):
     for line in models.split('\n'):
         if line.startswith('Model '):
             found = 1
+            continue
+        if found and not line:
+            break  # end of section
         if found:
             model_name = line.split()[0]
             if filter_(model_name):
                 _models.append(model_name)
-    _models.remove('controller')  # shouldn't try to nuke that one!
+    if 'controller' in _models:
+        _models.remove('controller')  # shouldn't try to nuke that one!
     return tuple(Nukeable(m, 'model') for m in _models)
 
 
@@ -71,29 +75,35 @@ def _get_apps_and_relations(model: Optional[str],
     return nukeables
 
 
-def _gather_nukeables(obj: str, model: Optional[str], borked: bool):
+def _gather_nukeables(obj: Optional[str], model: Optional[str], borked: bool):
     globber = lambda x: True
-    if obj.startswith('*'):
-        globber = lambda s: s.endswith(obj.strip('*'))
-    elif obj.endswith('*'):
-        globber = lambda s: s.startswith(obj.strip('*'))
-    obj = obj.strip('*')
+    if isinstance(obj, str):
+        if obj.startswith('*') and obj.endswith('*'):
+            globber = lambda s: obj.strip('*') in s
+        elif obj.startswith('*'):
+            globber = lambda s: s.endswith(obj.strip('*'))
+        elif obj.endswith('*'):
+            globber = lambda s: s.startswith(obj.strip('*'))
+        obj = obj.strip('*')
 
     nukeables: List[Nukeable] = []
 
     if model:
-        nukeables.extend(_get_apps_and_relations(model, borked=borked, filter_=globber))
+        nukeables.extend(
+            _get_apps_and_relations(model, borked=borked, filter_=globber))
 
     if not model:
         models = _get_models(filter_=globber)
         for _model in models:
-            nukeables.extend(_get_apps_and_relations(_model.name, borked=borked, filter_=globber))
+            nukeables.extend(_get_apps_and_relations(_model.name, borked=borked,
+                                                     filter_=globber))
             nukeables.append(_model)
     return nukeables
 
 
-def _nuke(obj: Optional[str], model: Optional[str], borked: bool, dry_run: bool):
-    if obj is None:
+def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
+          dry_run: bool):
+    if obj is None and not borked:
         nukeables = [Nukeable(current_model(), 'model')]
     else:
         nukeables = _gather_nukeables(obj, model, borked=borked)
@@ -118,13 +128,12 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool, dry_run: bool)
     # defcon 5
     if dry_run:
         for nukeable in nukeables:
-            print(f'would nuke {nukeable.name} ⚛')
+            print(f'would ⚛ {nukeable.name}')
 
-        print("✞ RIP ✞")
         return
 
     def fire(nukeable: Nukeable, nuke: str):
-        print(f'nuking :: {nukeable.name} ⚛')
+        print(f'nuking ⚛ {nukeable.name} ⚛')
         logger.debug(f'nuking {nukeable} with {nuke}')
         proc = Popen(nuke.split(' '), stdout=PIPE, stderr=PIPE)
         while proc.returncode is None:
@@ -143,23 +152,45 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool, dry_run: bool)
     tp.close()
     tp.join()
 
-    print('All done.')
+    if not dry_run:
+        print("✞ RIP ✞")
 
 
-def nuke(*what: str,
+def nuke(what: List[str] = typer.Argument(..., help="What to ⚛."),
          model: Optional[str] = typer.Option(
              None, '-m', '--model',
              help='The model. Defaults to current model.'),
+         n: Optional[int] = typer.Option(
+             None, '-n', '--number',
+             help="Exact number of things you're expected to be nuking."
+                  "Safety first."),
          borked: bool = typer.Option(
              None, '-b', '--borked',
-             help='Nukes all borked applications.'),
+             help='Nukes all borked applications in current or target model.'),
          dry_run: bool = typer.Option(
              None, '--dry-run',
              help='Do nothing, print out what would have happened.')):
     """Surgical carpet bombing tool.
 
-    Attempts to guess what you want to burn, and vanquishes it for you.
+    Attempts to guess what you want to burn, and rains holy vengeance upon it.
+
+    Examples:
+        $ jhack nuke
+        will vanquish the current model
+        $ jhack nuke test-foo-*
+        will bomb all nukeables starting with `test-foo-` , including:
+         - models
+         - applications
+         - relations
+        $ jhack nuke --model foo bar-*
+        will bomb all nukeables starting with `bar-` in model foo. As above.
+        $ jhack nuke -n=2 *foo*
+        will blow up the two things it can find that contain the substring "foo"
     """
+    if n is not None:
+        assert n > 0, f'nonsense: {n}'
+        if not len(what) == 1:
+            print('You cannot use `-n` with multiple targets.')
     if not what:
         _nuke(None, model=model, borked=borked, dry_run=dry_run)
     for obj in what:
@@ -167,7 +198,8 @@ def nuke(*what: str,
 
 
 if __name__ == '__main__':
-    nuke(
+    nuke(["*int*"],
+         n=None,
         model=None,
         borked=False,
         dry_run=True)

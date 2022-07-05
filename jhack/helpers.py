@@ -36,9 +36,10 @@ def get_local_charm() -> Path:
 def juju_status(app_name, model: str = None):
     if model:
         proc = Popen(f'{JUJU_COMMAND} status -m {model} {app_name} --relations'.split(),
-                     stdout=PIPE)
+                     stdout=PIPE, stderr=PIPE)
     else:
-        proc = Popen(f'{JUJU_COMMAND} status {app_name} --relations'.split(), stdout=PIPE)
+        proc = Popen(f'{JUJU_COMMAND} status {app_name} --relations'.split(),
+                     stdout=PIPE, stderr=PIPE)
     return proc.stdout.read().decode('utf-8')
 
 
