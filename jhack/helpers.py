@@ -49,11 +49,12 @@ def juju_models() -> str:
     return proc.stdout.read().decode('utf-8')
 
 
-def list_models() -> List[str]:
+def list_models(strip_star=False) -> List[str]:
     raw = juju_models()
     lines = raw.split('\n')[3:]
-    all_models = [line.split(' ')[0] for line in lines]
-    return all_models
+    if strip_star:
+        return [line.split(' ')[0].strip('*') for line in lines]
+    return [line.split(' ')[0] for line in lines]
 
 
 def current_model() -> str:

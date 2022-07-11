@@ -76,8 +76,8 @@ def rmodel(
                 f'invalid globbing: {model_name!r}; * only supported '
                 f'at the end or start of a pattern'
             )
-        all_models = list_models()
-        key = lambda name: method(name, model_name.strip('*'))
+        all_models = list_models(strip_star=True)
+        key = lambda name: method(name, model_name)
         to_remove = tuple(filter(key, all_models))
         if not to_remove:
             logger.info(
