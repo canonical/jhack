@@ -6,6 +6,7 @@ import typer
 from juju import jasyncio
 
 from jhack.config import JUJU_COMMAND
+from jhack.helpers import list_models, current_model
 from jhack.logger import logger
 
 
@@ -50,14 +51,6 @@ async def _remove_model(model_name: str, force=True,
         logger.info(f'spawned off model creator ({return_code}')
 
 
-def _list_models():
-    proc = Popen(f"{JUJU_COMMAND} models".split(' '), stdout=PIPE)
-    raw = proc.stdout.read().decode('utf-8').strip()
-    lines = raw.split('\n')[3:]
-    all_models = [line.split(' ')[0] for line in lines]
-    return all_models
-
-
 def rmodel(
         model_name=typer.Argument(
             None,
@@ -70,10 +63,7 @@ def rmodel(
         dry_run: bool = False):
 
     if not model_name:
-        all_models = _list_models()
-        key = lambda name: name.endswith('*')
-        current_model = next(filter(key, all_models))
-        to_remove = (current_model.strip('*'), )
+        to_remove = (current_model(), )
         logger.info(f'Preparing to remove current model ({to_remove[0]}...')
 
     elif '*' in model_name:
@@ -86,8 +76,8 @@ def rmodel(
                 f'invalid globbing: {model_name!r}; * only supported '
                 f'at the end or start of a pattern'
             )
-        all_models = _list_models()
-        key = lambda name: method(name, model_name.strip('*'))
+        all_models = list_models(strip_star=True)
+        key = lambda name: method(name, model_name)
         to_remove = tuple(filter(key, all_models))
         if not to_remove:
             logger.info(

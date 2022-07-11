@@ -9,6 +9,7 @@ import typer
 import yaml
 
 from jhack.config import JUJU_COMMAND
+from jhack.helpers import juju_status
 from jhack.logger import logger
 
 _JUJU_DATA_CACHE = {}
@@ -28,15 +29,6 @@ def _show_unit(unit_name, model: str = None):
     else:
         proc = Popen(f"{JUJU_COMMAND} show-unit {unit_name}".split(), stdout=PIPE)
     return proc.stdout.read().decode("utf-8").strip()
-
-
-def _juju_status(app_name, model: str = None):
-    if model:
-        proc = Popen(f'{JUJU_COMMAND} status -m {model} {app_name} --relations'.split(),
-                     stdout=PIPE)
-    else:
-        proc = Popen(f'{JUJU_COMMAND} status {app_name} --relations'.split(), stdout=PIPE)
-    return proc.stdout.read().decode('utf-8')
 
 
 def get_unit_info(unit_name: str, model: str = None) -> dict:
@@ -130,7 +122,7 @@ class AppRelationData:
 def get_metadata_from_status(app_name, relation_name, other_app_name,
                              other_relation_name, model: str = None):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status = _juju_status(app_name, model=model)
+    status = juju_status(app_name, model=model)
     # escape dashes
     re_safe_app_name = app_name.replace('-', r'\-')
 
@@ -305,7 +297,7 @@ class Relation:
 
 
 def get_relations(model: str = None) -> List[Relation]:
-    status = _juju_status('', model=model)
+    status = juju_status('', model=model)
     relations = None
     for line in status.split('\n'):
         if line.startswith('Relation provider'):

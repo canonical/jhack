@@ -157,6 +157,40 @@ Example output:
 Since v0.3, also peer relations are supported.
 Additionally, it supports “show me the nth relation” instead of having to type out the whole app-name:endpoint thing: if you have 3 relations in your model, you can simply do jhack show-relation -n 1 and jhack will print out the 2nd relation from the top (of the same list appearing when you do juju status --relations, that is.
 
+
+## nuke
+
+This utility is the swiss army knife of "just get rid of this thing already".
+The broad goal is to have one easy-to-use command to destroy things in the most dirty and unsafe way possible, just **please** _make it fast_ and **please** don't make me type _all those letters_ out.
+
+The tool is designed to be used with `juju status --relations` and `juju models`.
+
+The basic usage is as follows:
+
+`jhack nuke` -> will nuke the current model and that's that.
+`jhack nuke foo*` -> will: 
+ - scan `juju models` for models whose **name begins with "foo"** and nuke each one of them.
+ - For each model it did **not** target as nukeable in the previous step, it will scan `juju status -m that-model` and:
+   - for each app whose name begins with "foo", it will nuke it.
+   - for each relation NOT involving an app selected for nukage in the previous step, if either the provider or requirer starts with "foo", it will nuke it. 
+
+You can switch between "starts with" / "ends with" and "contains" matching modes by placing stars around the string:
+
+ - `jhack nuke foo`  --> same as `jhack nuke foo*`
+ - `jhack nuke *foo`  --> same algorithm as above, but will nuke stuff whose name _ends with_ "foo".
+ - `jhack nuke *foo*`  --> ... will nuke stuff that _contains_ "foo"
+ - `jhack nuke !foo`  --> _exact match_ only. So it will presumably only nuke one thing, except if you have many models with identically-named apps or relations in them. Then they'll all be vanquished.
+
+For targeting relations only, you can type out the endpoint name up to and including the colon. For example, for purging all relations involving your `my-db` application,
+you could do:
+`jhack nuke "my-db:"`, that will match all the relations of your app. They're history now.
+
+### Safety tips
+
+ - Learn to use the command by trying out the `--dry-run` flag first, that will print out what it would nuke without actually nuking anything. 
+ - The command has an optional `-n` flag that allows you to specify the expected number of nukes that should be fired out. If more or less than `n` nukeables are matched, the command will print an error message and abort.
+
+
 # model
 ## clear
 
