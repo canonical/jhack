@@ -278,7 +278,7 @@ class Processor:
         grid = Table.grid('', expand=True)
 
         self._unit_grids[new_target.unit_name] = grid
-        self.table.columns[-1]._cells.append(grid)
+        self._get_cells(self.table, 1).append(grid)
 
     def process(self, log: str):
         """process a log line"""
@@ -336,38 +336,38 @@ class Processor:
         tail = self._vline * len(tuple(d for d in deferred if d is not msg))
 
         if isinstance(msg, EventDeferredLogMsg):
+            previous_msg_idx = None
             try:
                 previous_msg_idx = next(
                     filter(
                         lambda s: s[1].startswith(f"({msg.n})"),
-                        enumerate(grid.columns[0]._cells))
+                        enumerate(self._get_cells(grid, 0)))
                 )[0]
             except StopIteration:
-                previous_msg_idx = None
+                pass
 
             if previous_msg_idx == None:
                 previous_msg_idx = next(
                     filter(
                         lambda s: s[1] == msg.event,
-                        enumerate(grid.columns[0]._cells))
+                        enumerate(self._get_cells(grid, 0)))
                 )[0]
-                grid.columns[0]._cells[
-                    previous_msg_idx] = f"({msg.n}) {msg.event}"
-                original_cell = grid.columns[1]._cells[previous_msg_idx]
+                self._get_cells(grid, 0)[previous_msg_idx] = f"({msg.n}) {msg.event}"
+                original_cell = self._get_cells(grid, 1)[previous_msg_idx]
                 new_cell = original_cell.replace(
                     self._dpad,
                     self._open + self._hline).replace(
                     self._vline, self._cross) + self._lup
-                grid.columns[1]._cells[previous_msg_idx] = new_cell
+                self._get_cells(grid, 1)[previous_msg_idx] = new_cell
                 lane = new_cell.index(self._lup)
 
             else:
                 # not the first time we defer you, boy
-                original_cell = grid.columns[1]._cells[previous_msg_idx]
+                original_cell = self._get_cells(grid, 1)[previous_msg_idx]
                 new_cell = original_cell.replace(
                     self._close + self._hline, self._pad + self._bounce
                 ).replace(self._ldown, self._lupdown) + tail
-                grid.columns[1]._cells[previous_msg_idx] = new_cell
+                self._get_cells(grid, 1)[previous_msg_idx] = new_cell
                 lane = new_cell.index(self._lupdown)
 
             self._cache_lane(msg.n, lane)
@@ -376,9 +376,9 @@ class Processor:
             previous_reemit = None
             try:
                 previous_reemit = next(
-                filter(
-                    lambda s: s[1].startswith(f"({msg.n})"),
-                    enumerate(grid.columns[0]._cells[1:]))
+                    filter(
+                        lambda s: s[1].startswith(f"({msg.n})"),
+                        enumerate(self._get_cells(grid, 0)[1:]))
                 )[0] + 1
             except StopIteration:
                 # message must have been cropped away
@@ -387,7 +387,7 @@ class Processor:
 
             cell = None
             if previous_reemit is not None:
-                previous_cell = grid.columns[1]._cells[previous_reemit]
+                previous_cell = self._get_cells(grid, 1)[previous_reemit]
 
                 # reopen previous reemittal if it's closed
                 cell = previous_cell.replace(
@@ -395,10 +395,10 @@ class Processor:
                     self._pad + self._bounce
                 ).replace(
                     self._ldown, self._lupdown)
-                grid.columns[1]._cells[previous_reemit] = cell
+                self._get_cells(grid, 1)[previous_reemit] = cell
 
             # now we look at the newly added cell and add a closure statement.
-            new_cell = grid.columns[1]._cells[0]
+            new_cell = self._get_cells(grid, 1)[0]
             new_cell = new_cell.replace(
                 self._dpad, self._close + self._hline)
             new_cell += tail
@@ -421,8 +421,7 @@ class Processor:
             for ln in range(lane):
                 if final_cell[ln] == self._vline:
                     final_cell[ln] = self._cross
-            grid.columns[1]._cells[0] = ''.join(final_cell)
-
+            self._get_cells(grid, 1)[0] = ''.join(final_cell)
 
             if previous_reemit is not None:
                 rng = range(1, previous_reemit)
@@ -436,7 +435,7 @@ class Processor:
                     {None: self._vline,
                      self._hline: self._cross,
                      self._ldown: self._lupdown},
-                self._nothing_to_report)
+                    self._nothing_to_report)
 
         else:
             grid.columns[1]._cells[0] += tail
@@ -458,10 +457,13 @@ class Processor:
         self._add_timestamp(msg)
         self._crop()
 
+    def _rotate(self, table: Table, column: int):
+        cells = self._get_cells(table, column)
+        cells.insert(0, cells.pop())
+
     @staticmethod
-    def _rotate(table, column):
-        table.columns[column]._cells.insert(0, table.columns[
-            column]._cells.pop())  # noqa
+    def _get_cells(table: Table, column: int) -> List[str]:
+        return table.columns[column]._cells  # noqa
 
     def _add_timestamp(self, msg: EventLogMsg):
         timestamps = self._timestamps_grid
@@ -474,8 +476,8 @@ class Processor:
         for table in (self._timestamps_grid, *self._unit_grids.values()):
             if len(table.rows) > self.history_length:
                 logger.info('popping a row...')
-                for column in table.columns:
-                    column._cells.pop()  # pop last
+                for column in range(len(table.columns)):
+                    self._get_cells(table, column).pop()  # pop last
                 table.rows.pop()  # pop last
 
 
