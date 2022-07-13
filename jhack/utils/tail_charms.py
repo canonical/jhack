@@ -175,7 +175,7 @@ class Processor:
         if evt.unit in self.tracking:  # target tracked
             self.evt_count += 1
             self.tracking[evt.unit].append(evt)
-            print(f"tracking {evt.event}")
+            logger.debug(f"tracking {evt.event}")
 
     def _defer(self, deferred: EventDeferredLogMsg):
         # find the original message we're deferring
@@ -196,7 +196,7 @@ class Processor:
             self.evt_count += 1
 
         self._deferred[deferred.unit].append(deferred)
-        print(f"deferred {deferred.event}")
+        logger.debug(f"deferred {deferred.event}")
 
     def _reemit(self, reemitted: EventReemittedLogMsg):
         # search deferred queue first to last
@@ -207,7 +207,7 @@ class Processor:
                 self._deferred[unit].remove(defrd)
                 # we track it.
                 self.tracking[unit].append(reemitted)
-                print(f"reemitted {reemitted.event}")
+                logger.debug(f"reemitted {reemitted.event}")
                 return
 
         raise RuntimeError(
@@ -352,9 +352,12 @@ class Processor:
                         lambda s: s[1] == msg.event,
                         enumerate(self._get_cells(grid, 0)))
                 )[0]
+                # if previous_msg_idx == 0, that's the case in
+                # which we're deferring the last event we emitted.
+                # otherwise we're deferring something we've re-emitted.
                 self._get_cells(grid, 0)[previous_msg_idx] = f"({msg.n}) {msg.event}"
                 original_cell = self._get_cells(grid, 1)[previous_msg_idx]
-                new_cell = original_cell.replace(
+                new_cell = (original_cell + tail).replace(
                     self._dpad,
                     self._open + self._hline).replace(
                     self._vline, self._cross) + self._lup
