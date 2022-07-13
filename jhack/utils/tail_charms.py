@@ -150,7 +150,7 @@ class Processor:
         table.add_column(header="timestamp")
         unit_grids = []
         for target in targets:
-            tgt_grid = Table.grid('', '', expand=True)
+            tgt_grid = Table.grid('', '', expand=True, padding=(0,1,0,1))
             table.add_column(header=target.unit_name)
             self._unit_grids[target.unit_name] = tgt_grid
             unit_grids.append(tgt_grid)
@@ -357,7 +357,11 @@ class Processor:
                 # otherwise we're deferring something we've re-emitted.
                 self._get_cells(grid, 0)[previous_msg_idx] = f"({msg.n}) {msg.event}"
                 original_cell = self._get_cells(grid, 1)[previous_msg_idx]
-                new_cell = (original_cell + tail).replace(
+                if self._vline in original_cell:
+                    tail_cell = original_cell
+                else:
+                    tail_cell = original_cell + tail
+                new_cell = tail_cell.replace(
                     self._dpad,
                     self._open + self._hline).replace(
                     self._vline, self._cross) + self._lup
