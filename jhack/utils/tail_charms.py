@@ -105,7 +105,6 @@ class EventDeferredLogMsg(EventLogMsg):
     charm_name: str
     n: str
 
-    lane: int = None
     # the original event we're deferring or re-deferring
     msg: EventLogMsg = None
 
@@ -142,7 +141,6 @@ class Processor:
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
         self.history_length = history_length
-        self.messages = {t.unit_name: [] for t in targets}
         self.console = console = Console()
         self.table = table = Table(show_footer=False, expand=True)
         self._unit_grids = {}
@@ -164,20 +162,16 @@ class Processor:
 
         self.evt_count = 0
 
-        # used to determine the deferral lane
-        self.deferred_evt_count = 0
-        self._events_tracked: Dict[str, List[EventLogMsg]] = defaultdict(list)
+        self.tracking: Dict[str, List[EventLogMsg]] = {}
         self._deferred: Dict[str, List[EventDeferredLogMsg]] = defaultdict(list)
 
     def _track(self, evt: EventLogMsg):
-        self.evt_count += 1
-        self._events_tracked[evt.unit].append(evt)
-
-        if self.add_new_targets and evt.unit not in self.messages:
+        if self.add_new_targets and evt.unit not in self.tracking:
             self._add_new_target(evt)
 
-        if evt.unit in self.messages:  # target tracked
-            self.messages[evt.unit].append(evt)
+        if evt.unit in self.tracking:  # target tracked
+            self.evt_count += 1
+            self.tracking[evt.unit].append(evt)
             print(f"tracking {evt.event}")
 
     def _defer(self, deferred: EventDeferredLogMsg):
@@ -189,34 +183,34 @@ class Processor:
                     return dfrd.msg
 
         def _search_in_tracked():
-            for msg in self.messages[deferred.unit]:
+            for msg in self.tracking.get(deferred.unit, ()):
                 if msg.event == deferred.event:
                     return msg
 
         msg = _search_in_deferred() or _search_in_tracked()
         deferred.msg = msg
-        if isinstance(msg, EventDeferredLogMsg):
-            deferred.lane = msg.lane
-        else:
-            self.deferred_evt_count += 1
-            deferred.lane = self.deferred_evt_count
+        if not isinstance(msg, EventDeferredLogMsg):
+            self.evt_count += 1
 
         self._deferred[deferred.unit].append(deferred)
-        print(f"deferred {deferred.event}; lane {deferred.lane}")
+        print(f"deferred {deferred.event}")
 
     def _reemit(self, reemitted: EventReemittedLogMsg):
         # search deferred queue first to last
+        if not self.tracking.get(reemitted.unit):
+            return
+
         unit = reemitted.unit
         for defrd in list(self._deferred[unit]):
             if defrd.n == reemitted.n:
                 reemitted.deferred = defrd
                 self._deferred[unit].remove(defrd)
                 # we track it.
-                self.messages[unit].append(reemitted)
+                self.tracking[unit].append(reemitted)
                 print(f"reemitted {reemitted.event}")
                 return
 
-        raise RuntimeError(f"cannot reemit {reemitted.event}; no "
+        raise RuntimeError(f"cannot reemit {reemitted.event}({reemitted.n}); no "
                            f"matching deferred event could be found "
                            f"in {self._deferred[unit]}.")
 
@@ -277,7 +271,7 @@ class Processor:
         logger.info(f"adding new unit {msg.unit}")
         new_target = Target.from_name(msg.unit)
 
-        self.messages[msg.unit] = []
+        self.tracking[msg.unit] = []
         self.targets.append(new_target)
         self.table.add_column(header=new_target.unit_name)
         grid = Table.grid('', expand=True)
@@ -291,15 +285,18 @@ class Processor:
             self._track(msg)
             self.display(msg)
 
-        elif deferred := self._match_event_deferred(log):
-            self._defer(deferred)
-            self._display_deferred(deferred)
+        elif msg := self._match_event_deferred(log):
+            # self._display_deferred(msg)
+            self._defer(msg)
 
-        elif reemitted := self._match_event_reemitted(log):
-            self._reemit(reemitted)
-            self.display(reemitted, reemitted=True)
+        elif msg := self._match_event_reemitted(log):
+            self._reemit(msg)
+            self.display(msg, reemitted=True)
+        else:
+            return
 
-        Console().print(self.table)
+        self.update(msg.unit)
+        Console().print(self.table)  # TODO: debug mode
 
     _pad = " "
     _dpad = _pad * 2
@@ -314,126 +311,40 @@ class Processor:
     _close = "❮"
     _open = "❯"
 
+    def update(self, unit: str):
+        # all the events we presently know to be deferred
+        deferred = self._deferred[unit]
+        grid = self._unit_grids[unit]
+        deferred_ns = {d.n for d in deferred}
+        emissions = defaultdict(list)
+
+        for i, (event_name, cell) in enumerate(zip(grid.columns[0]._cells, grid.columns[1]._cells)):
+            for n in deferred_ns:
+                if event_name.startswith(f"({n})"):
+                    # this is when this event was (re) emitted
+                    # since it is presently in a deferred state, we know there needs to be a start or a bounce there.
+                    emissions[event_name].append(i)
+
+        for evt_name, emissions in emissions.items():
+            *reemissions, first_emission = emissions
+            grid.columns[1]._cells[first_emission].replace(self._pad,
+                                                           self._open+self._hline)
+            for reemitted in reemissions:
+                grid.columns[1]._cells[first_emission].replace(self._open + self._hline,
+                                                               self._pad + self._bounce)
+
+            last_emission = max(emissions)
+
     def display(self, msg: EventLogMsg, reemitted: bool = False):
-        # if reemit_idx is not None: that means that this event,
-        # which we are emitting, is in fact a previously deferred
-        # event which we are only now reemitting.
-        unit = msg.unit
-        unit_grid = self._unit_grids[unit]
-
-        # add the event and the deferred events tree to the unit grid for
-        # this unit
-        deferred_events = self._deferred[unit]
-
-        lane = ''
-        if deferred_events:
-            lanes = {d.lane: d for d in deferred_events}
-            max_lane = max(lanes)
-            this_lane = -1
-            if reemitted:
-                this_lane = msg.deferred.lane
-
-            for lane_n in range(1, max_lane + 1):
-                if lane_n == this_lane:
-                    lane += self._ldown
-                    continue
-                lane_busy = lanes.get(lane_n)
-                lane += (self._vline if lane_busy else self._nothing_to_report)
-        else:
-            if reemitted:
-                lane += self._ldown
-
-        if reemitted:
-            cell = self._pad + self._close + lane
-        else:
-            cell = self._dpad + lane
-
-        n = f"({msg.n}) " if hasattr(msg, 'n') else ""
-        unit_grid.add_row(f"{n}{msg.event}", cell)
+        unit_grid = self._unit_grids[msg.unit]
+        n = f"({msg.n}) " if reemitted else ""
+        unit_grid.add_row(f"{n}{msg.event}", '')
         # move last to first, because we can't add row to the top
         self._rotate(unit_grid, 0)
         self._rotate(unit_grid, 1)
 
         self._add_timestamp(msg)
         self._crop()
-
-    def _display_deferred(self, msg: EventDeferredLogMsg):
-        # the problem is, we've emitted this event in the past.
-        # so instead of adding a new line we need to grab the right line and replace the deferral cell.
-        # the index of this event in the deferral queue, corresponding to the line index
-
-        # original message
-        # todo: might be gone by now!
-        original_evt_idx = list(reversed(self.messages[msg.unit])).index(msg.msg)
-
-        # restyle the original row
-        self._unit_grids[msg.unit].columns[0]._cells[original_evt_idx] = f"({msg.n}) {msg.event}"
-        deferral_cell = self._unit_grids[msg.unit].columns[1]._cells[original_evt_idx]
-        deferrals = list(deferral_cell)[2:]
-
-        def _update_lane(deferrals):
-            lane = msg.lane
-            if len(deferrals) <= lane:
-                deferrals += [self._nothing_to_report] * (lane - len(deferrals) + 1)
-            deferrals[lane] = self._lup
-
-        _update_lane(deferrals)
-        new_cell = self._pad + self._open + ''.join(deferrals)
-        self._unit_grids[msg.unit].columns[1]._cells[original_evt_idx] = new_cell
-
-
-        return
-
-        # it might be that between the emitted event and *now* other events have been reemitted (and redeferred?)
-        # example:
-        # 0 emit install                # cell 1
-        # 1 defer install               # will update cell 1 with corner and line
-        # 2 update-status               # event; cell 2; knows of 0: one deferral line
-        # 3 reemit queued install
-        # 4 re-defer install            # knows of 0 but not yet of 5: updates with bounce, keeps one line
-        # 5 defer update-status         # deferral; cell 2 is now wrong: there should be two deferral lines.
-
-        # that means that we need to update all rows between 2 and 5,
-        # because when they were rendered they only knew of one deferred event
-        # being present (install), but now we know that also update-status is being deferred.
-        # for cell in unit_grid.columns[1]._cells[:deferred_idx]:
-        #     cell += self._vline
-
-        # search if this event has been reemitted before; if so we
-        # need to turn that reemit into a bounce
-        reemitted_idx = None
-        for i, defrd in enumerate(deferred_events):
-            if defrd.n == msg.n:
-                reemitted_idx = i
-
-        if reemitted_idx:
-            previous_deferral_cell = unit_grid.columns[1]._cells[reemitted_idx]
-            # if self._ldown in previous_deferral_cell:
-            # we've just reemitted this event. We're apparently deferring it again.
-
-            print(len(deferred_events))
-            unit_grid.columns[1]._cells[
-                reemitted_idx] = previous_deferral_cell.replace(
-                self._ldown, self._lupdown).replace(
-                self._close, self._bounce)
-
-            previous_event_name_cell = unit_grid.columns[0]._cells[
-                reemitted_idx]
-            if not f"({msg.n})" in previous_event_name_cell:
-                # first time we defer it:
-                # update the event row by adding the event n
-                n_evt = f"({msg.n}) {msg.event}"
-                unit_grid.columns[0]._cells[reemitted_idx] = n_evt
-
-        # and now about all other lines in between:
-        for i, cell in enumerate(unit_grid.columns[1]._cells[:reemitted_idx]):
-            newcell = list(cell)
-            diff = (msg.lane - len(cell))
-            if diff >= 0:
-                newcell += ' ' * (diff + 1)
-            newcell[msg.lane] = self._vline
-            unit_grid.columns[1]._cells[i] = ''.join(newcell)
-        return  # we also don't need to add timestamps or crop
 
     @staticmethod
     def _rotate(table, column):
