@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass
 from subprocess import Popen, PIPE, STDOUT
-from typing import Sequence, Optional, Iterable, List, Dict, Tuple
+from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union
 
 import parse
 import typer
@@ -137,13 +137,15 @@ class Processor:
 
     def __init__(self, targets: Iterable[Target],
                  add_new_targets: bool = True,
-                 history_length: int = 10):
+                 history_length: int = 10,
+                 show_defer: bool = False):
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
         self.history_length = history_length
         self.console = console = Console()
         self.table = table = Table(show_footer=False, expand=True)
         self._unit_grids = {}
+        self._track_deferrals = show_defer
 
         table.add_column(header="timestamp")
         unit_grids = []
@@ -161,8 +163,9 @@ class Processor:
                          screen=False, refresh_per_second=20)
 
         self.evt_count = 0
-
-        self.tracking: Dict[str, List[EventLogMsg]] = {}
+        self._lanes = {}
+        self.tracking: Dict[str, List[EventLogMsg]] = {tgt.unit_name: [] for tgt
+                                                       in targets}
         self._deferred: Dict[str, List[EventDeferredLogMsg]] = defaultdict(list)
 
     def _track(self, evt: EventLogMsg):
@@ -197,9 +200,6 @@ class Processor:
 
     def _reemit(self, reemitted: EventReemittedLogMsg):
         # search deferred queue first to last
-        if not self.tracking.get(reemitted.unit):
-            return
-
         unit = reemitted.unit
         for defrd in list(self._deferred[unit]):
             if defrd.n == reemitted.n:
@@ -210,9 +210,10 @@ class Processor:
                 print(f"reemitted {reemitted.event}")
                 return
 
-        raise RuntimeError(f"cannot reemit {reemitted.event}({reemitted.n}); no "
-                           f"matching deferred event could be found "
-                           f"in {self._deferred[unit]}.")
+        raise RuntimeError(
+            f"cannot reemit {reemitted.event}({reemitted.n}); no "
+            f"matching deferred event could be found "
+            f"in {self._deferred[unit]}.")
 
     def __enter__(self):
         self.live.__enter__()
@@ -282,21 +283,35 @@ class Processor:
     def process(self, log: str):
         """process a log line"""
         if msg := self._match_event_emitted(log):
+            mode = 'emit'
             self._track(msg)
-            self.display(msg)
-
-        elif msg := self._match_event_deferred(log):
-            # self._display_deferred(msg)
-            self._defer(msg)
-
-        elif msg := self._match_event_reemitted(log):
-            self._reemit(msg)
-            self.display(msg, reemitted=True)
+        elif self._track_deferrals:
+            if msg := self._match_event_deferred(log):
+                mode = 'defer'
+            elif msg := self._match_event_reemitted(log):
+                self._track(msg)
+                mode = 'reemit'
+            else:
+                return
         else:
             return
 
-        self.update(msg.unit)
-        Console().print(self.table)  # TODO: debug mode
+        if not self._is_tracking(msg):
+            return
+
+        if mode == 'emit':
+            self.display(msg)
+        elif mode == 'defer':
+            self._defer(msg)
+        elif mode == 'reemit':
+            self._reemit(msg)
+            self.display(msg, reemitted=True)
+
+        if self._track_deferrals and self._is_tracking(msg) and mode != 'emit':
+            self.update(msg)
+
+    def _is_tracking(self, msg):
+        return msg.unit in self.tracking
 
     _pad = " "
     _dpad = _pad * 2
@@ -311,34 +326,131 @@ class Processor:
     _close = "❮"
     _open = "❯"
 
-    def update(self, unit: str):
+    def update(self, msg: EventLogMsg):
         # all the events we presently know to be deferred
-        deferred = self._deferred[unit]
+        unit = msg.unit
         grid = self._unit_grids[unit]
-        deferred_ns = {d.n for d in deferred}
-        emissions = defaultdict(list)
+        deferred = self._deferred[unit]
+        reemitting = isinstance(msg, EventReemittedLogMsg)
 
-        for i, (event_name, cell) in enumerate(zip(grid.columns[0]._cells, grid.columns[1]._cells)):
-            for n in deferred_ns:
-                if event_name.startswith(f"({n})"):
-                    # this is when this event was (re) emitted
-                    # since it is presently in a deferred state, we know there needs to be a start or a bounce there.
-                    emissions[event_name].append(i)
+        tail = self._vline * len(tuple(d for d in deferred if d is not msg))
 
-        for evt_name, emissions in emissions.items():
-            *reemissions, first_emission = emissions
-            grid.columns[1]._cells[first_emission].replace(self._pad,
-                                                           self._open+self._hline)
-            for reemitted in reemissions:
-                grid.columns[1]._cells[first_emission].replace(self._open + self._hline,
-                                                               self._pad + self._bounce)
+        if isinstance(msg, EventDeferredLogMsg):
+            try:
+                previous_msg_idx = next(
+                    filter(
+                        lambda s: s[1].startswith(f"({msg.n})"),
+                        enumerate(grid.columns[0]._cells))
+                )[0]
+            except StopIteration:
+                previous_msg_idx = None
 
-            last_emission = max(emissions)
+            if previous_msg_idx == None:
+                previous_msg_idx = next(
+                    filter(
+                        lambda s: s[1] == msg.event,
+                        enumerate(grid.columns[0]._cells))
+                )[0]
+                grid.columns[0]._cells[
+                    previous_msg_idx] = f"({msg.n}) {msg.event}"
+                original_cell = grid.columns[1]._cells[previous_msg_idx]
+                new_cell = original_cell.replace(
+                    self._dpad,
+                    self._open + self._hline).replace(
+                    self._vline, self._cross) + self._lup
+                grid.columns[1]._cells[previous_msg_idx] = new_cell
+                lane = new_cell.index(self._lup)
+
+            else:
+                # not the first time we defer you, boy
+                original_cell = grid.columns[1]._cells[previous_msg_idx]
+                new_cell = original_cell.replace(
+                    self._close + self._hline, self._pad + self._bounce
+                ).replace(self._ldown, self._lupdown) + tail
+                grid.columns[1]._cells[previous_msg_idx] = new_cell
+                lane = new_cell.index(self._lupdown)
+
+            self._cache_lane(msg.n, lane)
+
+        elif isinstance(msg, EventReemittedLogMsg):
+            previous_reemit = None
+            try:
+                previous_reemit = next(
+                filter(
+                    lambda s: s[1].startswith(f"({msg.n})"),
+                    enumerate(grid.columns[0]._cells[1:]))
+                )[0] + 1
+            except StopIteration:
+                # message must have been cropped away
+                logger.debug(f'unable to grab fetch previous reemit, '
+                             f'msg {msg.n} must be out of scope')
+
+            cell = None
+            if previous_reemit is not None:
+                previous_cell = grid.columns[1]._cells[previous_reemit]
+
+                # reopen previous reemittal if it's closed
+                cell = previous_cell.replace(
+                    self._close + self._hline,
+                    self._pad + self._bounce
+                ).replace(
+                    self._ldown, self._lupdown)
+                grid.columns[1]._cells[previous_reemit] = cell
+
+            # now we look at the newly added cell and add a closure statement.
+            new_cell = grid.columns[1]._cells[0]
+            new_cell = new_cell.replace(
+                self._dpad, self._close + self._hline)
+            new_cell += tail
+
+            lane = self._get_lane(msg.n)
+            if not lane:
+                if cell is None:
+                    raise RuntimeError(f'lane not cached for {msg.n}, and '
+                                       f'message is out of scope. '
+                                       f'Unable to proceed.')
+
+                if self._lup in cell:
+                    lane = cell.index(self._lup)
+                else:
+                    lane = cell.index(self._lupdown)
+                self._cache_lane(msg.n, lane)
+
+            closed_cell = _put(new_cell, lane, self._ldown, self._hline)
+            final_cell = list(closed_cell)
+            for ln in range(lane):
+                if final_cell[ln] == self._vline:
+                    final_cell[ln] = self._cross
+            grid.columns[1]._cells[0] = ''.join(final_cell)
+
+
+            if previous_reemit is not None:
+                rng = range(1, previous_reemit)
+            else:
+                # until the end of the visible table
+                rng = range(1, len(grid.columns[1]._cells))
+
+            for ln in rng:
+                grid.columns[1]._cells[ln] = _put(
+                    grid.columns[1]._cells[ln], lane,
+                    {None: self._vline,
+                     self._hline: self._cross,
+                     self._ldown: self._lupdown},
+                self._nothing_to_report)
+
+        else:
+            grid.columns[1]._cells[0] += tail
+
+    def _get_lane(self, n: str):
+        return self._lanes.get(n)
+
+    def _cache_lane(self, n: str, lane: int):
+        self._lanes[n] = lane
 
     def display(self, msg: EventLogMsg, reemitted: bool = False):
         unit_grid = self._unit_grids[msg.unit]
         n = f"({msg.n}) " if reemitted else ""
-        unit_grid.add_row(f"{n}{msg.event}", '')
+        unit_grid.add_row(f"{n}{msg.event}", '  ')
         # move last to first, because we can't add row to the top
         self._rotate(unit_grid, 0)
         self._rotate(unit_grid, 1)
@@ -383,7 +495,8 @@ def tail_events(
         dry_run: bool = False,
         framerate: float = .5,
         length: int = typer.Option(10, '-n', '--length'),
-        watch: bool = True,
+        show_defer: bool = False,
+        watch: bool = True
 ):
     """Pretty-print a table with the events that are fired on juju units
     in the current model.
@@ -416,7 +529,8 @@ def tail_events(
 
     try:
         with Processor(targets, add_new_targets,
-                       history_length=length) as processor:
+                       history_length=length,
+                       show_defer=show_defer) as processor:
             proc = _get_debug_log(cmd)
             # when we're in replay mode we're catching up with the replayed logs
             # so we won't limit the framerate and just flush the output
@@ -466,6 +580,19 @@ def tail_events(
         return
 
     print(f"processed {processor.evt_count} events.")
+
+
+def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=' '):
+    if isinstance(char, str):
+        char = {None: char}
+
+    if len(s) <= index:
+        s += placeholder * (index - len(s)) + char[None]
+        return s
+
+    l = list(s)
+    l[index] = char.get(l[index], char[None])
+    return ''.join(l)
 
 
 if __name__ == '__main__':
