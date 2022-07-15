@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from jhack.utils.tail_charms import tail_events
+from jhack.utils.tail_charms import tail_events, Processor, Target
 
 MOCK_JDL = {
     # scenario 1: emit, defer, reemit
@@ -109,3 +109,41 @@ def test_with_cropped_trfk_log(deferrals, length):
                wraps=lambda _: _fake_log_proc('cropped')) as mock_status:
         tail_events(targets='trfk/0', length=length,
                     show_defer=deferrals, watch=False)
+
+
+def test_tracking():
+    p = Processor([Target('myapp', 0)], show_defer=True)
+    l1, l2, l3, l4 = [
+        line.decode('utf-8').strip() for line in MOCK_JDL[1].split(b'\n')[:-1]
+    ]
+    raw_table = p._raw_tables['myapp/0']
+
+    p.process(l1)
+    assert raw_table.deferrals == [p._dpad]
+    assert raw_table.ns == [None]
+    assert raw_table.events == ['start']
+    assert raw_table.currently_deferred == []
+
+    p.process(l2)
+    assert raw_table.deferrals == [p._dpad, p._dpad]
+    assert raw_table.ns == [None, None]
+    assert raw_table.events == ['update_status', 'start']
+    assert raw_table.currently_deferred == []
+
+    p.process(l3)
+    assert raw_table.deferrals == [p._open + p._hline + p._lup, p._dpad]
+    assert raw_table.ns == ['0', None]
+    assert raw_table.events == ['update_status', 'start']
+    assert len(raw_table.currently_deferred) == 1
+
+    p.process(l4)
+    assert raw_table.deferrals == [
+        p._close + p._hline + p._ldown,
+        p._open + p._hline + p._lup,
+        p._dpad]
+    assert raw_table.ns == ['0', '0', None]
+    assert raw_table.events == ['update_status', 'update_status', 'start']
+    assert len(raw_table.currently_deferred) == 0
+
+
+
