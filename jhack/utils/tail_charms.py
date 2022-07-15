@@ -1,5 +1,5 @@
 import enum
-import logging
+import os
 import time
 from collections import defaultdict, Counter
 from dataclasses import dataclass, Field, field
@@ -9,13 +9,15 @@ from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union
 import parse
 import typer
 from rich.align import Align
-from rich.console import Console
+from rich.console import Console, Group
 from rich.live import Live
 from rich.table import Table
+from rich.text import Text
 
 from jhack.config import JUJU_COMMAND
+from jhack.logger import logger as jhacklogger
 
-logger = logging.getLogger(__file__)
+logger = jhacklogger.getChild(__file__)
 
 
 @dataclass
@@ -115,20 +117,38 @@ class EventReemittedLogMsg(EventLogMsg):
     charm_name: str
     n: str
 
-    deferred: EventDeferredLogMsg = None
-
 
 @dataclass
 class RawTable:
     events: List[str] = field(default_factory=list)
     deferrals: List[str] = field(default_factory=list)
     ns: List[str] = field(default_factory=list)
-    currently_deferred: List[EventLogMsg] = field(default_factory=list)
+    currently_deferred: List[EventDeferredLogMsg] = field(default_factory=list)
 
     def add(self, msg: Union[EventLogMsg]):
         self.events.insert(0, msg.event)
         self.deferrals.insert(0, '  ')
         self.ns.insert(0, getattr(msg, 'n', None))
+
+
+_colors = {
+    'leader_elected': "26, 184, 68",
+    'leader_settings_changed': "26, 184, 68",
+    '-relation-joined': "184, 26, 158",
+    '-relation-departed': "184, 26, 158",
+    '-relation-changed': "184, 26, 158",
+    '-relation-created': "184, 26, 158",
+    '-relation-broken': "184, 26, 158",
+    '-storage-attached': "184, 139, 26",
+    '-storage-detaching': "184, 139, 26",
+    'stop': "184, 26, 71",
+    'remove': "171, 81, 21",
+    'start': "20, 147, 186",
+    'install': "49, 183, 224",
+    '-pebble-ready': "212, 224, 49"
+}
+
+_default_color = ''
 
 
 class Processor:
@@ -156,15 +176,13 @@ class Processor:
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
         self.history_length = history_length
-        self.console = console = Console()
+        self.console = Console()
         self._raw_tables: Dict[str, RawTable] = {
             target.unit_name: RawTable() for target in targets}
         self._timestamps = []
 
         self._show_ns = show_ns and show_defer
         self._show_defer = show_defer
-        self.live = Live(None, console=console,
-                         screen=False, refresh_per_second=20)
 
         self.evt_count = Counter()
         self._lanes = {}
@@ -203,9 +221,11 @@ class Processor:
         deferred.msg = msg
 
         if not is_already_deferred:
+            logger.debug(f'deferring {deferred}')
             raw_table.currently_deferred.append(deferred)
 
-        logger.debug(f"deferred {deferred.event}")
+        else:
+            logger.debug(f"re-deferring {deferred.event}")
 
     def _reemit(self, reemitted: EventReemittedLogMsg):
         # search deferred queue first to last
@@ -214,24 +234,32 @@ class Processor:
 
         for defrd in list(raw_table.currently_deferred):
             if defrd.n == reemitted.n:
-                reemitted.deferred = defrd
                 raw_table.currently_deferred.remove(defrd)
                 # we track it.
                 self.tracking[unit].append(reemitted)
                 logger.debug(f"reemitted {reemitted.event}")
                 return
 
-        raise RuntimeError(
-            f"cannot reemit {reemitted.event}({reemitted.n}); no "
-            f"matching deferred event could be found "
-            f"in the currently deferred ones: {raw_table.currently_deferred}.")
+        logger.warning(
+            f"Error reemitting {reemitted.event}({reemitted.n}); no "
+            f"matching deferred event could be found in the currently deferred ones."
+            f"This can happen if you only set logging-config to DEBUG after "
+            f"the first events got deferred.")
 
-    def __enter__(self):
-        self.live.__enter__()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.live.__exit__(exc_type, exc_val, exc_tb)
+        # if we got here we need to make up a lane for the message.
+        mock_event = EventDeferredLogMsg(
+            pod_name=reemitted.pod_name,
+            timestamp="",
+            loglevel=reemitted.loglevel,
+            unit=reemitted.unit,
+            event=reemitted.event,
+            event_cls=reemitted.event_cls,
+            charm_name=reemitted.charm_name,
+            n=reemitted.n
+        )
+        # raw_table.currently_deferred.append(mock_event)
+        free_lane = max(self._lanes.values() if self._lanes else [0]) + 1
+        self._cache_lane(reemitted.n, free_lane)
 
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         match = self.event_deferred.parse(log)
@@ -316,6 +344,7 @@ class Processor:
             self._crop()
 
         if self._show_defer and self._is_tracking(msg) and mode != 'emit':
+            logger.info(f'updating defer for {msg.event}')
             self.update_defers(msg)
 
         self.render()
@@ -327,15 +356,25 @@ class Processor:
         table = Table(show_footer=False, expand=True)
         table.add_column(header="timestamp")
         unit_grids = []
-        for target in self.targets:
-            tgt_grid = Table.grid('', '', expand=True, padding=(0, 1, 0, 1))
-            raw_table = self._raw_tables[target.unit_name]
+        ns_shown = self._show_ns
+        n_cols = 3 if ns_shown else 2
+
+        targets = self.targets
+        raw_tables = self._raw_tables
+
+        for target in targets:
+            tgt_grid = Table.grid(*(('',) * n_cols),
+                                  expand=True,
+                                  padding=(0, 1, 0, 1))
+            raw_table = raw_tables[target.unit_name]
             for event, deferral, n in zip(raw_table.events, raw_table.deferrals,
                                           raw_table.ns):
-                evt = event
-                if self._show_ns and n is not None:
-                    evt = f"({n}) {evt}"
-                tgt_grid.add_row(evt, deferral)
+                rndr = Text(event, style=_colors.get(event, _default_color))
+
+                if ns_shown:
+                    tgt_grid.add_row(n, rndr, deferral)
+                else:
+                    tgt_grid.add_row(rndr, deferral)
 
             table.add_column(header=target.unit_name)
             unit_grids.append(tgt_grid)
@@ -350,7 +389,7 @@ class Processor:
             return table
 
         table_centered = Align.center(table)
-        self.live.update(table_centered)
+        self.console.print(table_centered)
 
     def _is_tracking(self, msg):
         return msg.unit in self.tracking
@@ -372,9 +411,6 @@ class Processor:
         # all the events we presently know to be deferred
         unit = msg.unit
         raw_table = self._raw_tables[unit]
-        deferred = raw_table.currently_deferred
-
-        tail = self._vline * len(tuple(d for d in deferred if d is not msg))
 
         previous_msg_idx = None
         deferring = isinstance(msg, EventDeferredLogMsg)
@@ -402,7 +438,7 @@ class Processor:
                 try:
                     previous_msg_idx = raw_table.events.index(msg.event)
                 except StopIteration:
-                    # should really not happen
+                    # should really not happen; it means
                     logger.error(f"{msg.event} not found in raw table")
                     raise
 
@@ -514,7 +550,20 @@ class Processor:
                     self._nothing_to_report)
 
         else:
-            raw_table.deferrals[0] += tail
+            if self._has_just_emitted:
+                # we just emitted twice, without deferring or reemitting,
+                # that means we can do some cleanup.
+                while raw_table.currently_deferred:
+                    dfrd = raw_table.currently_deferred.pop()
+                    logger.debug(
+                        f'removed spurious deferred event {dfrd.event}({dfrd.n})'
+                    )
+            else:
+                tail = raw_table.deferrals[0]
+                for cdef in raw_table.currently_deferred:
+                    lane = self._get_lane(cdef.n)
+                    tail = _put(tail, lane, self._vline, self._nothing_to_report)
+                raw_table.deferrals[0] = tail
 
     def _get_lane(self, n: str):
         return self._lanes.get(n)
@@ -539,7 +588,7 @@ class Processor:
 
     def quit(self):
         """Print a goodbye message."""
-        table = Table()
+        table = Table(expand=True)
 
         table.add_column("The end.")
         evt_count = self.evt_count
@@ -554,10 +603,10 @@ class Processor:
             cdefevents = []
             for tgt in self.targets:
                 raw_table = self._raw_tables[tgt.unit_name]
-                cdefevents.append(len(raw_table.currently_deferred))
+                cdefevents.append(str(len(raw_table.currently_deferred)))
             table.add_row('currently deferred events', *cdefevents)
 
-        self.live.console.print(table)
+        self.console.print(table)
 
 
 def _get_debug_log(cmd):
@@ -622,7 +671,7 @@ def _tail_events(
         replay: bool = True,  # listen from beginning of time?
         dry_run: bool = False,
         framerate: float = .5,
-        length: int = typer.Option(10, '-n', '--length'),
+        length: int = 10,
         show_defer: bool = False,
         show_ns: bool = False,
         watch: bool = True
@@ -644,6 +693,7 @@ def _tail_events(
 
     targets = parse_targets(targets)
 
+    logger.debug('starting JDL process')
     cmd = ([JUJU_COMMAND, 'debug-log'] +
            (['--tail'] if watch else []) +
            (['--replay'] if replay else []) +
@@ -653,55 +703,55 @@ def _tail_events(
         print(' '.join(cmd))
         return
 
+    processor = Processor(
+        targets, add_new_targets,
+        history_length=length,
+        show_ns=show_ns,
+        show_defer=show_defer)
+
     try:
-        with Processor(
-                targets, add_new_targets,
-                history_length=length,
-                show_ns=show_ns,
-                show_defer=show_defer) as processor:
-            proc = _get_debug_log(cmd)
-            # when we're in replay mode we're catching up with the replayed logs
-            # so we won't limit the framerate and just flush the output
-            replay_mode = True
+        proc = _get_debug_log(cmd)
+        # when we're in replay mode we're catching up with the replayed logs
+        # so we won't limit the framerate and just flush the output
+        replay_mode = True
 
-            if not watch:
-                stdout = iter(proc.stdout.readlines())
+        if not watch:
+            stdout = iter(proc.stdout.readlines())
 
-                def next_line():
-                    try:
-                        return next(stdout)
-                    except StopIteration:
-                        return ''
+            def next_line():
+                try:
+                    return next(stdout)
+                except StopIteration:
+                    return ''
 
-            else:
-                def next_line():
-                    line = proc.stdout.readline()
-                    return line
+        else:
+            def next_line():
+                line = proc.stdout.readline()
+                return line
 
-            while True:
-                start = time.time()
+        while True:
+            start = time.time()
 
-                line = next_line()
-                if not line:
-                    if not watch:
-                        break
+            line = next_line()
+            if not line:
+                if not watch:
+                    break
 
-                    if proc.poll() is not None:
-                        # process terminated FIXME: this shouldn't happen
-                        break
+                if proc.poll() is not None:
+                    # process terminated FIXME: this shouldn't happen
+                    break
 
-                    replay_mode = False
-                    continue
+                replay_mode = False
+                continue
 
-                if line:
-                    msg = line.decode('utf-8').strip()
-                    processor.process(msg)
+            if line:
+                msg = line.decode('utf-8').strip()
+                processor.process(msg)
 
-                if not replay_mode and (
-                        elapsed := time.time() - start) < framerate:
-                    time.sleep(framerate - elapsed)
-                    print(f"sleeping {framerate - elapsed}")
-
+            if not replay_mode and (
+                    elapsed := time.time() - start) < framerate:
+                time.sleep(framerate - elapsed)
+                print(f"sleeping {framerate - elapsed}")
 
     except KeyboardInterrupt:
         print('exiting...')
@@ -725,4 +775,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=' '):
 
 
 if __name__ == '__main__':
-    tail_events(targets='traefik-k8s/0', length=10000, watch=False)
+    _tail_events(replay=True, show_defer=True)

@@ -62,6 +62,11 @@ with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-cropped.txt',
     logs = f.read()
     MOCK_JDL['cropped'] = logs
 
+with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-log-borky.txt',
+          mode='rb') as f:
+    logs = f.read()
+    MOCK_JDL['borky'] = logs
+
 
 def _fake_log_proc(n):
     proc = MagicMock()
@@ -74,6 +79,13 @@ def mock_stdout(request):
     n = request.param
     with patch("jhack.utils.tail_charms._get_debug_log",
                wraps=lambda _: _fake_log_proc(n)) as mock_status:
+        yield
+
+
+@pytest.fixture(autouse=True)
+def silence_console_prints():
+    with patch("rich.console.Console.print",
+               wraps=lambda _: None):
         yield
 
 
@@ -90,7 +102,7 @@ def mock_stdout(request):
 @pytest.mark.parametrize('length', (3, 10, 100))
 def test_tail(deferrals, length):
     _tail_events(targets='myapp/0', length=length, show_defer=deferrals,
-                watch=False)
+                 watch=False)
 
 
 @pytest.mark.parametrize('deferrals', (True, False))
@@ -100,8 +112,16 @@ def test_with_real_trfk_log(deferrals, length, show_ns):
     with patch("jhack.utils.tail_charms._get_debug_log",
                wraps=lambda _: _fake_log_proc('real')) as mock_status:
         _tail_events(targets='trfk/0', length=length,
-                    show_ns=show_ns,
-                    show_defer=deferrals, watch=False)
+                     show_ns=show_ns,
+                     show_defer=deferrals, watch=False)
+
+
+def test_with_real_trfk_log_borky():
+    with patch("jhack.utils.tail_charms._get_debug_log",
+               wraps=lambda _: _fake_log_proc('borky')) as mock_status:
+        _tail_events(targets='trfk/0', length=100,
+                     show_ns=True,
+                     show_defer=True, watch=False)
 
 
 @pytest.mark.parametrize('deferrals', (True, False))
@@ -110,7 +130,7 @@ def test_with_cropped_trfk_log(deferrals, length):
     with patch("jhack.utils.tail_charms._get_debug_log",
                wraps=lambda _: _fake_log_proc('cropped')) as mock_status:
         _tail_events(targets='trfk/0', length=length,
-                    show_defer=deferrals, watch=False)
+                     show_defer=deferrals, watch=False)
 
 
 def test_tracking():
@@ -146,6 +166,3 @@ def test_tracking():
     assert raw_table.ns == ['0', '0', None]
     assert raw_table.events == ['update_status', 'update_status', 'start']
     assert len(raw_table.currently_deferred) == 0
-
-
-

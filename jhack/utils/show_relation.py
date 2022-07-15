@@ -12,6 +12,8 @@ from jhack.config import JUJU_COMMAND
 from jhack.helpers import juju_status
 from jhack.logger import logger
 
+logger = logger.getChild(__file__)
+
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 

@@ -1,4 +1,5 @@
 #!/bin/python3
+import logging
 import os.path
 import sys
 from pathlib import Path
@@ -17,7 +18,7 @@ except ModuleNotFoundError:
 
 from jhack.charm import functional
 from jhack.charm.init import init
-from jhack.logger import logger
+from jhack.logger import logger, LOGLEVEL
 from jhack.charm.update import update
 from jhack.charm.repack import repack
 from jhack.charm.sync import sync as sync_packed_charm
@@ -77,10 +78,14 @@ def main():
     app.add_typer(utils)
 
     @app.callback()
-    def set_verbose(verbose: bool = False):
-        if verbose:
-            typer.echo("::= Verbose mode. =::")
-            logger.setLevel('INFO')
+    def set_verbose(loglevel: str = None):
+        if loglevel:
+            typer.echo(f"::= Verbose mode ({loglevel}). =::")
+            logger.setLevel(loglevel)
+            logging.basicConfig(stream=sys.stdout)
+
+    if LOGLEVEL != 'WARNING':
+        typer.echo(f"::= Verbose mode ({LOGLEVEL}). =::")
 
     app()
 
