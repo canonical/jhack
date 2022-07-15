@@ -417,14 +417,31 @@ class Processor:
                 # which we're deferring the last event we emitted.
                 # otherwise we're deferring something we've re-emitted.
                 original_cell = raw_table.deferrals[previous_msg_idx]
-                if self._vline in original_cell:
-                    tail_cell = original_cell
+
+                if previous_msg_idx == 0:
+                    # we're deferring a just-emitted event.
+                    # This means we have to generate the full cell from scratch.
+                    new_cell = self._open + self._hline
+                    for dfrd in raw_table.currently_deferred:
+                        if dfrd is msg:
+                            continue
+
+                        # iterate through the busy lanes, put a cross there,
+                        # leave a hline otherwise
+                        lane = self._get_lane(dfrd.n)
+                        if not lane:
+                            raise ValueError(f'lane not cached for {dfrd}')
+
+                        new_cell = _put(new_cell, lane, self._cross,
+                                        self._hline)
+
+                    # at the end:
+                    new_cell += self._lup
+
                 else:
-                    tail_cell = original_cell + tail
-                new_cell = tail_cell.replace(
-                    self._dpad,
-                    self._open + self._hline).replace(
-                    self._vline, self._cross) + self._lup
+                    # turn all vlines we meet into crosses, add a lup
+                    new_cell = original_cell.replace(self._vline,
+                                                     self._cross) + self._lup
 
                 raw_table.deferrals[previous_msg_idx] = new_cell
                 lane = new_cell.index(self._lup)
@@ -533,6 +550,46 @@ def tail_events(
             help="Semicolon-separated list of targets to follow. "
                  "Example: 'foo/0;foo/1;bar/2'. By default, it will follow all "
                  "available targets."),
+        add_new_targets: bool = typer.Option(
+            True, '--add', '-A',
+            help="Keep adding new units as they appear. Can't be used "
+                 "in combination with nonempty targets arg. "),
+        level: LEVELS = 'DEBUG',
+        replay: bool = typer.Option(
+            False, '--replay',
+            help='Keep listening from beginning of time.'),
+        dry_run: bool = typer.Option(
+            False,
+            help="Only print what you would have done, exit."),
+        framerate: float = typer.Option(
+            .5, help="Framerate cap."),
+        length: int = typer.Option(10, '-l', '--length',
+                                   help="Maximum history length to show."),
+        show_defer: bool = typer.Option(
+            False, '-d', '--show-defer', help='Visualize the defer graph.'),
+        show_ns: bool = typer.Option(
+            False, '-n',
+            help='Prefix deferred events with their deferral ID. '
+                 'Only applicable if show_defer=True.'),
+        watch: bool = typer.Option(
+            True, '--watch',
+            help='Keep listening.')
+):
+    return _tail_events(
+        targets=targets,
+        add_new_targets=add_new_targets,
+        level=level,
+        replay=replay,
+        dry_run=dry_run,
+        framerate=framerate,
+        length=length,
+        show_defer=show_defer,
+        watch=watch
+    )
+
+
+def _tail_events(
+        targets: str = None,
         add_new_targets: bool = True,
         level: LEVELS = 'DEBUG',
         replay: bool = True,  # listen from beginning of time?
@@ -540,6 +597,7 @@ def tail_events(
         framerate: float = .5,
         length: int = typer.Option(10, '-n', '--length'),
         show_defer: bool = False,
+        show_ns: bool = False,
         watch: bool = True
 ):
     """Pretty-print a table with the events that are fired on juju units
@@ -572,9 +630,11 @@ def tail_events(
         return
 
     try:
-        with Processor(targets, add_new_targets,
-                       history_length=length,
-                       show_defer=show_defer) as processor:
+        with Processor(
+                targets, add_new_targets,
+                history_length=length,
+                show_ns=show_ns,
+                show_defer=show_defer) as processor:
             proc = _get_debug_log(cmd)
             # when we're in replay mode we're catching up with the replayed logs
             # so we won't limit the framerate and just flush the output

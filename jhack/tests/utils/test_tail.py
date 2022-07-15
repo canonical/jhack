@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from jhack.utils.tail_charms import tail_events, Processor, Target
+from jhack.utils.tail_charms import _tail_events, Processor, Target
 
 MOCK_JDL = {
     # scenario 1: emit, defer, reemit
@@ -89,16 +89,18 @@ def mock_stdout(request):
 @pytest.mark.parametrize('deferrals', (True, False))
 @pytest.mark.parametrize('length', (3, 10, 100))
 def test_tail(deferrals, length):
-    tail_events(targets='myapp/0', length=length, show_defer=deferrals,
+    _tail_events(targets='myapp/0', length=length, show_defer=deferrals,
                 watch=False)
 
 
 @pytest.mark.parametrize('deferrals', (True, False))
 @pytest.mark.parametrize('length', (3, 10, 100))
-def test_with_real_trfk_log(deferrals, length):
+@pytest.mark.parametrize('show_ns', (True, False))
+def test_with_real_trfk_log(deferrals, length, show_ns):
     with patch("jhack.utils.tail_charms._get_debug_log",
                wraps=lambda _: _fake_log_proc('real')) as mock_status:
-        tail_events(targets='trfk/0', length=length,
+        _tail_events(targets='trfk/0', length=length,
+                    show_ns=show_ns,
                     show_defer=deferrals, watch=False)
 
 
@@ -107,7 +109,7 @@ def test_with_real_trfk_log(deferrals, length):
 def test_with_cropped_trfk_log(deferrals, length):
     with patch("jhack.utils.tail_charms._get_debug_log",
                wraps=lambda _: _fake_log_proc('cropped')) as mock_status:
-        tail_events(targets='trfk/0', length=length,
+        _tail_events(targets='trfk/0', length=length,
                     show_defer=deferrals, watch=False)
 
 
