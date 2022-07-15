@@ -1,7 +1,7 @@
 import enum
 import logging
 import time
-from collections import defaultdict
+from collections import defaultdict, Counter
 from dataclasses import dataclass, Field, field
 from subprocess import Popen, PIPE, STDOUT
 from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union
@@ -166,7 +166,7 @@ class Processor:
         self.live = Live(None, console=console,
                          screen=False, refresh_per_second=20)
 
-        self.evt_count = 0
+        self.evt_count = Counter()
         self._lanes = {}
         self.tracking: Dict[str, List[EventLogMsg]] = {tgt.unit_name: [] for tgt
                                                        in targets}
@@ -177,7 +177,7 @@ class Processor:
             self._add_new_target(evt)
 
         if evt.unit in self.tracking:  # target tracked
-            self.evt_count += 1
+            self.evt_count[evt.unit] += 1
             self.tracking[evt.unit].insert(0, evt)
             self._raw_tables[evt.unit].add(evt)
             logger.debug(f"tracking {evt.event}")
@@ -201,8 +201,6 @@ class Processor:
 
         msg = _search_in_deferred() or _search_in_tracked()
         deferred.msg = msg
-        if not isinstance(msg, EventDeferredLogMsg):
-            self.evt_count += 1
 
         if not is_already_deferred:
             raw_table.currently_deferred.append(deferred)
@@ -226,7 +224,7 @@ class Processor:
         raise RuntimeError(
             f"cannot reemit {reemitted.event}({reemitted.n}); no "
             f"matching deferred event could be found "
-            f"in {raw_table.currently_deferred}.")
+            f"in the currently deferred ones: {raw_table.currently_deferred}.")
 
     def __enter__(self):
         self.live.__enter__()
@@ -539,6 +537,28 @@ class Processor:
                 logger.info('popping a row')
                 lst.pop()  # pop first
 
+    def quit(self):
+        """Print a goodbye message."""
+        table = Table()
+
+        table.add_column("The end.")
+        evt_count = self.evt_count
+
+        nevents = []
+        for tgt in self.targets:
+            table.add_column(tgt.unit_name)
+            nevents.append(str(evt_count[tgt.unit_name]))
+        table.add_row('events emitted', *nevents)
+
+        if self._show_defer:
+            cdefevents = []
+            for tgt in self.targets:
+                raw_table = self._raw_tables[tgt.unit_name]
+                cdefevents.append(len(raw_table.currently_deferred))
+            table.add_row('currently deferred events', *cdefevents)
+
+        self.live.console.print(table)
+
 
 def _get_debug_log(cmd):
     return Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
@@ -575,6 +595,12 @@ def tail_events(
             True, '--watch',
             help='Keep listening.')
 ):
+    """Pretty-print a table with the events that are fired on juju units
+    in the current model.
+    Examples:
+        >>> jhack tail mongo-k8s/2
+        >>> jhack tail -d
+    """
     return _tail_events(
         targets=targets,
         add_new_targets=add_new_targets,
@@ -584,6 +610,7 @@ def tail_events(
         framerate=framerate,
         length=length,
         show_defer=show_defer,
+        show_ns=show_ns,
         watch=watch
     )
 
@@ -600,9 +627,6 @@ def _tail_events(
         show_ns: bool = False,
         watch: bool = True
 ):
-    """Pretty-print a table with the events that are fired on juju units
-    in the current model.
-    """
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
 
@@ -611,11 +635,11 @@ def _tail_events(
 
     track_events = True
     if level not in {LEVELS.DEBUG, LEVELS.TRACE}:
-        print(f"we won't be able to track events with level={level}")
+        logger.debug(f"we won't be able to track events with level={level}")
         track_events = False
 
     if targets and add_new_targets:
-        print('targets provided; overruling add_new_targets param.')
+        logger.debug('targets provided; overruling add_new_targets param.')
         add_new_targets = False
 
     targets = parse_targets(targets)
@@ -681,6 +705,7 @@ def _tail_events(
 
     except KeyboardInterrupt:
         print('exiting...')
+        processor.quit()
         return
 
     print(f"processed {processor.evt_count} events.")
