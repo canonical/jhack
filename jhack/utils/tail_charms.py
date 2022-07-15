@@ -2,7 +2,7 @@ import enum
 import logging
 import time
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, Field, field
 from subprocess import Popen, PIPE, STDOUT
 from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union
 
@@ -118,6 +118,19 @@ class EventReemittedLogMsg(EventLogMsg):
     deferred: EventDeferredLogMsg = None
 
 
+@dataclass
+class RawTable:
+    events: List[str] = field(default_factory=list)
+    deferrals: List[str] = field(default_factory=list)
+    ns: List[str] = field(default_factory=list)
+    currently_deferred: List[EventLogMsg] = field(default_factory=list)
+
+    def add(self, msg: Union[EventLogMsg]):
+        self.events.append(msg)
+        self.ns.append(getattr(msg, 'n', None))
+
+
+
 class Processor:
     # FIXME: why does sometime event/relation_event work, and sometimes
     #  uniter_event does? OF Version?
@@ -143,30 +156,33 @@ class Processor:
         self.add_new_targets = add_new_targets
         self.history_length = history_length
         self.console = console = Console()
-        self.table = table = Table(show_footer=False, expand=True)
-        self._unit_grids = {}
+        self._raw_tables: Dict[str, RawTable] = {
+            target.unit_name: RawTable() for target in targets}
+        self._timestamps = []
+
         self._track_deferrals = show_defer
-
-        table.add_column(header="timestamp")
-        unit_grids = []
-        for target in targets:
-            tgt_grid = Table.grid('', '', expand=True, padding=(0,1,0,1))
-            table.add_column(header=target.unit_name)
-            self._unit_grids[target.unit_name] = tgt_grid
-            unit_grids.append(tgt_grid)
-
-        self._timestamps_grid = Table.grid('', expand=True)
-        table.add_row(self._timestamps_grid, *unit_grids)
-
-        self.table_centered = table_centered = Align.center(table)
-        self.live = Live(table_centered, console=console,
+        self.live = Live(None, console=console,
                          screen=False, refresh_per_second=20)
 
         self.evt_count = 0
         self._lanes = {}
         self.tracking: Dict[str, List[EventLogMsg]] = {tgt.unit_name: [] for tgt
                                                        in targets}
-        self._deferred: Dict[str, List[EventDeferredLogMsg]] = defaultdict(list)
+        self.render()
+
+    def render(self):
+        table = Table(show_footer=False, expand=True)
+        table.add_column(header="timestamp")
+        unit_grids = []
+        for target in self.targets:
+            tgt_grid = Table.grid('', '', expand=True, padding=(0, 1, 0, 1))
+            table.add_column(header=target.unit_name)
+            unit_grids.append(tgt_grid)
+
+        _timestamps_grid = Table.grid('', expand=True)
+        table.add_row(_timestamps_grid, *unit_grids)
+        table_centered = Align.center(table)
+        self.live.update(table_centered)
 
     def _track(self, evt: EventLogMsg):
         if self.add_new_targets and evt.unit not in self.tracking:
@@ -180,7 +196,7 @@ class Processor:
     def _defer(self, deferred: EventDeferredLogMsg):
         # find the original message we're deferring
         def _search_in_deferred():
-            for dfrd in self._deferred[deferred.unit]:
+            for dfrd in self._raw_tables[deferred.unit].currently_deferred:
                 if dfrd.n == deferred.n:
                     # not the first time we defer this boy
                     return dfrd.msg
@@ -195,16 +211,16 @@ class Processor:
         if not isinstance(msg, EventDeferredLogMsg):
             self.evt_count += 1
 
-        self._deferred[deferred.unit].append(deferred)
+        self._raw_tables[deferred.unit].currently_deferred.append(deferred)
         logger.debug(f"deferred {deferred.event}")
 
     def _reemit(self, reemitted: EventReemittedLogMsg):
         # search deferred queue first to last
         unit = reemitted.unit
-        for defrd in list(self._deferred[unit]):
+        for defrd in list(self._raw_tables[unit].currently_deferred):
             if defrd.n == reemitted.n:
                 reemitted.deferred = defrd
-                self._deferred[unit].remove(defrd)
+                self._raw_tables[unit].currently_deferred.remove(defrd)
                 # we track it.
                 self.tracking[unit].append(reemitted)
                 logger.debug(f"reemitted {reemitted.event}")
@@ -213,7 +229,7 @@ class Processor:
         raise RuntimeError(
             f"cannot reemit {reemitted.event}({reemitted.n}); no "
             f"matching deferred event could be found "
-            f"in {self._deferred[unit]}.")
+            f"in {self._raw_tables[unit].currently_deferred}.")
 
     def __enter__(self):
         self.live.__enter__()
@@ -274,11 +290,7 @@ class Processor:
 
         self.tracking[msg.unit] = []
         self.targets.append(new_target)
-        self.table.add_column(header=new_target.unit_name)
-        grid = Table.grid('', expand=True)
-
-        self._unit_grids[new_target.unit_name] = grid
-        self._get_cells(self.table, 1).append(grid)
+        self._raw_tables[new_target.unit_name] = RawTable()
 
     def process(self, log: str):
         """process a log line"""
@@ -329,34 +341,30 @@ class Processor:
     def update(self, msg: EventLogMsg):
         # all the events we presently know to be deferred
         unit = msg.unit
-        grid = self._unit_grids[unit]
-        deferred = self._deferred[unit]
-        reemitting = isinstance(msg, EventReemittedLogMsg)
+        raw_table = self._raw_tables[unit]
+        deferred = raw_table.currently_deferred
 
         tail = self._vline * len(tuple(d for d in deferred if d is not msg))
 
         if isinstance(msg, EventDeferredLogMsg):
-            previous_msg_idx = None
             try:
-                previous_msg_idx = next(
-                    filter(
-                        lambda s: s[1].startswith(f"({msg.n})"),
-                        enumerate(self._get_cells(grid, 0)))
-                )[0]
+                previous_msg_idx = raw_table.ns.index(msg.n)
             except StopIteration:
-                pass
+                previous_msg_idx = None
 
             if previous_msg_idx == None:
-                previous_msg_idx = next(
-                    filter(
-                        lambda s: s[1] == msg.event,
-                        enumerate(self._get_cells(grid, 0)))
-                )[0]
+                try:
+                    previous_msg_idx = raw_table.events.index(msg.event)
+                except StopIteration:
+                    # should really not happen
+                    logger.error(f"{msg.event} not found in raw table")
+                    raise
+
                 # if previous_msg_idx == 0, that's the case in
                 # which we're deferring the last event we emitted.
                 # otherwise we're deferring something we've re-emitted.
-                self._get_cells(grid, 0)[previous_msg_idx] = f"({msg.n}) {msg.event}"
-                original_cell = self._get_cells(grid, 1)[previous_msg_idx]
+                raw_table.ns[previous_msg_idx] = msg.n
+                original_cell = raw_table.deferrals[previous_msg_idx]
                 if self._vline in original_cell:
                     tail_cell = original_cell
                 else:
@@ -365,87 +373,84 @@ class Processor:
                     self._dpad,
                     self._open + self._hline).replace(
                     self._vline, self._cross) + self._lup
-                self._get_cells(grid, 1)[previous_msg_idx] = new_cell
+
+                raw_table.deferrals[previous_msg_idx] = new_cell
                 lane = new_cell.index(self._lup)
 
             else:
                 # not the first time we defer you, boy
-                original_cell = self._get_cells(grid, 1)[previous_msg_idx]
+                original_cell = raw_table.deferrals[previous_msg_idx]
                 new_cell = original_cell.replace(
                     self._close + self._hline, self._pad + self._bounce
                 ).replace(self._ldown, self._lupdown) + tail
-                self._get_cells(grid, 1)[previous_msg_idx] = new_cell
+                raw_table.deferrals[previous_msg_idx] = new_cell
                 lane = new_cell.index(self._lupdown)
 
             self._cache_lane(msg.n, lane)
 
         elif isinstance(msg, EventReemittedLogMsg):
-            previous_reemit = None
             try:
-                previous_reemit = next(
-                    filter(
-                        lambda s: s[1].startswith(f"({msg.n})"),
-                        enumerate(self._get_cells(grid, 0)[1:]))
-                )[0] + 1
+                previous_msg_idx = raw_table.ns.index(msg.n)
             except StopIteration:
+                previous_msg_idx = None
                 # message must have been cropped away
                 logger.debug(f'unable to grab fetch previous reemit, '
                              f'msg {msg.n} must be out of scope')
 
             cell = None
-            if previous_reemit is not None:
-                previous_cell = self._get_cells(grid, 1)[previous_reemit]
+            if previous_msg_idx is not None:
+                original_cell = raw_table.deferrals[previous_msg_idx]
 
                 # reopen previous reemittal if it's closed
-                cell = previous_cell.replace(
+                new_cell = original_cell.replace(
                     self._close + self._hline,
                     self._pad + self._bounce
                 ).replace(
                     self._ldown, self._lupdown)
-                self._get_cells(grid, 1)[previous_reemit] = cell
+                raw_table.deferrals[previous_msg_idx] = new_cell
 
             # now we look at the newly added cell and add a closure statement.
-            new_cell = self._get_cells(grid, 1)[0]
-            new_cell = new_cell.replace(
+            current_cell = raw_table.deferrals[0]
+            current_cell_new = current_cell.replace(
                 self._dpad, self._close + self._hline)
-            new_cell += tail
+            current_cell_new += tail
 
             lane = self._get_lane(msg.n)
             if not lane:
-                if cell is None:
+                if current_cell_new is None:
                     raise RuntimeError(f'lane not cached for {msg.n}, and '
                                        f'message is out of scope. '
                                        f'Unable to proceed.')
 
-                if self._lup in cell:
-                    lane = cell.index(self._lup)
+                if self._lup in current_cell_new:
+                    lane = current_cell_new.index(self._lup)
                 else:
-                    lane = cell.index(self._lupdown)
+                    lane = current_cell_new.index(self._lupdown)
                 self._cache_lane(msg.n, lane)
 
-            closed_cell = _put(new_cell, lane, self._ldown, self._hline)
+            closed_cell = _put(current_cell_new, lane, self._ldown, self._hline)
             final_cell = list(closed_cell)
             for ln in range(lane):
                 if final_cell[ln] == self._vline:
                     final_cell[ln] = self._cross
-            self._get_cells(grid, 1)[0] = ''.join(final_cell)
+            raw_table.deferrals[0] = ''.join(final_cell)
 
-            if previous_reemit is not None:
-                rng = range(1, previous_reemit)
+            if previous_msg_idx is not None:
+                rng = range(1, previous_msg_idx)
             else:
                 # until the end of the visible table
-                rng = range(1, len(grid.columns[1]._cells))
+                rng = range(1, len(raw_table.deferrals))
 
             for ln in rng:
-                grid.columns[1]._cells[ln] = _put(
-                    grid.columns[1]._cells[ln], lane,
+                raw_table.deferrals[ln] = _put(
+                    raw_table.deferrals[ln], lane,
                     {None: self._vline,
                      self._hline: self._cross,
                      self._ldown: self._lupdown},
                     self._nothing_to_report)
 
         else:
-            grid.columns[1]._cells[0] += tail
+            raw_table.deferrals[0] += tail
 
     def _get_lane(self, n: str):
         return self._lanes.get(n)
@@ -454,38 +459,32 @@ class Processor:
         self._lanes[n] = lane
 
     def display(self, msg: EventLogMsg, reemitted: bool = False):
-        unit_grid = self._unit_grids[msg.unit]
-        n = f"({msg.n}) " if reemitted else ""
-        unit_grid.add_row(f"{n}{msg.event}", '  ')
-        # move last to first, because we can't add row to the top
-        self._rotate(unit_grid, 0)
-        self._rotate(unit_grid, 1)
+        raw_table = self._raw_tables[msg.unit]
+        raw_table.deferrals.append(self._dpad)
+        raw_table.events.append(msg.event)
+        raw_table.ns.append(msg.n if reemitted else None)
+        self._timestamps.append(msg.timestamp)
 
-        self._add_timestamp(msg)
         self._crop()
 
     def _rotate(self, table: Table, column: int):
-        cells = self._get_cells(table, column)
+        cells = table.columns[column]._cells  # noqa
         cells.insert(0, cells.pop())
-
-    @staticmethod
-    def _get_cells(table: Table, column: int) -> List[str]:
-        return table.columns[column]._cells  # noqa
-
-    def _add_timestamp(self, msg: EventLogMsg):
-        timestamps = self._timestamps_grid
-        timestamps.add_row(msg.timestamp)
-        # move last to first, because we can't add row to the top
-        self._rotate(timestamps, 0)
 
     def _crop(self):
         # crop all:
-        for table in (self._timestamps_grid, *self._unit_grids.values()):
-            if len(table.rows) > self.history_length:
-                logger.info('popping a row...')
-                for column in range(len(table.columns)):
-                    self._get_cells(table, column).pop()  # pop last
-                table.rows.pop()  # pop last
+        if len(self._timestamps) <= self.history_length:
+            # nothing to do.
+            return
+
+        lst: List
+        for lst in (self._timestamps,
+                    *(raw.deferrals for raw in self._raw_tables.values()),
+                    *(raw.events for raw in self._raw_tables.values()),
+                    *(raw.ns for raw in self._raw_tables.values())):
+            if len(lst) > self.history_length:
+                logger.info('popping a row')
+                lst.pop(0)  # pop first
 
 
 def _get_debug_log(cmd):
