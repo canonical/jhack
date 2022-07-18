@@ -448,6 +448,8 @@ class Processor:
             for evt in raw_table.currently_deferred:
                 tail = _put(tail, self._get_lane(evt.n), self._vline,
                             self._nothing_to_report)
+                tail = self._dpad + tail[2:]
+
             raw_table.deferrals[0] = tail
 
     def _get_event_color(self, event: str) -> Color:
@@ -714,6 +716,7 @@ class Processor:
                     lane = self._get_lane(cdef.n)
                     tail = _put(tail, lane, self._vline,
                                 self._nothing_to_report)
+                    tail = self._dpad + tail[2:]
                 raw_table.deferrals[0] = tail
 
             self._has_just_emitted = True
