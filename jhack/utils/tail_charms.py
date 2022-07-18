@@ -96,6 +96,8 @@ class LEVELS(enum.Enum):
 
 @dataclass
 class EventLogMsg:
+    type = 'emitted'
+
     pod_name: str
     timestamp: str
     loglevel: str
@@ -111,6 +113,7 @@ class EventLogMsg:
 
 @dataclass
 class EventDeferredLogMsg(EventLogMsg):
+    type = 'deferred'
     event_cls: str = ""
     charm_name: str = ""
     n: str = ""
@@ -118,7 +121,7 @@ class EventDeferredLogMsg(EventLogMsg):
 
 @dataclass
 class EventReemittedLogMsg(EventDeferredLogMsg):
-    pass
+    type = 'reemitted'
 
 
 @dataclass
@@ -526,8 +529,8 @@ class Processor:
         raw_table = self._raw_tables[unit]
 
         previous_msg_idx = None
-        deferring = isinstance(msg, EventDeferredLogMsg)
-        reemitting = isinstance(msg, EventReemittedLogMsg)
+        deferring = msg.type == 'deferred'
+        reemitting = msg.type == 'reemitted'
         if deferring or reemitting:
             if deferring:
                 # if we're deferring, we're not adding a new logline so we can
@@ -922,7 +925,6 @@ def _tail_events(
                 time.sleep(framerate - elapsed)
 
     except KeyboardInterrupt:
-        print('exiting...')
         processor.quit()
         return
 

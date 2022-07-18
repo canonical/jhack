@@ -116,14 +116,6 @@ def test_with_real_trfk_log(deferrals, length, show_ns):
                      show_defer=deferrals, watch=False)
 
 
-def test_with_real_trfk_log_borky():
-    with patch("jhack.utils.tail_charms._get_debug_log",
-               wraps=lambda _: _fake_log_proc('borky')) as mock_status:
-        _tail_events(targets='trfk/0', length=100,
-                     show_ns=True,
-                     show_defer=True, watch=False)
-
-
 @pytest.mark.parametrize('deferrals', (True, False))
 @pytest.mark.parametrize('length', (3, 10, 100))
 def test_with_cropped_trfk_log(deferrals, length):
