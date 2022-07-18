@@ -519,7 +519,7 @@ class Processor:
     _cross = "┼"
     _lup = "┘"
     _lupdown = "┤"
-    _bounce = "⭘"
+    _bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
     _ldown = "┐"
     _hline = "─"
     _close = "❮"
