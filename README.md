@@ -69,31 +69,86 @@ Will pprint the last N in a nice format. Keeps listening and updates in the
 background as new units are added.
 
 ```
-┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ timestamp ┃ prometheus-k8s/0             ┃ traefik-k8s/0                ┃ prometheus-k8s/1             ┃
-┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ 13:37:15  │                              │                              │ ingress-relation-changed     │
-│ 13:37:14  │                              │                              │ ingress-relation-joined      │
-│ 13:37:14  │                              │                              │ ingress-relation-changed     │
-│ 13:37:13  │                              │                              │ prometheus-peers-relation-c… │
-│ 13:37:12  │                              │                              │ prometheus-peers-relation-j… │
-│ 13:37:12  │                              │                              │ prometheus-pebble-ready      │
-│ 13:37:11  │                              │                              │ start                        │
-│ 13:37:10  │                              │                              │ config-changed               │
-│ 13:37:09  │ ingress-relation-changed     │                              │                              │
-│ 13:37:09  │                              │                              │ database-storage-attached    │
-│ 13:37:09  │                              │ ingress-per-unit-relation-c… │                              │
-│ 13:37:08  │                              │                              │ leader-settings-changed      │
-│ 13:37:08  │                              │ ingress-per-unit-relation-c… │                              │
-│ 13:37:08  │ prometheus-peers-relation-c… │                              │                              │
-│ 13:37:08  │                              │                              │ ingress-relation-created     │
-│ 13:37:07  │                              │ ingress-per-unit-relation-j… │                              │
-│ 13:37:07  │ prometheus-peers-relation-j… │                              │                              │
-│ 13:37:07  │                              │                              │ prometheus-peers-relation-c… │
-│ 13:37:06  │                              │                              │ install                      │
-└───────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ timestamp ┃ traefik-k8s/0                ┃ prometheus-k8s/1             ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 13:37:15  │                              │ ingress-relation-changed     │
+│ 13:37:14  │                              │ ingress-relation-joined      │
+│ 13:37:14  │                              │ ingress-relation-changed     │
+│ 13:37:13  │                              │ prometheus-peers-relation-c… │
+│ 13:37:12  │                              │ prometheus-peers-relation-j… │
+│ 13:37:12  │                              │ prometheus-pebble-ready      │
+│ 13:37:11  │                              │ start                        │
+│ 13:37:10  │                              │ config-changed               │
+│ 13:37:09  │                              │                              │
+│ 13:37:09  │                              │ database-storage-attached    │
+│ 13:37:09  │ ingress-per-unit-relation-c… │                              │
+│ 13:37:08  │                              │ leader-settings-changed      │
+│ 13:37:08  │ ingress-per-unit-relation-c… │                              │
+│ 13:37:08  │                              │                              │
+│ 13:37:08  │                              │ ingress-relation-created     │
+│ 13:37:07  │ ingress-per-unit-relation-j… │                              │
+│ 13:37:07  │                              │                              │
+│ 13:37:07  │                              │ prometheus-peers-relation-c… │
+│ 13:37:06  │                              │ install                      │
+└───────────┴──────────────────────────────┴──────────────────────────────┘
 ```
 
+### There's more!
+You can use `tail` to visualize deferrals in `ops`.
+
+If you pass the `-d` flag, short for `--show-defer`, whenever an event is deferred, reemitted, or re-deferred, you'll be able to follow it right along the tail.
+You might see then something like:
+```text
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ timestamp                ┃ trfk/0                                ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 14:02:53                 │                                     │ │
+│ 14:01:36                 │ event_3                           ❯─┘ │
+│ 13:56:49                 │ ingress_per_unit_relation_changed     │
+│ 13:56:47                 │ ingress_per_unit_relation_changed     │
+│ 13:56:47                 │ ingress_per_unit_relation_changed     │
+│ 13:56:46                 │ ingress_per_unit_relation_joined      │
+│ 13:56:46                 │ event_3                           ❮─┐ │
+│ 13:56:46                 │ ingress_per_unit_relation_created   │ │  
+│ 13:46:30                 │ event_3                            ⭘┤ │
+│ 13:41:51                 │ event_3                           ❯─┘ │
+│ 13:41:51                 │ event_2                           ❮─┐ │
+│ 13:36:50                 │ event_2                           ❯─┘ │
+│ 13:36:50                 │ event_1                           ❮─┐ │
+│ 13:31:29                 │ event_1                           ❯─┘ │
+                            
+                            [...]
+```
+
+The little circle is `event-3` getting re-emitted and immediately re-deferred!
+
+The graph can get nice and messy if multiple events get deferred in an interleaved fashion, enabling you to *see* what's going on. Which is nice.
+
+```text
+update_status ❮──────┐ 
+update_status   .....│ 
+update_status  ⭘─────┤ 
+update_status   .....│ 
+update_status  ⭘─────┤ 
+update_status ❮─────┐│ 
+update_status ❯─────┼┘ 
+update_status  ⭘────┤  
+update_status ❮────┐│  
+update_status ❯────┼┘  
+update_status ❮────┼┐  
+update_status  ⭘───┤│  
+update_status ❯────┼┘  
+update_status  ⭘───┤   
+update_status ❮───┐│   
+update_status ❮──┐││   
+update_status ❯──┼┼┘   
+update_status  ⭘─┼┤    
+update_status  ⭘─┤│    
+update_status ❯──┼┘    
+```
+
+And did I mention that there's **colors**?
 
 ## show-relation 
 
