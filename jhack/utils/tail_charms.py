@@ -332,13 +332,18 @@ class Processor:
         self.tracking[unit].append(reemitted)
         logger.debug(f"reemitted {reemitted.event}")
 
+    def _uniform_event(self, event: str):
+        return event.replace('-', '_')
+
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         if "Deferring" not in log:
             return
         match = self.event_deferred.parse(
             log) or self.event_deferred_from_relation.parse(log)
         if match:
-            return EventDeferredLogMsg(**match.named, mocked=False)
+            params = match.named
+            params['event'] = self._uniform_event(params['event'])
+            return EventDeferredLogMsg(**params, mocked=False)
 
     def _match_event_reemitted(self, log: str) -> Optional[
         EventReemittedLogMsg]:
@@ -347,7 +352,9 @@ class Processor:
         match = self.event_reemitted.parse(
             log) or self.event_reemitted_from_relation.parse(log)
         if match:
-            return EventReemittedLogMsg(**match.named, mocked=False)
+            params = match.named
+            params['event'] = self._uniform_event(params['event'])
+            return EventReemittedLogMsg(**params, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
         # log format =

@@ -61,11 +61,11 @@ with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-cropped.txt',
           mode='rb') as f:
     logs = f.read()
     MOCK_JDL['cropped'] = logs
-
-with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-log-borky.txt',
-          mode='rb') as f:
-    logs = f.read()
-    MOCK_JDL['borky'] = logs
+#
+# with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-log-borky.txt',
+#           mode='rb') as f:
+#     logs = f.read()
+#     MOCK_JDL['borky'] = logs
 
 
 def _fake_log_proc(n):
