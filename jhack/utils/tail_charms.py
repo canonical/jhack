@@ -519,9 +519,11 @@ class Processor:
     _cross = "┼"
     _lup = "┘"
     _lupdown = "┤"
-    _bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
     _ldown = "┐"
     _hline = "─"
+
+    # todo: should we have a "console compatibility mode" using ascii here?
+    _bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
     _close = "❮"
     _open = "❯"
 
