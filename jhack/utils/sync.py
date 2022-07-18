@@ -11,6 +11,8 @@ from juju import jasyncio
 from jhack.config import JUJU_COMMAND
 from jhack.logger import logger
 
+logger = logger.getChild(__file__)
+
 
 def watch(paths, on_change: typing.Callable,
           extensions: typing.Iterable[str] = (),

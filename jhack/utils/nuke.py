@@ -10,6 +10,8 @@ from jhack.config import JUJU_COMMAND
 from jhack.helpers import juju_status, juju_models, current_model, list_models
 from jhack.logger import logger
 
+logger = logger.getChild(__file__)
+
 
 @dataclass
 class Endpoints:
@@ -228,7 +230,7 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
         print("✞ RIP ✞")
 
 
-def nuke(what: List[str] = typer.Argument(..., help="What to ⚛."),
+def nuke(what: List[str] = typer.Argument(None, help="What to ⚛."),
          model: Optional[str] = typer.Option(
              None, '-m', '--model',
              help='The model. Defaults to current model.'),
