@@ -592,6 +592,11 @@ class Processor:
             else:
                 # not the first time we defer you, boy
                 original_cell = raw_table.deferrals[previous_msg_idx]
+                if self._close + self._hline not in original_cell:
+                    raise ValueError(
+                        f'Expected closure not found in original cell: '
+                        f'{original_cell}; something wrong processing {msg}')
+
                 new_cell = original_cell.replace(
                     self._close + self._hline,
                     self._pad + self._bounce
