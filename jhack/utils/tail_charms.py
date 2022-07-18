@@ -774,6 +774,7 @@ class Processor:
         table_centered = Align.center(table)
         self.live.update(table_centered)
         self.live.refresh()
+        self.live.stop()
 
 
 def _get_debug_log(cmd):
