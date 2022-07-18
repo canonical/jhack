@@ -1,5 +1,6 @@
 import enum
 import os
+import random
 import sys
 import time
 from collections import defaultdict, Counter
@@ -10,8 +11,10 @@ from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union, cast
 import parse
 import typer
 from rich.align import Align
+from rich.color import Color
 from rich.console import Console, Group
 from rich.live import Live
+from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
@@ -99,25 +102,23 @@ class EventLogMsg:
     unit: str
     event: str
     mocked: bool
-    # relation: str = None
-    # relation_id: str = None
+
+    # we don't have any use for these, and they're only present if this event
+    # has been (re)emitted/deferred during a relation hook call.
+    endpoint: str = ""
+    endpoint_id: str = ""
 
 
 @dataclass
 class EventDeferredLogMsg(EventLogMsg):
-    event_cls: str
-    charm_name: str
-    n: str
-
-    # the original event we're deferring or re-deferring
-    msg: EventLogMsg = None
+    event_cls: str = ""
+    charm_name: str = ""
+    n: str = ""
 
 
 @dataclass
-class EventReemittedLogMsg(EventLogMsg):
-    event_cls: str
-    charm_name: str
-    n: str
+class EventReemittedLogMsg(EventDeferredLogMsg):
+    pass
 
 
 @dataclass
@@ -125,32 +126,55 @@ class RawTable:
     events: List[str] = field(default_factory=list)
     deferrals: List[str] = field(default_factory=list)
     ns: List[str] = field(default_factory=list)
+    n_colors: Dict[str, str] = field(default_factory=dict)
     currently_deferred: List[EventDeferredLogMsg] = field(default_factory=list)
+
+    def get_color(self, n: str) -> str:
+        return self.n_colors.get(n, _default_n_color)
 
     def add(self, msg: Union[EventLogMsg]):
         self.events.insert(0, msg.event)
         self.deferrals.insert(0, '  ')
-        self.ns.insert(0, getattr(msg, 'n', None))
+        n = getattr(msg, 'n', None)
+        self.ns.insert(0, n)
+        if n and n not in self.n_colors:
+            self.n_colors[n] = _random_color()
+
+    def add_blank_row(self):
+        self.ns.insert(0, None)
+        self.events.insert(0, None)
+        self.deferrals.insert(0, '  ')
 
 
-_colors = {
-    'leader_elected': "26, 184, 68",
-    'leader_settings_changed': "26, 184, 68",
-    '-relation-joined': "184, 26, 158",
-    '-relation-departed': "184, 26, 158",
-    '-relation-changed': "184, 26, 158",
-    '-relation-created': "184, 26, 158",
-    '-relation-broken': "184, 26, 158",
-    '-storage-attached': "184, 139, 26",
-    '-storage-detaching': "184, 139, 26",
-    'stop': "184, 26, 71",
-    'remove': "171, 81, 21",
-    'start': "20, 147, 186",
-    'install': "49, 183, 224",
-    '-pebble-ready': "212, 224, 49"
+_event_colors = {
+    'update_status': Color.from_rgb(50, 50, 50),
+    'collect_metrics': Color.from_rgb(50, 50, 50),
+    'leader_elected': Color.from_rgb(26, 184, 68),
+    'leader_settings_changed': Color.from_rgb(26, 184, 68),
+    '_relation_created': Color.from_rgb(184, 26, 250),
+    '_relation_joined': Color.from_rgb(184, 26, 200),
+    '_relation_changed': Color.from_rgb(184, 26, 150),
+    '_relation_departed': Color.from_rgb(184, 70, 100),
+    '_relation_broken': Color.from_rgb(184, 80, 50),
+    '_storage_attached': Color.from_rgb(184, 139, 26),
+    '_storage_detaching': Color.from_rgb(184, 139, 26),
+    'stop': Color.from_rgb(184, 26, 71),
+    'remove': Color.from_rgb(171, 81, 21),
+    'start': Color.from_rgb(20, 147, 186),
+    'install': Color.from_rgb(49, 183, 224),
+    '-pebble-ready': Color.from_rgb(212, 224, 40),
 }
 
-_default_color = ''
+_default_event_color = Color.from_rgb(255, 255, 255)
+_default_n_color = Color.from_rgb(255, 255, 255)
+_tstamp_color = Color.from_rgb(255, 160, 120)
+
+
+def _random_color():
+    r = random.randint(0, 255)
+    g = random.randint(0, 255)
+    b = random.randint(0, 255)
+    return Color.from_rgb(r, g, b)
 
 
 class Processor:
@@ -158,23 +182,31 @@ class Processor:
     #  uniter_event does? OF Version?
     event = parse.compile(
         "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-    relation_event = parse.compile(
-        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {relation}:{relation_id}: Emitting Juju event {event}.")
+    event_from_relation = parse.compile(
+        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
     uniter_event = parse.compile(
         '{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
-    # Deferring <UpdateStatusEvent via TraefikIngressCharm/on/bork[247]>.
     event_deferred = parse.compile(
         '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-    # unit-traefik-k8s-0: 12:16:47 DEBUG unit.traefik-k8s/0.juju-log Re-emitting <UpdateStatusEvent via TraefikIngressCharm/on/update_status[130]>.
+    event_deferred_from_relation = parse.compile(
+        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
     event_reemitted = parse.compile(
         '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
+    )
+    event_reemitted_from_relation = parse.compile(
+        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
     )
 
     def __init__(self, targets: Iterable[Target],
                  add_new_targets: bool = True,
                  history_length: int = 10,
                  show_ns: bool = True,
+                 color: bool = True,
                  show_defer: bool = False):
+        if not color:
+            # maybe implement it some day.
+            logger.debug('Sorry, but colors are too pretty to get rid of.')
+
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
         self.history_length = history_length
@@ -202,7 +234,7 @@ class Processor:
         if self._warned_about_orphans:
             return
         logger.warning(
-            f"Error processing {evt.event}({getattr(evt,'n', '?')}); no "
+            f"Error processing {evt.event}({getattr(evt, 'n', '?')}); no "
             f"matching deferred event could be found in the currently "
             f"deferred/previously emitted ones. This can happen if you only set "
             f"logging-config to DEBUG after the first events got deferred, "
@@ -241,21 +273,11 @@ class Processor:
 
         is_already_deferred = False
 
-        def _search_in_deferred():
-            for dfrd in raw_table.currently_deferred:
-                if dfrd.n == deferred.n:
-                    # not the first time we defer this boy
-                    nonlocal is_already_deferred
-                    is_already_deferred = True
-                    return dfrd.msg
-
-        def _search_in_tracked():
-            for _msg in self.tracking.get(deferred.unit, ()):
-                if _msg.event == deferred.event:
-                    return _msg
-
-        msg = _search_in_deferred() or _search_in_tracked()
-        deferred.msg = msg
+        for dfrd in raw_table.currently_deferred:
+            if dfrd.n == deferred.n:
+                # not the first time we defer this boy
+                is_already_deferred = True
+                return dfrd.msg
 
         if not is_already_deferred:
             logger.debug(f'deferring {deferred}')
@@ -304,7 +326,6 @@ class Processor:
             # free_lane = max(self._lanes.values() if self._lanes else [0]) + 1
             # self._cache_lane(reemitted.n, free_lane)
 
-
         raw_table.currently_deferred.remove(deferred)
 
         # start tracking the reemitted event.
@@ -312,13 +333,19 @@ class Processor:
         logger.debug(f"reemitted {reemitted.event}")
 
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
-        match = self.event_deferred.parse(log)
+        if "Deferring" not in log:
+            return
+        match = self.event_deferred.parse(
+            log) or self.event_deferred_from_relation.parse(log)
         if match:
             return EventDeferredLogMsg(**match.named, mocked=False)
 
     def _match_event_reemitted(self, log: str) -> Optional[
         EventReemittedLogMsg]:
-        match = self.event_reemitted.parse(log)
+        if "Re-emitting" not in log:
+            return
+        match = self.event_reemitted.parse(
+            log) or self.event_reemitted_from_relation.parse(log)
         if match:
             return EventReemittedLogMsg(**match.named, mocked=False)
 
@@ -331,12 +358,9 @@ class Processor:
 
         # search for relation events
         if not match:
-            match = self.relation_event.parse(log)
+            match = self.event_from_relation.parse(log)
             if match:
                 params = match.named
-                # we don't have any use for those (yet?).
-                del params['relation']
-                del params['relation_id']
 
         # attempt to match in another format ?
         if not match:
@@ -391,6 +415,9 @@ class Processor:
 
         if mode in {'reemit', 'emit'}:
             self._timestamps.insert(0, msg.timestamp)
+            # we need to update all *other* tables as well, to insert a
+            # blank line where this event would appear
+            self._extend_other_tables(msg)
             self._crop()
 
         if self._show_defer and self._is_tracking(msg):
@@ -399,12 +426,35 @@ class Processor:
 
         self.render()
 
+    def _extend_other_tables(self, msg: EventLogMsg):
+        raw_tables = self._raw_tables
+        for unit, raw_table in raw_tables.items():
+            if unit == msg.unit:
+                # this raw_table: skip
+                continue
+
+            raw_table.add_blank_row()
+            tail = ''
+            for evt in raw_table.currently_deferred:
+                tail = _put(tail, self._get_lane(evt.n), self._vline,
+                            self._nothing_to_report)
+            raw_table.deferrals[0] = tail
+
+    def _get_event_color(self, event: str) -> Color:
+        if event in _event_colors:
+            return _event_colors.get(event, _default_event_color)
+        else:
+            for _e in _event_colors:
+                if event.endswith(_e):
+                    return _event_colors[_e]
+        return _default_event_color
+
     def render(self, _debug=False) -> Align:
         # we're rendering the table and flipping it every time. more efficient
         # to add new rows to the top and keep old ones, but how do we know if
         # deferral lines have changed?
         table = Table(show_footer=False, expand=True)
-        table.add_column(header="timestamp")
+        table.add_column(header="timestamp", style='')
         unit_grids = []
         ns_shown = self._show_ns
         n_cols = 3 if ns_shown else 2
@@ -419,19 +469,21 @@ class Processor:
             raw_table = raw_tables[target.unit_name]
             for event, deferral, n in zip(raw_table.events, raw_table.deferrals,
                                           raw_table.ns):
-                rndr = Text(event, style=_colors.get(event, _default_color))
-
+                rndr = Text(event, style=Style(
+                    color=self._get_event_color(event))) if event else ""
                 if ns_shown:
-                    tgt_grid.add_row(n, rndr, deferral)
+                    n_rndr = Text(n, style=Style(
+                        color=raw_table.get_color(n))) if n else ""
+                    tgt_grid.add_row(n_rndr, rndr, deferral)
                 else:
                     tgt_grid.add_row(rndr, deferral)
 
-            table.add_column(header=target.unit_name)
+            table.add_column(header=target.unit_name, style='')
             unit_grids.append(tgt_grid)
 
         _timestamps_grid = Table.grid('', expand=True)
         for tstamp in self._timestamps:
-            _timestamps_grid.add_row(tstamp)
+            _timestamps_grid.add_row(tstamp, style=Style(color=_tstamp_color))
 
         table.add_row(_timestamps_grid, *unit_grids)
         if _debug:
@@ -552,14 +604,15 @@ class Processor:
                     if _msg is msg:
                         continue
                     busy_lane = self._get_lane(_msg.n)
-                    new_cell = _put(new_cell, busy_lane, self._cross, self._nothing_to_report)
+                    new_cell = _put(new_cell, busy_lane, self._cross,
+                                    self._nothing_to_report)
 
                 raw_table.deferrals[previous_msg_idx] = new_cell
                 try:
                     lane = new_cell.index(self._lupdown)
                 except ValueError:
                     logger.error(
-                        f'Failed looking up lane by idnexing lupdown in {new_cell}'
+                        f'Failed looking up lane by indexing lupdown in {new_cell}'
                         f'something wrong with {raw_table}'
                     )
                     raise
@@ -612,8 +665,9 @@ class Processor:
                 for idx in range(2, lane):
                     previous_reemittal_cell = _put(previous_reemittal_cell, idx,
                                                    {self._cross: self._cross,
-                                                       self._vline: self._cross,
-                                                    None: self._hline}, self._hline)
+                                                    self._vline: self._cross,
+                                                    None: self._hline},
+                                                   self._hline)
 
                 raw_table.deferrals[previous_msg_idx] = previous_reemittal_cell
                 rng = range(1, previous_msg_idx)
@@ -643,7 +697,8 @@ class Processor:
                 tail = raw_table.deferrals[0]
                 for cdef in raw_table.currently_deferred:
                     lane = self._get_lane(cdef.n)
-                    tail = _put(tail, lane, self._vline, self._nothing_to_report)
+                    tail = _put(tail, lane, self._vline,
+                                self._nothing_to_report)
                 raw_table.deferrals[0] = tail
 
             self._has_just_emitted = True
@@ -652,6 +707,7 @@ class Processor:
         self._has_just_emitted = False
 
     def _get_lane(self, n: str):
+        # todo: check that N is unique across units, else this will get messy
         return self._lanes.get(n)
 
     def _cache_lane(self, n: str, lane: int):
@@ -676,26 +732,30 @@ class Processor:
         """Print a goodbye message."""
         table = cast(Table, self.render().renderable)
         table.rows[-1].end_section = True
-
-        table.add_row("The end.", end_section=True)
-
         evt_count = self.evt_count
 
         nevents = []
+        tgt_names = []
         for tgt in self.targets:
-            table.add_column(tgt.unit_name)
             nevents.append(str(evt_count[tgt.unit_name]))
-        table.add_row('events emitted', *nevents)
+            text = Text(tgt.unit_name, style="bold")
+            tgt_names.append(text)
+        table.add_row(Text("The end.", style='bold blue'), *tgt_names,
+                      end_section=True)
+
+        table.add_row(Text('events emitted', style='green'), *nevents)
 
         if self._show_defer:
             cdefevents = []
             for tgt in self.targets:
                 raw_table = self._raw_tables[tgt.unit_name]
                 cdefevents.append(str(len(raw_table.currently_deferred)))
-            table.add_row('currently deferred events', *cdefevents)
+            table.add_row(Text('currently deferred events', style='green'),
+                          *cdefevents)
 
         table_centered = Align.center(table)
         self.live.update(table_centered)
+        self.live.refresh()
 
 
 def _get_debug_log(cmd):
@@ -731,7 +791,11 @@ def tail_events(
                  'Only applicable if show_defer=True.'),
         watch: bool = typer.Option(
             True, '--watch',
-            help='Keep listening.')
+            help='Keep listening.'),
+        color: bool = typer.Option(
+            True,
+            help='Colorize output.')
+
 ):
     """Pretty-print a table with the events that are fired on juju units
     in the current model.
@@ -749,7 +813,8 @@ def tail_events(
         length=length,
         show_defer=show_defer,
         show_ns=show_ns,
-        watch=watch
+        watch=watch,
+        color=color
     )
 
 
@@ -763,7 +828,8 @@ def _tail_events(
         length: int = 10,
         show_defer: bool = False,
         show_ns: bool = False,
-        watch: bool = True
+        watch: bool = True,
+        color: bool = True
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -796,6 +862,7 @@ def _tail_events(
         targets, add_new_targets,
         history_length=length,
         show_ns=show_ns,
+        color=color,
         show_defer=show_defer)
 
     try:
@@ -864,4 +931,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=' '):
 
 
 if __name__ == '__main__':
-    _tail_events(replay=True, show_defer=True)
+    _tail_events(replay=True, show_defer=True, show_ns=True, length=40)
