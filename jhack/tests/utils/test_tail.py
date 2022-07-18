@@ -166,3 +166,19 @@ def test_tracking():
     assert raw_table.ns == ['0', '0', None]
     assert raw_table.events == ['update_status', 'update_status', 'start']
     assert len(raw_table.currently_deferred) == 0
+
+
+def test_tracking_reemit_only():
+    # we only process a `Re-emitting` log, this should cause Processor to mock a defer,
+    # and mock an emit before that.
+    p = Processor([Target('myapp', 0)], show_defer=True)
+    reemittal = MOCK_JDL[1].split(b'\n')[-2].decode('utf-8').strip()
+    raw_table = p._raw_tables['myapp/0']
+
+    p.process(reemittal)
+    assert raw_table.deferrals == [
+        p._close + p._hline + p._ldown,
+        p._open + p._hline + p._lup]
+    assert raw_table.ns == ['0', '0']
+    assert raw_table.events == ['update_status', 'update_status']
+    assert len(raw_table.currently_deferred) == 0

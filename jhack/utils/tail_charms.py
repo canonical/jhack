@@ -1,10 +1,11 @@
 import enum
 import os
+import sys
 import time
 from collections import defaultdict, Counter
 from dataclasses import dataclass, Field, field
 from subprocess import Popen, PIPE, STDOUT
-from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union
+from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union, cast
 
 import parse
 import typer
@@ -97,6 +98,7 @@ class EventLogMsg:
     loglevel: str
     unit: str
     event: str
+    mocked: bool
     # relation: str = None
     # relation_id: str = None
 
@@ -188,9 +190,27 @@ class Processor:
         self._lanes = {}
         self.tracking: Dict[str, List[EventLogMsg]] = {tgt.unit_name: [] for tgt
                                                        in targets}
+
+        self._has_just_emitted = False
+        self.console = console = Console()
+        self.live = Live(console=console)
         self.render()
 
-    def _track(self, evt: EventLogMsg):
+        self._warned_about_orphans = False
+
+    def _warn_about_orphaned_event(self, evt):
+        if self._warned_about_orphans:
+            return
+        logger.warning(
+            f"Error processing {evt.event}({getattr(evt,'n', '?')}); no "
+            f"matching deferred event could be found in the currently "
+            f"deferred/previously emitted ones. This can happen if you only set "
+            f"logging-config to DEBUG after the first events got deferred, "
+            f"or after the history started getting recorded anyway. "
+            f"This means you might see some messy output.")
+        self._warned_about_orphans = True
+
+    def _emit(self, evt: EventLogMsg):
         if self.add_new_targets and evt.unit not in self.tracking:
             self._add_new_target(evt)
 
@@ -203,19 +223,36 @@ class Processor:
     def _defer(self, deferred: EventDeferredLogMsg):
         # find the original message we're deferring
         raw_table = self._raw_tables[deferred.unit]
+
+        if deferred.event not in raw_table.events:
+            # we're deferring an event we've not seen before: logging just started.
+            # so we pretend we've seen it, to be safe.
+            mock_event = EventLogMsg(
+                pod_name=deferred.pod_name,
+                timestamp="",
+                loglevel=deferred.loglevel,
+                unit=deferred.unit,
+                event=deferred.event,
+                mocked=True
+            )
+            self._emit(mock_event)
+            logger.debug(f"Mocking {mock_event}: we're deferring it but "
+                         f"we've not seen it before.")
+
         is_already_deferred = False
 
         def _search_in_deferred():
             for dfrd in raw_table.currently_deferred:
                 if dfrd.n == deferred.n:
                     # not the first time we defer this boy
+                    nonlocal is_already_deferred
                     is_already_deferred = True
                     return dfrd.msg
 
         def _search_in_tracked():
-            for msg in self.tracking.get(deferred.unit, ()):
-                if msg.event == deferred.event:
-                    return msg
+            for _msg in self.tracking.get(deferred.unit, ()):
+                if _msg.event == deferred.event:
+                    return _msg
 
         msg = _search_in_deferred() or _search_in_tracked()
         deferred.msg = msg
@@ -232,45 +269,58 @@ class Processor:
         unit = reemitted.unit
         raw_table = self._raw_tables[unit]
 
-        for defrd in list(raw_table.currently_deferred):
-            if defrd.n == reemitted.n:
-                raw_table.currently_deferred.remove(defrd)
-                # we track it.
-                self.tracking[unit].append(reemitted)
-                logger.debug(f"reemitted {reemitted.event}")
-                return
+        deferred = None
+        for _deferred in list(raw_table.currently_deferred):
+            if _deferred.n == reemitted.n:
+                deferred = _deferred
 
-        logger.warning(
-            f"Error reemitting {reemitted.event}({reemitted.n}); no "
-            f"matching deferred event could be found in the currently deferred ones."
-            f"This can happen if you only set logging-config to DEBUG after "
-            f"the first events got deferred.")
+        if not deferred:
+            self._warn_about_orphaned_event(reemitted)
+            # if we got here we need to make up a lane for the message.
+            deferred = EventDeferredLogMsg(
+                pod_name=reemitted.pod_name,
+                timestamp="",
+                loglevel=reemitted.loglevel,
+                unit=reemitted.unit,
+                event=reemitted.event,
+                event_cls=reemitted.event_cls,
+                charm_name=reemitted.charm_name,
+                n=reemitted.n,
+                mocked=True
+            )
+            # this is a reemittal log, so we've _emitted it once, which has stored this n into raw_table.ns.
+            # this will make update_defers believe that we've already deferred this event, which we haven't.
+            # self._timestamps.extend([deferred.timestamp + '*'] * 2)
+            self._timestamps.insert(0, deferred.timestamp)
 
-        # if we got here we need to make up a lane for the message.
-        mock_event = EventDeferredLogMsg(
-            pod_name=reemitted.pod_name,
-            timestamp="",
-            loglevel=reemitted.loglevel,
-            unit=reemitted.unit,
-            event=reemitted.event,
-            event_cls=reemitted.event_cls,
-            charm_name=reemitted.charm_name,
-            n=reemitted.n
-        )
-        # raw_table.currently_deferred.append(mock_event)
-        free_lane = max(self._lanes.values() if self._lanes else [0]) + 1
-        self._cache_lane(reemitted.n, free_lane)
+            self._defer(deferred)
+            logger.debug(f"mocking {deferred}: we're reemitting it but "
+                         f"we've not seen it before.")
+            self.update_defers(deferred)
+
+            # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
+            # so we need to _emit it once more.
+            self._emit(reemitted)
+            # free_lane = max(self._lanes.values() if self._lanes else [0]) + 1
+            # self._cache_lane(reemitted.n, free_lane)
+
+
+        raw_table.currently_deferred.remove(deferred)
+
+        # start tracking the reemitted event.
+        self.tracking[unit].append(reemitted)
+        logger.debug(f"reemitted {reemitted.event}")
 
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         match = self.event_deferred.parse(log)
         if match:
-            return EventDeferredLogMsg(**match.named)
+            return EventDeferredLogMsg(**match.named, mocked=False)
 
     def _match_event_reemitted(self, log: str) -> Optional[
         EventReemittedLogMsg]:
         match = self.event_reemitted.parse(log)
         if match:
-            return EventReemittedLogMsg(**match.named)
+            return EventReemittedLogMsg(**match.named, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
         # log format =
@@ -305,7 +355,7 @@ class Processor:
 
         # uniform
         params['event'] = params['event'].replace('-', '_')
-        return EventLogMsg(**params)
+        return EventLogMsg(**params, mocked=False)
 
     def _add_new_target(self, msg: EventLogMsg):
         logger.info(f"adding new unit {msg.unit}")
@@ -319,12 +369,12 @@ class Processor:
         """process a log line"""
         if msg := self._match_event_emitted(log):
             mode = 'emit'
-            self._track(msg)
+            self._emit(msg)
         elif self._show_defer:
             if msg := self._match_event_deferred(log):
                 mode = 'defer'
             elif msg := self._match_event_reemitted(log):
-                self._track(msg)
+                self._emit(msg)
                 mode = 'reemit'
             else:
                 return
@@ -340,16 +390,16 @@ class Processor:
             self._reemit(msg)
 
         if mode in {'reemit', 'emit'}:
-            self._timestamps.append(msg.timestamp)
+            self._timestamps.insert(0, msg.timestamp)
             self._crop()
 
-        if self._show_defer and self._is_tracking(msg) and mode != 'emit':
+        if self._show_defer and self._is_tracking(msg):
             logger.info(f'updating defer for {msg.event}')
             self.update_defers(msg)
 
         self.render()
 
-    def render(self, _debug=False):
+    def render(self, _debug=False) -> Align:
         # we're rendering the table and flipping it every time. more efficient
         # to add new rows to the top and keep old ones, but how do we know if
         # deferral lines have changed?
@@ -389,7 +439,11 @@ class Processor:
             return table
 
         table_centered = Align.center(table)
-        self.console.print(table_centered)
+        self.live.update(table_centered)
+
+        if not self.live.is_started:
+            self.live.start()
+        return table_centered
 
     def _is_tracking(self, msg):
         return msg.unit in self.tracking
@@ -432,17 +486,20 @@ class Processor:
                 pass
 
         if deferring:
+            assert isinstance(msg, EventDeferredLogMsg)  # type guard
             # we did not find (in scope) a previous logline emitting
             # this event by number; let's search by name.
-            if previous_msg_idx is None:
-                try:
-                    previous_msg_idx = raw_table.events.index(msg.event)
-                except StopIteration:
-                    # should really not happen; it means
-                    logger.error(f"{msg.event} not found in raw table")
-                    raise
+            if msg.mocked or previous_msg_idx is None:
+                if previous_msg_idx is None:
+                    try:
+                        previous_msg_idx = raw_table.events.index(msg.event)
+                    except ValueError:
+                        # should really not happen; it may mean that earlier logs
+                        # are unavailable (user only got to DEBUG recently).
+                        logger.error(f"{msg.event} not found in raw table")
+                        previous_msg_idx = 0
 
-                if known_n := raw_table.ns[previous_msg_idx] is not None:
+                if (known_n := raw_table.ns[previous_msg_idx]) is not None:
                     assert known_n == msg.n, f"mismatching n; {known_n} != {msg.n}"
 
                 # store it
@@ -486,13 +543,32 @@ class Processor:
                 new_cell = original_cell.replace(
                     self._close + self._hline,
                     self._pad + self._bounce
-                ).replace(self._ldown, self._lupdown)
+                ).replace(
+                    self._ldown, self._lupdown
+                ).replace(
+                    self._vline, self._cross)
+
+                for _msg in raw_table.currently_deferred:
+                    if _msg is msg:
+                        continue
+                    busy_lane = self._get_lane(_msg.n)
+                    new_cell = _put(new_cell, busy_lane, self._cross, self._nothing_to_report)
+
                 raw_table.deferrals[previous_msg_idx] = new_cell
-                lane = new_cell.index(self._lupdown)
+                try:
+                    lane = new_cell.index(self._lupdown)
+                except ValueError:
+                    logger.error(
+                        f'Failed looking up lane by idnexing lupdown in {new_cell}'
+                        f'something wrong with {raw_table}'
+                    )
+                    raise
 
             self._cache_lane(msg.n, lane)
 
         elif reemitting:
+            assert isinstance(msg, EventReemittedLogMsg)  # type guard
+
             if previous_msg_idx is None:
                 # message must have been cropped away
                 logger.debug(f'unable to grab fetch previous reemit, '
@@ -501,20 +577,12 @@ class Processor:
             lane = None
             if previous_msg_idx is not None:
                 original_reemittal_cell = raw_table.deferrals[previous_msg_idx]
-
-                # reopen previous reemittal if it's closed
-                previous_reemittal_cell = original_reemittal_cell.replace(
-                    self._close + self._hline,
-                    self._pad + self._bounce
-                ).replace(
-                    self._ldown, self._lupdown)
-                raw_table.deferrals[previous_msg_idx] = previous_reemittal_cell
-
                 lane = None
                 for sym in {self._lupdown, self._lup}:
-                    if sym in previous_reemittal_cell:
-                        lane = previous_reemittal_cell.index(sym)
+                    if sym in original_reemittal_cell:
+                        lane = original_reemittal_cell.index(sym)
                         break  # found
+
             if lane is None:
                 lane = self._get_lane(msg.n)
                 if lane is None:
@@ -536,6 +604,18 @@ class Processor:
             raw_table.deferrals[0] = ''.join(final_cell)
 
             if previous_msg_idx is not None:
+                # we clean up the previous line:
+                # there could be a vline because of the tail present back then,
+                # we need to replace it with cross.
+                # reopen previous reemittal if it's closed
+                previous_reemittal_cell = raw_table.deferrals[previous_msg_idx]
+                for idx in range(2, lane):
+                    previous_reemittal_cell = _put(previous_reemittal_cell, idx,
+                                                   {self._cross: self._cross,
+                                                       self._vline: self._cross,
+                                                    None: self._hline}, self._hline)
+
+                raw_table.deferrals[previous_msg_idx] = previous_reemittal_cell
                 rng = range(1, previous_msg_idx)
             else:
                 # until the end of the visible table
@@ -551,19 +631,25 @@ class Processor:
 
         else:
             if self._has_just_emitted:
-                # we just emitted twice, without deferring or reemitting,
+                # we just emitted twice, without deferring or reemitting anything in between,
                 # that means we can do some cleanup.
                 while raw_table.currently_deferred:
                     dfrd = raw_table.currently_deferred.pop()
                     logger.debug(
                         f'removed spurious deferred event {dfrd.event}({dfrd.n})'
                     )
+
             else:
                 tail = raw_table.deferrals[0]
                 for cdef in raw_table.currently_deferred:
                     lane = self._get_lane(cdef.n)
                     tail = _put(tail, lane, self._vline, self._nothing_to_report)
                 raw_table.deferrals[0] = tail
+
+            self._has_just_emitted = True
+            return
+
+        self._has_just_emitted = False
 
     def _get_lane(self, n: str):
         return self._lanes.get(n)
@@ -588,9 +674,11 @@ class Processor:
 
     def quit(self):
         """Print a goodbye message."""
-        table = Table(expand=True)
+        table = cast(Table, self.render().renderable)
+        table.rows[-1].end_section = True
 
-        table.add_column("The end.")
+        table.add_row("The end.", end_section=True)
+
         evt_count = self.evt_count
 
         nevents = []
@@ -606,7 +694,8 @@ class Processor:
                 cdefevents.append(str(len(raw_table.currently_deferred)))
             table.add_row('currently deferred events', *cdefevents)
 
-        self.console.print(table)
+        table_centered = Align.center(table)
+        self.live.update(table_centered)
 
 
 def _get_debug_log(cmd):
@@ -750,8 +839,8 @@ def _tail_events(
 
             if not replay_mode and (
                     elapsed := time.time() - start) < framerate:
+                logger.debug(f"sleeping {framerate - elapsed}")
                 time.sleep(framerate - elapsed)
-                print(f"sleeping {framerate - elapsed}")
 
     except KeyboardInterrupt:
         print('exiting...')
