@@ -315,8 +315,7 @@ class Processor:
             )
             # this is a reemittal log, so we've _emitted it once, which has stored this n into raw_table.ns.
             # this will make update_defers believe that we've already deferred this event, which we haven't.
-            # self._timestamps.extend([deferred.timestamp + '*'] * 2)
-            self._timestamps.insert(0, deferred.timestamp)
+            self._timestamps.insert(0, deferred.timestamp + '*')
 
             self._defer(deferred)
             logger.debug(f"mocking {deferred}: we're reemitting it but "
@@ -549,16 +548,46 @@ class Processor:
             try:
                 previous_msg_idx = raw_table.ns[offset:].index(msg.n) + offset
             except ValueError:
+                logger.debug(f'n {msg.n} is new.')
                 pass
 
         if deferring:
             assert isinstance(msg, EventDeferredLogMsg)  # type guard
             # we did not find (in scope) a previous logline emitting
             # this event by number; let's search by name.
+            if msg.mocked and previous_msg_idx is None:
+                # we are mocking an event whose first emission could be out of scope
+                for idx, (evt, n) in enumerate(zip(raw_table.events, raw_table.ns)):
+                    if evt == msg.event and n is None:
+                        previous_msg_idx = idx
+                        break
+
+                if previous_msg_idx is None:
+                    logger.debug(f'Mocked event {msg.event}({msg.n}) is out of scope, and '
+                                 f'no not-yet-numbered companion can be '
+                                 f'found in the table.')
+                    # we need to find an empty lane for this new message.
+                    busy = set(self._lanes.values())
+                    free = None
+                    for lane in range(max(busy)):
+                        if lane not in busy:
+                            free = lane
+                            break
+                    if free is None:
+                        free = max(busy) + 1
+                    self._cache_lane(msg.n, free)
+                    return
+
             if msg.mocked or previous_msg_idx is None:
                 if previous_msg_idx is None:
+                    logger.debug(
+                        "Deferring an event which we don't know it when was "
+                        f"emitted first. Attempting to guess by indexing the "
+                        f"event name ({msg.event}) in the raw table.")
                     try:
                         previous_msg_idx = raw_table.events.index(msg.event)
+                        logger.debug(f"according to raw table, "
+                                     f"our index is {previous_msg_idx}")
                     except ValueError:
                         # should really not happen; it may mean that earlier logs
                         # are unavailable (user only got to DEBUG recently).
@@ -566,7 +595,12 @@ class Processor:
                         previous_msg_idx = 0
 
                 if (known_n := raw_table.ns[previous_msg_idx]) is not None:
-                    assert known_n == msg.n, f"mismatching n; {known_n} != {msg.n}"
+                    if not known_n == msg.n:
+                        logger.error(
+                            f"The original log at line {previous_msg_idx} "
+                            f"({raw_table.events[previous_msg_idx]}) has n = {known_n}, "
+                            f"but the message we just parsed ({msg.event}) has n = {msg.n}"
+                        )
 
                 # store it
                 raw_table.ns[previous_msg_idx] = msg.n
@@ -739,13 +773,13 @@ class Processor:
             # nothing to do.
             return
 
+        logger.info('cropping table')
         lst: List
         for lst in (self._timestamps,
                     *(raw.deferrals for raw in self._raw_tables.values()),
                     *(raw.events for raw in self._raw_tables.values()),
                     *(raw.ns for raw in self._raw_tables.values())):
-            if len(lst) > self.history_length:
-                logger.info('popping a row')
+            while len(lst) > self.history_length:
                 lst.pop()  # pop first
 
     def quit(self):
@@ -790,12 +824,12 @@ def tail_events(
                  "Example: 'foo/0;foo/1;bar/2'. By default, it will follow all "
                  "available targets."),
         add_new_targets: bool = typer.Option(
-            True, '--add', '-A',
+            True, '--add', '-a',
             help="Keep adding new units as they appear. Can't be used "
                  "in combination with nonempty targets arg. "),
         level: LEVELS = 'DEBUG',
         replay: bool = typer.Option(
-            False, '--replay',
+            False, '--replay', '-r',
             help='Keep listening from beginning of time.'),
         dry_run: bool = typer.Option(
             False,
@@ -807,7 +841,7 @@ def tail_events(
         show_defer: bool = typer.Option(
             False, '-d', '--show-defer', help='Visualize the defer graph.'),
         show_ns: bool = typer.Option(
-            False, '-n',
+            False, '-n', '--show-defer-id',
             help='Prefix deferred events with their deferral ID. '
                  'Only applicable if show_defer=True.'),
         watch: bool = typer.Option(

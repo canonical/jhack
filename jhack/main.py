@@ -78,11 +78,14 @@ def main():
     app.add_typer(utils)
 
     @app.callback()
-    def set_verbose(loglevel: str = None):
-        if loglevel:
-            typer.echo(f"::= Verbose mode ({loglevel}). =::")
-            logger.setLevel(loglevel)
+    def set_verbose(log: str = None, path: Path = None):
+        if log:
+            typer.echo(f"::= Verbose mode ({log}). =::")
+            logger.setLevel(log)
             logging.basicConfig(stream=sys.stdout)
+            if path:
+                hdlr = logging.FileHandler(path)
+                logger.addHandler(hdlr)
 
     if LOGLEVEL != 'WARNING':
         typer.echo(f"::= Verbose mode ({LOGLEVEL}). =::")
