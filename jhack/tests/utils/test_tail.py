@@ -174,3 +174,8 @@ def test_tracking_reemit_only():
     assert raw_table.ns == ['0', '0']
     assert raw_table.events == ['update_status', 'update_status']
     assert len(raw_table.currently_deferred) == 0
+
+
+def test_tail_with_file_input():
+    _tail_events(files=["./tail_mocks/interlace-log-0.txt", "./tail_mocks/interlace-log-1.txt"])
+

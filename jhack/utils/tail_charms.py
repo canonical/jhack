@@ -20,6 +20,7 @@ from rich.text import Text
 
 from jhack.config import JUJU_COMMAND
 from jhack.logger import logger as jhacklogger
+from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
@@ -183,29 +184,14 @@ def _random_color():
 class Processor:
     # FIXME: why does sometime event/relation_event work, and sometimes
     #  uniter_event does? OF Version?
-    event = parse.compile(
-        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-    event_from_relation = parse.compile(
-        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
-    uniter_event = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
-    event_deferred = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-    event_deferred_from_relation = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-    event_reemitted = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-    )
-    event_reemitted_from_relation = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-    )
 
     def __init__(self, targets: Iterable[Target],
                  add_new_targets: bool = True,
                  history_length: int = 10,
                  show_ns: bool = True,
                  color: bool = True,
-                 show_defer: bool = False):
+                 show_defer: bool = False,
+                 date: bool = False):
         if not color:
             # maybe implement it some day.
             logger.debug('Sorry, but colors are too pretty to get rid of.')
@@ -232,6 +218,42 @@ class Processor:
         self.render()
 
         self._warned_about_orphans = False
+
+        if date:
+            print("Setting patterns to use date")
+            self.event = parse.compile(
+                "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
+            self.event_from_relation = parse.compile(
+                "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
+            self.uniter_event = parse.compile(
+                '{pod_name}: {date} {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
+            self.event_deferred = parse.compile(
+                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
+            self.event_deferred_from_relation = parse.compile(
+                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
+            self.event_reemitted = parse.compile(
+                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
+            )
+            self.event_reemitted_from_relation = parse.compile(
+                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
+            )
+        else:
+            self.event = parse.compile(
+                "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
+            self.event_from_relation = parse.compile(
+                "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
+            self.uniter_event = parse.compile(
+                '{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
+            self.event_deferred = parse.compile(
+                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
+            self.event_deferred_from_relation = parse.compile(
+                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
+            self.event_reemitted = parse.compile(
+                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
+            )
+            self.event_reemitted_from_relation = parse.compile(
+                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
+            )
 
     def _warn_about_orphaned_event(self, evt):
         if self._warned_about_orphans:
@@ -388,6 +410,10 @@ class Processor:
 
         # uniform
         params['event'] = params['event'].replace('-', '_')
+
+        # Ignore the unused date parameter
+        if "date" in params:
+            del params['date']
         return EventLogMsg(**params, mocked=False)
 
     def _add_new_target(self, msg: EventLogMsg):
@@ -849,7 +875,14 @@ def tail_events(
             help='Keep listening.'),
         color: bool = typer.Option(
             True,
-            help='Colorize output.')
+            help='Colorize output.'),
+        file: Optional[List[str]] = typer.Option(
+            [],
+            help="Text file with logs from `juju debug-log`.  Can be used in place of streaming "
+                 "logs directly from juju, and can be set multiple times to read from multiple "
+                 "files.  File must be exported from juju using `juju debug-log --date` to allow"
+                 " for proper sorting"
+        )
 
 ):
     """Pretty-print a table with the events that are fired on juju units
@@ -869,7 +902,8 @@ def tail_events(
         show_defer=show_defer,
         show_ns=show_ns,
         watch=watch,
-        color=color
+        color=color,
+        files=file
     )
 
 
@@ -884,7 +918,8 @@ def _tail_events(
         show_defer: bool = False,
         show_ns: bool = False,
         watch: bool = True,
-        color: bool = True
+        color: bool = True,
+        files: List[str] = None
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -903,7 +938,22 @@ def _tail_events(
 
     targets = parse_targets(targets)
 
-    logger.debug('starting JDL process')
+    if files and replay:
+        logger.debug(f"ignoring `replay` because files were provided")
+        replay = False
+
+    if files and watch:
+        logger.debug(f"ignoring `watch` because files were provided")
+        watch = False
+
+    if files:
+        # If we're using file input, they must also have dates in the output
+        date = True
+    else:
+        date = False
+
+
+    logger.debug('starting to read logs')
     cmd = ([JUJU_COMMAND, 'debug-log'] +
            (['--tail'] if watch else []) +
            (['--replay'] if replay else []) +
@@ -918,27 +968,44 @@ def _tail_events(
         history_length=length,
         show_ns=show_ns,
         color=color,
-        show_defer=show_defer)
+        show_defer=show_defer,
+        date=date
+    )
+
+    print("TEST")
 
     try:
-        proc = _get_debug_log(cmd)
         # when we're in replay mode we're catching up with the replayed logs
         # so we won't limit the framerate and just flush the output
         replay_mode = True
 
-        if not watch:
-            stdout = iter(proc.stdout.readlines())
+        if files:
+            # handle input from files
+            log_getter = DebugLogInterlacer(files)
 
             def next_line():
                 try:
-                    return next(stdout)
+                    # Encode to be similar to other input sources
+                    return log_getter.readline().encode('utf-8')
                 except StopIteration:
                     return ''
 
         else:
-            def next_line():
-                line = proc.stdout.readline()
-                return line
+            proc = _get_debug_log(cmd)
+
+            if not watch:
+                stdout = iter(proc.stdout.readlines())
+
+                def next_line():
+                    try:
+                        return next(stdout)
+                    except StopIteration:
+                        return ''
+
+            else:
+                def next_line():
+                    line = proc.stdout.readline()
+                    return line
 
         while True:
             start = time.time()
@@ -948,8 +1015,9 @@ def _tail_events(
                 if not watch:
                     break
 
-                if proc.poll() is not None:
+                if not files and proc.poll() is not None:
                     # process terminated FIXME: this shouldn't happen
+                    # Checks only if we're watching a process
                     break
 
                 replay_mode = False
