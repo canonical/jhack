@@ -12,7 +12,20 @@ from jhack.helpers import juju_status, juju_models, current_model, list_models
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
-
+NUKE_ASCII_ART = """
+                             ____
+                     __,-~~/~    `---.
+                   _/_,---(      ,    )
+               __ /        <    /   )  \___
+- ------===;;;'====------------------===;;;===----- -  -
+                  \/  ~"~"~"~"~"~\~"~)~"/
+                  (_ (   \  (     >    \)
+                   \_( _ <         >_>'
+                      ~ `-i' ::>|--"
+                          I;|.|.|
+                         <|i::|i|`.
+                        (` ^'"`-' ")
+"""
 
 @dataclass
 class Endpoints:
@@ -205,9 +218,10 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
             print(f'would ⚛ {nukeable}')
         return
 
+    pad = '\t' * 2
     def fire(nukeable: Nukeable, nuke: str):
         """defcon 5"""
-        print(f'nuking ⚛ {nukeable} ⚛')
+        print(pad + f'nuking ⚛ {nukeable} ⚛')
         logger.debug(f'nuking {nukeable} with {nuke}')
         proc = Popen(nuke.split(' '), stdout=PIPE, stderr=PIPE)
         proc.wait()
@@ -220,6 +234,8 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
         else:
             logger.debug(f'hit and sunk')
 
+    print(NUKE_ASCII_ART)
+
     tp = ThreadPool()
     for nukeable, nuke in zip(nukeables, nukes):
         tp.apply_async(fire, (nukeable, nuke))
@@ -228,7 +244,7 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
     tp.join()
 
     if not dry_run:
-        print("✞ RIP ✞")
+        print(pad + '\t' + "✞ RIP ✞")
 
 
 def nuke(what: List[str] = typer.Argument(None, help="What to ⚛."),
@@ -237,7 +253,7 @@ def nuke(what: List[str] = typer.Argument(None, help="What to ⚛."),
              help='The model. Defaults to current model.'),
          n: Optional[int] = typer.Option(
              None, '-n', '--number',
-             help="Exact number of things you're expected to be nuking."
+             help="Exact number of things you're expectig to get nuked."
                   "Safety first."),
          borked: bool = typer.Option(
              None, '-b', '--borked',
@@ -261,6 +277,8 @@ def nuke(what: List[str] = typer.Argument(None, help="What to ⚛."),
         will bomb all nukeables starting with `bar-` in model foo. As above.
         $ jhack nuke -n=2 *foo*
         will blow up the two things it can find that contain the substring "foo"
+
+    Nuke ascii art by Bill March from https://www.asciiart.eu/weapons/explosives
     """
     if n is not None:
         assert n > 0, f'nonsense: {n}'
