@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 from subprocess import Popen, PIPE
@@ -89,7 +90,7 @@ def _get_apps_and_relations(model: Optional[str],
                 nukeables.append(Nukeable(app_name, 'app', model=model))
 
         if relation:
-            prov, req, *_ = line.split(' ')
+            prov, req, *_ = re.split(r'\s+', line)
             eps = Endpoints(prov.strip(), req.strip())
             if filter_(eps.provider) or filter_(eps.requirer):
                 nukeables.append(Nukeable(f'{prov} {req}', 'relation',
