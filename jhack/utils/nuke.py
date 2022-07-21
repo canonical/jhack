@@ -244,12 +244,10 @@ def _nuke(
     def fire(nukeable: Nukeable, nuke: str):
         """defcon 5"""
         _atom = Style(bold=True, color="green")
-        print(f"nuking: {nukeable}u")
 
         nukeable_name = nukeable.name
         if not nukeable.type == "model":
             nukeable_name += f" ({nukeable.model})"
-        print(nukeable_name)
 
         to_nuke = Style(color=COLOR_MAP[nukeable.type])
         text = (
