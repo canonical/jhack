@@ -6,12 +6,23 @@ from time import sleep
 from typing import Optional, Literal, List, Callable
 
 import typer
+from rich.align import Align
+from rich.console import Console, Group
+from rich.style import Style
+from rich.text import Text
 
 from jhack.config import JUJU_COMMAND
 from jhack.helpers import juju_status, juju_models, current_model, list_models
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
+
+ATOM = '⚛'
+COLOR_MAP = {
+    'model': 'red',
+    'relation': 'cyan',
+    'app': 'orange',
+}
 NUKE_ASCII_ART = """
                              ____
                      __,-~~/~    `---.
@@ -26,6 +37,7 @@ NUKE_ASCII_ART = """
                          <|i::|i|`.
                         (` ^'"`-' ")
 """
+
 
 @dataclass
 class Endpoints:
@@ -49,7 +61,7 @@ class Nukeable:
             return f"model {self.name!r}"
         elif self.type == 'app':
             return f"app {self.name!r} ({self.model})"
-        else: # relation
+        else:  # relation
             return f"relation {self.endpoints.provider!r} --> {self.endpoints.requirer}"
 
 
@@ -204,24 +216,35 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
             logger.debug(f"Unexpected number of nukeables; "
                          f"expected {n}, got: {nukeables}")
             for nukeable in nukeables:
-                print(f'would ⚛ {nukeable}')
+                print(f'would {ATOM} {nukeable}')
             word = 'less' if n > real_n else 'more'
             print(f'\nThat is {word} than what you expected. Aborting...')
             return
 
     if not nukeables:
-        print('Nothing to ⚛.')
+        print(f'Nothing to {ATOM}.')
         return
 
     if dry_run:
         for nukeable in nukeables:
-            print(f'would ⚛ {nukeable}')
+            print(f'would {ATOM} {nukeable}')
         return
 
+    console = Console()
+    print_centered = lambda s: console.print(Align(s, align='center'))
+
     pad = '\t' * 2
+
     def fire(nukeable: Nukeable, nuke: str):
         """defcon 5"""
-        print(pad + f'nuking ⚛ {nukeable} ⚛')
+        _atom = Text(ATOM, style=Style(bold=True, color='green'))
+
+        nukeable_name = nukeable.name
+        if not nukeable.type == 'model':
+            nukeable_name += f" ({nukeable.model})"
+
+        to_nuke = Text(nukeable_name, style=Style(color=COLOR_MAP[nukeable.type]))
+        print_centered(Text(f'nuking').append(_atom).append(to_nuke).append(_atom))
         logger.debug(f'nuking {nukeable} with {nuke}')
         proc = Popen(nuke.split(' '), stdout=PIPE, stderr=PIPE)
         proc.wait()
@@ -234,7 +257,8 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
         else:
             logger.debug(f'hit and sunk')
 
-    print(NUKE_ASCII_ART)
+    print_centered(Text(NUKE_ASCII_ART,
+                        style=Style(dim=True, blink=True, bold=True)))
 
     tp = ThreadPool()
     for nukeable, nuke in zip(nukeables, nukes):
@@ -244,10 +268,11 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
     tp.join()
 
     if not dry_run:
-        print(pad + '\t' + "✞ RIP ✞")
+        print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)))
 
 
-def nuke(what: List[str] = typer.Argument(None, help="What to ⚛."),
+def nuke(what: List[str] = typer.Argument(None,
+                                          help=f"What to {ATOM}."),
          model: Optional[str] = typer.Option(
              None, '-m', '--model',
              help='The model. Defaults to current model.'),
