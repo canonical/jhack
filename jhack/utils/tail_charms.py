@@ -214,13 +214,12 @@ class Processor:
 
         self._has_just_emitted = False
         self.console = console = Console()
-        self.live = Live(console=console)
-        self.render()
+        self.live = live = Live(console=console)
+        live.start()
 
         self._warned_about_orphans = False
 
         if date:
-            print("Setting patterns to use date")
             self.event = parse.compile(
                 "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
             self.event_from_relation = parse.compile(
@@ -531,7 +530,9 @@ class Processor:
         self.live.update(table_centered)
 
         if not self.live.is_started:
+            logger.info('live started by render')
             self.live.start()
+
         return table_centered
 
     def _is_tracking(self, msg):
@@ -972,8 +973,6 @@ def _tail_events(
         date=date
     )
 
-    print("TEST")
-
     try:
         # when we're in replay mode we're catching up with the replayed logs
         # so we won't limit the framerate and just flush the output
@@ -1033,10 +1032,9 @@ def _tail_events(
                 time.sleep(framerate - elapsed)
 
     except KeyboardInterrupt:
+        pass  # quit
+    finally:
         processor.quit()
-        return
-
-    print(f"processed {processor.evt_count} events.")
 
 
 def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=' '):
