@@ -220,7 +220,6 @@ class Processor:
         self._warned_about_orphans = False
 
         if date:
-            print("Setting patterns to use date")
             self.event = parse.compile(
                 "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
             self.event_from_relation = parse.compile(
