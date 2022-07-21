@@ -4,7 +4,7 @@
 
 
 This is a homegrown collection of opinionated scripts and utilities to make the 
-charm dev's life a somewhat easier.
+charm dev's life somewhat easier.
 
 #### Installation:
 ##### from sources (dev setup):
