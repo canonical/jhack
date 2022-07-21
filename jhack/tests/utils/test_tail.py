@@ -177,5 +177,7 @@ def test_tracking_reemit_only():
 
 
 def test_tail_with_file_input():
-    _tail_events(files=["./tail_mocks/interlace-log-0.txt", "./tail_mocks/interlace-log-1.txt"])
+    _tail_events(
+        files=["./tail_mocks/real-prom-cropped-for-interlace.txt", "./tail_mocks/real-trfk-cropped-for-interlace.txt"]
+    )
 
