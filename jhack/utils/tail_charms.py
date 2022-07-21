@@ -184,14 +184,29 @@ def _random_color():
 class Processor:
     # FIXME: why does sometime event/relation_event work, and sometimes
     #  uniter_event does? OF Version?
+    event = parse.compile(
+        "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
+    event_from_relation = parse.compile(
+        "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
+    uniter_event = parse.compile(
+        '{pod_name}: {date} {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
+    event_deferred = parse.compile(
+        '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
+    event_deferred_from_relation = parse.compile(
+        '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
+    event_reemitted = parse.compile(
+        '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
+    )
+    event_reemitted_from_relation = parse.compile(
+        '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
+    )
 
     def __init__(self, targets: Iterable[Target],
                  add_new_targets: bool = True,
                  history_length: int = 10,
                  show_ns: bool = True,
                  color: bool = True,
-                 show_defer: bool = False,
-                 date: bool = False):
+                 show_defer: bool = False):
         if not color:
             # maybe implement it some day.
             logger.debug('Sorry, but colors are too pretty to get rid of.')
@@ -218,41 +233,6 @@ class Processor:
         live.start()
 
         self._warned_about_orphans = False
-
-        if date:
-            self.event = parse.compile(
-                "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-            self.event_from_relation = parse.compile(
-                "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
-            self.uniter_event = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
-            self.event_deferred = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_deferred_from_relation = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_reemitted = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
-            self.event_reemitted_from_relation = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
-        else:
-            self.event = parse.compile(
-                "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-            self.event_from_relation = parse.compile(
-                "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
-            self.uniter_event = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
-            self.event_deferred = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_deferred_from_relation = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_reemitted = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
-            self.event_reemitted_from_relation = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
 
     def _warn_about_orphaned_event(self, evt):
         if self._warned_about_orphans:
@@ -955,7 +935,7 @@ def _tail_events(
 
 
     logger.debug('starting to read logs')
-    cmd = ([JUJU_COMMAND, 'debug-log'] +
+    cmd = ([JUJU_COMMAND, 'debug-log', '--date'] +
            (['--tail'] if watch else []) +
            (['--replay'] if replay else []) +
            ['--level', level.value])
@@ -969,9 +949,7 @@ def _tail_events(
         history_length=length,
         show_ns=show_ns,
         color=color,
-        show_defer=show_defer,
-        date=date
-    )
+        show_defer=show_defer)
 
     try:
         # when we're in replay mode we're catching up with the replayed logs
