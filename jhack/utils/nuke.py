@@ -18,10 +18,11 @@ from jhack.logger import logger
 logger = logger.getChild(__file__)
 
 ATOM = '⚛'
+ICBM = f"~]=={ATOM}❯"
 COLOR_MAP = {
     'model': 'red',
     'relation': 'cyan',
-    'app': 'orange',
+    'app': '#ebb134',
 }
 NUKE_ASCII_ART = """
                              ____
@@ -233,18 +234,22 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
     console = Console()
     print_centered = lambda s: console.print(Align(s, align='center'))
 
-    pad = '\t' * 2
-
     def fire(nukeable: Nukeable, nuke: str):
         """defcon 5"""
-        _atom = Text(ATOM, style=Style(bold=True, color='green'))
+        _atom = Style(bold=True, color='green')
+        print(f"nuking: {nukeable}u")
 
         nukeable_name = nukeable.name
         if not nukeable.type == 'model':
             nukeable_name += f" ({nukeable.model})"
+        print(nukeable_name)
 
-        to_nuke = Text(nukeable_name, style=Style(color=COLOR_MAP[nukeable.type]))
-        print_centered(Text(f'nuking').append(_atom).append(to_nuke).append(_atom))
+        to_nuke = Style(color=COLOR_MAP[nukeable.type])
+        text = Text(f'nuking').append(
+            nukeable_name, to_nuke).append(
+            ATOM, _atom)
+
+        print_centered(text)
         logger.debug(f'nuking {nukeable} with {nuke}')
         proc = Popen(nuke.split(' '), stdout=PIPE, stderr=PIPE)
         proc.wait()
@@ -262,7 +267,10 @@ def _nuke(obj: Optional[str], model: Optional[str], borked: bool,
 
     tp = ThreadPool()
     for nukeable, nuke in zip(nukeables, nukes):
-        tp.apply_async(fire, (nukeable, nuke))
+        logger.debug(f"firing {nuke} {ICBM} {nukeable}")
+        res = tp.apply_async(fire, (nukeable, nuke))
+        if not res.successful():
+            print_centered(f"nuke {nuke} {ICBM} {nukeable} failed; someone doesn't want to die")
 
     tp.close()
     tp.join()
