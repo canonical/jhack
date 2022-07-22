@@ -150,6 +150,47 @@ update_status ❯──┼┘
 
 And did I mention that there's **colors**?
 
+### You can also `tail` saved logs
+
+Say you have saved two debug-logs with:
+
+```
+juju debug-log --date -i prom/0 > prom.log
+juju debug-log --date -i trfk/0 > trfk.log
+```
+
+Yielding files:
+
+prom.txt
+```
+unit-prom-0: 2022-07-20 10:00:00 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-21 5:00:00 INFO juju.worker.uniter.operation ran "prometheus-peers-relation-created" hook (via hook dispatching script: dispatch)
+```
+
+trfk.txt
+```
+unit-trfk-0: 2022-07-20 11:00:00 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 12:00:00 INFO juju.worker.uniter.operation ran "traefik-pebble-ready" hook (via hook dispatching script: dispatch)
+```
+
+You can run `jhack utils tail --file=prom.txt --file=trfk.txt` to see the events in all the logs, interlaced in the correct chronological order as expected:
+
+```
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ timestamp      ┃ prom/0                               ┃ trfk/0                  ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│  5:00:00       │ prometheus_peers_relation_created    │                         │
+│ 12:00:00       │                                      │ traefik_pebble_ready    │
+│ 11:00:00       │                                      │ start                   │
+│ 10:00:00       │ install                              │                         │
+├────────────────┼──────────────────────────────────────┼─────────────────────────┤
+│ The end.       │ prom/0                               │ trfk/0                  │
+├────────────────┼──────────────────────────────────────┼─────────────────────────┤
+│ events emitted │ 2                                    │ 2                       │
+└────────────────┴──────────────────────────────────────┴─────────────────────────┘
+```
+
+
 ## show-relation 
 
 Displays the databags of units involved in a relation.

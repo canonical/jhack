@@ -973,6 +973,8 @@ def _tail_events(
         date=date
     )
 
+    print("TEST")
+
     try:
         # when we're in replay mode we're catching up with the replayed logs
         # so we won't limit the framerate and just flush the output

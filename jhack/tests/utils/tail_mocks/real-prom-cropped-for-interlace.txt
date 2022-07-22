@@ -1,0 +1,42 @@
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.cmd running containerAgent [2.9.32 c360f3d92b40458cf15512a7fe5eddb0e7ae57b2 gc go1.18.3]
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.cmd.containeragent.unit start "unit"
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.upgradesteps upgrade steps for 2.9.32 have already been run.
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.probehttpserver starting http server on [::]:3856
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.api connection established to "wss://controller-service.controller-uk8sx.svc.cluster.local:17070/model/241733e9-d6d3-4922-87df-e301d04aedeb/api"
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.apicaller [241733] "unit-prom-0" successfully connected to "controller-service.controller-uk8sx.svc.cluster.local:17070"
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.api cannot resolve "controller-service.controller-uk8sx.svc.cluster.local": lookup controller-service.controller-uk8sx.svc.cluster.local: operation was canceled
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.api connection established to "wss://10.152.183.197:17070/model/241733e9-d6d3-4922-87df-e301d04aedeb/api"
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.apicaller [241733] "unit-prom-0" successfully connected to "10.152.183.197:17070"
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.migrationminion migration phase is now: NONE
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.logger logger worker started
+unit-prom-0: 2022-07-20 15:34:06 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.leadership prom/0 promoted to leadership of prom
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.caasupgrader unblocking abort check
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-prom-0
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.uniter unit "prom/0" started
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.uniter resuming charm install
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.worker.uniter.charm downloading ch:amd64/focal/prometheus-k8s-51 from API server
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.downloader downloading from ch:amd64/focal/prometheus-k8s-51
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.downloader download complete ("ch:amd64/focal/prometheus-k8s-51")
+unit-prom-0: 2022-07-20 15:34:06 INFO juju.downloader download verified ("ch:amd64/focal/prometheus-k8s-51")
+unit-prom-0: 2022-07-20 15:34:13 INFO juju.worker.uniter hooks are retried true
+unit-prom-0: 2022-07-20 15:34:14 INFO juju.worker.uniter found queued "install" hook
+unit-prom-0: 2022-07-20 15:34:15 INFO unit.prom/0.juju-log Running legacy hooks/install.
+unit-prom-0: 2022-07-20 15:34:15 INFO unit.prom/0.juju-log Kubernetes service 'prom' patched successfully
+unit-prom-0: 2022-07-20 15:34:16 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:34:17 INFO juju.worker.uniter.operation ran "prometheus-peers-relation-created" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:34:17 INFO juju.worker.uniter found queued "leader-elected" hook
+unit-prom-0: 2022-07-20 15:34:18 INFO juju.worker.uniter.operation ran "leader-elected" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:34:19 INFO juju.worker.uniter.operation ran "database-storage-attached" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:34:20 INFO juju.worker.uniter.operation ran "config-changed" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:34:20 INFO juju.worker.uniter found queued "start" hook
+unit-prom-0: 2022-07-20 15:34:20 INFO unit.prom/0.juju-log Running legacy hooks/start.
+unit-prom-0: 2022-07-20 15:34:21 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:35:14 INFO unit.prom/0.juju-log Pushed new configuration
+unit-prom-0: 2022-07-20 15:35:15 INFO unit.prom/0.juju-log Prometheus (re)started
+unit-prom-0: 2022-07-20 15:35:16 INFO juju.worker.uniter.operation ran "prometheus-pebble-ready" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:38:44 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:44:29 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:48:06 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+unit-prom-0: 2022-07-20 15:48:11 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)

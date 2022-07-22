@@ -1,0 +1,36 @@
+unit-trfk-0: 2022-07-20 15:34:04 INFO juju.cmd running containerAgent [2.9.32 c360f3d92b40458cf15512a7fe5eddb0e7ae57b2 gc go1.18.3]
+unit-trfk-0: 2022-07-20 15:34:04 INFO juju.cmd.containeragent.unit start "unit"
+unit-trfk-0: 2022-07-20 15:34:04 INFO juju.worker.upgradesteps upgrade steps for 2.9.32 have already been run.
+unit-trfk-0: 2022-07-20 15:34:04 INFO juju.worker.probehttpserver starting http server on [::]:3856
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.api connection established to "wss://controller-service.controller-uk8sx.svc.cluster.local:17070/model/241733e9-d6d3-4922-87df-e301d04aedeb/api"
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.apicaller [241733] "unit-trfk-0" successfully connected to "controller-service.controller-uk8sx.svc.cluster.local:17070"
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.migrationminion migration phase is now: NONE
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.logger logger worker started
+unit-trfk-0: 2022-07-20 15:34:05 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.leadership trfk/0 promoted to leadership of trfk
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.caasupgrader unblocking abort check
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-trfk-0
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.uniter unit "trfk/0" started
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.uniter resuming charm install
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.worker.uniter.charm downloading ch:amd64/focal/traefik-k8s-10 from API server
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.downloader downloading from ch:amd64/focal/traefik-k8s-10
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.downloader download complete ("ch:amd64/focal/traefik-k8s-10")
+unit-trfk-0: 2022-07-20 15:34:05 INFO juju.downloader download verified ("ch:amd64/focal/traefik-k8s-10")
+unit-trfk-0: 2022-07-20 15:34:13 INFO juju.worker.uniter hooks are retried true
+unit-trfk-0: 2022-07-20 15:34:13 INFO juju.worker.uniter found queued "install" hook
+unit-trfk-0: 2022-07-20 15:34:15 INFO unit.trfk/0.juju-log Running legacy hooks/install.
+unit-trfk-0: 2022-07-20 15:34:16 INFO unit.trfk/0.juju-log Kubernetes service 'trfk' patched successfully
+unit-trfk-0: 2022-07-20 15:34:16 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:34:16 INFO juju.worker.uniter found queued "leader-elected" hook
+unit-trfk-0: 2022-07-20 15:34:17 INFO juju.worker.uniter.operation ran "leader-elected" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:34:18 INFO juju.worker.uniter.operation ran "configurations-storage-attached" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:34:19 INFO juju.worker.uniter.operation ran "config-changed" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:34:19 INFO juju.worker.uniter found queued "start" hook
+unit-trfk-0: 2022-07-20 15:34:19 INFO unit.trfk/0.juju-log Running legacy hooks/start.
+unit-trfk-0: 2022-07-20 15:34:20 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:34:31 INFO juju.worker.uniter.operation ran "traefik-pebble-ready" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:38:22 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:44:09 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:48:05 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+unit-trfk-0: 2022-07-20 15:48:10 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
