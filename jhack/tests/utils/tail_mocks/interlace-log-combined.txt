@@ -1,0 +1,10 @@
+debuglog-0: 2022-07-20 12:24:26 INFO juju.worker.apicaller [241733] "controller-0" successfully connected to "localhost:17070"
+debuglog-1: 2022-07-20 13:24:26 INFO juju.worker.apicaller [241733] "controller-0" successfully connected to "localhost:17070"
+debuglog-1: 2022-07-21 1:24:26 INFO juju.worker.logforwarder config change - log forwarding not enabled
+debuglog-0: 2022-07-21 12:24:26 INFO juju.worker.logforwarder config change - log forwarding not enabled
+debuglog-0: 2022-07-21 13:24:26 INFO juju.worker.logger logger worker started
+debuglog-0: 2022-07-21 16:24:26 INFO juju.worker.pruner.action status history config: max age: 336h0m0s, max collection size 5120M for kubeflow (241733e9-d6d3-4922-87df-e301d04aedeb)
+debuglog-1: 2022-07-22 1:24:26 INFO juju.worker.logger logger worker started
+debuglog-1: 2022-07-22 2:24:26 INFO juju.worker.pruner.action status history config: max age: 336h0m0s, max collection size 5120M for kubeflow (241733e9-d6d3-4922-87df-e301d04aedeb)
+debuglog-0: 2022-07-22 12:24:26 INFO juju.worker.pruner.statushistory status history config: max age: 336h0m0s, max collection size 5120M for kubeflow (241733e9-d6d3-4922-87df-e301d04aedeb)
+debuglog-1: 2022-07-22 22:24:26 INFO juju.worker.pruner.statushistory status history config: max age: 336h0m0s, max collection size 5120M for kubeflow (241733e9-d6d3-4922-87df-e301d04aedeb)
