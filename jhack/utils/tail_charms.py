@@ -1,6 +1,7 @@
 import enum
 import os
 import random
+import re
 import sys
 import time
 from collections import defaultdict, Counter
@@ -20,6 +21,7 @@ from rich.text import Text
 
 from jhack.config import JUJU_COMMAND
 from jhack.logger import logger as jhacklogger
+from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
@@ -183,22 +185,6 @@ def _random_color():
 class Processor:
     # FIXME: why does sometime event/relation_event work, and sometimes
     #  uniter_event does? OF Version?
-    event = parse.compile(
-        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-    event_from_relation = parse.compile(
-        "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
-    uniter_event = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
-    event_deferred = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-    event_deferred_from_relation = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-    event_reemitted = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-    )
-    event_reemitted_from_relation = parse.compile(
-        '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-    )
 
     def __init__(self, targets: Iterable[Target],
                  add_new_targets: bool = True,
@@ -228,10 +214,28 @@ class Processor:
 
         self._has_just_emitted = False
         self.console = console = Console()
-        self.live = Live(console=console)
-        self.render()
+        self.live = live = Live(console=console)
+        live.start()
 
         self._warned_about_orphans = False
+
+        base_pattern = "^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) unit\.(?P<unit>\S+)\.juju-log "
+        base_relation_pattern = base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
+
+        event_suffix = "Emitting Juju event (?P<event>\S+)\."
+        self.event = re.compile(base_pattern + event_suffix)
+        self.event_from_relation = re.compile(base_relation_pattern + event_suffix)
+
+        self.uniter_event = re.compile('^(?P<pod_name>\S+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran \"(?P<event>\S+)\" hook \(via hook dispatching script: dispatch\)')
+
+        event_repr = "<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
+        defer_suffix = "Deferring " + event_repr
+        self.event_deferred = re.compile(base_pattern + defer_suffix)
+        self.event_deferred_from_relation = re.compile(base_relation_pattern + defer_suffix)
+
+        reemitted_suffix = "Re-emitting " + event_repr
+        self.event_reemitted = re.compile(base_pattern + reemitted_suffix)
+        self.event_reemitted_from_relation = re.compile(base_relation_pattern + reemitted_suffix)
 
     def _warn_about_orphaned_event(self, evt):
         if self._warned_about_orphans:
@@ -340,10 +344,10 @@ class Processor:
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         if "Deferring" not in log:
             return
-        match = self.event_deferred.parse(
-            log) or self.event_deferred_from_relation.parse(log)
+        match = self.event_deferred.match(
+            log) or self.event_deferred_from_relation.match(log)
         if match:
-            params = match.named
+            params = match.groupdict()
             params['event'] = self._uniform_event(params['event'])
             return EventDeferredLogMsg(**params, mocked=False)
 
@@ -351,10 +355,10 @@ class Processor:
         EventReemittedLogMsg]:
         if "Re-emitting" not in log:
             return
-        match = self.event_reemitted.parse(
-            log) or self.event_reemitted_from_relation.parse(log)
+        match = self.event_reemitted.match(
+            log) or self.event_reemitted_from_relation.match(log)
         if match:
-            params = match.named
+            params = match.groupdict()
             params['event'] = self._uniform_event(params['event'])
             return EventReemittedLogMsg(**params, mocked=False)
 
@@ -363,20 +367,13 @@ class Processor:
         # unit-traefik-k8s-0: 10:36:19 DEBUG unit.traefik-k8s/0.juju-log ingress-per-unit:38: Emitting Juju event ingress_per_unit_relation_changed.
         # unit-prometheus-k8s-0: 13:06:09 DEBUG unit.prometheus-k8s/0.juju-log ingress:44: Emitting Juju event ingress_relation_changed.
 
-        match = self.event.parse(log)
-
-        # search for relation events
-        if not match:
-            match = self.event_from_relation.parse(log)
-            if match:
-                params = match.named
-
+        match = self.event.match(log) or self.event_from_relation.match(log)
         # attempt to match in another format ?
         if not match:
             # fallback
-            if match := self.uniter_event.parse(log):
-                unit = parse.compile("unit-{}").parse(match.named['pod_name'])
-                params = match.named
+            if match := self.uniter_event.match(log):
+                params = match.groupdict()
+                unit = parse.compile("unit-{}").parse(params['pod_name'])
                 *names, number = unit.fixed[0].split('-')
                 name = '-'.join(names)
                 params['unit'] = '/'.join([name, number])
@@ -384,10 +381,14 @@ class Processor:
                 return
 
         else:
-            params = match.named
+            params = match.groupdict()
 
         # uniform
         params['event'] = params['event'].replace('-', '_')
+
+        # Ignore the unused date parameter
+        if "date" in params:
+            del params['date']
         return EventLogMsg(**params, mocked=False)
 
     def _add_new_target(self, msg: EventLogMsg):
@@ -505,7 +506,9 @@ class Processor:
         self.live.update(table_centered)
 
         if not self.live.is_started:
+            logger.info('live started by render')
             self.live.start()
+
         return table_centered
 
     def _is_tracking(self, msg):
@@ -849,7 +852,14 @@ def tail_events(
             help='Keep listening.'),
         color: bool = typer.Option(
             True,
-            help='Colorize output.')
+            help='Colorize output.'),
+        file: Optional[List[str]] = typer.Option(
+            [],
+            help="Text file with logs from `juju debug-log`.  Can be used in place of streaming "
+                 "logs directly from juju, and can be set multiple times to read from multiple "
+                 "files.  File must be exported from juju using `juju debug-log --date` to allow"
+                 " for proper sorting"
+        )
 
 ):
     """Pretty-print a table with the events that are fired on juju units
@@ -869,7 +879,8 @@ def tail_events(
         show_defer=show_defer,
         show_ns=show_ns,
         watch=watch,
-        color=color
+        color=color,
+        files=file
     )
 
 
@@ -884,7 +895,8 @@ def _tail_events(
         show_defer: bool = False,
         show_ns: bool = False,
         watch: bool = True,
-        color: bool = True
+        color: bool = True,
+        files: List[str] = None
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -903,7 +915,15 @@ def _tail_events(
 
     targets = parse_targets(targets)
 
-    logger.debug('starting JDL process')
+    if files and replay:
+        logger.debug(f"ignoring `replay` because files were provided")
+        replay = False
+
+    if files and watch:
+        logger.debug(f"ignoring `watch` because files were provided")
+        watch = False
+
+    logger.debug('starting to read logs')
     cmd = ([JUJU_COMMAND, 'debug-log'] +
            (['--tail'] if watch else []) +
            (['--replay'] if replay else []) +
@@ -918,27 +938,41 @@ def _tail_events(
         history_length=length,
         show_ns=show_ns,
         color=color,
-        show_defer=show_defer)
+        show_defer=show_defer
+    )
 
     try:
-        proc = _get_debug_log(cmd)
         # when we're in replay mode we're catching up with the replayed logs
         # so we won't limit the framerate and just flush the output
         replay_mode = True
 
-        if not watch:
-            stdout = iter(proc.stdout.readlines())
+        if files:
+            # handle input from files
+            log_getter = DebugLogInterlacer(files)
 
             def next_line():
                 try:
-                    return next(stdout)
+                    # Encode to be similar to other input sources
+                    return log_getter.readline().encode('utf-8')
                 except StopIteration:
                     return ''
 
         else:
-            def next_line():
-                line = proc.stdout.readline()
-                return line
+            proc = _get_debug_log(cmd)
+
+            if not watch:
+                stdout = iter(proc.stdout.readlines())
+
+                def next_line():
+                    try:
+                        return next(stdout)
+                    except StopIteration:
+                        return ''
+
+            else:
+                def next_line():
+                    line = proc.stdout.readline()
+                    return line
 
         while True:
             start = time.time()
@@ -948,8 +982,9 @@ def _tail_events(
                 if not watch:
                     break
 
-                if proc.poll() is not None:
+                if not files and proc.poll() is not None:
                     # process terminated FIXME: this shouldn't happen
+                    # Checks only if we're watching a process
                     break
 
                 replay_mode = False
@@ -965,10 +1000,11 @@ def _tail_events(
                 time.sleep(framerate - elapsed)
 
     except KeyboardInterrupt:
+        pass  # quit
+    finally:
         processor.quit()
-        return
 
-    print(f"processed {processor.evt_count} events.")
+    return processor  # for testing
 
 
 def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=' '):
@@ -985,4 +1021,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=' '):
 
 
 if __name__ == '__main__':
-    _tail_events(replay=True, show_defer=True, show_ns=True, length=40)
+    _tail_events(files=['/home/pietro/jdl.txt'])
