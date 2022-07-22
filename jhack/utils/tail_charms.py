@@ -1,6 +1,7 @@
 import enum
 import os
 import random
+import re
 import sys
 import time
 from collections import defaultdict, Counter
@@ -190,8 +191,7 @@ class Processor:
                  history_length: int = 10,
                  show_ns: bool = True,
                  color: bool = True,
-                 show_defer: bool = False,
-                 date: bool = False):
+                 show_defer: bool = False):
         if not color:
             # maybe implement it some day.
             logger.debug('Sorry, but colors are too pretty to get rid of.')
@@ -219,40 +219,23 @@ class Processor:
 
         self._warned_about_orphans = False
 
-        if date:
-            self.event = parse.compile(
-                "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-            self.event_from_relation = parse.compile(
-                "{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
-            self.uniter_event = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
-            self.event_deferred = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_deferred_from_relation = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_reemitted = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
-            self.event_reemitted_from_relation = parse.compile(
-                '{pod_name}: {date} {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
-        else:
-            self.event = parse.compile(
-                "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Emitting Juju event {event}.")
-            self.event_from_relation = parse.compile(
-                "{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Emitting Juju event {event}.")
-            self.uniter_event = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} juju.worker.uniter.operation ran "{event}" hook (via hook dispatching script: dispatch)')
-            self.event_deferred = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_deferred_from_relation = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Deferring <{event_cls} via {charm_name}/on/{event}[{n}]>.')
-            self.event_reemitted = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
-            self.event_reemitted_from_relation = parse.compile(
-                '{pod_name}: {timestamp} {loglevel} unit.{unit}.juju-log {endpoint}:{endpoint_id}: Re-emitting <{event_cls} via {charm_name}/on/{event}[{n}]>.'
-            )
+        base_pattern = "^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) unit\.(?P<unit>\S+)\.juju-log "
+        base_relation_pattern = base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
+
+        event_suffix = "Emitting Juju event (?P<event>\S+)\."
+        self.event = re.compile(base_pattern + event_suffix)
+        self.event_from_relation = re.compile(base_relation_pattern + event_suffix)
+
+        self.uniter_event = re.compile('^(?P<pod_name>\S+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran \"(?P<event>\S+)\" hook \(via hook dispatching script: dispatch\)')
+
+        event_repr = "<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
+        defer_suffix = "Deferring " + event_repr
+        self.event_deferred = re.compile(base_pattern + defer_suffix)
+        self.event_deferred_from_relation = re.compile(base_relation_pattern + defer_suffix)
+
+        reemitted_suffix = "Re-emitting " + event_repr
+        self.event_reemitted = re.compile(base_pattern + reemitted_suffix)
+        self.event_reemitted_from_relation = re.compile(base_relation_pattern + reemitted_suffix)
 
     def _warn_about_orphaned_event(self, evt):
         if self._warned_about_orphans:
@@ -361,10 +344,10 @@ class Processor:
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         if "Deferring" not in log:
             return
-        match = self.event_deferred.parse(
-            log) or self.event_deferred_from_relation.parse(log)
+        match = self.event_deferred.match(
+            log) or self.event_deferred_from_relation.match(log)
         if match:
-            params = match.named
+            params = match.groupdict()
             params['event'] = self._uniform_event(params['event'])
             return EventDeferredLogMsg(**params, mocked=False)
 
@@ -372,10 +355,10 @@ class Processor:
         EventReemittedLogMsg]:
         if "Re-emitting" not in log:
             return
-        match = self.event_reemitted.parse(
-            log) or self.event_reemitted_from_relation.parse(log)
+        match = self.event_reemitted.match(
+            log) or self.event_reemitted_from_relation.match(log)
         if match:
-            params = match.named
+            params = match.groupdict()
             params['event'] = self._uniform_event(params['event'])
             return EventReemittedLogMsg(**params, mocked=False)
 
@@ -384,20 +367,13 @@ class Processor:
         # unit-traefik-k8s-0: 10:36:19 DEBUG unit.traefik-k8s/0.juju-log ingress-per-unit:38: Emitting Juju event ingress_per_unit_relation_changed.
         # unit-prometheus-k8s-0: 13:06:09 DEBUG unit.prometheus-k8s/0.juju-log ingress:44: Emitting Juju event ingress_relation_changed.
 
-        match = self.event.parse(log)
-
-        # search for relation events
-        if not match:
-            match = self.event_from_relation.parse(log)
-            if match:
-                params = match.named
-
+        match = self.event.match(log) or self.event_from_relation.match(log)
         # attempt to match in another format ?
         if not match:
             # fallback
-            if match := self.uniter_event.parse(log):
-                unit = parse.compile("unit-{}").parse(match.named['pod_name'])
-                params = match.named
+            if match := self.uniter_event.match(log):
+                params = match.groupdict()
+                unit = parse.compile("unit-{}").parse(params['pod_name'])
                 *names, number = unit.fixed[0].split('-')
                 name = '-'.join(names)
                 params['unit'] = '/'.join([name, number])
@@ -405,7 +381,7 @@ class Processor:
                 return
 
         else:
-            params = match.named
+            params = match.groupdict()
 
         # uniform
         params['event'] = params['event'].replace('-', '_')
@@ -947,13 +923,6 @@ def _tail_events(
         logger.debug(f"ignoring `watch` because files were provided")
         watch = False
 
-    if files:
-        # If we're using file input, they must also have dates in the output
-        date = True
-    else:
-        date = False
-
-
     logger.debug('starting to read logs')
     cmd = ([JUJU_COMMAND, 'debug-log'] +
            (['--tail'] if watch else []) +
@@ -969,11 +938,8 @@ def _tail_events(
         history_length=length,
         show_ns=show_ns,
         color=color,
-        show_defer=show_defer,
-        date=date
+        show_defer=show_defer
     )
-
-    print("TEST")
 
     try:
         # when we're in replay mode we're catching up with the replayed logs
@@ -1037,6 +1003,8 @@ def _tail_events(
         pass  # quit
     finally:
         processor.quit()
+
+    return processor  # for testing
 
 
 def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=' '):
