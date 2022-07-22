@@ -52,9 +52,10 @@ def juju_models() -> str:
 def list_models(strip_star=False) -> List[str]:
     raw = juju_models()
     lines = raw.split('\n')[3:]
+    models = filter(None, (line.split(' ')[0] for line in lines))
     if strip_star:
-        return [line.split(' ')[0].strip('*') for line in lines]
-    return [line.split(' ')[0] for line in lines]
+        return [name.strip('*') for name in models]
+    return models
 
 
 def current_model() -> str:
