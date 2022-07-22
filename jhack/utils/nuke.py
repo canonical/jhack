@@ -208,20 +208,21 @@ def _nuke(
 ):
     if obj is None and not borked:
         logger.info("No object provided, we'll nuke the current model.")
-        nukeables = [Nukeable(model, "model")]
+        nukeables = [Nukeable(current_model(), "model")]
     else:
-
-        SELECTORS = 'amr'
-        _selectors = set(selectors or SELECTORS)  # all
-        for char in SELECTORS:
-            if char.upper() in _selectors:
-                _selectors.remove(char.upper())
-                _selectors.remove(char)
-
         if obj == '*' and selectors is None:
             # nuke * === nuke all applications.
             # That's the most common target.
             _selectors = {'a'}
+        elif borked:
+            _selectors = {'a'}
+        else:
+            SELECTORS = 'amr'
+            _selectors = set(selectors or SELECTORS)  # all
+            for char in SELECTORS:
+                if char.upper() in _selectors:
+                    _selectors.remove(char.upper())
+                    _selectors.remove(char)
 
         nukeables = _gather_nukeables(obj, model, borked=borked,
                                       selectors=''.join(_selectors))
@@ -340,7 +341,7 @@ def _nuke(
         else:
             if not res.successful():
                 print_centered(
-                    f"nuke {nuke} {ICBM} {nukeable} failed; someone doesn't want to die"
+                    f"nuke {nuke!r} {ICBM} {nukeable!r} failed; someone doesn't want to die"
                 )
 
     if not dry_run:
@@ -402,6 +403,11 @@ def nuke(
         assert n > 0, f"nonsense: {n}"
         if not len(what) == 1:
             print("You cannot use `-n` with multiple targets.")
+            return
+    if selectors != 'a' and borked:
+        print('borked implies selector=`a`')
+        return
+
     if not what:
         _nuke(None, model=model, borked=borked, selectors=selectors, n=n, dry_run=dry_run)
     for obj in what:
