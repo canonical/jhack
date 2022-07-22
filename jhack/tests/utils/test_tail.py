@@ -52,12 +52,13 @@ MOCK_JDL = {
         """,
 }
 
-with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-log.txt',
+mocks_dir = Path(__file__).parent / 'tail_mocks'
+with open(mocks_dir / 'real-trfk-log.txt',
           mode='rb') as f:
     logs = f.read()
     MOCK_JDL['real'] = logs
 
-with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-cropped.txt',
+with open(mocks_dir / 'real-trfk-cropped.txt',
           mode='rb') as f:
     logs = f.read()
     MOCK_JDL['cropped'] = logs
@@ -178,6 +179,7 @@ def test_tracking_reemit_only():
 
 def test_tail_with_file_input():
     _tail_events(
-        files=["./tail_mocks/real-prom-cropped-for-interlace.txt", "./tail_mocks/real-trfk-cropped-for-interlace.txt"]
+        files=["./tail_mocks/real-prom-cropped-for-interlace.txt",
+               "./tail_mocks/real-trfk-cropped-for-interlace.txt"]
     )
 

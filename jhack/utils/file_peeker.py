@@ -37,3 +37,11 @@ class FilePeeker:
     def readlines(self, *args, **kwargs):
         """Convenience alias to access underlying file object's readlines method"""
         return self.file.readlines(*args, **kwargs)
+
+    def __iter__(self):
+        while True:
+            line = self.readline()
+            if not line:
+                return
+            yield line
+
