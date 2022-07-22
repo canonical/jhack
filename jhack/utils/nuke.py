@@ -206,8 +206,6 @@ def _nuke(
     n: int = None,
     dry_run: bool = False,
 ):
-    print(obj, model, borked, selectors, n, dry_run)
-
     if obj is None and not borked:
         logger.info("No object provided, we'll nuke the current model.")
         nukeables = [Nukeable(model, "model")]
