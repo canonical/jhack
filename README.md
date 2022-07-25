@@ -281,11 +281,18 @@ For targeting relations only, you can type out the endpoint name up to and inclu
 you could do:
 `jhack nuke "my-db:"`, that will match all the relations of your app. They're history now.
 
-### Safety tips
+By using this tool you acknowledge the possibility of it bricking your model or controller. Hopefully nothing beyond that.
 
+### Safety tips
  - Learn to use the command by trying out the `--dry-run` flag first, that will print out what it would nuke without actually nuking anything. 
  - The command has an optional `-n` flag that allows you to specify the expected number of nukes that should be fired out. If more or less than `n` nukeables are matched, the command will print an error message and abort.
-
+ - The command has a `--selectors` (`-s`) option that can be used to specify what to include/exclude in the bombardment.
+   - 'a' for apps, 'A' for all except apps
+   - 'm' for models, 'M' for all except models
+   - 'r' for relations, 'R' for all except relations 
+     (although, the resulting nuke will probably also wipe the relations that would have been matched had this flag been omitted)
+   
+   So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.   
 
 # model
 ## clear
