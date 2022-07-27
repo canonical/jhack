@@ -140,7 +140,7 @@ def get_metadata_from_status(app_name, relation_name, other_app_name,
     scale = raw_scale[0][-1]
 
     leader_id = \
-        re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(
+        re.compile(fr"^\s*{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(
             status)[
             0][-1]
     intf_re = fr"(({re_safe_app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
