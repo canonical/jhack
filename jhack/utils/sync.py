@@ -150,4 +150,4 @@ async def push_to_remote_juju_unit(file: Path, remote_root: str,
                      f"\nstdout={proc.stdout.read()}, "
                      f"\nstderr={proc.stderr.read()}")
 
-    logger.info(f'synced {file}')
+    print(f'synced {file}')

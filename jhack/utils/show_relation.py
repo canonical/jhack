@@ -124,46 +124,25 @@ class AppRelationData:
 def get_metadata_from_status(app_name, relation_name, other_app_name,
                              other_relation_name, model: str = None):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status = juju_status(app_name, model=model)
-    # escape dashes
+    status = juju_status(app_name, model=model, json=True)
+    scale = int(status['applications'][app_name]['scale'])
+
+    leader_id: int = 0
+    unit_ids: List[int] = []
+
+    for u, v in status['applications'][app_name]['units'].items():
+        unit_id = int(u.split('/')[1])
+        if v['leader']:
+            leader_id = unit_id
+        unit_ids.append(unit_id)
+
+    # we gotta do this because json status --format json does not include the interface
+    raw_text_status = juju_status(app_name, model=model)
+
     re_safe_app_name = app_name.replace('-', r'\-')
-
-    # even if the scale is "4/5" this will match the first digit, i.e. the current scale
-    raw_scale = re.compile(
-        fr"^{re_safe_app_name}(?!\/)(\s+)?((\w|\/|\:|\@|\-|\d|\.)+)?(\s+)?(\w+)(\s+)?(?P<scale>\d+)",
-        re.MULTILINE).findall(status)
-
-    if not raw_scale:
-        raise RuntimeError(
-            f'failed to parse output of juju status {app_name!r}; '
-            f'is the app name correct?')
-    scale = raw_scale[0][-1]
-
-    leader_id = \
-        re.compile(fr"^{re_safe_app_name}\/(\d+)\*", re.MULTILINE).findall(
-            status)[
-            0][-1]
     intf_re = fr"(({re_safe_app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
-    interface = re.compile(intf_re).findall(status)[0][-1]
-
-    # parse status to enumerate the existing units for app_name.
-    status_lines = status.split('\n')
-    units_header = next(
-        (line for line in status_lines if line.startswith('Unit ')))
-    unit_lines = status_lines[status_lines.index(units_header):]
-    units: List[int] = []
-    for unit_line in unit_lines:
-        if not unit_line.strip():
-            # first newline is end of section.
-            break
-        if unit_line.startswith(app_name):
-            app_name_, unit_id_ = unit_line.split(' ')[0].split('/')
-            if app_name_ == app_name:
-                # this unit belongs to our app
-                unit_id = int(unit_id_.strip('*'))
-                units.append(unit_id)
-
-    return Metadata(int(scale), tuple(units), int(leader_id), interface)
+    interface = re.compile(intf_re).findall(raw_text_status)[0][-1]
+    return Metadata(scale, tuple(unit_ids), leader_id, interface)
 
 
 def get_app_name_and_units(url, relation_name,
@@ -372,8 +351,8 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
             relation = relations[n]
         except IndexError:
             raise RuntimeError(
-                f"There are only {len(relations)} relations."
-                f"Can't show the {n}th."
+                f"There are only {len(relations)} relations. "
+                f"Can't show the {n+1}th."
             )
         endpoint1 = relation.provider
 

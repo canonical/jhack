@@ -20,7 +20,7 @@ from jhack.charm import functional
 from jhack.charm.init import init
 from jhack.logger import logger, LOGLEVEL
 from jhack.charm.update import update
-from jhack.charm.repack import repack
+from jhack.charm.repack import refresh
 from jhack.charm.sync import sync as sync_packed_charm
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
@@ -58,7 +58,7 @@ def main():
 
     charm = typer.Typer(name='charm', help='Charmcrafting utilities.')
     charm.command(name='update')(update)
-    charm.command(name='repack')(repack)
+    charm.command(name='refresh')(refresh)
     charm.command(name='init')(init)
     charm.command(name='func')(functional.run)
     charm.command(name='sync')(sync_packed_charm)

@@ -1,5 +1,6 @@
 import contextlib
 import os
+import json as jsn
 from pathlib import Path
 from subprocess import Popen, PIPE
 from typing import List
@@ -33,14 +34,17 @@ def get_local_charm() -> Path:
         )
 
 
-def juju_status(app_name, model: str = None):
+def juju_status(app_name, model: str = None, json: bool = False):
+    cmd = f'{JUJU_COMMAND} status {app_name} --relations'
     if model:
-        proc = Popen(f'{JUJU_COMMAND} status -m {model} {app_name} --relations'.split(),
-                     stdout=PIPE, stderr=PIPE)
-    else:
-        proc = Popen(f'{JUJU_COMMAND} status {app_name} --relations'.split(),
-                     stdout=PIPE, stderr=PIPE)
-    return proc.stdout.read().decode('utf-8')
+        cmd += ' -m {model}'
+    if json:
+        cmd += ' --format json'
+    proc = Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
+    raw = proc.stdout.read().decode('utf-8')
+    if json:
+        return jsn.loads(raw)
+    return raw
 
 
 def juju_models() -> str:

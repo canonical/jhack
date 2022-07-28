@@ -29,7 +29,7 @@ def pack(root: Path, clean=False, dry_run: bool = False):
         print(f'done in {time() - start:4}s')
 
 
-def refresh(root: Path, charm_name: str = None,
+def _refresh(root: Path, charm_name: str = None,
             app_name: str = None, dry_run: bool = False):
     if not charm_name:
         with cwd(root):
@@ -51,7 +51,7 @@ def refresh(root: Path, charm_name: str = None,
     print('done.')
 
 
-def repack(root: Path = None,
+def refresh(root: Path = None,
            charm_name: str = None,
            clean: bool = False,
            app_name: str = None,
@@ -61,4 +61,4 @@ def repack(root: Path = None,
     """
     root = root or Path(os.getcwd())
     pack(root, dry_run=dry_run, clean=clean)
-    refresh(root, app_name=app_name, charm_name=charm_name, dry_run=dry_run)
+    _refresh(root, app_name=app_name, charm_name=charm_name, dry_run=dry_run)

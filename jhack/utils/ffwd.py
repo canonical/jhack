@@ -25,7 +25,6 @@ def fast_forward(
     if timeout:
         print(f'\ttimeout set at {timeout}s\n')
 
-    print('ffwd: ')
     try:
         while True:
             now = datetime.datetime.now()
