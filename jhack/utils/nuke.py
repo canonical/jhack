@@ -415,4 +415,4 @@ def nuke(
 
 
 if __name__ == "__main__":
-    _nuke("tra", dry_run=True)
+    _nuke("ceilo", dry_run=True)

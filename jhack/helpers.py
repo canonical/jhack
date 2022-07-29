@@ -37,7 +37,7 @@ def get_local_charm() -> Path:
 def juju_status(app_name, model: str = None, json: bool = False):
     cmd = f'{JUJU_COMMAND} status{" " + app_name if app_name else ""} --relations'
     if model:
-        cmd += ' -m {model}'
+        cmd += f' -m {model}'
     if json:
         cmd += ' --format json'
     proc = Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
