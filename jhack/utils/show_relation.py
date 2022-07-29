@@ -363,9 +363,12 @@ async def render_relation(endpoint1: str = None, endpoint2: str = None,
         try:
             relation = relations[n]
         except IndexError:
+            n_rel = len(relations)
+            plur_rel = n_rel > 1
             raise RuntimeError(
-                f"There are only {len(relations)} relations. "
-                f"Can't show the {n+1}th."
+                f"There {'are' if plur_rel else 'is'} only {n_rel} "
+                f"relation{'s' if plur_rel else ''}. "
+                f"Can't show index={n+1}."
             )
         endpoint1 = relation.provider
 
