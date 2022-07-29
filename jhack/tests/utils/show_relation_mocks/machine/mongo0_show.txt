@@ -1,4 +1,4 @@
-mongo/0:
+mongodb/1:
   workload-version: 3.6.8
   machine: "2"
   opened-ports:

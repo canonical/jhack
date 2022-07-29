@@ -1,43 +1,41 @@
 prometheus-k8s/1:
   opened-ports: []
-  charm: ch:amd64/focal/prometheus-k8s-20
+  charm: local:focal/prometheus-k8s-0
   leader: false
   life: alive
   relation-info:
-  - relation-id: 0
+  - relation-id: 2
     endpoint: prometheus-peers
     related-endpoint: prometheus-peers
     application-data: {}
     local-unit:
       in-scope: true
       data:
-        egress-subnets: 10.152.183.183/32
-        ingress-address: 10.152.183.183
-        private-address: 10.152.183.183
+        egress-subnets: 10.152.183.202/32
+        ingress-address: 10.152.183.202
+        private-address: 10.152.183.202
     related-units:
       prometheus-k8s/0:
         in-scope: true
         data:
-          egress-subnets: 10.152.183.183/32
-          ingress-address: 10.152.183.183
-          private-address: 10.152.183.183
-  - relation-id: 1
+          egress-subnets: 10.152.183.202/32
+          ingress-address: 10.152.183.202
+          private-address: 10.152.183.202
+  - relation-id: 3
     endpoint: ingress
     related-endpoint: ingress-per-unit
     application-data:
-      _supported_versions: '- v1'
-      data: |-
-        ingress:
-          prometheus-k8s/0:
-            url: http://13.2:80/foo-prom-0
-          prometheus-k8s/1:
-            url: http://13.2:80/foo-prom-1
+      ingress: |-
+        prometheus-k8s/0:
+          url: http://10.1.232.172:80/bar-prometheus-k8s-0
+        prometheus-k8s/1:
+          url: http://10.1.232.172:80/bar-prometheus-k8s-1
     related-units:
       traefik-k8s/0:
         in-scope: true
         data:
-          egress-subnets: 10.152.183.107/32
-          ingress-address: 10.152.183.107
-          private-address: 10.152.183.107
-  provider-id: prom-1
-  address: 10.1.232.174
+          egress-subnets: 10.152.183.253/32
+          ingress-address: 10.152.183.253
+          private-address: 10.152.183.253
+  provider-id: prometheus-k8s-1
+  address: 10.1.232.184

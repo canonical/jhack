@@ -21,7 +21,7 @@ ceilometer/0:
     related-endpoint: database
     application-data: {}
     related-units:
-      mongo/0:
+      mongodb/1:
         in-scope: true
         data:
           egress-subnets: 10.1.70.128/32

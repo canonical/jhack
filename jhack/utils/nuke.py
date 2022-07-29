@@ -146,7 +146,7 @@ def _get_apps_and_relations(
 
 def _gather_nukeables(obj: Optional[str], model: Optional[str],
                       borked: bool, selectors: str = ''):
-    logger.debug(f'Gathering nukeables for {obj} with _selectors = {selectors!r}')
+    logger.debug(f'Gathering nukeables for {obj!r} with _selectors = {selectors!r}')
 
     globber = lambda s: s.startswith(obj)
 

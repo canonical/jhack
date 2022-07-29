@@ -1,30 +1,36 @@
 import sys
 from pathlib import Path
 from unittest.mock import patch
+import json as _json
 
 import pytest
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from jhack.utils.show_relation import sync_show_relation, get_content
+from jhack.utils.show_relation import _sync_show_relation, get_content
 
 
-def fake_juju_status(app_name, model=None):
+def fake_juju_status(app_name, model=None, json: bool = False):
+    ext = '.jsn' if json else '.txt'
     if app_name == 'ceilometer':
-        source = 'ceil_status.txt'
-    elif app_name == 'mongo':
-        source = 'mongo_status.txt'
+        source = 'ceil_status' + ext
+    elif app_name == 'mongodb':
+        source = 'mongo_status' + ext
     else:
         raise ValueError(app_name)
     mock_file = Path(
         __file__).parent / 'show_relation_mocks' / 'machine' / source
-    return mock_file.read_text()
+    raw = mock_file.read_text()
+
+    if json:
+        return _json.loads(raw)
+    return raw
 
 
 def fake_juju_show_unit(app_name, model=None):
     if app_name == 'ceilometer/0':
         source = 'ceil0_show.txt'
-    elif app_name == 'mongo/0':
+    elif app_name == 'mongodb/1':
         source = 'mongo0_show.txt'
     else:
         raise ValueError(app_name)
@@ -43,13 +49,11 @@ def mock_stdout():
 
 
 def test_show_unit_works():
-    sync_show_relation("ceilometer:shared-db", "mongo:database",
-                       n=None, model=None, show_juju_keys=False,
-                       hide_empty_databags=False)
+    _sync_show_relation("ceilometer:shared-db", "mongodb:database")
 
 
 def test_databag_shape_ceil():
-    content = get_content("ceilometer:shared-db", "mongo:database", False)
+    content = get_content("ceilometer:shared-db", "mongodb:database", False)
     assert content.app_name == 'ceilometer'
     assert content.endpoint == 'shared-db'
     assert content.application_data == {}
@@ -58,8 +62,8 @@ def test_databag_shape_ceil():
 
 
 def test_databag_shape_mongo():
-    content = get_content("mongo:database", "ceilometer:shared-db", False)
-    assert content.app_name == 'mongo'
+    content = get_content("mongodb:database", "ceilometer:shared-db", False)
+    assert content.app_name == 'mongodb'
     assert content.endpoint == 'database'
     assert content.application_data == {}
     assert content.units_data == {

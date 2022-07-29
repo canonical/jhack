@@ -24,6 +24,11 @@ def purge(data: dict):
             del data[key]
 
 
+def _juju_status(*args, **kwargs):
+    # to facilitate mocking in utests
+    return juju_status(*args, **kwargs)
+
+
 def _show_unit(unit_name, model: str = None):
     if model:
         proc = Popen(f"{JUJU_COMMAND} show-unit -m {model} {unit_name}".split(),
@@ -124,20 +129,25 @@ class AppRelationData:
 def get_metadata_from_status(app_name, relation_name, other_app_name,
                              other_relation_name, model: str = None):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status = juju_status(app_name, model=model, json=True)
-    scale = int(status['applications'][app_name]['scale'])
+    status = _juju_status(app_name, model=model, json=True)
+    # machine status json output apparently has no 'scale'... -_-
+    scale = len(status['applications'][app_name]['units'])
 
-    leader_id: int = 0
+    leader_id: int = None
     unit_ids: List[int] = []
 
     for u, v in status['applications'][app_name]['units'].items():
         unit_id = int(u.split('/')[1])
-        if v['leader']:
+        if v.get('leader', False):
             leader_id = unit_id
         unit_ids.append(unit_id)
+    if leader_id is None:
+        raise RuntimeError(f'could not identify leader among units {unit_ids}. '
+                           f'If this is a machine model, you might need to '
+                           f'wait for all units to be allocated.')
 
     # we gotta do this because json status --format json does not include the interface
-    raw_text_status = juju_status(app_name, model=model)
+    raw_text_status = _juju_status(app_name, model=model)
 
     re_safe_app_name = app_name.replace('-', r'\-')
     intf_re = fr"(({re_safe_app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
@@ -175,7 +185,11 @@ def get_content(obj: str, other_obj,
         url, endpoint, other_app_name, other_endpoint,
         model)
 
-    other_unit_id = 0
+    # in k8s there's always a 0 unit, in machine that's not the case.
+    # so even though we need 'any' remote unit name, we still need to query the status
+    # to find out what units there are.
+    status = _juju_status(other_app_name, model=model, json=True)
+    other_unit_name = next(iter(status['applications'][other_app_name]['units']))
     # we might have a different number of units and other units, and it doesn't
     # matter which 'other' we pass to get the databags for 'this one'.
     # in peer relations, show-unit luckily reports 'local-unit', so we're good.
@@ -186,7 +200,6 @@ def get_content(obj: str, other_obj,
     r_id = None
     for unit_id in units:
         unit_name = f"{app_name}/{unit_id}"
-        other_unit_name = f"{other_app_name}/{other_unit_id}"
         unit_data, app_data, r_id_ = get_databags(
             unit_name, other_unit_name,
             endpoint, other_endpoint,
@@ -278,7 +291,7 @@ class Relation:
 
 
 def get_relations(model: str = None) -> List[Relation]:
-    status = juju_status('', model=model)
+    status = _juju_status('', model=model)
     relations = None
     for line in status.split('\n'):
         if line.startswith('Relation provider'):
@@ -457,7 +470,9 @@ def sync_show_relation(
         hide_empty_databags: bool = typer.Option(
             False, "--hide-empty", "-h",
             help="Do not show empty databags."),
-        watch: bool = False,
+        watch: bool = typer.Option(
+            False, '-w', '--watch',
+            help='Keep watching for changes.'),
         model: str = typer.Option(
             None, "-m", "--model",
             help="Which model to look into."),
@@ -472,6 +487,26 @@ def sync_show_relation(
 
     $ jhack utils show-relation my_app:relation_name other_app:other_name
     """
+    return _sync_show_relation(
+        endpoint1=endpoint1,
+        endpoint2=endpoint2,
+        n=n,
+        show_juju_keys=show_juju_keys,
+        hide_empty_databags=hide_empty_databags,
+        watch=watch,
+        model=model,
+    )
+
+
+def _sync_show_relation(
+    endpoint1: str = None,
+    endpoint2: str = None,
+    n: int = None,
+    show_juju_keys: bool = False,
+    hide_empty_databags: bool = False,
+    model: str = None,
+    watch: bool = False
+):
     try:
         import rich  # noqa
     except ImportError:
@@ -508,10 +543,6 @@ def sync_show_relation(
 
 
 if __name__ == '__main__':
-    _defaults = dict(n=None,
-                     model=None,
-                     show_juju_keys=True,
-                     hide_empty_databags=False)
     # sync_show_relation("rolling-ops:restart", endpoint2=None, **_defaults)
     # sync_show_relation("ceilometer:shared-db", "mongo:database")
-    sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress", **_defaults)
+    _sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
