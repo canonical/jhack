@@ -143,8 +143,7 @@ def get_metadata_from_status(app_name, relation_name, other_app_name,
         unit_ids.append(unit_id)
     if leader_id is None:
         raise RuntimeError(f'could not identify leader among units {unit_ids}. '
-                           f'If this is a machine model, you might need to '
-                           f'wait for all units to be allocated.')
+                           f'You might need to wait for all units to be allocated.')
 
     # we gotta do this because json status --format json does not include the interface
     raw_text_status = _juju_status(app_name, model=model)

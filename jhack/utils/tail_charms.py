@@ -236,6 +236,7 @@ class Processor:
         reemitted_suffix = "Re-emitting " + event_repr
         self.event_reemitted = re.compile(base_pattern + reemitted_suffix)
         self.event_reemitted_from_relation = re.compile(base_relation_pattern + reemitted_suffix)
+        self._rendered = False
 
     def _warn_about_orphaned_event(self, evt):
         if self._warned_about_orphans:
@@ -465,6 +466,7 @@ class Processor:
         # we're rendering the table and flipping it every time. more efficient
         # to add new rows to the top and keep old ones, but how do we know if
         # deferral lines have changed?
+        self._rendered = True
         table = Table(show_footer=False, expand=True)
         table.add_column(header="timestamp", style='')
         unit_grids = []
@@ -473,7 +475,6 @@ class Processor:
 
         targets = self.targets
         raw_tables = self._raw_tables
-
         for target in targets:
             tgt_grid = Table.grid(*(('',) * n_cols),
                                   expand=True,
@@ -787,6 +788,10 @@ class Processor:
 
     def quit(self):
         """Print a goodbye message."""
+        if not self._rendered:
+            self.live.update('No events caught.', refresh=True)
+            return
+
         table = cast(Table, self.render().renderable)
         table.rows[-1].end_section = True
         evt_count = self.evt_count
@@ -814,6 +819,12 @@ class Processor:
         self.live.update(table_centered)
         self.live.refresh()
         self.live.stop()
+
+    def update_if_empty(self):
+        if self._rendered:
+            return
+        self.live.update("Listening for events...",
+                         refresh=True)
 
 
 def _get_debug_log(cmd):
@@ -998,6 +1009,8 @@ def _tail_events(
                     elapsed := time.time() - start) < framerate:
                 logger.debug(f"sleeping {framerate - elapsed}")
                 time.sleep(framerate - elapsed)
+
+            processor.update_if_empty()
 
     except KeyboardInterrupt:
         pass  # quit
