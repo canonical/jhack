@@ -30,6 +30,7 @@ from jhack.utils.nuke import nuke
 from jhack.utils.show_relation import sync_show_relation
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
+from jhack.utils.fire import fire
 from jhack.jinx.install import install as jinx_install
 from jhack.jinx.init import init_jinx as jinx_init
 from jhack.jinx.pack import pack as jinx_pack
@@ -71,6 +72,7 @@ def main():
     app.command(name='nuke')(nuke)
     app.command(name='ffwd')(fast_forward)
     app.command(name='unbork-juju')(unbork_juju)
+    app.command(name='fire')(fire)
 
     app.add_typer(model)
     app.add_typer(jinx)
