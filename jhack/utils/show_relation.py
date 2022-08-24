@@ -545,6 +545,4 @@ def _sync_show_relation(
 
 
 if __name__ == '__main__':
-    # sync_show_relation("rolling-ops:restart", endpoint2=None, **_defaults)
-    # sync_show_relation("ceilometer:shared-db", "mongo:database")
-    _sync_show_relation("traefik-k8s:ingress-per-unit", "prometheus-k8s:ingress")
+    _sync_show_relation(n=0)

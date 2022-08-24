@@ -206,10 +206,15 @@ def _nuke(
     n: int = None,
     dry_run: bool = False,
 ):
-    if obj is None and not borked:
-        logger.info("No object provided, we'll nuke the current model.")
+    if obj is None and not borked and not selectors:
+        logger.info("No object | selectors provided, we'll nuke the current model.")
         nukeables = [Nukeable(current_model(), "model")]
     else:
+        if obj is None:
+            # means we passed selectors:
+            assert selectors, 'invalid usage'
+            obj = ''  # FIXME: kinda hacky
+
         if obj == '*' and selectors is None:
             # nuke * === nuke all applications.
             # That's the most common target.

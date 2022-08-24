@@ -7,7 +7,8 @@ import time
 from collections import defaultdict, Counter
 from dataclasses import dataclass, Field, field
 from subprocess import Popen, PIPE, STDOUT
-from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union, cast
+from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union, cast, \
+    Callable
 
 import parse
 import typer
@@ -400,7 +401,7 @@ class Processor:
         self.targets.append(new_target)
         self._raw_tables[new_target.unit_name] = RawTable()
 
-    def process(self, log: str):
+    def process(self, log: str) -> Optional[EventLogMsg]:
         """process a log line"""
         if msg := self._match_event_emitted(log):
             mode = 'emit'
@@ -436,6 +437,7 @@ class Processor:
             self.update_defers(msg)
 
         self.render()
+        return msg
 
     def _extend_other_tables(self, msg: EventLogMsg):
         raw_tables = self._raw_tables
@@ -907,7 +909,10 @@ def _tail_events(
         show_ns: bool = False,
         watch: bool = True,
         color: bool = True,
-        files: List[str] = None
+        files: List[str] = None,
+
+        # for script use only
+        _on_event: Callable[[EventLogMsg], None] = None
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -1003,7 +1008,11 @@ def _tail_events(
 
             if line:
                 msg = line.decode('utf-8').strip()
-                processor.process(msg)
+                captured = processor.process(msg)
+
+                # notify listeners that an event has been processed.
+                if _on_event and captured:
+                    _on_event(captured)
 
             if not replay_mode and (
                     elapsed := time.time() - start) < framerate:

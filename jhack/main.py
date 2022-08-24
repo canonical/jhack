@@ -16,6 +16,7 @@ except ModuleNotFoundError:
     raise RuntimeError(f'cannot find jhack modules; '
                        f'check your PATH={sys.path}.')
 
+from jhack.charm.record import record
 from jhack.charm import functional
 from jhack.charm.init import init
 from jhack.logger import logger, LOGLEVEL
@@ -46,6 +47,7 @@ def main():
     utils.command(name='show-relation')(sync_show_relation)
     utils.command(name='tail')(tail_events)
     utils.command(name='nuke')(nuke)
+    utils.command(name='record')(record)
     utils.command(name='ffwd')(fast_forward)
     utils.command(name='unbork-juju')(unbork_juju)
 
