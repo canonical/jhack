@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Union, AnyStr, List
+from typing import AnyStr, List, Union
 
 
 class FilePeeker:
@@ -7,6 +7,7 @@ class FilePeeker:
 
     To interact with the base file object, use the .file attribute
     """
+
     # TODO: Add enter and exit to make cleanup easier
     def __init__(self, filename: Union[str, Path]):
         self.filename = str(filename)
@@ -44,4 +45,3 @@ class FilePeeker:
             if not line:
                 return
             yield line
-

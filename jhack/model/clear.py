@@ -1,4 +1,4 @@
-from typing import Set, Optional
+from typing import Optional, Set
 
 from juju import jasyncio
 from juju.application import Application
@@ -10,14 +10,12 @@ from jhack.logger import logger
 def parse_app_or_app_list(s: Optional[str]) -> Set[str]:
     if s is None:
         return set()
-    if ',' in s:
-        return set(s.split(','))
+    if "," in s:
+        return set(s.split(","))
     return {s}
 
 
-async def clear_model(apps: str = (),
-                      keep: str = (),
-                      dry_run: bool = False):
+async def clear_model(apps: str = (), keep: str = (), dry_run: bool = False):
     """Destroys all applications from a model, or a specified subset of them,
     while keeping a few.
     """
@@ -27,7 +25,7 @@ async def clear_model(apps: str = (),
         existing_apps = model.applications.keys()
 
         if not existing_apps:
-            logger.info('This model is already empty.')
+            logger.info("This model is already empty.")
             return
 
         if invalid := apps - existing_apps:
@@ -39,7 +37,7 @@ async def clear_model(apps: str = (),
             logger.info(f"Model clear.")
             return
 
-        destroying = '\n - ' + '\n - '.join(to_destroy)
+        destroying = "\n - " + "\n - ".join(to_destroy)
         if dry_run:
             print(f"Would destroy: {destroying}")
             return
@@ -47,9 +45,10 @@ async def clear_model(apps: str = (),
             print(f"Destroying: {destroying}")
 
         await jasyncio.gather(
-            *(model.applications[app].destroy() for app in to_destroy))
+            *(model.applications[app].destroy() for app in to_destroy)
+        )
 
-        logger.info('Model cleared.')
+        logger.info("Model cleared.")
         # todo find way to do --force --no-wait
 
 

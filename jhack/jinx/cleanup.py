@@ -4,7 +4,7 @@ from pathlib import Path
 
 def cleanup():
     """Removes standard metadata yaml files."""
-    print('cleaning up metadata files...')
-    to_remove = ['charmcraft', 'actions', 'metadata', 'config']
+    print("cleaning up metadata files...")
+    to_remove = ["charmcraft", "actions", "metadata", "config"]
     for file in to_remove:
-        os.remove(Path()/(file + '.yaml'))
+        os.remove(Path() / (file + ".yaml"))

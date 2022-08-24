@@ -3,8 +3,10 @@ from pathlib import Path
 from subprocess import Popen
 from time import sleep
 
+from jhack.helpers import JPopen
+
 jinx_root = Path(__file__).parent
-path_to_jinx = jinx_root / 'jinx'
+path_to_jinx = jinx_root / "jinx"
 
 
 def jinx_installed() -> bool:
@@ -14,16 +16,15 @@ def jinx_installed() -> bool:
 def install():
     """Install jinx source and unpack script."""
     if jinx_installed():
-        print('existing jinx source found; cleaning up...')
+        print("existing jinx source found; cleaning up...")
         shutil.rmtree(path_to_jinx)
 
-    print('installing jinx...')
+    print("installing jinx...")
 
     script = "git clone https://github.com/PietroPasotti/jinx"
-    proc = Popen(script.split(' '), cwd=jinx_root)
+    proc = JPopen(script.split(" "), cwd=jinx_root)
     proc.wait()
     while proc.returncode is None:
-        sleep(.1)
+        sleep(0.1)
 
-    print('jinx installed.'
-          f'\nPYTHONPATH=PYTHONPATH;{path_to_jinx.absolute()}')
+    print("jinx installed." f"\nPYTHONPATH=PYTHONPATH;{path_to_jinx.absolute()}")

@@ -1,8 +1,9 @@
 from pathlib import Path
-from typing import Union, List
+from typing import List, Union
+
+import parse
 
 from jhack.utils.file_peeker import FilePeeker
-import parse
 
 
 class DebugLogInterlacer:
@@ -11,6 +12,7 @@ class DebugLogInterlacer:
     Yields the chronologically next row across one or more debug log files, keeping track of
     progress so that successive calls to readline will progress through the monitored files.
     """
+
     line_pattern = parse.compile("{_}: {timestamp:ti} {_}")
     line_pattern_no_date = parse.compile("{_}: {timestamp:tt} {_}")
 
@@ -33,7 +35,10 @@ class DebugLogInterlacer:
 
                 if match := self.line_pattern.parse(line):
                     this_timestamp = match.named["timestamp"]
-                    if next_line_timestamp is None or this_timestamp < next_line_timestamp:
+                    if (
+                        next_line_timestamp is None
+                        or this_timestamp < next_line_timestamp
+                    ):
                         next_line_timestamp = this_timestamp
                         next_line_file_index = i
                 else:
@@ -53,4 +58,4 @@ class DebugLogInterlacer:
         if next_line_file_index is not None:
             return self.file_peekers[next_line_file_index].readline()
         else:
-            return ''
+            return ""
