@@ -2,32 +2,53 @@ import os
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 
-try:
-    juju_command = check_output(['which', 'juju'])
-except CalledProcessError:
-    # we're snapped!
+from jhack.logger import logger
 
-    config_dir = os.environ.get('SNAP_DATA')
-    config_file = Path(config_dir) / 'config'
+default_juju_data_loc = '~/.local/share/juju/controllers.yaml'
 
+
+def configure():
+    snap_data = os.environ.get('SNAP_DATA')
+
+    if "jhack" not in snap_data:  # we could be in another snap
+        logger.info("jhack running in unsnapped mode. Nothing to configure.")
+        return
+
+    logger.info("jhack running in snapped mode. Configuring...")
+
+    # check `juju` command.
     try:
-        juju, jujudata = config_file.read_text().strip().split('\n')
-        JUJU_COMMAND = juju.split('=')[1]
-        JUJU_DATA = jujudata.split('=')[1]
-        os.environ["JUJU_DATA"] = JUJU_DATA
-    except (KeyError, FileNotFoundError, Exception) as e:
-        print(e)
-        JUJU_COMMAND = "BORK"
+        juju_command = check_output(['which', 'juju'])
+        logger.info(f'juju command is {juju_command}')
+    except CalledProcessError:
+        logger.error('juju command not found. '
+                     'All jhacks depending on juju calls will bork.'
+                     'if this is a snap, you might have forgotten to '
+                     'connect jhack to juju.')
 
-else:
-    JUJU_COMMAND = juju_command.decode('utf-8').strip()
+    # check that `JUJU_DATA` is set. if not, default it.
+    jdata_key = 'JUJU_DATA'
+    jdata = os.environ.get(jdata_key)
+    logger.warning(f"JUJU_DATA is {jdata}")
 
-try:
-    out = check_output(['which', JUJU_COMMAND])
-    print(f'juju command = {JUJU_COMMAND}::{out}')
-except CalledProcessError:
-    print('juju command not found. '
-          'All jhacks depending on juju calls will bork.' 
-          'if this is a snap, configure jhack by running '
-          '`snap set jhack juju /path/to/juju`;'
-          'else ensure the `juju` command is available.')
+    config_file = Path(snap_data) / 'config'
+    if not config_file.exists():
+        logger.warning(f'no config file found at: {config_file}.')
+        logger.warning(f"setting JUJU_DATA to default: {default_juju_data_loc}")
+        juju_data_loc = default_juju_data_loc
+    else:
+        logger.debug(f'config file found at: {config_file}.')
+        try:
+            juju_data_loc = config_file.read_text().split('=')[1].strip()
+        except (IndexError, TypeError) as e:
+            logger.error(f'error parsing config file: {e}.'
+                         f'Will fall back to default juju data '
+                         f'location: {default_juju_data_loc}')
+            juju_data_loc = default_juju_data_loc
+
+    logger.debug(f"setting JUJU_DATA to: {juju_data_loc}")
+    os.environ[jdata_key] = juju_data_loc
+
+
+if __name__ == '__main__':
+    configure()

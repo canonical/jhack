@@ -1,26 +1,23 @@
 import enum
-import os
 import random
 import re
-import sys
 import time
-from collections import defaultdict, Counter
-from dataclasses import dataclass, Field, field
+from collections import Counter
+from dataclasses import dataclass, field
 from subprocess import Popen, PIPE, STDOUT
-from typing import Sequence, Optional, Iterable, List, Dict, Tuple, Union, cast, \
+from typing import Sequence, Optional, Iterable, List, Dict, Union, cast, \
     Callable
 
 import parse
 import typer
 from rich.align import Align
 from rich.color import Color
-from rich.console import Console, Group
+from rich.console import Console
 from rich.live import Live
 from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from jhack.config import JUJU_COMMAND
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
@@ -49,7 +46,7 @@ class Target:
 
 
 def get_all_units() -> Sequence[Target]:
-    cmd = Popen(f"{JUJU_COMMAND} status".split(' '), stdout=PIPE)
+    cmd = Popen(f"juju status".split(' '), stdout=PIPE)
     output = cmd.stdout.read().decode('utf-8')
 
     units = []
@@ -940,7 +937,7 @@ def _tail_events(
         watch = False
 
     logger.debug('starting to read logs')
-    cmd = ([JUJU_COMMAND, 'debug-log'] +
+    cmd = (['juju', 'debug-log'] +
            (['--tail'] if watch else []) +
            (['--replay'] if replay else []) +
            ['--level', level.value])

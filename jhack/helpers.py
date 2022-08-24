@@ -7,8 +7,6 @@ from typing import List
 
 from juju.model import Model
 
-from jhack.config import JUJU_COMMAND
-
 
 @contextlib.asynccontextmanager
 async def get_current_model() -> Model:
@@ -35,7 +33,7 @@ def get_local_charm() -> Path:
 
 
 def juju_status(app_name, model: str = None, json: bool = False):
-    cmd = f'{JUJU_COMMAND} status{" " + app_name if app_name else ""} --relations'
+    cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
         cmd += f' -m {model}'
     if json:
@@ -48,7 +46,7 @@ def juju_status(app_name, model: str = None, json: bool = False):
 
 
 def juju_models() -> str:
-    proc = Popen(f'{JUJU_COMMAND} models'.split(),
+    proc = Popen(f'juju models'.split(),
                  stdout=PIPE)
     return proc.stdout.read().decode('utf-8')
 

@@ -3,10 +3,8 @@ set -e
 
 CONFIG_FILE=$SNAP_DATA/config
 
-juju=$(snapctl get juju)
 juju_data=$(snapctl get jujudata)
 
 rm -f "$CONFIG_FILE"
 
-echo juju="$juju" >> "$CONFIG_FILE"
 echo juju_data="$juju_data" >> "$CONFIG_FILE"

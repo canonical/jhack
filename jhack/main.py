@@ -6,6 +6,7 @@ from pathlib import Path
 
 import typer
 
+
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
 
@@ -91,6 +92,9 @@ def main():
 
     if LOGLEVEL != 'WARNING':
         typer.echo(f"::= Verbose mode ({LOGLEVEL}). =::")
+
+    from jhack.config import configure
+    configure()
 
     app()
 

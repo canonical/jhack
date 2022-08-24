@@ -5,7 +5,6 @@ import typer
 from typing import List, Dict, Protocol
 from dataclasses import dataclass, asdict
 
-from jhack.config import JUJU_COMMAND
 from jhack.helpers import current_model
 from jhack.utils.show_relation import RelationData, get_relations, \
     get_relation_data
@@ -73,7 +72,7 @@ class Recorder:
 
     def _config_state(self) -> KeyValueMapping:
         config_raw = check_output(
-            f'{JUJU_COMMAND} config {self._app} --output=json'.split())
+            f'juju config {self._app} --output=json'.split())
         config = json.loads(config_raw or "{}").get('settings', {})
         cfg = {key: value['value'] for key, value in config.items()}
         return cfg

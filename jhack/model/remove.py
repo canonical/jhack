@@ -5,7 +5,6 @@ from subprocess import Popen, PIPE
 import typer
 from juju import jasyncio
 
-from jhack.config import JUJU_COMMAND
 from jhack.helpers import list_models, current_model
 from jhack.logger import logger
 
@@ -23,7 +22,7 @@ async def _remove_model(model_name: str, force=True,
                         no_wait=True, destroy_storage=True,
                         restart=False,
                         dry_run=False):
-    cmd = f'{JUJU_COMMAND} destroy-model {model_name} ' \
+    cmd = f'juju destroy-model {model_name} ' \
           f'{"--force " if force else ""}' \
           f'{"--no-wait " if no_wait else ""}' \
           f'{"--destroy-storage " if destroy_storage else ""}-y'
@@ -47,7 +46,7 @@ async def _remove_model(model_name: str, force=True,
 
     if restart:
         print(f'cycling :: {model_name} ♽')
-        return_code = _exec(f"{JUJU_COMMAND} add-model {model_name}")
+        return_code = _exec(f"juju add-model {model_name}")
         logger.info(f'spawned off model creator ({return_code}')
 
 

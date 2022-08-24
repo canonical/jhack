@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 import time
 from dataclasses import dataclass
@@ -8,7 +9,6 @@ from typing import Dict, Optional, Tuple, List
 import typer
 import yaml
 
-from jhack.config import JUJU_COMMAND
 from jhack.helpers import juju_status
 from jhack.logger import logger
 
@@ -31,10 +31,10 @@ def _juju_status(*args, **kwargs):
 
 def _show_unit(unit_name, model: str = None):
     if model:
-        proc = Popen(f"{JUJU_COMMAND} show-unit -m {model} {unit_name}".split(),
+        proc = Popen(f"juju show-unit -m {model} {unit_name}".split(),
                      stdout=PIPE)
     else:
-        proc = Popen(f"{JUJU_COMMAND} show-unit {unit_name}".split(), stdout=PIPE)
+        proc = Popen(f"juju show-unit {unit_name}".split(), stdout=PIPE)
     return proc.stdout.read().decode("utf-8").strip()
 
 

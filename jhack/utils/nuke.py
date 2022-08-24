@@ -11,7 +11,6 @@ from rich.console import Console, Group
 from rich.style import Style
 from rich.text import Text
 
-from jhack.config import JUJU_COMMAND
 from jhack.helpers import juju_status, juju_models, current_model, list_models
 from jhack.logger import logger
 
@@ -242,7 +241,7 @@ def _nuke(
         if nukeable.type == "model":
             nuked_models.add(nukeable.name)
             nukes.append(
-                f"{JUJU_COMMAND} destroy-model {nukeable.name} "
+                f"juju destroy-model {nukeable.name} "
                 f"--force --no-wait --destroy-storage -y"
             )
 
@@ -255,7 +254,7 @@ def _nuke(
                 continue
 
             nukes.append(
-                f"{JUJU_COMMAND} remove-application {nukeable.name} "
+                f"juju remove-application {nukeable.name} "
                 f"--force --no-wait"
             )
 
@@ -271,7 +270,7 @@ def _nuke(
                 nukeables.remove(nukeable)
                 continue
 
-            nukes.append(f"{JUJU_COMMAND} remove-relation {provider} {requirer}")
+            nukes.append(f"juju remove-relation {provider} {requirer}")
 
         else:
             raise ValueError(nukeable.type)
