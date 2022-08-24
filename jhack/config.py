@@ -4,7 +4,7 @@ from subprocess import CalledProcessError, check_output
 
 from jhack.logger import logger
 
-default_juju_data_loc = '~/.local/share/juju/controllers.yaml'
+default_juju_data_loc = '~/.local/share/juju/'
 
 
 def configure():
@@ -46,7 +46,7 @@ def configure():
                          f'location: {default_juju_data_loc}')
             juju_data_loc = default_juju_data_loc
 
-    logger.debug(f"setting JUJU_DATA to: {juju_data_loc}")
+    logger.warning(f"setting JUJU_DATA to: {juju_data_loc}")
     os.environ[jdata_key] = juju_data_loc
 
 
