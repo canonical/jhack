@@ -3,7 +3,7 @@ from pathlib import Path
 from subprocess import CalledProcessError, check_output
 
 try:
-    check_output(['which', 'juju'])
+    juju_command = check_output(['which', 'juju'])
 except CalledProcessError:
     # we're snapped!
 
@@ -20,10 +20,11 @@ except CalledProcessError:
         JUJU_COMMAND = "BORK"
 
 else:
-    JUJU_COMMAND = "/snap/bin/juju"
+    JUJU_COMMAND = juju_command.decode('utf-8').strip()
 
 try:
-    check_output(['which', JUJU_COMMAND])
+    out = check_output(['which', JUJU_COMMAND])
+    print(f'juju command = {JUJU_COMMAND}::{out}')
 except CalledProcessError:
     print('juju command not found. '
           'All jhacks depending on juju calls will bork.' 
