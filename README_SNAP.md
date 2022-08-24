@@ -17,4 +17,10 @@ Setup:
     # e.g. /home/chuck/.local/share/juju/
 
 
-    
+## Strict confinement progress:
+
+- copy over read-only juju-data to snap-filesystem-owned ~/jdata
+- cp -r /home/pietro/.local/share/juju ~/jdata
+- JUJU_DATA=~/jdata juju [commands] 
+- should work
+- doesn't work

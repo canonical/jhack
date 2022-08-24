@@ -1,5 +1,4 @@
 import asyncio
-import os
 import re
 import time
 from dataclasses import dataclass
@@ -31,15 +30,9 @@ def _juju_status(*args, **kwargs):
 
 def _show_unit(unit_name, model: str = None):
     if model:
-        proc = JPopen(
-            f"juju show-unit -m {model} {unit_name}".split(),
-            stdout=PIPE,
-            env=os.environ,
-        )
+        proc = JPopen(f"juju show-unit -m {model} {unit_name}".split(), stdout=PIPE)
     else:
-        proc = JPopen(
-            f"juju show-unit {unit_name}".split(), stdout=PIPE, env=os.environ
-        )
+        proc = JPopen(f"juju show-unit {unit_name}".split(), stdout=PIPE)
     return proc.stdout.read().decode("utf-8").strip()
 
 
@@ -391,16 +384,21 @@ async def render_relation(
     if n is not None:
         relations = get_relations(model)
         if not relations:
-            print("No relations found.")
+            print(f"No relations found in model {model!r}.")
             return
         try:
             relation = relations[n]
         except IndexError:
             n_rel = len(relations)
             plur_rel = n_rel > 1
+
+            def pl(condition, a='', b=''):
+                """Conditional pluralizer."""
+                return condition and a or b
+
             raise RuntimeError(
-                f"There {'are' if plur_rel else 'is'} only {n_rel} "
-                f"relation{'s' if plur_rel else ''}. "
+                f"There {pl(plur_rel, 'are', 'is')} only {n_rel} "
+                f"relation{pl(plur_rel, 's')}. "
                 f"Can't show index={n+1}."
             )
         endpoint1 = relation.provider

@@ -42,7 +42,7 @@ def juju_status(app_name, model: str = None, json: bool = False):
         cmd += f" -m {model}"
     if json:
         cmd += " --format json"
-    proc = JPopen(cmd.split(), stdout=PIPE, stderr=PIPE, env=os.environ)
+    proc = JPopen(cmd.split(), stdout=PIPE, stderr=PIPE)
     raw = proc.stdout.read().decode("utf-8")
     if json:
         return jsn.loads(raw)
@@ -50,7 +50,7 @@ def juju_status(app_name, model: str = None, json: bool = False):
 
 
 def juju_models() -> str:
-    proc = JPopen(f"juju models".split(), stdout=PIPE, env=os.environ)
+    proc = JPopen(f"juju models".split(), stdout=PIPE)
     return proc.stdout.read().decode("utf-8")
 
 
