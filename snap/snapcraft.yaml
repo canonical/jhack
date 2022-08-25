@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.2.91-dev'
+version: '0.2.92-strict'
 summary: Cli tool packed with juju hacks.
 
 description: |
