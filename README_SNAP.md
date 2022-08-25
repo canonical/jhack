@@ -24,4 +24,4 @@ This should suffice:
 Running `snap connections jhack` should show that there are no unplugged slots.
 There is a script to do this quickly if you are developing the local repo.
 
-> sudo snap/bind
+> sudo bind
