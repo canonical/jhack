@@ -38,3 +38,9 @@ apps:
     command: bin/jhack
     plugs:
       - juju-client-observe
+
+plugs:
+  peers:
+    interface: content
+    content: microk8s
+    target: $SNAP_DATA/microk8s

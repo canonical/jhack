@@ -10,7 +10,7 @@ default_juju_data_loc = "~/.local/share/juju/"
 def configure():
     snap_data = os.environ.get("SNAP_DATA")
 
-    if "jhack" not in snap_data:  # we could be in another snap
+    if not snap_data or "jhack" not in snap_data:  # we could be in another snap
         logger.info("jhack running in unsnapped mode. Nothing to configure.")
         return
 
