@@ -17,12 +17,13 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import JPopen
+from jhack.helpers import JPopen, juju_version
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
+JUJU_VERSION = juju_version()
 
 @dataclass
 class Target:
@@ -232,7 +233,7 @@ class Processor:
         self.event_from_relation = re.compile(base_relation_pattern + event_suffix)
 
         self.uniter_event = re.compile(
-            '^(?P<pod_name>\S+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook \(via hook dispatching script: dispatch\)'
+            '^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook \(via hook dispatching script: dispatch\)'
         )
 
         event_repr = "<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
@@ -381,27 +382,22 @@ class Processor:
             return EventReemittedLogMsg(**params, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
-        # log format =
-        # unit-traefik-k8s-0: 10:36:19 DEBUG unit.traefik-k8s/0.juju-log ingress-per-unit:38: Emitting Juju event ingress_per_unit_relation_changed.
-        # unit-prometheus-k8s-0: 13:06:09 DEBUG unit.prometheus-k8s/0.juju-log ingress:44: Emitting Juju event ingress_relation_changed.
-
-        match = self.event.match(log) or self.event_from_relation.match(log)
-        # attempt to match in another format ?
-        if not match:
-            # fallback
-            if match := self.uniter_event.match(log):
-                params = match.groupdict()
-                unit = parse.compile("unit-{}").parse(params["pod_name"])
-                *names, number = unit.fixed[0].split("-")
-                name = "-".join(names)
-                params["unit"] = "/".join([name, number])
-            else:
-                return
-
-        else:
+        if match := self.event.match(log) or self.event_from_relation.match(log):
             params = match.groupdict()
 
-        # uniform
+        # TODO: in juju2, sometimes we need to match events in a
+        #  different way: understand why.
+        elif JUJU_VERSION < "3.0" and (match := self.uniter_event.match(log)):
+            params = match.groupdict()
+            unit = params.pop('unit_name')
+            n = params.pop('unit_number')
+            params["pod_name"] = f"{unit}-{n}"
+            params["unit"] = f"{unit}/{n}"
+
+        else:
+            return
+
+        # uniform event names
         params["event"] = params["event"].replace("-", "_")
 
         # Ignore the unused date parameter

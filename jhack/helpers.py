@@ -36,6 +36,14 @@ def get_local_charm() -> Path:
 JPopen = partial(subprocess.Popen, env=os.environ)
 
 
+def juju_version():
+    proc = JPopen('juju version'.split(), stdout=PIPE)
+    raw = proc.stdout.read().decode('utf-8').strip()
+    if '-' in raw:
+        return raw.split('-')[0]
+    return raw
+
+
 def juju_status(app_name, model: str = None, json: bool = False):
     cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
