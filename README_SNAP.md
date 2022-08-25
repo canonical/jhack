@@ -1,26 +1,27 @@
 This folder holds snap information for jhack.
 
-Build instructions:
+Development rebuild oneliner:
+
+    sudo snap remove --purge jhack; snapcraft; sudo snap install --dangerous ./jhack_0.2.92-strict_amd64.snap
     
-    cd jhack/snap
-    snapcraft --use-lxd  # this will generate a .snap file
 
 To publish a new snap version and release on edge:
 
     snapcraft upload ./jhack_[...].snap --release=edge 
 
-Setup:
+## Setup:
+You need to connect jhack to a bunch of plugs for it to work.
+This should suffice:
 
-    sudo snap set juju=/path/to/juju/executable
-    # e.g. /snap/bin/juju
-    sudo snap set jujudata=/path/to/juju/ 
-    # e.g. /home/chuck/.local/share/juju/
+    sudo snap connect jhack:peers microk8s               
+    sudo snap connect jhack:juju-client-observe snapd
+    sudo snap connect jhack:network snapd
+    sudo snap connect jhack:network-bind snapd       
+    sudo snap connect jhack:config-lxd snapd          
+    sudo snap connect jhack:dot-kubernetes snapd    
+    sudo snap connect jhack:dot-local-share-juju snapd
 
+Running `snap connections jhack` should show that there are no unplugged slots.
+There is a script to do this quickly if you are developing the local repo.
 
-## Strict confinement progress:
-
-- copy over read-only juju-data to snap-filesystem-owned ~/jdata
-- cp -r /home/pietro/.local/share/juju ~/jdata
-- JUJU_DATA=~/jdata juju [commands] 
-- should work
-- doesn't work
+> sudo bind

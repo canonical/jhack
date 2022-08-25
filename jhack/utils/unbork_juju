@@ -8,9 +8,11 @@ model_name="cos"
 juju_channel="stable"
 microk8s_channel="stable"
 
-while getopts "J:M:m:c:" opt; do
+usage() { echo "Usage: $0 [-J <string>] [-M <string>] [-m <string>] [-c <string>] -" 1>&2; exit 1; }
+
+while getopts ":J:M:m:c:" opt; do
   case "${opt}" in
-    J )
+    J)
       juju_channel="${OPTARG}"
       ;;
     M)
@@ -24,6 +26,7 @@ while getopts "J:M:m:c:" opt; do
       ;;
    \? )
      echo "Invalid Option: -${OPTARG}" 1>&2
+     usage
      exit 1
      ;;
   esac

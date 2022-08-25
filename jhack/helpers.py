@@ -33,7 +33,15 @@ def get_local_charm() -> Path:
 
 
 # Env-passing-down Popen
-JPopen = partial(subprocess.Popen, env=os.environ)
+JPopen = partial(subprocess.Popen, env=os.environ, stdout=PIPE)
+
+
+def juju_version():
+    proc = JPopen('juju version'.split())
+    raw = proc.stdout.read().decode('utf-8').strip()
+    if '-' in raw:
+        return raw.split('-')[0]
+    return raw
 
 
 def juju_status(app_name, model: str = None, json: bool = False):
@@ -42,7 +50,7 @@ def juju_status(app_name, model: str = None, json: bool = False):
         cmd += f" -m {model}"
     if json:
         cmd += " --format json"
-    proc = JPopen(cmd.split(), stdout=PIPE, stderr=PIPE)
+    proc = JPopen(cmd.split(), stderr=PIPE)
     raw = proc.stdout.read().decode("utf-8")
     if json:
         return jsn.loads(raw)
@@ -50,7 +58,7 @@ def juju_status(app_name, model: str = None, json: bool = False):
 
 
 def juju_models() -> str:
-    proc = JPopen(f"juju models".split(), stdout=PIPE)
+    proc = JPopen(f"juju models".split())
     return proc.stdout.read().decode("utf-8")
 
 
