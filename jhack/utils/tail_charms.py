@@ -5,7 +5,17 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from subprocess import PIPE, STDOUT
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Union, cast
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
 import parse
 import typer
@@ -24,6 +34,7 @@ from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 logger = jhacklogger.getChild(__file__)
 
 JUJU_VERSION = juju_version()
+_Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
 
 @dataclass
@@ -192,19 +203,19 @@ class Processor:
         add_new_targets: bool = True,
         history_length: int = 10,
         show_ns: bool = True,
-        color: bool = True,
+        color: _Color = "auto",
         show_defer: bool = False,
         event_filter_re: re.Pattern = None,
     ):
-        if not color:
-            # maybe implement it some day.
-            logger.debug("Sorry, but colors are too pretty to get rid of.")
-
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
         self.history_length = history_length
+
+        if color == "no":
+            color = None
+
+        self.console = console = Console(color_system=color)
         self.event_filter_re = event_filter_re
-        self.console = Console()
         self._raw_tables: Dict[str, RawTable] = {
             target.unit_name: RawTable() for target in targets
         }
@@ -220,7 +231,6 @@ class Processor:
         }
 
         self._has_just_emitted = False
-        self.console = console = Console()
         self.live = live = Live(console=console)
         live.start()
 
@@ -533,7 +543,7 @@ class Processor:
 
         table.add_row(_timestamps_grid, *unit_grids)
         if _debug:
-            Console().print(table)
+            self.console.print(table)
             return table
 
         table_centered = Align.center(table)
@@ -919,7 +929,14 @@ def tail_events(
         "Only applicable if show_defer=True.",
     ),
     watch: bool = typer.Option(True, "--watch", help="Keep listening."),
-    color: bool = typer.Option(True, help="Colorize output."),
+    color: str = typer.Option(
+        "auto",
+        "-c",
+        "--color",
+        help="Color scheme to adopt. Supported options: "
+        "['auto', 'standard', '256', 'truecolor', 'windows']"
+        "no: disable colors entirely.",
+    ),
     file: Optional[List[str]] = typer.Option(
         [],
         help="Text file with logs from `juju debug-log`.  Can be used in place of streaming "
@@ -971,7 +988,7 @@ def _tail_events(
     show_defer: bool = False,
     show_ns: bool = False,
     watch: bool = True,
-    color: bool = True,
+    color: str = "auto",
     files: List[str] = None,
     event_filter: str = None,
     # for script use only

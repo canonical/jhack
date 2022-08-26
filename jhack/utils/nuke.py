@@ -16,6 +16,8 @@ from jhack.logger import logger
 
 logger = logger.getChild("nuke")
 
+_Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
+
 ATOM = "⚛"
 ICBM = f"~]=={ATOM}❯"
 COLOR_MAP = {
@@ -206,6 +208,7 @@ def _nuke(
     selectors: Optional[str] = None,
     n: int = None,
     dry_run: bool = False,
+    color: _Color = "auto",
 ):
     if obj is None and not borked and not selectors:
         logger.info("No object | selectors provided, we'll nuke the current model.")
@@ -297,7 +300,10 @@ def _nuke(
             print(f"would {ATOM} {nukeable} with {nuke}")
         return
 
-    console = Console()
+    if color == "no":
+        color = None
+
+    console = Console(color_system=color)
     print_centered = lambda s: console.print(Align(s, align="center"))
 
     def fire(nukeable: Nukeable, nuke: str):
@@ -386,6 +392,14 @@ def nuke(
     dry_run: bool = typer.Option(
         None, "--dry-run", help="Do nothing, print out what would have happened."
     ),
+    color: Optional[str] = typer.Option(
+        "auto",
+        "-c",
+        "--color",
+        help="Color scheme to adopt. Supported options: "
+        "['auto', 'standard', '256', 'truecolor', 'windows']"
+        "no: disable colors entirely.",
+    ),
 ):
     """Surgical carpet bombing tool.
 
@@ -416,15 +430,18 @@ def nuke(
     if selectors != "a" and borked:
         print("borked implies selector=`a`")
         return
-
+    kwargs = dict(
+        model=model,
+        borked=borked,
+        selectors=selectors,
+        n=n,
+        dry_run=dry_run,
+        color=color,
+    )
     if not what:
-        _nuke(
-            None, model=model, borked=borked, selectors=selectors, n=n, dry_run=dry_run
-        )
+        _nuke(None, **kwargs)
     for obj in what:
-        _nuke(
-            obj, model=model, borked=borked, selectors=selectors, n=n, dry_run=dry_run
-        )
+        _nuke(obj, **kwargs)
 
 
 if __name__ == "__main__":
