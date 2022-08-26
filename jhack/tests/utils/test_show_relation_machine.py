@@ -69,7 +69,7 @@ def test_databag_shape_mongo():
     assert (
         content.units_data
         == {
-            0: {
+            1: {
                 "hostname": "10.1.70.128",
                 "port": "27017",
                 "type": "database",
@@ -78,4 +78,4 @@ def test_databag_shape_mongo():
         }
         != {0: {"ceilometer_database": "ceilometer"}}
     )
-    assert content.meta.leader_id == 0
+    assert content.meta.leader_id == 1

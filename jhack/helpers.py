@@ -37,10 +37,10 @@ JPopen = partial(subprocess.Popen, env=os.environ, stdout=PIPE)
 
 
 def juju_version():
-    proc = JPopen('juju version'.split())
-    raw = proc.stdout.read().decode('utf-8').strip()
-    if '-' in raw:
-        return raw.split('-')[0]
+    proc = JPopen("juju version".split())
+    raw = proc.stdout.read().decode("utf-8").strip()
+    if "-" in raw:
+        return raw.split("-")[0]
     return raw
 
 
