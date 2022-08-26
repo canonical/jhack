@@ -3,7 +3,7 @@ import re
 import time
 from dataclasses import dataclass
 from subprocess import PIPE
-from typing import Dict, List, Optional, Tuple, Literal
+from typing import Dict, List, Literal, Optional, Tuple
 
 import typer
 import yaml

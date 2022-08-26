@@ -397,8 +397,8 @@ def nuke(
         "-c",
         "--color",
         help="Color scheme to adopt. Supported options: "
-             "['auto', 'standard', '256', 'truecolor', 'windows']"
-             "no: disable colors entirely.",
+        "['auto', 'standard', '256', 'truecolor', 'windows']"
+        "no: disable colors entirely.",
     ),
 ):
     """Surgical carpet bombing tool.
@@ -430,9 +430,14 @@ def nuke(
     if selectors != "a" and borked:
         print("borked implies selector=`a`")
         return
-    kwargs = dict(model=model, borked=borked, selectors=selectors,
-                  n=n, dry_run=dry_run,
-                  color=color)
+    kwargs = dict(
+        model=model,
+        borked=borked,
+        selectors=selectors,
+        n=n,
+        dry_run=dry_run,
+        color=color,
+    )
     if not what:
         _nuke(None, **kwargs)
     for obj in what:

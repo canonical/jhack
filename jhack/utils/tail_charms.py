@@ -10,11 +10,11 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Literal,
     Optional,
     Sequence,
     Union,
     cast,
-    Literal,
 )
 
 import parse
@@ -205,6 +205,7 @@ class Processor:
         show_ns: bool = True,
         color: _Color = "auto",
         show_defer: bool = False,
+        event_filter_re: re.Pattern = None,
     ):
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
@@ -214,6 +215,7 @@ class Processor:
             color = None
 
         self.console = console = Console(color_system=color)
+        self.event_filter_re = event_filter_re
         self._raw_tables: Dict[str, RawTable] = {
             target.unit_name: RawTable() for target in targets
         }
@@ -370,6 +372,13 @@ class Processor:
     def _uniform_event(self, event: str):
         return event.replace("-", "_")
 
+    def _match_filter(self, event_name: str) -> bool:
+        """If the user specified an event name regex filter, run it."""
+        if not self.event_filter_re:
+            return True
+        match = self.event_filter_re.match(event_name)
+        return bool(match)
+
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         if "Deferring" not in log:
             return
@@ -378,7 +387,9 @@ class Processor:
         ) or self.event_deferred_from_relation.match(log)
         if match:
             params = match.groupdict()
-            params["event"] = self._uniform_event(params["event"])
+            params["event"] = event = self._uniform_event(params["event"])
+            if not self._match_filter(event):
+                return
             return EventDeferredLogMsg(**params, mocked=False)
 
     def _match_event_reemitted(self, log: str) -> Optional[EventReemittedLogMsg]:
@@ -389,7 +400,9 @@ class Processor:
         ) or self.event_reemitted_from_relation.match(log)
         if match:
             params = match.groupdict()
-            params["event"] = self._uniform_event(params["event"])
+            params["event"] = event = self._uniform_event(params["event"])
+            if not self._match_filter(event):
+                return
             return EventReemittedLogMsg(**params, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
@@ -408,8 +421,9 @@ class Processor:
         else:
             return
 
-        # uniform event names
-        params["event"] = params["event"].replace("-", "_")
+        params["event"] = event = self._uniform_event(params["event"])
+        if not self._match_filter(event):
+            return
 
         # Ignore the unused date parameter
         if "date" in params:
@@ -930,6 +944,15 @@ def tail_events(
         "files.  File must be exported from juju using `juju debug-log --date` to allow"
         " for proper sorting",
     ),
+    filter_events: Optional[str] = typer.Option(
+        None,
+        "-f",
+        "--filter",
+        help="Python-style regex pattern to filter events by name with."
+        "Examples: "
+        "  -f '(?!update)' --> all events except those starting with 'update'."
+        "  -f 'ingress' --> all events starting with 'ingress'.",
+    ),
 ):
     """Pretty-print a table with the events that are fired on juju units
     in the current model.
@@ -950,6 +973,7 @@ def tail_events(
         watch=watch,
         color=color,
         files=file,
+        event_filter=filter_events,
     )
 
 
@@ -964,8 +988,9 @@ def _tail_events(
     show_defer: bool = False,
     show_ns: bool = False,
     watch: bool = True,
-    color: bool = True,
+    color: str = "auto",
     files: List[str] = None,
+    event_filter: str = None,
     # for script use only
     _on_event: Callable[[EventLogMsg], None] = None,
 ):
@@ -1006,6 +1031,8 @@ def _tail_events(
         print(" ".join(cmd))
         return
 
+    event_filter_pattern = re.compile(event_filter) if event_filter else None
+
     processor = Processor(
         targets,
         add_new_targets,
@@ -1013,6 +1040,7 @@ def _tail_events(
         show_ns=show_ns,
         color=color,
         show_defer=show_defer,
+        event_filter_re=event_filter_pattern,
     )
 
     try:
