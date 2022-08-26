@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.2.93-strict'
+version: '0.2.94-strict'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -43,10 +43,13 @@ apps:
       - juju-client-observe
       - dot-local-share-juju
 
-      # required to use multiprocessing semaphores etc...
 
 plugs:
   dot-local-share-juju:
     interface: personal-files
     write:
       - $HOME/.local/share/juju
+
+  # required to use multiprocessing semaphores
+  shared-memory:
+    private: true
