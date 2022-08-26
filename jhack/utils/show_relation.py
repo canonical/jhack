@@ -392,7 +392,7 @@ async def render_relation(
             n_rel = len(relations)
             plur_rel = n_rel > 1
 
-            def pl(condition, a='', b=''):
+            def pl(condition, a="", b=""):
                 """Conditional pluralizer."""
                 return condition and a or b
 
