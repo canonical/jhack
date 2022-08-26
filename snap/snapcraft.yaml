@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.2.92-strict'
+version: '0.2.93-strict'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -37,27 +37,16 @@ apps:
   jhack:
     command: bin/jhack
     plugs:
-      - juju-client-observe
-      - dot-kubernetes
-      - dot-local-share-juju
-      - config-lxd
       - network
       - network-bind
+      # read-write access to .local/share/juju (JUJU_DATA)
+      - juju-client-observe
+      - dot-local-share-juju
+
+      # required to use multiprocessing semaphores etc...
 
 plugs:
-  peers:
-    interface: content
-    content: microk8s
-    target: $SNAP_DATA/microk8s
-  dot-kubernetes:
-    interface: personal-files
-    read:
-      - $HOME/.kube
   dot-local-share-juju:
     interface: personal-files
     write:
       - $HOME/.local/share/juju
-  config-lxd:
-    interface: personal-files
-    read:
-      - $HOME/snap/lxd/common/config

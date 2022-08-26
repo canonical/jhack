@@ -1,6 +1,5 @@
 import asyncio
 import os
-from subprocess import PIPE, Popen
 
 import typer
 from juju import jasyncio
