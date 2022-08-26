@@ -3,7 +3,7 @@ import re
 import time
 from dataclasses import dataclass
 from subprocess import PIPE
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Literal
 
 import typer
 import yaml
@@ -15,6 +15,8 @@ logger = logger.getChild(__file__)
 
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
+
+_Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
 
 def purge(data: dict):
@@ -392,7 +394,7 @@ async def render_relation(
             n_rel = len(relations)
             plur_rel = n_rel > 1
 
-            def pl(condition, a='', b=''):
+            def pl(condition, a="", b=""):
                 """Conditional pluralizer."""
                 return condition and a or b
 
@@ -522,6 +524,14 @@ def sync_show_relation(
         False, "-w", "--watch", help="Keep watching for changes."
     ),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
+    color: Optional[str] = typer.Option(
+        "auto",
+        "-c",
+        "--color",
+        help="Color scheme to adopt. Supported options: "
+        "['auto', 'standard', '256', 'truecolor', 'windows']"
+        "no: disable colors entirely.",
+    ),
 ):
     """Displays the databags of two applications or units involved in a relation.
 
@@ -541,6 +551,7 @@ def sync_show_relation(
         hide_empty_databags=hide_empty_databags,
         watch=watch,
         model=model,
+        color=color,
     )
 
 
@@ -552,6 +563,7 @@ def _sync_show_relation(
     hide_empty_databags: bool = False,
     model: str = None,
     watch: bool = False,
+    color: _Color = "auto",
 ):
     try:
         import rich  # noqa
@@ -560,6 +572,10 @@ def _sync_show_relation(
         return
 
     from rich.console import Console
+
+    if color == "no":
+        color = None
+    console = Console(color_system=color)
 
     while True:
         start = time.time()
@@ -584,8 +600,8 @@ def _sync_show_relation(
                 time.sleep(1.5 - elapsed)
                 _JUJU_DATA_CACHE.clear()
             # we clear RIGHT BEFORE printing to prevent flickering
-            Console().clear()
-        Console().print(table)
+            console.clear()
+        console.print(table)
 
         if not watch:
             return

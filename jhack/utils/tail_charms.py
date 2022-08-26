@@ -5,7 +5,17 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from subprocess import PIPE, STDOUT
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Union, cast
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+    Literal,
+)
 
 import parse
 import typer
@@ -24,6 +34,8 @@ from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 logger = jhacklogger.getChild(__file__)
 
 JUJU_VERSION = juju_version()
+_Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
+
 
 @dataclass
 class Target:
@@ -191,17 +203,17 @@ class Processor:
         add_new_targets: bool = True,
         history_length: int = 10,
         show_ns: bool = True,
-        color: bool = True,
+        color: _Color = "auto",
         show_defer: bool = False,
     ):
-        if not color:
-            # maybe implement it some day.
-            logger.debug("Sorry, but colors are too pretty to get rid of.")
-
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
         self.history_length = history_length
-        self.console = Console()
+
+        if color == "no":
+            color = None
+
+        self.console = console = Console(color_system=color)
         self._raw_tables: Dict[str, RawTable] = {
             target.unit_name: RawTable() for target in targets
         }
@@ -217,7 +229,6 @@ class Processor:
         }
 
         self._has_just_emitted = False
-        self.console = console = Console()
         self.live = live = Live(console=console)
         live.start()
 
@@ -389,8 +400,8 @@ class Processor:
         #  different way: understand why.
         elif JUJU_VERSION < "3.0" and (match := self.uniter_event.match(log)):
             params = match.groupdict()
-            unit = params.pop('unit_name')
-            n = params.pop('unit_number')
+            unit = params.pop("unit_name")
+            n = params.pop("unit_number")
             params["pod_name"] = f"{unit}-{n}"
             params["unit"] = f"{unit}/{n}"
 
@@ -518,7 +529,7 @@ class Processor:
 
         table.add_row(_timestamps_grid, *unit_grids)
         if _debug:
-            Console().print(table)
+            self.console.print(table)
             return table
 
         table_centered = Align.center(table)
@@ -904,7 +915,14 @@ def tail_events(
         "Only applicable if show_defer=True.",
     ),
     watch: bool = typer.Option(True, "--watch", help="Keep listening."),
-    color: bool = typer.Option(True, help="Colorize output."),
+    color: str = typer.Option(
+        "auto",
+        "-c",
+        "--color",
+        help="Color scheme to adopt. Supported options: "
+        "['auto', 'standard', '256', 'truecolor', 'windows']"
+        "no: disable colors entirely.",
+    ),
     file: Optional[List[str]] = typer.Option(
         [],
         help="Text file with logs from `juju debug-log`.  Can be used in place of streaming "
