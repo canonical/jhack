@@ -25,6 +25,14 @@ def configure():
             "connect jhack to some required plugs."
         )
 
+    # python-libjuju grabs the juju-data location from envvar.
+    # We provide it here to ensure it's what we think it should be.
+    logger.info(f'Previous env JUJU_DATA = {os.environ.get("JUJU_DATA")}.')
+    user = os.environ["USER"]
+    jdata = f"/home/{user}/.local/share/juju"
+    os.environ["JUJU_DATA"] = jdata
+    logger.info(f"Set JUJU_DATA to {jdata}.")
+
 
 if __name__ == "__main__":
     configure()
