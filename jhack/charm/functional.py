@@ -5,7 +5,6 @@ import shutil
 import tempfile
 import typing
 from pathlib import Path
-from subprocess import Popen
 from typing import Optional
 
 from ops.charm import CharmBase
