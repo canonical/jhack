@@ -1,9 +1,33 @@
+import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+import jhack.utils.tail_charms
+
+# these tests target juju2. TODO: make a juju3 version
+jhack.utils.tail_charms.JUJU_VERSION = "2.0"
 from jhack.utils.tail_charms import Processor, Target, _tail_events
+
+
+def _mock_emit(event_name, app_name="myapp", unit_number=0,
+               event_n=0, timestamp="12:17:50", loglevel="DEBUG"):
+    defaults = {}
+    defaults.update(
+        {
+            'app_name': app_name,
+            'unit_number': unit_number,
+            'event_name': event_name,
+            'event_n': event_n,
+            'timestamp': timestamp,
+            'loglevel': loglevel,
+                     })
+    emit = "unit-{app_name}-{unit_number}: {timestamp} " \
+           "DEBUG unit.{app_name}/{unit_number}.juju-log " \
+           "Emitting Juju event {event_name}."
+
+    return emit.format(**defaults)
 
 MOCK_JDL = {
     # scenario 1: emit, defer, reemit
@@ -187,3 +211,23 @@ def test_tail_with_file_input():
             "./tail_mocks/real-trfk-cropped-for-interlace.txt",
         ]
     )
+
+
+@pytest.mark.parametrize('pattern, log, match', (
+        (None, _mock_emit('foo'), True),
+        ("bar", _mock_emit('foo'), False),
+        ("foo", _mock_emit('foo'), True),
+        ("(?!foo)", _mock_emit('foo'), False),
+        ("(?!foo)", _mock_emit('foob'), False),
+        ("(?!foo)", _mock_emit('boof'), True),
+))
+def test_tail_event_filter(pattern, log, match):
+    proc = Processor(targets=[],
+                     event_filter_re=(re.compile(pattern) if pattern else None))
+    msg = proc.process(log)
+    if match:
+        assert msg
+    else:
+        assert msg is None
+
+
