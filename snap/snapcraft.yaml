@@ -39,12 +39,11 @@ apps:
     plugs:
       - network
       - network-bind
-      # read-write access to .local/share/juju (JUJU_DATA)
-      - juju-client-observe
       - dot-local-share-juju
 
 
 plugs:
+  # read-write access to .local/share/juju (JUJU_DATA)
   dot-local-share-juju:
     interface: personal-files
     write:
