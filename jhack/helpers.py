@@ -36,10 +36,11 @@ def get_local_charm() -> Path:
 def JPopen(*args, **kwargs):
     return subprocess.Popen(
         *args,
-        env=kwargs.pop('env', os.environ),
-        stderr=kwargs.pop('stderr', PIPE),
-        stdout=kwargs.pop('stdout', PIPE),
-        **kwargs)
+        env=kwargs.pop("env", os.environ),
+        stderr=kwargs.pop("stderr", PIPE),
+        stdout=kwargs.pop("stdout", PIPE),
+        **kwargs,
+    )
 
 
 def juju_version():
