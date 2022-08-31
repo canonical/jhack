@@ -33,7 +33,13 @@ def get_local_charm() -> Path:
 
 
 # Env-passing-down Popen
-JPopen = partial(subprocess.Popen, env=os.environ, stdout=PIPE)
+def JPopen(*args, **kwargs):
+    return subprocess.Popen(
+        *args,
+        env=kwargs.pop('env', os.environ),
+        stderr=kwargs.pop('stderr', PIPE),
+        stdout=kwargs.pop('stdout', PIPE),
+        **kwargs)
 
 
 def juju_version():

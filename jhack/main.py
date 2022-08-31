@@ -31,6 +31,7 @@ from jhack.model.remove import rmodel
 from jhack.utils.ffwd import fast_forward
 from jhack.utils.nuke import nuke
 from jhack.utils.show_relation import sync_show_relation
+from jhack.utils.show_stored import show_stored
 from jhack.utils.sync import sync as sync_deployed_charm
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
@@ -44,6 +45,7 @@ def main():
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="sync")(sync_deployed_charm)
     utils.command(name="show-relation")(sync_show_relation)
+    utils.command(name="show-stored")(show_stored)
     utils.command(name="tail")(tail_events)
     utils.command(name="nuke")(nuke)
     utils.command(name="record")(record)
@@ -69,6 +71,7 @@ def main():
     app = typer.Typer(name="jhack", help="Hacky, wacky, but ultimately charming.")
     app.command(name="sync")(sync_deployed_charm)
     app.command(name="show-relation")(sync_show_relation)
+    app.command(name="show-stored")(show_stored)
     app.command(name="tail")(tail_events)
     app.command(name="nuke")(nuke)
     app.command(name="ffwd")(fast_forward)
