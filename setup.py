@@ -1,5 +1,6 @@
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 
 def read(fname):
@@ -16,20 +17,12 @@ setup(
     keywords="juju hacks cli charm charming",
     url="https://github.com/PietroPasotti/jhack",
     packages=find_packages(),
-    long_description=read('README.md'),
-    requires=["juju",
-              "ops",
-              "typer",
-              "rich",
-              "parse"],
+    long_description=read("README.md"),
+    requires=["juju", "ops", "typer", "rich", "parse"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
         "License :: OSI Approved :: Apache Software License",
     ],
-    entry_points={
-        'console_scripts': [
-            'jhack = jhack.main:main'
-        ]
-    }
+    entry_points={"console_scripts": ["jhack = jhack.main:main"]},
 )

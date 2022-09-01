@@ -113,23 +113,26 @@ class YAMLStore(Store):
     def close(self):
         pass
 
+
 def _load_adapters(file: str):
     try:
         path = Path(file)
         sys.path.append(str(path.parent.absolute()))
-        filename = '.'.join(path.name.split('.')[:-1]) # filename without extension
+        filename = ".".join(path.name.split(".")[:-1])  # filename without extension
         # adapter_module = None
         adapter_module = importlib.import_module(filename)
         if adapter_module is None:
-            raise RuntimeError(f'unable to import {file} as a python module')
+            raise RuntimeError(f"unable to import {file} as a python module")
         if not hasattr(adapter_module, "adapters"):
-            raise RuntimeError(f'imported module {adapter_module} has no '
-                               f'`adapters` variable defined.')
+            raise RuntimeError(
+                f"imported module {adapter_module} has no "
+                f"`adapters` variable defined."
+            )
         adapters = adapter_module.adapters
         return adapters
     except Exception as e:
-        logger.error(f'Failed to parse adapter file {file}: an error occurred. '
-                     f'{e}')
+        logger.error(f"Failed to parse adapter file {file}: an error occurred. " f"{e}")
+
 
 class StorageView:
     _builtin_adapters: Dict[str, Adapter] = {
@@ -151,8 +154,9 @@ class StorageView:
     ):
         self.store = None
         self._filter_re = re.compile(filter_re) if filter_re else None
-        self._user_adapters: Optional[Dict[str, Adapter]] = \
+        self._user_adapters: Optional[Dict[str, Adapter]] = (
             _load_adapters(adapters) if adapters else None
+        )
         self._include_of_storage = include_of_storage
         self._reader = reader
 
@@ -249,7 +253,7 @@ class StorageView:
         key_re = re.compile(r"\[([^\d\W]\w*)\]")
         try:
             keys = key_re.findall(snapshot)
-            owners = snapshot.split("/")[:-(len(keys))]
+            owners = snapshot.split("/")[: -(len(keys))]
             return ".".join(owners + keys)
         except Exception as e:
             logger.debug(f"failure processing snapshot {snapshot}: {e}")
@@ -305,10 +309,12 @@ class StorageView:
             self.live.stop()
 
 
-def get_local_storage(unit_name: str):
+def get_local_storage(unit_name: str, machine: bool = False):
     unit_name_sane = unit_name.replace("/", "-")
+    container = " --container charm" if not machine else ""
+
     cmd = (
-        f"juju scp --container charm {unit_name}:"
+        f"juju scp{container} {unit_name}:"
         f"/var/lib/juju/agents/unit-{unit_name_sane}/charm/"
         f".unit-state.db ".split()
     )
@@ -370,6 +376,7 @@ def _show_stored(
     use_controller_storage: bool = False,
     color: _Color = "auto",
     watch: bool = False,
+    machine: bool = False,
     include_of_storage: bool = False,
     refresh_rate=0.5,
 ):
@@ -397,7 +404,7 @@ def _show_stored(
             get_db = partial(get_controller_storage, unit_name=target)
 
         else:
-            get_db = partial(get_local_storage, unit_name=target)
+            get_db = partial(get_local_storage, unit_name=target, machine=machine)
 
     else:  # file
 
@@ -462,6 +469,14 @@ def show_stored(
     watch: bool = typer.Option(
         False, "-w", "--watch", help="Keep watching for changes.", is_flag=True
     ),
+    machine: bool = typer.Option(
+        False,
+        "-m",
+        "--machine",
+        help="Is this a machine charm? "
+        "Only relevant if the charm is using local storage.",
+        is_flag=True,
+    ),
     include_of_storage: bool = typer.Option(
         False,
         "-o",
@@ -482,6 +497,7 @@ def show_stored(
         adapters=adapters,
         use_controller_storage=use_controller_storage,
         color=color,
+        machine=machine,
         watch=watch,
         include_of_storage=include_of_storage,
         refresh_rate=refresh_rate,
@@ -489,5 +505,6 @@ def show_stored(
 
 
 if __name__ == "__main__":
-    _show_stored("prom/0", watch=False, adapters="/home/pietro/.config/JetBrains/PyCharmCE2022.2/scratches/scratch_5.py")
+    # _show_stored("prom/0", watch=False, adapters="/home/pietro/.config/JetBrains/PyCharmCE2022.2/scratches/scratch_5.py")
+    _show_stored("hello/0")
     # _show_stored('/home/pietro/hacking/jhack/jhack/tests/utils/show_stored_mocks/trfk-0.dbdump')  # noqa
