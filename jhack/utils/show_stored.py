@@ -313,7 +313,7 @@ def get_local_storage(unit_name: str, machine: bool = False):
     unit_name_sane = unit_name.replace("/", "-")
     container = " --container charm" if not machine else ""
 
-    cmd = (
+    base_cmd = (
         f"juju scp{container} {unit_name}:"
         f"/var/lib/juju/agents/unit-{unit_name_sane}/charm/"
         f".unit-state.db ".split()
@@ -324,7 +324,7 @@ def get_local_storage(unit_name: str, machine: bool = False):
         with tempfile.NamedTemporaryFile(
             suffix=".db", prefix="unit-state-", dir=expanduser("~")
         ) as tf:
-            cmd.append(tf.name)
+            cmd = base_cmd + [tf.name]
 
             proc = JPopen(cmd)
             proc.wait(10)
@@ -339,8 +339,6 @@ def get_local_storage(unit_name: str, machine: bool = False):
             tf_file = Path(tf.name)
 
             yield tf.name
-
-            tf_file.unlink()
 
 
 def get_controller_storage(unit_name: str):
