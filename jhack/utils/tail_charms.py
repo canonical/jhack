@@ -934,7 +934,7 @@ def tail_events(
         "-c",
         "--color",
         help="Color scheme to adopt. Supported options: "
-        "['auto', 'standard', '256', 'truecolor', 'windows']"
+        "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
         "no: disable colors entirely.",
     ),
     file: Optional[List[str]] = typer.Option(

@@ -456,7 +456,7 @@ def show_stored(
         "-c",
         "--color",
         help="Color scheme to adopt. Supported options: "
-        "['auto', 'standard', '256', 'truecolor', 'windows']"
+        "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
         "no: disable colors entirely.",
     ),
     watch: bool = typer.Option(
