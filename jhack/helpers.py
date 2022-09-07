@@ -9,6 +9,9 @@ from typing import List
 
 from juju.model import Model
 
+from jhack.config import IS_SNAPPED
+from jhack.logger import logger
+
 
 @contextlib.asynccontextmanager
 async def get_current_model() -> Model:
@@ -34,13 +37,25 @@ def get_local_charm() -> Path:
 
 # Env-passing-down Popen
 def JPopen(*args, **kwargs):
-    return subprocess.Popen(
+    proc = subprocess.Popen(
         *args,
         env=kwargs.pop("env", os.environ),
         stderr=kwargs.pop("stderr", PIPE),
         stdout=kwargs.pop("stdout", PIPE),
         **kwargs,
     )
+    proc.wait()
+
+    if proc.returncode != 0:
+        msg = "failed to get juju status."
+        if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
+            msg += " If you see an ERROR above saying something like " \
+                   "'open ~/.local/share/juju/ssh: permission denied'," \
+                   "you might have forgotten to " \
+                   "'sudo snap connect jhack:dot-local-share-juju snapd'"
+        logger.error(msg)
+
+    return proc
 
 
 def juju_version():
