@@ -36,7 +36,7 @@ def get_local_charm() -> Path:
 
 
 # Env-passing-down Popen
-def JPopen(*args, **kwargs):
+def JPopen(*args, wait=False, **kwargs):
     proc = subprocess.Popen(
         *args,
         env=kwargs.pop("env", os.environ),
@@ -44,9 +44,11 @@ def JPopen(*args, **kwargs):
         stdout=kwargs.pop("stdout", PIPE),
         **kwargs,
     )
-    proc.wait()
+    if wait:
+        proc.wait()
 
-    if proc.returncode != 0:
+    # this will presumably only ever branch if wait==True
+    if proc.returncode not in {0, None}:
         msg = f"failed to invoke juju command ({args}, {kwargs})"
         if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
             msg += " If you see an ERROR above saying something like " \

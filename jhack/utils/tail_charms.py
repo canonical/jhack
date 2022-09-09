@@ -17,7 +17,6 @@ from typing import (
     cast,
 )
 
-import parse
 import typer
 from rich.align import Align
 from rich.color import Color
@@ -1129,4 +1128,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(files=["/home/pietro/jdl.txt"])
+    _tail_events(length=30, replay=True)
