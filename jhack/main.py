@@ -30,6 +30,7 @@ from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
 from jhack.utils.ffwd import fast_forward
 from jhack.utils.nuke import nuke
+from jhack.utils.simulate_event import simulate_event
 from jhack.utils.show_relation import sync_show_relation
 from jhack.utils.show_stored import show_stored
 from jhack.utils.sync import sync as sync_deployed_charm
@@ -51,6 +52,7 @@ def main():
     utils.command(name="record")(record)
     utils.command(name="ffwd")(fast_forward)
     utils.command(name="unbork-juju")(unbork_juju)
+    utils.command(name="fire")(simulate_event)
 
     jinx = typer.Typer(
         name="jinx",
@@ -74,6 +76,7 @@ def main():
     app.command(name="show-stored")(show_stored)
     app.command(name="tail")(tail_events)
     app.command(name="nuke")(nuke)
+    app.command(name="fire")(simulate_event)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
 
@@ -98,7 +101,6 @@ def main():
     from jhack.config import configure
 
     configure()
-
     app()
 
 

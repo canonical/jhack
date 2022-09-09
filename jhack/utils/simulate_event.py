@@ -1,8 +1,8 @@
 from jhack.helpers import juju_version, JPopen, show_unit
+from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
-_J_EXEC_CMD = 'juju-exec' if juju_version() < "0.3" else 'juju-run'
-
+_J_EXEC_CMD = 'juju-exec' if juju_version() >= "0.3" else 'juju-run'
 _RELATION_EVENT_SUFFIXES = {
     '-relation-changed',
     '-relation-created',
@@ -11,6 +11,7 @@ _RELATION_EVENT_SUFFIXES = {
     '-relation-departed',
 }
 
+logger = jhack_logger.getChild('simulate_event')
 
 def _get_relation_id(unit: str, endpoint: str):
     unit = show_unit(unit)
@@ -40,9 +41,9 @@ def _get_env(unit, event, relation_id: int = None):
 
 def _simulate_event(unit, event):
     env = _get_env(unit, event)
-    proc = JPopen(
-        f"juju ssh {unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
-    )
+    cmd = f"juju ssh {unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
+    logger.info(cmd)
+    proc = JPopen(cmd.split())
     proc.wait()
     return
 
