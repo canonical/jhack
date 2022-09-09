@@ -218,19 +218,19 @@ def provision(
                  ' a unit (provisions that unit only), a semicolon-separated list thereof, '
                  'or blank (provisions all units)'),
         script: str = typer.Option(
-            'default',
+            'default', '--script', '-s',
             help="The provisioner script. It can either be the path to an executable file "
                  f"(presumably a shell script), or a name of a file which will be presumed "
                  f"to be in {PROVISION_SCRIPT_TEMPFILE_PATH.parent.absolute()}. "
                  f"This is the script that will be run on all to-be-provisioned units."),
         container: str = typer.Option(
-            'charm',
+            'charm', '--container', '-c',
             help="For k8s units, the name of the container to provision."),
         timeout: int = typer.Option(
-            1000,
+            1000, '--timeout', '-t',
             help="For k8s units, the name of the container to provision."),
         n_proc: int = typer.Option(
-            8,
+            8, '--processes', '-p',
             help="Number of processes to spawn. If 0, will provision sequentially."),
         dry_run: bool = False):
     return _provision(
