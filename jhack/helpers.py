@@ -47,7 +47,7 @@ def JPopen(*args, **kwargs):
     proc.wait()
 
     if proc.returncode != 0:
-        msg = "failed to get juju status."
+        msg = f"failed to invoke juju command ({args}, {kwargs})"
         if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
             msg += " If you see an ERROR above saying something like " \
                    "'open ~/.local/share/juju/ssh: permission denied'," \
@@ -66,7 +66,7 @@ def juju_version():
     return raw
 
 
-def juju_status(app_name, model: str = None, json: bool = False):
+def juju_status(app_name=None, model: str = None, json: bool = False):
     cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
         cmd += f" -m {model}"
@@ -77,6 +77,21 @@ def juju_status(app_name, model: str = None, json: bool = False):
     if json:
         return jsn.loads(raw)
     return raw
+
+
+def is_k8s_model(status=None):
+    status = status or juju_status(json=True)
+    if status['applications']:
+        # no machines = k8s model
+        if not status.get('machines'):
+            return True
+        else:
+            return False
+
+    cloud_name = status['model']['cloud']
+    logger.warning('unable to determine with certainty if the current model is a k8s model or not;'
+                   f'guessing it based on the cloud name ({cloud_name})')
+    return 'k8s' in cloud_name
 
 
 def juju_models() -> str:

@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 from jhack.charm import functional
 from jhack.charm.init import init
-from jhack.charm.provision import _provision_unit as provision
+from jhack.charm.provision import provision
 from jhack.charm.record import record
 from jhack.charm.repack import refresh
 from jhack.charm.sync import sync as sync_packed_charm
