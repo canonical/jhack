@@ -1,4 +1,5 @@
 import contextlib
+import json
 import json as jsn
 import os
 import subprocess
@@ -67,6 +68,12 @@ def juju_status(app_name, model: str = None, json: bool = False):
 def juju_models() -> str:
     proc = JPopen(f"juju models".split())
     return proc.stdout.read().decode("utf-8")
+
+
+def show_unit(unit: str):
+    proc = JPopen(f"juju show-unit {unit} --format json".split())
+    raw = json.loads(proc.stdout.read().decode("utf-8"))
+    return raw[unit]
 
 
 def list_models(strip_star=False) -> List[str]:
