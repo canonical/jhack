@@ -36,6 +36,8 @@ from jhack.utils.show_stored import show_stored
 from jhack.utils.sync import sync as sync_deployed_charm
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
+from jhack.utils.event_recorder.client import list_events, re_fire, dump_db
+from jhack.utils.event_recorder.record import install
 
 
 def main():
@@ -70,6 +72,13 @@ def main():
     charm.command(name="func")(functional.run)
     charm.command(name="sync")(sync_packed_charm)
 
+    replay = typer.Typer(name="replay",
+                         help="Commands to replay events.")
+    replay.command(name="install")(install)
+    replay.command(name="list")(list_events)
+    replay.command(name="dump")(dump_db)
+    replay.command(name="refire")(re_fire)
+
     app = typer.Typer(name="jhack", help="Hacky, wacky, but ultimately charming.")
     app.command(name="sync")(sync_deployed_charm)
     app.command(name="show-relation")(sync_show_relation)
@@ -84,6 +93,7 @@ def main():
     app.add_typer(jinx)
     app.add_typer(charm)
     app.add_typer(utils)
+    app.add_typer(replay)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):
