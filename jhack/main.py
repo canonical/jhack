@@ -36,7 +36,7 @@ from jhack.utils.show_stored import show_stored
 from jhack.utils.sync import sync as sync_deployed_charm
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
-from jhack.utils.event_recorder.client import list_events, re_fire, dump_db
+from jhack.utils.event_recorder.client import list_events, emit, dump_db
 from jhack.utils.event_recorder.record import install
 
 
@@ -72,12 +72,11 @@ def main():
     charm.command(name="func")(functional.run)
     charm.command(name="sync")(sync_packed_charm)
 
-    replay = typer.Typer(name="replay",
-                         help="Commands to replay events.")
+    replay = typer.Typer(name="replay", help="Commands to replay events.")
     replay.command(name="install")(install)
     replay.command(name="list")(list_events)
     replay.command(name="dump")(dump_db)
-    replay.command(name="refire")(re_fire)
+    replay.command(name="emit")(emit)
 
     app = typer.Typer(name="jhack", help="Hacky, wacky, but ultimately charming.")
     app.command(name="sync")(sync_deployed_charm)

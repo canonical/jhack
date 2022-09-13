@@ -47,22 +47,23 @@ def list_events(
     return _list_events(unit, db_path)
 
 
-def _re_fire(unit: str, idx: int, db_path: Path = DEFAULT_DB_NAME, dry_run: bool = False):
+def _emit(unit: str, idx: int, db_path=DEFAULT_DB_NAME, dry_run: bool = False):
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
-        _fetch_db(unit, db_path, temp_db)
+        _fetch_db(unit, remote_db_path=db_path, local_db_path=temp_db)
 
-    with event_db(db_path) as data:
-        event = data[idx]
+        with event_db(temp_db) as data:
+            event = data.events[idx]
 
-    print(f"{'Would' if dry_run else 'Will'} re-fire: {event.name}  ({event.timestamp}).")
+    print(f"{'Would replay' if dry_run else 'Replaying'} event ({idx}): {event.name} as originally emitted at {event.timestamp}.")
     if dry_run:
         return
 
-    return _simulate_event(unit, event.name, env_override=event.env)
+    return _simulate_event(unit, event.name,
+                           env_override=[f"{k}='{v}'" for k, v in event.env.items()])
 
 
-def re_fire(
+def emit(
         unit: str = typer.Argument(
             ..., help="Target unit."),
         idx: Optional[int] = typer.Argument(
@@ -71,7 +72,7 @@ def re_fire(
         db_path=DEFAULT_DB_NAME,
         dry_run: bool = False):
     """Select the `idx`th event stored on the unit db and re-fire it."""
-    _re_fire(unit, idx, db_path, dry_run=dry_run)
+    _emit(unit, idx, db_path, dry_run=dry_run)
 
 
 def _dump_db(unit: str, idx: int = -1, db_path=DEFAULT_DB_NAME):
@@ -103,4 +104,4 @@ def dump_db(
 
 
 if __name__ == '__main__':
-    _list_events('trfk/2')
+    _emit('trfk/0', 15)

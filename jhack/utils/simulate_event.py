@@ -15,6 +15,8 @@ _RELATION_EVENT_SUFFIXES = {
     '-relation-departed',
 }
 _PEBBLE_READY_SUFFIX = '-pebble-ready'
+OPS_DISPATCH = "OPERATOR_DISPATCH"
+juju_context_id = 'JUJU_CONTEXT_ID'
 
 logger = jhack_logger.getChild('simulate_event')
 
@@ -38,10 +40,12 @@ def _get_relation_endpoint(event: str):
     return False
 
 
-def _get_env(unit, event, relation_remote: str = None, override: List[str] = None):
+def _get_env(unit, event, relation_remote: str = None,
+             override: List[str] = None, operator_dispatch: bool = False):
     env = {
         "JUJU_DISPATCH_PATH": f"hooks/{event}",
         "JUJU_MODEL_NAME": current_model(),
+        "JUJU_UNIT_NAME": unit,
     }
 
     if endpoint := _get_relation_endpoint(event):
@@ -71,17 +75,50 @@ def _get_env(unit, event, relation_remote: str = None, override: List[str] = Non
             key, value = opt.split('=')
             env[key] = value
 
-    return ' '.join(f"{k}={v}" for k, v in env.items())
+    if operator_dispatch:
+        # TODO: Unclear what this flag does,
+        #  but most of the time you want it to be false. Dig deeper?
+        logger.debug('Inserting operator dispatch flag...')
+        env[OPS_DISPATCH] = "1"
+    else:
+        if OPS_DISPATCH in env:
+            logger.debug('Purged operator dispatch flag...')
+            del env[OPS_DISPATCH]
+    #
+    for k, v in dict(env).items():
+        if not isinstance(v, str):
+            logger.warning(k, f'maps to a non-string val ({v}); casting...')
+            v = str(v)
+
+        if ' ' in v:
+            # FIXME: find a way to quote this
+            logger.warning(f'whitespace found in var {k}: skipping...')
+            del env[k]
+
+    if juju_context_id in env:
+        logger.debug(f'removed {juju_context_id}')
+        del env[juju_context_id]
+
+    return ' '.join(f'{k}={v}' for k, v in env.items())
 
 
 def _simulate_event(unit, event,
                     relation_remote: str = None,
+                    operator_dispatch: bool = False,
                     env_override: List[str] = None):
-    env = _get_env(unit, event, relation_remote=relation_remote, override=env_override)
+    env = _get_env(unit, event, relation_remote=relation_remote,
+                   override=env_override, operator_dispatch=operator_dispatch)
+    # todo: insert `sudo` if this is a machine unit!
     cmd = f"juju ssh {unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
     logger.info(cmd)
     proc = JPopen(cmd.split())
     proc.wait()
+    if proc.returncode != 0:
+        logger.error(f'cmd {cmd} terminated with {proc.returncode}')
+        logger.error(f'stdout={proc.stdout.read()}')
+        logger.error(f'stderr={proc.stderr.read()}')
+
+    print(f'Fired {event} on {unit}.')
     return
 
 

@@ -3,7 +3,6 @@ import json
 import json as jsn
 import os
 import subprocess
-from functools import partial
 from pathlib import Path
 from subprocess import PIPE
 from typing import List

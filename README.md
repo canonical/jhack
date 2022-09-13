@@ -451,7 +451,7 @@ Example run:
         (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined  
         (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed 
     $ jhack replay refire trfk/0 2
-    Replaying event (3): ingress-per-unit-relation-joined as originally emitted at 2022-09-12 11:54:03.293178
+    Replaying event (3): ingress-per-unit-relation-joined as originally emitted at 2022-09-12 11:54:03.293178.
 
 ## dump
 
