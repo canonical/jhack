@@ -17,6 +17,7 @@ except ModuleNotFoundError:
 
 from jhack.charm import functional
 from jhack.charm.init import init
+from jhack.charm.provision import provision
 from jhack.charm.record import record
 from jhack.charm.repack import refresh
 from jhack.charm.sync import sync as sync_packed_charm
@@ -71,6 +72,7 @@ def main():
     charm.command(name="init")(init)
     charm.command(name="func")(functional.run)
     charm.command(name="sync")(sync_packed_charm)
+    charm.command(name="provision")(provision)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")
     replay.command(name="install")(install)

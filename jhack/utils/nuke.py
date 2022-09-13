@@ -97,6 +97,9 @@ def _get_apps_and_relations(
     logger.info("gathering apps and relations")
 
     status = juju_status("", model)
+    if not status:
+        return []
+
     apps = 0
     relation = 0
     nukeables = []

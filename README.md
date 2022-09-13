@@ -490,6 +490,32 @@ pushes them into the packed charm whenever there's one.
 
 `jhack charm sync ./my_charm_file-amd64.charm --src ./src --dst src`
 
+## provision
+
+Run a script in one or multiple units.
+
+When debugging, it's often handy to install certain tools on a running unit, to then shell into it and start hacking around.
+How often have you:
+```
+juju ssh foo/0
+apt update
+apt install vim procps top mc -y
+```
+
+Well, no more!
+
+The idea is: you create your unit provisioning script in `~/.cprov/default`, keeping in mind that no user input can be expected (i.e. put `-y` flags everywhere).
+
+Running 
+> jhack charm provision traefik-k8s/1;prometheus-k8s
+
+will run that script on all prometheus units, and traefik's unit `1`.
+You can put multiple scripts in `~/.cprov`, and choose which one to use by:
+> jhack charm provision foo/1 --script foo
+
+Alternatively, you can pass a full path, and it will not matter where the file is:
+> jhack charm provision foo/1 --script /path/to/your/script.sh
+
 ## repack
 Used to pack a charm and refresh it in a juju model. Useful when developing.
 If used without arguments, it will assume the cwd is the charm's root, will run
