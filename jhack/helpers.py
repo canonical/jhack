@@ -9,6 +9,9 @@ from typing import List
 
 from juju.model import Model
 
+from jhack.config import IS_SNAPPED
+from jhack.logger import logger
+
 
 @contextlib.asynccontextmanager
 async def get_current_model() -> Model:
@@ -33,14 +36,28 @@ def get_local_charm() -> Path:
 
 
 # Env-passing-down Popen
-def JPopen(*args, **kwargs):
-    return subprocess.Popen(
+def JPopen(*args, wait=False, **kwargs):
+    proc = subprocess.Popen(
         *args,
         env=kwargs.pop("env", os.environ),
         stderr=kwargs.pop("stderr", PIPE),
         stdout=kwargs.pop("stdout", PIPE),
         **kwargs,
     )
+    if wait:
+        proc.wait()
+
+    # this will presumably only ever branch if wait==True
+    if proc.returncode not in {0, None}:
+        msg = f"failed to invoke juju command ({args}, {kwargs})"
+        if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
+            msg += " If you see an ERROR above saying something like " \
+                   "'open ~/.local/share/juju/ssh: permission denied'," \
+                   "you might have forgotten to " \
+                   "'sudo snap connect jhack:dot-local-share-juju snapd'"
+        logger.error(msg)
+
+    return proc
 
 
 def juju_version():
@@ -51,7 +68,7 @@ def juju_version():
     return raw
 
 
-def juju_status(app_name, model: str = None, json: bool = False):
+def juju_status(app_name=None, model: str = None, json: bool = False):
     cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
         cmd += f" -m {model}"
@@ -62,6 +79,21 @@ def juju_status(app_name, model: str = None, json: bool = False):
     if json:
         return jsn.loads(raw)
     return raw
+
+
+def is_k8s_model(status=None):
+    status = status or juju_status(json=True)
+    if status['applications']:
+        # no machines = k8s model
+        if not status.get('machines'):
+            return True
+        else:
+            return False
+
+    cloud_name = status['model']['cloud']
+    logger.warning('unable to determine with certainty if the current model is a k8s model or not;'
+                   f'guessing it based on the cloud name ({cloud_name})')
+    return 'k8s' in cloud_name
 
 
 def juju_models() -> str:
