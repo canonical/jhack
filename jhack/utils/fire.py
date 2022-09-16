@@ -20,11 +20,10 @@ DATABASE_PORT_65535_TCP_ADDR=10.152.183.157
 JUJU_CHARM_HTTPS_PROXY=
 TMUX=/tmp/tmux-0/default,8469,1
 HOSTNAME={app_name}-{unit_id}
-JUJU_CONTEXT_ID={app_name}/{unit_id}-{event_name}-3768183998347822863
 DATABASE_PORT_65535_TCP_PORT=65535
 JUJU_MODEL_UUID={model_uuid}
-JUJU_VERSION=2.9.32
-CLOUD_API_VERSION=1.24.0
+JUJU_VERSION={juju_version}
+CLOUD_API_VERSION=1.25.0
 JUJU_CHARM_HTTP_PROXY=
 MODELOPERATOR_PORT_17071_TCP_ADDR=10.152.183.212
 DATABASE_SERVICE_PORT_PLACEHOLDER=65535
@@ -111,6 +110,7 @@ def build_env(event: str, target: str, model: str = None):
         'model_name': model,
         'container_names': 'foo',
         'cloud': cloud,
+        'juju_version': agent_version,
         'event_name': event,
     }
     text = ENVIRON.format(**replacements)
@@ -122,8 +122,8 @@ def build_env(event: str, target: str, model: str = None):
 def _fire(event: str, target: str, model: str = None):
     env = build_env(event, target, model)
 
-    cmd = f"cd ./agents/unit-{target.replace('/', '-')}/charm/; {env} ./dispatch"
-    outer_cmd = f"{JUJU_COMMAND} ssh {target} {cmd}"
+    cmd = f" {env} /var/lib/juju/agents/unit-{target.replace('/', '-')}/charm/dispatch"
+    outer_cmd = f"{JUJU_COMMAND} exec -u {target} -- {cmd}"
     proc = Popen(outer_cmd.split(), stdout=PIPE, stderr=PIPE)
     while proc.returncode is None:
         print('waiting for response...')
@@ -149,3 +149,7 @@ def fire(event: str = typer.Argument(..., help="Name of the event to fire."),
          model: str = typer.Argument(None, help="The model the target is in. "
                                                 "Defaults to *the current model*.")):
     return _fire(event, target, model)
+
+
+if __name__ == '__main__':
+    _fire('update-status', 'trfk/0', None)
