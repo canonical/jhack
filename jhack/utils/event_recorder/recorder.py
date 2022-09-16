@@ -2,11 +2,11 @@ import datetime
 import json
 import os
 from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Generator, List, Dict
+from typing import Dict, Generator, List
 
-DEFAULT_DB_NAME = 'event_db.json'
+DEFAULT_DB_NAME = "event_db.json"
 
 
 class DB:
@@ -17,7 +17,7 @@ class DB:
     def load(self):
         text = self._file.read_text()
         raw = json.loads(text)
-        events = [Event(**obj) for obj in raw.get('events', ())]
+        events = [Event(**obj) for obj in raw.get("events", ())]
         self.data = Data(events)
 
     def commit(self):
@@ -31,7 +31,7 @@ class Event:
 
     @property
     def name(self):
-        return self.env['JUJU_DISPATCH_PATH'].split('/')[1]
+        return self.env["JUJU_DISPATCH_PATH"].split("/")[1]
 
     @property
     def datetime(self):
@@ -47,9 +47,9 @@ class Data:
 def event_db(file=DEFAULT_DB_NAME) -> Generator[Data, None, None]:
     path = Path(file)
     if not path.exists():
-        print(f'Initializing DB file at {path}...')
+        print(f"Initializing DB file at {path}...")
         path.touch(mode=0o666)
-        path.write_text('{}')  # empty json obj
+        path.write_text("{}")  # empty json obj
 
     db = DB(file=path)
     db.load()
@@ -58,10 +58,7 @@ def event_db(file=DEFAULT_DB_NAME) -> Generator[Data, None, None]:
 
 
 def _capture() -> Event:
-    return Event(
-        env=dict(os.environ),
-        timestamp=datetime.datetime.now().isoformat()
-    )
+    return Event(env=dict(os.environ), timestamp=datetime.datetime.now().isoformat())
 
 
 def record(file=DEFAULT_DB_NAME):
@@ -69,4 +66,4 @@ def record(file=DEFAULT_DB_NAME):
         events = data.events
         event = _capture()
         events.append(event)
-        print(f'Captured event: {event.name}')
+        print(f"Captured event: {event.name}")

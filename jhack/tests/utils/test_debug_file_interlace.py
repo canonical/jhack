@@ -1,23 +1,27 @@
+from pathlib import Path
+
 import pytest
 
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
+
+mocks_dir = Path(__file__).parent / "tail_mocks"
 
 
 @pytest.mark.parametrize(
     "input_files, expected_output_file",
     (
         (
-            ["./tail_mocks/interlace-log-0.txt"],
-            "./tail_mocks/interlace-log-0.txt",
+            [mocks_dir / "interlace-log-0.txt"],
+            mocks_dir / "interlace-log-0.txt",
         ),
         (
-            ["./tail_mocks/interlace-log-0.txt", "./tail_mocks/interlace-log-1.txt"],
-            "./tail_mocks/interlace-log-combined.txt",
+            [mocks_dir / "interlace-log-0.txt", mocks_dir / "interlace-log-1.txt"],
+            mocks_dir / "interlace-log-combined.txt",
         ),
         (
             [
-                "./tail_mocks/interlace-log-no-date.txt",
-                "./tail_mocks/interlace-log-1.txt",
+                mocks_dir / "interlace-log-no-date.txt",
+                mocks_dir / "interlace-log-1.txt",
             ],
             None,
         ),

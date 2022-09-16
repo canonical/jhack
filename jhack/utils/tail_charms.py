@@ -4,6 +4,7 @@ import re
 import time
 from collections import Counter
 from dataclasses import dataclass, field
+from pathlib import Path
 from subprocess import PIPE, STDOUT
 from typing import (
     Callable,
@@ -415,13 +416,12 @@ class Processor:
             return EventReemittedLogMsg(**params, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
-        if match := self.event.match(log) or \
-                    self.event_from_relation.match(log):
+        if match := self.event.match(log) or self.event_from_relation.match(log):
             params = match.groupdict()
 
         elif match := self.operator_event.match(log):
             params = match.groupdict()
-            params['operator_event'] = True
+            params["operator_event"] = True
 
         # TODO: in juju2, sometimes we need to match events in a
         #  different way: understand why.
@@ -1006,7 +1006,7 @@ def _tail_events(
     show_ns: bool = False,
     watch: bool = True,
     color: str = "auto",
-    files: List[str] = None,
+    files: List[Union[str, Path]] = None,
     event_filter: str = None,
     # for script use only
     _on_event: Callable[[EventLogMsg], None] = None,

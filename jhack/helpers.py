@@ -51,10 +51,12 @@ def JPopen(*args, wait=False, **kwargs):
     if proc.returncode not in {0, None}:
         msg = f"failed to invoke juju command ({args}, {kwargs})"
         if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
-            msg += " If you see an ERROR above saying something like " \
-                   "'open ~/.local/share/juju/ssh: permission denied'," \
-                   "you might have forgotten to " \
-                   "'sudo snap connect jhack:dot-local-share-juju snapd'"
+            msg += (
+                " If you see an ERROR above saying something like "
+                "'open ~/.local/share/juju/ssh: permission denied',"
+                "you might have forgotten to "
+                "'sudo snap connect jhack:dot-local-share-juju snapd'"
+            )
         logger.error(msg)
 
     return proc
@@ -83,17 +85,19 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
 
 def is_k8s_model(status=None):
     status = status or juju_status(json=True)
-    if status['applications']:
+    if status["applications"]:
         # no machines = k8s model
-        if not status.get('machines'):
+        if not status.get("machines"):
             return True
         else:
             return False
 
-    cloud_name = status['model']['cloud']
-    logger.warning('unable to determine with certainty if the current model is a k8s model or not;'
-                   f'guessing it based on the cloud name ({cloud_name})')
-    return 'k8s' in cloud_name
+    cloud_name = status["model"]["cloud"]
+    logger.warning(
+        "unable to determine with certainty if the current model is a k8s model or not;"
+        f"guessing it based on the cloud name ({cloud_name})"
+    )
+    return "k8s" in cloud_name
 
 
 def juju_models() -> str:

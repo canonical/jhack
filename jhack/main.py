@@ -29,16 +29,16 @@ from jhack.jinx.pack import pack as jinx_pack
 from jhack.logger import LOGLEVEL, logger
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
+from jhack.utils.event_recorder.client import dump_db, emit, list_events
+from jhack.utils.event_recorder.record import install
 from jhack.utils.ffwd import fast_forward
 from jhack.utils.nuke import nuke
-from jhack.utils.simulate_event import simulate_event
 from jhack.utils.show_relation import sync_show_relation
 from jhack.utils.show_stored import show_stored
+from jhack.utils.simulate_event import simulate_event
 from jhack.utils.sync import sync as sync_deployed_charm
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
-from jhack.utils.event_recorder.client import list_events, emit, dump_db
-from jhack.utils.event_recorder.record import install
 
 
 def main():
