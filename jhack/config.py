@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from subprocess import CalledProcessError, check_output, check_call
+from subprocess import CalledProcessError, check_call, check_output
 
 from jhack.logger import logger
 
@@ -33,15 +33,16 @@ def configure():
     jdata = f"/home/{user}/.local/share/juju"
 
     try:
-        test_file = Path(jdata) / '.test_rw'
-        test_file.write_text('kuckadoodle-foo')
+        test_file = Path(jdata) / ".test_rw"
+        test_file.write_text("kuckadoodle-foo")
         test_file.unlink()
     except PermissionError:
         logger.error(
             f"It seems like the snap doesn't have access to {jdata};"
             f"to grant it, run 'sudo snap connect jhack:dot-local-share-juju snapd'."
             f"Some Jhack commands will still work, but those that interact "
-            f"with the juju client will not.")
+            f"with the juju client will not."
+        )
 
     # if we don't have rw access this will not do anything:
     # python-libjuju grabs the juju-data location from envvar.

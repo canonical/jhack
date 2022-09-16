@@ -25,6 +25,10 @@ class DebugLogInterlacer:
         next_line_timestamp = None
         next_line_file_index = None
 
+        if len(self.files) == 1:
+            fp = self.file_peekers[0]
+            return fp.readline()
+
         for i, file_peeker in enumerate(self.file_peekers):
             try:
                 line = file_peeker.peekline()
