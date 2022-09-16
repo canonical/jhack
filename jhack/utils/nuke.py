@@ -1,9 +1,9 @@
 import re
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
-from subprocess import Popen, PIPE
+from subprocess import PIPE
 from time import sleep
-from typing import Optional, Literal, List, Callable
+from typing import Callable, List, Literal, Optional
 
 import typer
 from rich.align import Align
@@ -11,11 +11,12 @@ from rich.console import Console, Group
 from rich.style import Style
 from rich.text import Text
 
-from jhack.config import JUJU_COMMAND
-from jhack.helpers import juju_status, juju_models, current_model, list_models
+from jhack.helpers import JPopen, current_model, juju_models, juju_status, list_models
 from jhack.logger import logger
 
-logger = logger.getChild('nuke')
+logger = logger.getChild("nuke")
+
+_Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
 ATOM = "⚛"
 ICBM = f"~]=={ATOM}❯"
@@ -87,14 +88,18 @@ def _get_models(filter_):
 
 
 def _get_apps_and_relations(
-    model: Optional[str], borked: bool,
-        filter_: Callable[[str], bool],
-        include_apps: bool = True,
-        include_relations: bool = True,
+    model: Optional[str],
+    borked: bool,
+    filter_: Callable[[str], bool],
+    include_apps: bool = True,
+    include_relations: bool = True,
 ) -> List[Nukeable]:
-    logger.info('gathering apps and relations')
+    logger.info("gathering apps and relations")
 
     status = juju_status("", model)
+    if not status:
+        return []
+
     apps = 0
     relation = 0
     nukeables = []
@@ -115,15 +120,15 @@ def _get_apps_and_relations(
         if not line.strip():
             continue
 
-        logger.debug(f'checking {line}')
+        logger.debug(f"checking {line}")
         if apps and include_apps:
-            logger.debug(f'checking {line}')
+            logger.debug(f"checking {line}")
             if borked and "active" in line:
-                logger.debug(f'skipping non-borked app')
+                logger.debug(f"skipping non-borked app")
                 continue
             entity_name = line.split()[0].strip("*")
             if "/" in entity_name:
-                logger.debug(f'skipping unit {entity_name}')
+                logger.debug(f"skipping unit {entity_name}")
                 # unit; can't nuke those yet
                 continue
             if filter_(entity_name):
@@ -144,14 +149,15 @@ def _get_apps_and_relations(
     return nukeables
 
 
-def _gather_nukeables(obj: Optional[str], model: Optional[str],
-                      borked: bool, selectors: str = ''):
-    logger.debug(f'Gathering nukeables for {obj!r} with _selectors = {selectors!r}')
+def _gather_nukeables(
+    obj: Optional[str], model: Optional[str], borked: bool, selectors: str = ""
+):
+    logger.debug(f"Gathering nukeables for {obj!r} with _selectors = {selectors!r}")
 
     globber = lambda s: s.startswith(obj)
 
-    if isinstance(obj, str) and ('*' in obj or '!' in obj):
-        logger.info('globbing detected; analyzing pattern')
+    if isinstance(obj, str) and ("*" in obj or "!" in obj):
+        logger.info("globbing detected; analyzing pattern")
 
         if "*" in obj and "!" in obj:
             raise RuntimeError("combinations of ! and * not supported.")
@@ -161,7 +167,7 @@ def _gather_nukeables(obj: Optional[str], model: Optional[str],
         elif "!" in obj:
             raise RuntimeError("! is only supported at the start of the name.")
 
-        if obj.startswith("*") and obj.endswith("*") and obj != '*':
+        if obj.startswith("*") and obj.endswith("*") and obj != "*":
             globber = lambda s: obj.strip("*") in s
         elif obj.startswith("*"):
             globber = lambda s: s.endswith(obj.strip("*"))
@@ -172,27 +178,27 @@ def _gather_nukeables(obj: Optional[str], model: Optional[str],
 
     nukeables: List[Nukeable] = []
 
-    if 'a' in selectors or 'r' in selectors:
-        logger.info(f'gathering apps and relations ({selectors})')
+    if "a" in selectors or "r" in selectors:
+        logger.info(f"gathering apps and relations ({selectors})")
         nukeables.extend(
             _get_apps_and_relations(
                 model or current_model(),
                 borked=borked,
                 filter_=globber,
-                include_apps='a' in selectors,
-                include_relations='r' in selectors
+                include_apps="a" in selectors,
+                include_relations="r" in selectors,
             )
         )
 
     # if we passed a model, we mean 'nuke something in that model'
     # otherwise, we may be interested in nuking the models themselves.
-    if not model and 'm' in selectors:
-        logger.info('gathering models')
+    if not model and "m" in selectors:
+        logger.info("gathering models")
         for model_ in list_models(strip_star=True):
             if model_ == "controller":
                 continue
             if globber(model_):
-                logger.info(f'collected {model_} for nukage')
+                logger.info(f"collected {model_} for nukage")
                 nukeables.append(Nukeable(model_, "model"))
 
     return nukeables
@@ -205,39 +211,46 @@ def _nuke(
     selectors: Optional[str] = None,
     n: int = None,
     dry_run: bool = False,
+    color: _Color = "auto",
 ):
-    if obj is None and not borked:
-        logger.info("No object provided, we'll nuke the current model.")
+    if obj is None and not borked and not selectors:
+        logger.info("No object | selectors provided, we'll nuke the current model.")
         nukeables = [Nukeable(current_model(), "model")]
     else:
-        if obj == '*' and selectors is None:
+        if obj is None:
+            # means we passed selectors:
+            assert selectors, "invalid usage"
+            obj = ""  # FIXME: kinda hacky
+
+        if obj == "*" and selectors is None:
             # nuke * === nuke all applications.
             # That's the most common target.
-            _selectors = {'a'}
+            _selectors = {"a"}
         elif borked:
-            _selectors = {'a'}
+            _selectors = {"a"}
         else:
-            SELECTORS = 'amr'
+            SELECTORS = "amr"
             _selectors = set(selectors or SELECTORS)  # all
             for char in SELECTORS:
                 if char.upper() in _selectors:
                     _selectors.remove(char.upper())
                     _selectors.remove(char)
 
-        nukeables = _gather_nukeables(obj, model, borked=borked,
-                                      selectors=''.join(_selectors))
-        logger.debug(f'Gathered: {nukeables}')
+        nukeables = _gather_nukeables(
+            obj, model, borked=borked, selectors="".join(_selectors)
+        )
+        logger.debug(f"Gathered: {nukeables}")
 
     nukes = []
     nuked_apps = set()
     nuked_models = set()
 
     for nukeable in tuple(nukeables):
-        logger.info(f'collecting for nukage: {nukeable}')
+        logger.info(f"collecting for nukage: {nukeable}")
         if nukeable.type == "model":
             nuked_models.add(nukeable.name)
             nukes.append(
-                f"{JUJU_COMMAND} destroy-model {nukeable.name} "
+                f"juju destroy-model {nukeable.name} "
                 f"--force --no-wait --destroy-storage -y"
             )
 
@@ -250,8 +263,7 @@ def _nuke(
                 continue
 
             nukes.append(
-                f"{JUJU_COMMAND} remove-application {nukeable.name} "
-                f"--force --no-wait"
+                f"juju remove-application {nukeable.name} " f"--force --no-wait"
             )
 
         elif nukeable.type == "relation":
@@ -266,7 +278,7 @@ def _nuke(
                 nukeables.remove(nukeable)
                 continue
 
-            nukes.append(f"{JUJU_COMMAND} remove-relation {provider} {requirer}")
+            nukes.append(f"juju remove-relation {provider} {requirer}")
 
         else:
             raise ValueError(nukeable.type)
@@ -291,7 +303,10 @@ def _nuke(
             print(f"would {ATOM} {nukeable} with {nuke}")
         return
 
-    console = Console()
+    if color == "no":
+        color = None
+
+    console = Console(color_system=color)
     print_centered = lambda s: console.print(Align(s, align="center"))
 
     def fire(nukeable: Nukeable, nuke: str):
@@ -311,7 +326,7 @@ def _nuke(
 
         print_centered(text)
         logger.debug(f"nuking {nukeable} with {nuke}")
-        proc = Popen(nuke.split(" "), stdout=PIPE, stderr=PIPE)
+        proc = JPopen(nuke.split(" "), stdout=PIPE, stderr=PIPE)
         proc.wait()
         while proc.returncode is None:
             sleep(0.1)
@@ -351,14 +366,17 @@ def _nuke(
 def nuke(
     what: List[str] = typer.Argument(None, help=f"What to {ATOM}."),
     selectors: str = typer.Option(
-        None, "-s", "--select",
+        None,
+        "-s",
+        "--select",
         help=f"Selector specifiers to choose what to {ATOM}."
-             f"A lower-case letter indicates `include`, "
-             f"an upper-case one indicates `exclude`. \n\n"
-             f"m := models; a := apps; r := relations\n\n"
-             f"Examples:"
-             f"`ma` = only include models and apps in the target selection (equivalent to `R`).\n"
-             f"`AR` = exclude models and relations (equivalent to `m`)"),
+        f"A lower-case letter indicates `include`, "
+        f"an upper-case one indicates `exclude`. \n\n"
+        f"m := models; a := apps; r := relations\n\n"
+        f"Examples:"
+        f"`ma` = only include models and apps in the target selection (equivalent to `R`).\n"
+        f"`AR` = exclude models and relations (equivalent to `m`)",
+    ),
     model: Optional[str] = typer.Option(
         None, "-m", "--model", help="The model. Defaults to current model."
     ),
@@ -376,6 +394,14 @@ def nuke(
     ),
     dry_run: bool = typer.Option(
         None, "--dry-run", help="Do nothing, print out what would have happened."
+    ),
+    color: Optional[str] = typer.Option(
+        "auto",
+        "-c",
+        "--color",
+        help="Color scheme to adopt. Supported options: "
+        "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
+        "no: disable colors entirely.",
     ),
 ):
     """Surgical carpet bombing tool.
@@ -397,21 +423,28 @@ def nuke(
 
     Nuke ascii art by Bill March from https://www.asciiart.eu/weapons/explosives
     """
-    logger.info('starting jhack nuke')
+    logger.info("starting jhack nuke")
 
     if n is not None:
         assert n > 0, f"nonsense: {n}"
         if not len(what) == 1:
             print("You cannot use `-n` with multiple targets.")
             return
-    if selectors != 'a' and borked:
-        print('borked implies selector=`a`')
+    if selectors != "a" and borked:
+        print("borked implies selector=`a`")
         return
-
+    kwargs = dict(
+        model=model,
+        borked=borked,
+        selectors=selectors,
+        n=n,
+        dry_run=dry_run,
+        color=color,
+    )
     if not what:
-        _nuke(None, model=model, borked=borked, selectors=selectors, n=n, dry_run=dry_run)
+        _nuke(None, **kwargs)
     for obj in what:
-        _nuke(obj, model=model, borked=borked, selectors=selectors, n=n, dry_run=dry_run)
+        _nuke(obj, **kwargs)
 
 
 if __name__ == "__main__":

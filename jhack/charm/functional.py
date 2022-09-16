@@ -5,21 +5,19 @@ import shutil
 import tempfile
 import typing
 from pathlib import Path
-from subprocess import Popen
 from typing import Optional
-
-from typer import Option
-
-from jhack.logger import logger
 
 from ops.charm import CharmBase
 from ops.model import StatusBase
+from typer import Option
 
 from jhack.charm.update import update
+from jhack.logger import logger
 
-RESOURCE_ROOT = Path(__file__).parent / 'resources' / 'functional-charm'
+RESOURCE_ROOT = Path(__file__).parent / "resources" / "functional-charm"
 DEFAULT_PACKED_CHARM_TEMPLATE = (
-            RESOURCE_ROOT / 'functional-charm_ubuntu-20.04-amd64.charm').absolute()
+    RESOURCE_ROOT / "functional-charm_ubuntu-20.04-amd64.charm"
+).absolute()
 
 PREFIX = '''#!/usr/bin/env python3
 # Copyleft 4242 functional.py
@@ -46,12 +44,14 @@ def _check_signature(fn):
     sig = inspect.signature(fn)
     if not any(sig == inspect.signature(p) for p in _protos):
         raise ValueError(
-            'function signature needs to be '
-            '(self:CharmBase, logger:logging.Logger=None) -> Optional[StatusBase]')
+            "function signature needs to be "
+            "(self:CharmBase, logger:logging.Logger=None) -> Optional[StatusBase]"
+        )
 
 
-def charm(fn: typing.Callable[
-    [CharmBase, Optional[logging.Logger]], Optional[StatusBase]]):
+def charm(
+    fn: typing.Callable[[CharmBase, Optional[logging.Logger]], Optional[StatusBase]]
+):
     """Decorator to wrap a function and make it a charm's init."""
     _check_signature(fn)
 
@@ -68,7 +68,7 @@ def _get_charm_function(file, name):
 
     def is_charm_decorated(fn_tok):
         for decorator in fn_tok.decorator_list:
-            if decorator.id == 'charm':
+            if decorator.id == "charm":
                 return True
         return False
 
@@ -86,22 +86,22 @@ def _get_charm_function(file, name):
             raise NotFound()
 
     # we rename the function and drop the decorator
-    fn.decorator_list = [dec for dec in fn.decorator_list if dec.id != 'charm']
+    fn.decorator_list = [dec for dec in fn.decorator_list if dec.id != "charm"]
     ori_name = fn.name
-    fn.name = 'charm'
+    fn.name = "charm"
     return fn, ori_name
 
 
 def _load_charm_source():
-    charm_source = RESOURCE_ROOT / 'src' / 'charm.py'
+    charm_source = RESOURCE_ROOT / "src" / "charm.py"
 
     if not charm_source.exists():
-        raise ValueError('charm source not found')
+        raise ValueError("charm source not found")
     return ast.parse(charm_source.read_text())
 
 
 def _inject_fn(charm_source, charm_fn):
-    charm_init = lambda node: getattr(node, 'name', None) == '__init__'
+    charm_init = lambda node: getattr(node, "name", None) == "__init__"
     charm_init = next(filter(charm_init, ast.walk(charm_source)))
     charm_init.body.insert(1, charm_fn)
     return charm_init
@@ -109,21 +109,28 @@ def _inject_fn(charm_source, charm_fn):
 
 def _update_built_charm(source: str, template, dry_run):
     with tempfile.TemporaryDirectory() as tempdir:
-        (Path(tempdir) / 'charm.py').write_text(source)
-        update(template, src=[tempdir], dst=('src',), dry_run=dry_run)
+        (Path(tempdir) / "charm.py").write_text(source)
+        update(template, src=[tempdir], dst=("src",), dry_run=dry_run)
 
 
-def run(file: str,
-        name: str = None,
-        dry_run: bool = False,
-        built_charm_template=Option(
-            DEFAULT_PACKED_CHARM_TEMPLATE, '--template', '-t',
-            help="The packed charm you wish to use as a template."),
-        deploy: str = Option(
-            None, '-d', '--deploy-name',
-            help='App name under which to deploy the charm; '
-                 'if left blank, the charm will not be deployed')
-        ):
+def run(
+    file: str,
+    name: str = None,
+    dry_run: bool = False,
+    built_charm_template=Option(
+        DEFAULT_PACKED_CHARM_TEMPLATE,
+        "--template",
+        "-t",
+        help="The packed charm you wish to use as a template.",
+    ),
+    deploy: str = Option(
+        None,
+        "-d",
+        "--deploy-name",
+        help="App name under which to deploy the charm; "
+        "if left blank, the charm will not be deployed",
+    ),
+):
     """Scan a file for an `@functional.charm`-decorated function and runs it
     like a charm.
 
@@ -135,20 +142,22 @@ def run(file: str,
     try:
         import astunparse
     except ModuleNotFoundError:
-        print(f'this function requires the `astunparse` module. '
-              f'To solve: `pip install astunparse`')
+        print(
+            f"this function requires the `astunparse` module. "
+            f"To solve: `pip install astunparse`"
+        )
         return
 
     if not Path(built_charm_template).exists():
-        print(f'charm template {built_charm_template} not found')
+        print(f"charm template {built_charm_template} not found")
         if built_charm_template == DEFAULT_PACKED_CHARM_TEMPLATE:
-            print('you might need to fetch it with git lfs')
+            print("you might need to fetch it with git lfs")
         return
 
     try:
         charm_fn, ori_name = _get_charm_function(file, name)
     except NotFound:
-        print(f'@charm-decorated function (with name {name}) not found in {file}')
+        print(f"@charm-decorated function (with name {name}) not found in {file}")
         return
 
     charm_source = _load_charm_source()
@@ -157,13 +166,13 @@ def run(file: str,
     new_source = PREFIX + astunparse.unparse(charm_source)
 
     if dry_run:
-        logger.info('resulting charm.py file:')
+        logger.info("resulting charm.py file:")
         logger.info(new_source)
 
     # we don't just overwrite our template:
     i = 0
     while True:
-        charm_name = ori_name + (f'_{i}' if i else '') + '.charm'
+        charm_name = ori_name + (f"_{i}" if i else "") + ".charm"
         charm_package = Path() / charm_name
         if not charm_package.exists():
             break
@@ -172,23 +181,24 @@ def run(file: str,
     shutil.copyfile(built_charm_template, charm_package)
     _update_built_charm(new_source, charm_package, dry_run)
 
-    print(f'charm ready at {charm_package.absolute()}')
+    print(f"charm ready at {charm_package.absolute()}")
     if deploy:
         cmd = f"juju deploy ./{charm_name} {deploy}"
         if dry_run:
-            print(f'would run: {cmd}')
+            print(f"would run: {cmd}")
             return
-        proc = Popen(cmd.split(), cwd=charm_package.parent.absolute())
+        proc = JPopen(cmd.split(), cwd=charm_package.parent.absolute())
         proc.wait()
 
-    print('all done.')
+    print("all done.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     @charm
     def foo(self: CharmBase, logger: logging.Logger = None):
         from ops.model import ActiveStatus
-        return ActiveStatus('welcome to functional charms')
 
-    run(__file__, name='foo', deploy='foo')
+        return ActiveStatus("welcome to functional charms")
+
+    run(__file__, name="foo", deploy="foo")

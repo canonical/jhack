@@ -1,4 +1,4 @@
-# jhack
+# jhack - Make charming charming again!
 
 [![jhack](https://snapcraft.io/jhack/badge.svg)](https://snapcraft.io/jhack) [![foo](https://img.shields.io/badge/everything-charming-blueviolet)](https://github.com/PietroPasotti/jhack) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://discourse.charmhub.io/t/visualizing-relation-databags-for-development-and-debugging/5991)
 
@@ -254,6 +254,102 @@ Since v0.3, also peer relations are supported.
 Additionally, it supports “show me the nth relation” instead of having to type out the whole app-name:endpoint thing: if you have 3 relations in your model, you can simply do jhack show-relation -n 1 and jhack will print out the 2nd relation from the top (of the same list appearing when you do juju status --relations, that is.
 
 
+## show-stored
+
+As we know, ops offers the possibility to use StoredState to persist some data between events, making charms therefore (somewhat) stateful. It can be challenging (or simply tedious) during testing and debugging, to inspect the contents of a live charm’s stored state in a uniform way. 
+
+Well, no more! 
+
+Suppose you have a prometheus-k8s charm deployed as `prom` (and related to traefik-k8s).
+Type: `jhack show-stored prom/0` and you'd get:
+
+```commandline
+                                                      store data v0.1                                                       
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│                                                             │                                                            │
+│  handle:  PrometheusCharm/GrafanaDashboardProvider[grafan…  │  handle:  PrometheusCharm/IngressPerUnitRequirer[ingress…  │
+│    size:  8509b                                             │    size:  657b                                             │
+│                           <dict>                            │                           <dict>                           │
+│ ┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ │ ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ │
+│ ┃ key                   ┃ value                           ┃ │ ┃ key            ┃ value                                 ┃ │
+│ ┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩ │ ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩ │
+│ │ 'dashboard_templates' │ {'file:prometheus-k8s_rev1.jso… │ │ │ 'current_urls' │ {'prom/0':                            │ │
+│ │                       │ {'charm': 'prometheus-k8s',     │ │ │                │ 'http://0.0.0.0:80/baz-prom-0'}       │ │
+│ │                       │ 'content':                      │ │ └────────────────┴───────────────────────────────────────┘ │
+│ │                       │ '/Td6WFoAAATm1rRGAgAhARYAAAB0L… │ │                                                            │
+│ │                       │ 'juju_topology': {'model':      │ │                                                            $
+│ │                       │ 'baz', 'model_uuid':            │ │                                                            │
+│ │                       │ '00ff58ab-c187-497d-85b3-7cadd… │ │                                                            │
+│ │                       │ 'application': 'prom', 'unit':  │ │                                                            │
+│ │                       │ 'prom/0'}}}                     │ │                                                            │
+│ └───────────────────────┴─────────────────────────────────┘ │                                                            │
+└─────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘
+```
+
+### Adapters
+The bottom part of the two table cells contains the ‘blob’ itself. At the moment we only implement ‘pretty-printers’ for python dicts. ops natively serializes only native python datatypes (anything you can `yaml.dump, in fact), but you could be serializing much more complex stuff than that.
+
+For that reason, `jhack show-stored` exposes an `--adapters` optional argument, which allows you to inject your custom adapter to deserialize a specific handle. So, for example, if you are not happy with how the ingress `StoredData` is represented, you could create a file:
+
+```python
+from urllib.parse import urlparse
+from rich.table import Table
+def _deserialize_ingress(raw: dict):
+    urls = raw['current_urls']
+    table = Table(title='ingress view adapter')
+    table.add_column('unit')
+    table.add_column('scheme')
+    table.add_column('hostname')
+    table.add_column('port')
+    table.add_column('path')
+
+    for unit_name, url in urls.items():
+        row = [unit_name]
+
+        p_url = urlparse(url)
+        hostname, port = p_url.netloc.split(":")
+        row.extend((p_url.scheme, hostname, port, p_url.path))
+
+        table.add_row(*row)
+
+    return table  # we can return any rich.RenderableType (str, or Rich builtins)
+
+# For this to work, this file needs to declare a global 'adapters' var of the right type.
+adapters = {
+    "PrometheusCharm/IngressPerUnitRequirer[ingress]/StoredStateData[_stored]": _deserialize_ingress
+}
+```
+And then by running jhack show-stored -a /path/to/that/file, you’d magically get:
+
+```commandline
+                                                      store data v0.1                                                       
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│                                                             │                                                            │
+│  handle:  PrometheusCharm/GrafanaDashboardProvider[grafan…  │  handle:  PrometheusCharm/IngressPerUnitRequirer[ingress…  │
+│    size:  8509b                                             │    size:  657b                                             │
+│                           <dict>                            │                ingress view adapter                        │
+│ ┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ │ ┏━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━┓        │
+│ ┃ key                   ┃ value                           ┃ │ ┃ unit   ┃ scheme ┃ hostname ┃ port ┃ path        ┃        │
+│ ┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩ │ ┡━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━┩        │
+│ │ 'dashboard_templates' │ {'file:prometheus-k8s_rev1.jso… │ │ │ prom/0 │ http   │ 0.0.0.0  │ 80   │ /baz-prom-0 │        │
+│ │                       │ {'charm': 'prometheus-k8s',     │ │ └────────┴────────┴──────────┴──────┴─────────────┘        │
+│ │                       │ 'content':                      │ │                                                            │
+│ │                       │ '/Td6WFoAAATm1rRGAgAhARYAAAB0L… │ │                                                            │
+│ │                       │ 'juju_topology': {'model':      │ │                                                            │
+│ │                       │ 'baz', 'model_uuid':            │ │                                                            │
+│ │                       │ '00ff58ab-c187-497d-85b3-7cadd… │ │                                                            │
+│ │                       │ 'application': 'prom', 'unit':  │ │                                                            │
+│ │                       │ 'prom/0'}}}                     │ │                                                            │
+│ └───────────────────────┴─────────────────────────────────┘ │                                                            │
+└─────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘
+```
+
+Which is pretty cool.
+
 ## nuke
 
 This utility is the swiss army knife of "just get rid of this thing already".
@@ -324,6 +420,32 @@ Like update, but keeps watching for changes in the provided directories and
 pushes them into the packed charm whenever there's one.
 
 `jhack charm sync ./my_charm_file-amd64.charm --src ./src --dst src`
+
+## provision
+
+Run a script in one or multiple units.
+
+When debugging, it's often handy to install certain tools on a running unit, to then shell into it and start hacking around.
+How often have you:
+```
+juju ssh foo/0
+apt update
+apt install vim procps top mc -y
+```
+
+Well, no more!
+
+The idea is: you create your unit provisioning script in `~/.cprov/default`, keeping in mind that no user input can be expected (i.e. put `-y` flags everywhere).
+
+Running 
+> jhack charm provision traefik-k8s/1;prometheus-k8s
+
+will run that script on all prometheus units, and traefik's unit `1`.
+You can put multiple scripts in `~/.cprov`, and choose which one to use by:
+> jhack charm provision foo/1 --script foo
+
+Alternatively, you can pass a full path, and it will not matter where the file is:
+> jhack charm provision foo/1 --script /path/to/your/script.sh
 
 ## repack
 Used to pack a charm and refresh it in a juju model. Useful when developing.

@@ -1,12 +1,11 @@
 import json
 import re
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from time import sleep
 
+import typer
 from rich.console import Console
 from rich.text import Text
-
-import typer
 
 from jhack.config import JUJU_COMMAND
 
@@ -84,38 +83,38 @@ MODELOPERATOR_SERVICE_PORT=17071
 JUJU_CHARM_NO_PROXY=127.0.0.1,localhost,::1
 _=/usr/bin/env"""
 
+
 def get_models():
     cmd = f"{JUJU_COMMAND} models --format json"
     proc = Popen(cmd.split(), stdout=PIPE)
     proc.wait()
-    data = json.loads(proc.stdout.read().decode('utf-8'))
+    data = json.loads(proc.stdout.read().decode("utf-8"))
     return data
 
 
 def build_env(event: str, target: str, model: str = None):
     model_info = get_models()
     if model is None:
-        model = model_info['current-model']
-    model_data = next(filter(lambda m: m['short-name'] == model,
-                      model_info['models']))
-    model_uuid = model_data['model-uuid']
-    cloud = model_data['cloud']
-    agent_version = model_data['agent-version']
+        model = model_info["current-model"]
+    model_data = next(filter(lambda m: m["short-name"] == model, model_info["models"]))
+    model_uuid = model_data["model-uuid"]
+    cloud = model_data["cloud"]
+    agent_version = model_data["agent-version"]
 
-    app_name, unit_id = target.split('/')
+    app_name, unit_id = target.split("/")
     replacements = {
-        'app_name': app_name,
-        'unit_id': unit_id,
-        'model_uuid': model_uuid,
-        'model_name': model,
-        'container_names': 'foo',
-        'cloud': cloud,
-        'juju_version': agent_version,
-        'event_name': event,
+        "app_name": app_name,
+        "unit_id": unit_id,
+        "model_uuid": model_uuid,
+        "model_name": model,
+        "container_names": "foo",
+        "cloud": cloud,
+        "juju_version": agent_version,
+        "event_name": event,
     }
     text = ENVIRON.format(**replacements)
-    pairs = dict(pair.split('=') for pair in text.split('\n'))
-    escaped = " ".join('='.join((k, f"'{v}'")) for k, v in pairs.items())
+    pairs = dict(pair.split("=") for pair in text.split("\n"))
+    escaped = " ".join("=".join((k, f"'{v}'")) for k, v in pairs.items())
     return escaped
 
 
@@ -126,30 +125,33 @@ def _fire(event: str, target: str, model: str = None):
     outer_cmd = f"{JUJU_COMMAND} exec -u {target} -- {cmd}"
     proc = Popen(outer_cmd.split(), stdout=PIPE, stderr=PIPE)
     while proc.returncode is None:
-        print('waiting for response...')
+        print("waiting for response...")
         proc.wait()
-        sleep(.2)
+        sleep(0.2)
     # print(outer_cmd)
     # return
-    stdout, stderr = (c.read().decode('utf-8') for c in (proc.stdout, proc.stderr))
+    stdout, stderr = (c.read().decode("utf-8") for c in (proc.stdout, proc.stderr))
     console = Console()
     if proc.returncode != 0 or stderr:
-        console.print(Text('completed with errors', style='red bold'))
+        console.print(Text("completed with errors", style="red bold"))
         console.print(stderr)
     else:
-        console.print(Text('completed without errors', style='green bold'))
+        console.print(Text("completed without errors", style="green bold"))
 
     if stdout:
-        console.print(Text('standard output follows:', style='bold'))
+        console.print(Text("standard output follows:", style="bold"))
         console.print(stdout)
 
 
-def fire(event: str = typer.Argument(..., help="Name of the event to fire."),
-         target: str = typer.Argument(..., help="Who to fire it on."),
-         model: str = typer.Argument(None, help="The model the target is in. "
-                                                "Defaults to *the current model*.")):
+def fire(
+    event: str = typer.Argument(..., help="Name of the event to fire."),
+    target: str = typer.Argument(..., help="Who to fire it on."),
+    model: str = typer.Argument(
+        None, help="The model the target is in. " "Defaults to *the current model*."
+    ),
+):
     return _fire(event, target, model)
 
 
-if __name__ == '__main__':
-    _fire('update-status', 'trfk/0', None)
+if __name__ == "__main__":
+    _fire("update-status", "trfk/0", None)

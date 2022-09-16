@@ -3,21 +3,24 @@ import os
 import time
 import typing
 from pathlib import Path
-from subprocess import Popen, PIPE
+from subprocess import PIPE
 from typing import List
 
 from juju import jasyncio
 
-from jhack.config import JUJU_COMMAND
+from jhack.helpers import JPopen
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
 
 
-def watch(paths, on_change: typing.Callable,
-          extensions: typing.Iterable[str] = (),
-          recursive: bool = True,
-          polling_interval: float = 1.):
+def watch(
+    paths,
+    on_change: typing.Callable,
+    extensions: typing.Iterable[str] = (),
+    recursive: bool = True,
+    polling_interval: float = 1.0,
+):
     """Watches a directory for changes; on any, calls on_change back with them."""
 
     resolved = [Path(path).resolve() for path in paths]
@@ -25,34 +28,34 @@ def watch(paths, on_change: typing.Callable,
     def check_ext(file):
         if not extensions:
             return True
-        return str(file).split('.')[-1] in extensions
+        return str(file).split(".")[-1] in extensions
 
     watch_list = []
     for path in resolved:
         if not path.is_dir():
-            logger.error(f'not a directory: {path}; cannot watch.')
+            logger.error(f"not a directory: {path}; cannot watch.")
             continue
         watch_list += walk(path, recursive, check_ext)
 
     if not watch_list:
-        logger.error('nothing to watch')
+        logger.error("nothing to watch")
         return
 
-    logger.info('watching: \n\t%s' % "\n\t".join(map(str, watch_list)))
-    logger.info('Ctrl+C to interrupt')
+    logger.info("watching: \n\t%s" % "\n\t".join(map(str, watch_list)))
+    logger.info("Ctrl+C to interrupt")
 
     hashes = {}
     while True:
         # determine which files have changed
         changed_files = []
         for file in watch_list:
-            logger.debug(f'checking {file}')
+            logger.debug(f"checking {file}")
             if old_tstamp := hashes.get(file, None):
                 new_tstamp = os.path.getmtime(file)
                 if new_tstamp == old_tstamp:
-                    logger.debug(f'timestamp unchanged {old_tstamp}')
+                    logger.debug(f"timestamp unchanged {old_tstamp}")
                     continue
-                logger.debug(f'changed: {file}')
+                logger.debug(f"changed: {file}")
                 hashes[file] = new_tstamp
                 changed_files.append(file)
             else:
@@ -74,19 +77,21 @@ def walk(path: Path, recursive, check_ext) -> List[Path]:
             if path_.is_dir():
                 walked.extend(walk(path_, recursive, check_ext))
             else:
-                logger.warning(f'skipped {path_}')
+                logger.warning(f"skipped {path_}")
     return walked
 
 
-def sync(local_folder: str,
-         unit: str,
-         remote_root: str = None,
-         container_name: str = 'charm',
-         machine_charm: bool = False,
-         polling_interval: float = 1,
-         recursive: bool = False,
-         exts: List[str] = None,
-         dry_run: bool = False):
+def sync(
+    local_folder: str,
+    unit: str,
+    remote_root: str = None,
+    container_name: str = "charm",
+    machine_charm: bool = False,
+    polling_interval: float = 1,
+    recursive: bool = False,
+    exts: List[str] = None,
+    dry_run: bool = False,
+):
     """Syncs a local folder to a remote juju unit via juju scp.
 
     Example:
@@ -102,52 +107,57 @@ def sync(local_folder: str,
       you pass will be interpreted to this relative remote root which we have no
       control over.
     """
-    spec = unit.split('/')
+    spec = unit.split("/")
 
     if len(spec) == 2:
         app, unit = spec
     else:
         app = spec[0]
         unit = 0
-    remote_root = remote_root or f"/var/lib/juju/agents/" \
-                                 f"unit-{app}-{unit}/charm/"
+    remote_root = remote_root or f"/var/lib/juju/agents/" f"unit-{app}-{unit}/charm/"
 
     def on_change(changed_files):
         if not changed_files:
             return
         if dry_run:
-            print('would sync:', changed_files)
+            print("would sync:", changed_files)
             return
 
         loop = asyncio.events.get_event_loop()
         loop.run_until_complete(
             jasyncio.gather(
-                *(push_to_remote_juju_unit(changed, remote_root,
-                                           app, unit, container_name, machine_charm)
-                  for changed in changed_files)
+                *(
+                    push_to_remote_juju_unit(
+                        changed, remote_root, app, unit, container_name, machine_charm
+                    )
+                    for changed in changed_files
+                )
             )
         )
         time.sleep(polling_interval)
 
-    watch((local_folder, ), on_change, exts, recursive, polling_interval)
+    watch((local_folder,), on_change, exts, recursive, polling_interval)
 
 
-async def push_to_remote_juju_unit(file: Path, remote_root: str,
-                                   app, unit, container_name, machine_charm):
-    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1:]
+async def push_to_remote_juju_unit(
+    file: Path, remote_root: str, app, unit, container_name, machine_charm
+):
+    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1 :]
 
     if not machine_charm:
         container_opt = f"--container {container_name} " if container_name else ""
-        cmd = f"{JUJU_COMMAND} scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
-        proc = Popen(cmd.split(' '), stdout=PIPE, stderr=PIPE)
+        cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
+        proc = JPopen(cmd.split(" "), stdout=PIPE, stderr=PIPE)
     else:
-        cmd = f"cat {file} | {JUJU_COMMAND} ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
-        proc = Popen([cmd], stdout=PIPE, stderr=PIPE, shell=True)
+        cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
+        proc = JPopen([cmd], stdout=PIPE, stderr=PIPE, shell=True)
 
     retcode = proc.returncode
     if retcode != None:
-        logger.error(f"{cmd} errored with code {retcode}: "
-                     f"\nstdout={proc.stdout.read()}, "
-                     f"\nstderr={proc.stderr.read()}")
+        logger.error(
+            f"{cmd} errored with code {retcode}: "
+            f"\nstdout={proc.stdout.read()}, "
+            f"\nstderr={proc.stderr.read()}"
+        )
 
-    print(f'synced {file}')
+    print(f"synced {file}")

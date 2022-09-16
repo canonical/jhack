@@ -12,10 +12,12 @@ from jhack.logger import logger
 chmod_plusx = lambda file: os.chmod(file, os.stat(file).st_mode | stat.S_IEXEC)
 
 
-def update(charm: Path = None,
-           src: List[Path] = ('./src', './lib'),
-           dst: List[Path] = ('src', 'lib'),
-           dry_run: bool = False):
+def update(
+    charm: Path = None,
+    src: List[Path] = ("./src", "./lib"),
+    dst: List[Path] = ("src", "lib"),
+    dry_run: bool = False,
+):
     """
     Force-push into a local .charm file one or more directories.
 
@@ -45,11 +47,9 @@ def update(charm: Path = None,
 
     try:
         # extract charm to build directory
-        with zipfile.ZipFile(charm, 'r') as zip_read:
+        with zipfile.ZipFile(charm, "r") as zip_read:
             zip_read.extractall(build_dir)
-            logger.info(
-                f'Extracted {len(zip_read.filelist)} files to build folder.'
-            )
+            logger.info(f"Extracted {len(zip_read.filelist)} files to build folder.")
 
         # remove src and lib
         for source, destination in zip(src, dst):
@@ -57,9 +57,9 @@ def update(charm: Path = None,
             build_dst = build_dir / destination
             # ensure the destination is **gone**
             if dry_run:
-                logger.info(f'Would remove {build_dst}...')
+                logger.info(f"Would remove {build_dst}...")
                 if source.exists():
-                    logger.info(f'...and replace it with {source}')
+                    logger.info(f"...and replace it with {source}")
                 continue
 
             # ensure the build_dst is clear
@@ -70,12 +70,10 @@ def update(charm: Path = None,
 
             shutil.copytree(source, build_dst, copy_function=shutil.copy)
             if not dry_run:
-                logger.info(f'Copy: {source} --> {build_dst}.')
+                logger.info(f"Copy: {source} --> {build_dst}.")
 
         if dry_run:
-            logger.info(
-                f'Would unlink {charm} and replace it with {build_dir}.'
-            )
+            logger.info(f"Would unlink {charm} and replace it with {build_dir}.")
             return
 
         # remove old charm
@@ -84,14 +82,14 @@ def update(charm: Path = None,
         charm_package_name = str(charm)[:-6]
 
         # for some reason copytree breaks permissions...
-        chmod_plusx(build_dir / 'dispatch')
-        chmod_plusx(build_dir / 'src' / 'charm.py')
+        chmod_plusx(build_dir / "dispatch")
+        chmod_plusx(build_dir / "src" / "charm.py")
 
-        shutil.make_archive(charm_package_name, 'zip', build_dir)
+        shutil.make_archive(charm_package_name, "zip", build_dir)
 
         # rename back to .charm as shutil.make_archive
         # won't let us override .zip
-        os.rename(charm_package_name + '.zip', charm_package_name + '.charm')
+        os.rename(charm_package_name + ".zip", charm_package_name + ".charm")
 
     finally:
         shutil.rmtree(build_dir)

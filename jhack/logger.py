@@ -1,6 +1,6 @@
 import logging
 import os
 
-LOGLEVEL = os.environ.get('LOGLEVEL', 'WARNING').upper()
+LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
 logging.basicConfig(level=LOGLEVEL)
-logger = logging.getLogger('jhack')
+logger = logging.getLogger("jhack")

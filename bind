@@ -1,0 +1,11 @@
+#/usr/bin/bash
+echo "binding jhack slots..."
+          
+sudo snap connect jhack:network snapd
+sudo snap connect jhack:network-bind snapd       
+sudo snap connect jhack:dot-local-share-juju snapd
+sudo snap connect jhack:juju-client-observe snapd
+
+echo "done."
+
+snap connections jhack

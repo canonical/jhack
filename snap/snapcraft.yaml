@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.2.9-dev'
+version: '0.2.94-strict'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -17,20 +17,38 @@ description: |
   charming charming again.
 
 grade: stable
-confinement: devmode
+confinement: strict
 
 parts:
   jhack:
     plugin: python
     source: https://github.com/PietroPasotti/jhack.git
-    source-branch: master
+    source-branch: strict-snap
     python-packages:
       - typer==0.4.1
       - ops==1.4.0
       - rich==12.0.1
       - parse==1.19.0
       - juju==2.9.7
+    stage-snaps:
+      - juju/3.0/beta
 
 apps:
   jhack:
     command: bin/jhack
+    plugs:
+      - network
+      - network-bind
+      - dot-local-share-juju
+
+
+plugs:
+  # read-write access to .local/share/juju (JUJU_DATA)
+  dot-local-share-juju:
+    interface: personal-files
+    write:
+      - $HOME/.local/share/juju
+
+  # required to use multiprocessing semaphores
+  shared-memory:
+    private: true
