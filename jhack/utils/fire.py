@@ -7,8 +7,6 @@ import typer
 from rich.console import Console
 from rich.text import Text
 
-from jhack.config import JUJU_COMMAND
-
 ENVIRON = r"""SHELL=/bin/bash
 KUBERNETES_SERVICE_PORT_HTTPS=443
 WEBSERVER_SERVICE_PORT=65535
@@ -122,7 +120,7 @@ def _fire(event: str, target: str, model: str = None):
     env = build_env(event, target, model)
 
     cmd = f" {env} /var/lib/juju/agents/unit-{target.replace('/', '-')}/charm/dispatch"
-    outer_cmd = f"{JUJU_COMMAND} exec -u {target} -- {cmd}"
+    outer_cmd = f"juju exec -u {target} -- {cmd}"
     proc = Popen(outer_cmd.split(), stdout=PIPE, stderr=PIPE)
     while proc.returncode is None:
         print("waiting for response...")
