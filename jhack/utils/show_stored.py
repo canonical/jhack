@@ -269,7 +269,7 @@ class StorageView:
                 f"Failed to parse SQLite storage file {store_path}: {e}"
             ) from e
 
-        table = Table(title="store data v0.1")
+        table = Table(title="stored data v0.1")
         contents = []
         metadata = []
         snapshots = tuple(store.list_snapshots())

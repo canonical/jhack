@@ -264,7 +264,7 @@ Suppose you have a prometheus-k8s charm deployed as `prom` (and related to traef
 Type: `jhack show-stored prom/0` and you'd get:
 
 ```commandline
-                                                      store data v0.1                                                       
+                                                      stored data v0.1                                                       
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -324,7 +324,7 @@ adapters = {
 And then by running jhack show-stored -a /path/to/that/file, you’d magically get:
 
 ```commandline
-                                                      store data v0.1                                                       
+                                                      stored data v0.1                                                       
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
