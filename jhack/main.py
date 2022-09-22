@@ -32,6 +32,7 @@ from jhack.model.remove import rmodel
 from jhack.utils.event_recorder.client import dump_db, emit, list_events
 from jhack.utils.event_recorder.record import install
 from jhack.utils.ffwd import fast_forward
+from jhack.utils.fire import fire
 from jhack.utils.nuke import nuke
 from jhack.utils.show_relation import sync_show_relation
 from jhack.utils.show_stored import show_stored
@@ -89,6 +90,7 @@ def main():
     app.command(name="fire")(simulate_event)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
+    app.command(name="fire")(fire)
 
     app.add_typer(model)
     app.add_typer(jinx)

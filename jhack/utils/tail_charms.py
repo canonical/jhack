@@ -4,6 +4,7 @@ import re
 import time
 from collections import Counter
 from dataclasses import dataclass, field
+from itertools import chain
 from pathlib import Path
 from subprocess import PIPE, STDOUT
 from typing import (
@@ -27,7 +28,7 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import JPopen, juju_version
+from jhack.helpers import JPopen, juju_status, juju_version
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
@@ -45,6 +46,11 @@ class Target:
 
     @staticmethod
     def from_name(name: str):
+        if "/" not in name:
+            logger.warning(
+                "invalid target name: expected `<app_name>/<unit_id>`; "
+                f"got {name!r}."
+            )
         app, unit_ = name.split("/")
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
@@ -59,26 +65,12 @@ class Target:
 
 
 def get_all_units() -> Sequence[Target]:
-    cmd = JPopen(f"juju status".split(" "), stdout=PIPE)
-    output = cmd.stdout.read().decode("utf-8")
-
-    units = []
-    units_section = False
-    for line in output.split("\n"):
-        if units_section and not line.strip():
-            # empty line after units section: end of units section
-            units_section = False
-            break
-
-        first_part, *_ = line.split(" ")
-        if first_part == "Unit":
-            units_section = True
-            continue
-
-        if units_section:
-            target = Target.from_name(first_part)
-            units.append(target)
-    return tuple(units)
+    status = juju_status(json=True)
+    # sub charms don't have units
+    units = list(
+        chain(*(app.get("units", ()) for app in status["applications"].values()))
+    )
+    return tuple(map(Target.from_name, units))
 
 
 def parse_targets(targets: str = None) -> Sequence[Target]:

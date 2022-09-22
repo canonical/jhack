@@ -243,3 +243,14 @@ def test_tail_event_filter(pattern, log, match):
         assert msg
     else:
         assert msg is None
+
+
+def test_machine_log_with_subordinates():
+    proc = _tail_events(
+        length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
+    )
+    assert len(proc.targets) == 4
+    assert len(proc._raw_tables["mongodb/0"].events) == 12
+    assert len(proc._raw_tables["ceil/0"].events) == 12
+    assert len(proc._raw_tables["prometheus-node-exporter/0"].events) == 7
+    assert len(proc._raw_tables["ubuntu/0"].events) == 12
