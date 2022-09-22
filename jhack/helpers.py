@@ -1,8 +1,8 @@
 import contextlib
+import json
 import json as jsn
 import os
 import subprocess
-from functools import partial
 from pathlib import Path
 from subprocess import PIPE
 from typing import List
@@ -11,6 +11,14 @@ from juju.model import Model
 
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
+
+
+def get_models():
+    cmd = f"juju models --format json"
+    proc = JPopen(cmd.split())
+    proc.wait()
+    data = json.loads(proc.stdout.read().decode("utf-8"))
+    return data
 
 
 @contextlib.asynccontextmanager
@@ -103,6 +111,12 @@ def is_k8s_model(status=None):
 def juju_models() -> str:
     proc = JPopen(f"juju models".split())
     return proc.stdout.read().decode("utf-8")
+
+
+def show_unit(unit: str):
+    proc = JPopen(f"juju show-unit {unit} --format json".split())
+    raw = json.loads(proc.stdout.read().decode("utf-8"))
+    return raw[unit]
 
 
 def list_models(strip_star=False) -> List[str]:

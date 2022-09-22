@@ -14,7 +14,6 @@ from typing import Any, Callable, Dict, Iterable, Literal, Optional, Type, Union
 
 import typer
 import yaml
-from logger import logger
 from ops.storage import SQLiteStorage
 from rich.align import Align
 from rich.console import Console, RenderableType
@@ -23,6 +22,7 @@ from rich.table import Table
 from rich.text import Text
 
 from jhack.helpers import JPopen
+from jhack.logger import logger
 
 Adapter = Callable[[Any], RenderableType]
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
@@ -269,7 +269,7 @@ class StorageView:
                 f"Failed to parse SQLite storage file {store_path}: {e}"
             ) from e
 
-        table = Table(title="store data v0.1")
+        table = Table(title="stored data v0.1")
         contents = []
         metadata = []
         snapshots = tuple(store.list_snapshots())

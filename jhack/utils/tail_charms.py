@@ -5,6 +5,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field
 from itertools import chain
+from pathlib import Path
 from subprocess import PIPE, STDOUT
 from typing import (
     Callable,
@@ -114,6 +115,9 @@ class EventLogMsg:
     endpoint: str = ""
     endpoint_id: str = ""
 
+    # whether this event is an operator event (charm calling itself)
+    operator_event: bool = False
+
 
 @dataclass
 class EventDeferredLogMsg(EventLogMsg):
@@ -130,6 +134,7 @@ class EventReemittedLogMsg(EventDeferredLogMsg):
 
 @dataclass
 class RawTable:
+    msgs: List[EventLogMsg] = field(default_factory=list)
     events: List[str] = field(default_factory=list)
     deferrals: List[str] = field(default_factory=list)
     ns: List[str] = field(default_factory=list)
@@ -140,6 +145,7 @@ class RawTable:
         return self.n_colors.get(n, _default_n_color)
 
     def add(self, msg: Union[EventLogMsg]):
+        self.msgs.insert(0, msg)
         self.events.insert(0, msg.event)
         self.deferrals.insert(0, "  ")
         n = getattr(msg, "n", None)
@@ -148,6 +154,7 @@ class RawTable:
             self.n_colors[n] = _random_color()
 
     def add_blank_row(self):
+        self.msgs.insert(0, None)
         self.ns.insert(0, None)
         self.events.insert(0, None)
         self.deferrals.insert(0, "  ")
@@ -175,6 +182,7 @@ _event_colors = {
 _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
+_operator_event_color = Color.from_rgb(252, 115, 3)
 
 
 def _random_color():
@@ -231,6 +239,9 @@ class Processor:
         base_relation_pattern = (
             base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
         )
+
+        operator_event_suffix = "Charm called itself via hooks/(?P<event>\S+)\."
+        self.operator_event = re.compile(base_pattern + operator_event_suffix)
 
         event_suffix = "Emitting Juju event (?P<event>\S+)\."
         self.event = re.compile(base_pattern + event_suffix)
@@ -400,6 +411,10 @@ class Processor:
         if match := self.event.match(log) or self.event_from_relation.match(log):
             params = match.groupdict()
 
+        elif match := self.operator_event.match(log):
+            params = match.groupdict()
+            params["operator_event"] = True
+
         # TODO: in juju2, sometimes we need to match events in a
         #  different way: understand why.
         elif JUJU_VERSION < "3.0" and (match := self.uniter_event.match(log)):
@@ -484,7 +499,10 @@ class Processor:
 
             raw_table.deferrals[0] = tail
 
-    def _get_event_color(self, event: str) -> Color:
+    def _get_event_color(self, msg: EventLogMsg) -> Color:
+        event = msg.event
+        if msg.operator_event:
+            return _operator_event_color
         if event in _event_colors:
             return _event_colors.get(event, _default_event_color)
         else:
@@ -509,11 +527,11 @@ class Processor:
         for target in targets:
             tgt_grid = Table.grid(*(("",) * n_cols), expand=True, padding=(0, 1, 0, 1))
             raw_table = raw_tables[target.unit_name]
-            for event, deferral, n in zip(
-                raw_table.events, raw_table.deferrals, raw_table.ns
+            for msg, event, deferral, n in zip(
+                raw_table.msgs, raw_table.events, raw_table.deferrals, raw_table.ns
             ):
                 rndr = (
-                    Text(event, style=Style(color=self._get_event_color(event)))
+                    Text(event, style=Style(color=self._get_event_color(msg)))
                     if event
                     else ""
                 )
@@ -980,7 +998,7 @@ def _tail_events(
     show_ns: bool = False,
     watch: bool = True,
     color: str = "auto",
-    files: List[str] = None,
+    files: List[Union[str, Path]] = None,
     event_filter: str = None,
     # for script use only
     _on_event: Callable[[EventLogMsg], None] = None,

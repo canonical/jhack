@@ -3,12 +3,12 @@
 [![jhack](https://snapcraft.io/jhack/badge.svg)](https://snapcraft.io/jhack) [![foo](https://img.shields.io/badge/everything-charming-blueviolet)](https://github.com/PietroPasotti/jhack) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://discourse.charmhub.io/t/visualizing-relation-databags-for-development-and-debugging/5991)
 
 
-This is a homegrown collection of opinionated scripts and utilities to make the 
+This is a homegrown collection of opinionated scripts and utilities to make the
 charm dev's life somewhat easier.
 
 #### Installation:
 ##### from sources (dev setup):
-Clone the repo; alias '/path/to/jhack/main.py' as 'jhack', or something. 
+Clone the repo; alias '/path/to/jhack/main.py' as 'jhack', or something.
 Ensure the requirements are installed:
 
     $ pip install -r requirements.txt
@@ -19,7 +19,7 @@ Ensure the requirements are installed:
     $ pip install ./dist/jhack-v...whl
 
 ##### as snap (coming soon!):
-    
+
     $ sudo snap install --edge --devmode jhack
 
 #### Usage:
@@ -38,7 +38,7 @@ Happy hacking!
 
 `jhack utils sync ./src application-name/0`
 
-Will watch the ./src folder for changes and push any to application-name/0 
+Will watch the ./src folder for changes and push any to application-name/0
 under /charm/src/.
 
 ## unbork-juju
@@ -65,7 +65,7 @@ jhack utils ffwd
 ## tail
 
 Monitors the logs and gathers all logs concerning events being fired on the units.
-Will pprint the last N in a nice format. Keeps listening and updates in the 
+Will pprint the last N in a nice format. Keeps listening and updates in the
 background as new units are added.
 
 ```
@@ -191,7 +191,7 @@ You can run `jhack utils tail --file=prom.txt --file=trfk.txt` to see the events
 ```
 
 
-## show-relation 
+## show-relation
 
 Displays the databags of units involved in a relation.
 if the endpoint is of the form `app-name/id:relation-name`: it will display the application databag and the one for the unit with id=`id`.
@@ -256,15 +256,15 @@ Additionally, it supports “show me the nth relation” instead of having to ty
 
 ## show-stored
 
-As we know, ops offers the possibility to use StoredState to persist some data between events, making charms therefore (somewhat) stateful. It can be challenging (or simply tedious) during testing and debugging, to inspect the contents of a live charm’s stored state in a uniform way. 
+As we know, ops offers the possibility to use StoredState to persist some data between events, making charms therefore (somewhat) stateful. It can be challenging (or simply tedious) during testing and debugging, to inspect the contents of a live charm’s stored state in a uniform way.
 
-Well, no more! 
+Well, no more!
 
 Suppose you have a prometheus-k8s charm deployed as `prom` (and related to traefik-k8s).
 Type: `jhack show-stored prom/0` and you'd get:
 
 ```commandline
-                                                      store data v0.1                                                       
+                                                      stored data v0.1                                                       
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -324,7 +324,7 @@ adapters = {
 And then by running jhack show-stored -a /path/to/that/file, you’d magically get:
 
 ```commandline
-                                                      store data v0.1                                                       
+                                                      stored data v0.1                                                       
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -360,18 +360,18 @@ The tool is designed to be used with `juju status --relations` and `juju models`
 The basic usage is as follows:
 
 `jhack nuke` -> will nuke the current model and that's that.
-`jhack nuke foo*` -> will: 
- - scan `juju models` for models whose **name begins with "foo"** and nuke each one of them.
- - For each model it did **not** target as nukeable in the previous step, it will scan `juju status -m that-model` and:
-   - for each app whose name begins with "foo", it will nuke it.
-   - for each relation NOT involving an app selected for nukage in the previous step, if either the provider or requirer starts with "foo", it will nuke it. 
+`jhack nuke foo*` -> will:
+- scan `juju models` for models whose **name begins with "foo"** and nuke each one of them.
+- For each model it did **not** target as nukeable in the previous step, it will scan `juju status -m that-model` and:
+    - for each app whose name begins with "foo", it will nuke it.
+    - for each relation NOT involving an app selected for nukage in the previous step, if either the provider or requirer starts with "foo", it will nuke it.
 
 You can switch between "starts with" / "ends with" and "contains" matching modes by placing stars around the string:
 
- - `jhack nuke foo`  --> same as `jhack nuke foo*`
- - `jhack nuke *foo`  --> same algorithm as above, but will nuke stuff whose name _ends with_ "foo".
- - `jhack nuke *foo*`  --> ... will nuke stuff that _contains_ "foo"
- - `jhack nuke !foo`  --> _exact match_ only. So it will presumably only nuke one thing, except if you have many models with identically-named apps or relations in them. Then they'll all be vanquished.
+- `jhack nuke foo`  --> same as `jhack nuke foo*`
+- `jhack nuke *foo`  --> same algorithm as above, but will nuke stuff whose name _ends with_ "foo".
+- `jhack nuke *foo*`  --> ... will nuke stuff that _contains_ "foo"
+- `jhack nuke !foo`  --> _exact match_ only. So it will presumably only nuke one thing, except if you have many models with identically-named apps or relations in them. Then they'll all be vanquished.
 
 For targeting relations only, you can type out the endpoint name up to and including the colon. For example, for purging all relations involving your `my-db` application,
 you could do:
@@ -380,15 +380,84 @@ you could do:
 By using this tool you acknowledge the possibility of it bricking your model or controller. Hopefully nothing beyond that.
 
 ### Safety tips
- - Learn to use the command by trying out the `--dry-run` flag first, that will print out what it would nuke without actually nuking anything. 
- - The command has an optional `-n` flag that allows you to specify the expected number of nukes that should be fired out. If more or less than `n` nukeables are matched, the command will print an error message and abort.
- - The command has a `--selectors` (`-s`) option that can be used to specify what to include/exclude in the bombardment.
-   - 'a' for apps, 'A' for all except apps
-   - 'm' for models, 'M' for all except models
-   - 'r' for relations, 'R' for all except relations 
-     (although, the resulting nuke will probably also wipe the relations that would have been matched had this flag been omitted)
-   
-   So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.   
+- Learn to use the command by trying out the `--dry-run` flag first, that will print out what it would nuke without actually nuking anything.
+- The command has an optional `-n` flag that allows you to specify the expected number of nukes that should be fired out. If more or less than `n` nukeables are matched, the command will print an error message and abort.
+- The command has a `--selectors` (`-s`) option that can be used to specify what to include/exclude in the bombardment.
+    - 'a' for apps, 'A' for all except apps
+    - 'm' for models, 'M' for all except models
+    - 'r' for relations, 'R' for all except relations
+      (although, the resulting nuke will probably also wipe the relations that would have been matched had this flag been omitted)
+
+  So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.
+
+
+# replay
+This command offers facilities to capture runtime event contexts and use them to 're-fire' "the same event" later on.
+The flow consists of two main steps:
+- inject code that captures any event, serializes it and dumps it to a db on the unit.
+- whenever you like trigger a charm execution reusing a recorded context.
+
+## install
+
+This command is used to inject into a unit the code responsible for capturing the context in which the charm runs and dropping it to a db file.
+
+Example usage:
+
+    jhack replay install trfk/0
+
+## list
+
+This command is used to enumerate, first to last, all events which have been fired onto a unit (since replay was installed!).
+You can use the index of the enumeration to later re-fire the event.
+
+Example:
+
+    jhack replay list trfk/0
+
+its output could be something like:
+
+    Listing recorded events:                                                     
+        (0) 2022-09-12 11:54:02.279174 :: start                              
+        (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created  
+        (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined   
+        (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed  
+        (4) 2022-09-12 11:54:04.369351 :: ingress-per-unit-relation-joined   
+        (5) 2022-09-12 11:54:04.924288 :: ingress-per-unit-relation-changed  
+        (6) 2022-09-12 11:54:10.371510 :: traefik-pebble-ready
+
+or if no events have been fired yet:
+
+    Listing recorded events:
+        <no events>                                                          
+
+
+Tip: to quickly get some events in, you could `jhack fire trfr/0 update-status`.
+
+## refire
+
+This command is used to re-fire a recorded event onto the same unit.
+
+    jhack replay refire trfk/0 2
+
+Note that the index needs to match that of some recorded event (you can inspect those with `jhack replay list`).
+
+Example run:
+
+    $ jhack replay install trfk/0
+    $ jhack replay list trfk/0
+    Listing recorded events:
+        (0) 2022-09-12 11:54:02.279174 :: start                             
+        (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created 
+        (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined  
+        (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed 
+    $ jhack replay refire trfk/0 2
+    Replaying event (3): ingress-per-unit-relation-joined as originally emitted at 2022-09-12 11:54:03.293178.
+
+## dump
+
+Dump a recorded event (raw json).
+Interesting if you want to inspect the event context, or if you want to re-use it in other scripts (e.g. with `jhack utils fire`).
+
 
 # model
 ## clear
@@ -412,11 +481,11 @@ Updates a packed .charm file by dumping into it any number of directories.
 
 `jhack charm update ./my_charm_file-amd64.charm --src ./src --dst src`
 
-This will take ./src and recursively copy it into the packed charm's /src dir 
+This will take ./src and recursively copy it into the packed charm's /src dir
 (it will destroy any existing content).
 
 ## sync
-Like update, but keeps watching for changes in the provided directories and 
+Like update, but keeps watching for changes in the provided directories and
 pushes them into the packed charm whenever there's one.
 
 `jhack charm sync ./my_charm_file-amd64.charm --src ./src --dst src`
@@ -449,12 +518,12 @@ Alternatively, you can pass a full path, and it will not matter where the file i
 
 ## repack
 Used to pack a charm and refresh it in a juju model. Useful when developing.
-If used without arguments, it will assume the cwd is the charm's root, will run 
+If used without arguments, it will assume the cwd is the charm's root, will run
 `charmcraft pack`, and grab the application name from the charm's name.
 
 `jhack charm repack`
 
-Otherwise, you can specify a folder where the packing should be done, and an 
+Otherwise, you can specify a folder where the packing should be done, and an
 application name to target with the refresh.
 
 `jhack charm repack --root /where/my/charm/root/is --name juju-app-name`

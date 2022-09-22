@@ -29,11 +29,14 @@ from jhack.jinx.pack import pack as jinx_pack
 from jhack.logger import LOGLEVEL, logger
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
+from jhack.utils.event_recorder.client import dump_db, emit, list_events
+from jhack.utils.event_recorder.record import install
 from jhack.utils.ffwd import fast_forward
 from jhack.utils.fire import fire
 from jhack.utils.nuke import nuke
 from jhack.utils.show_relation import sync_show_relation
 from jhack.utils.show_stored import show_stored
+from jhack.utils.simulate_event import simulate_event
 from jhack.utils.sync import sync as sync_deployed_charm
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
@@ -53,6 +56,7 @@ def main():
     utils.command(name="record")(record)
     utils.command(name="ffwd")(fast_forward)
     utils.command(name="unbork-juju")(unbork_juju)
+    utils.command(name="fire")(simulate_event)
 
     jinx = typer.Typer(
         name="jinx",
@@ -71,12 +75,19 @@ def main():
     charm.command(name="sync")(sync_packed_charm)
     charm.command(name="provision")(provision)
 
+    replay = typer.Typer(name="replay", help="Commands to replay events.")
+    replay.command(name="install")(install)
+    replay.command(name="list")(list_events)
+    replay.command(name="dump")(dump_db)
+    replay.command(name="emit")(emit)
+
     app = typer.Typer(name="jhack", help="Hacky, wacky, but ultimately charming.")
     app.command(name="sync")(sync_deployed_charm)
     app.command(name="show-relation")(sync_show_relation)
     app.command(name="show-stored")(show_stored)
     app.command(name="tail")(tail_events)
     app.command(name="nuke")(nuke)
+    app.command(name="fire")(simulate_event)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
     app.command(name="fire")(fire)
@@ -85,6 +96,7 @@ def main():
     app.add_typer(jinx)
     app.add_typer(charm)
     app.add_typer(utils)
+    app.add_typer(replay)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):
@@ -102,7 +114,6 @@ def main():
     from jhack.config import configure
 
     configure()
-
     app()
 
 
