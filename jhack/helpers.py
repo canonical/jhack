@@ -13,6 +13,14 @@ from jhack.config import IS_SNAPPED
 from jhack.logger import logger
 
 
+def get_models():
+    cmd = f"juju models --format json"
+    proc = JPopen(cmd.split())
+    proc.wait()
+    data = json.loads(proc.stdout.read().decode("utf-8"))
+    return data
+
+
 @contextlib.asynccontextmanager
 async def get_current_model() -> Model:
     model = Model()

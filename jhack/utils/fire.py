@@ -7,6 +7,8 @@ import typer
 from rich.console import Console
 from rich.text import Text
 
+from jhack.helpers import get_models
+
 ENVIRON = r"""SHELL=/bin/bash
 KUBERNETES_SERVICE_PORT_HTTPS=443
 WEBSERVER_SERVICE_PORT=65535
@@ -80,14 +82,6 @@ DEBIAN_FRONTEND=noninteractive
 MODELOPERATOR_SERVICE_PORT=17071
 JUJU_CHARM_NO_PROXY=127.0.0.1,localhost,::1
 _=/usr/bin/env"""
-
-
-def get_models():
-    cmd = f"{JUJU_COMMAND} models --format json"
-    proc = Popen(cmd.split(), stdout=PIPE)
-    proc.wait()
-    data = json.loads(proc.stdout.read().decode("utf-8"))
-    return data
 
 
 def build_env(event: str, target: str, model: str = None):
