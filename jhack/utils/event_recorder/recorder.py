@@ -8,7 +8,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, Generator, List, Literal, Any, Tuple
+from typing import Any, Dict, Generator, List, Literal, Tuple
 
 try:
     from jhack.logger import logger as jhack_logger
@@ -19,20 +19,20 @@ except ModuleNotFoundError:
     jhack_logger = getLogger()
 
 DEFAULT_DB_NAME = "event_db.json"
-logger = jhack_logger.getChild('recorder')
+logger = jhack_logger.getChild("recorder")
 
-MemoModes = Literal['record', 'replay']
+MemoModes = Literal["record", "replay"]
 
 
 def _load_memo_mode() -> MemoModes:
-    val = os.getenv('MEMO_MODE', 'record')
-    if val == 'record':
-        logger.info('MEMO: recording')
-    elif val == 'replay':
-        logger.info('MEMO: replaying')
+    val = os.getenv("MEMO_MODE", "record")
+    if val == "record":
+        logger.info("MEMO: recording")
+    elif val == "replay":
+        logger.info("MEMO: replaying")
     else:
-        logger.error(f'MEMO: invalid value ({val!r}). Defaulting to `record`.')
-        return 'record'
+        logger.error(f"MEMO: invalid value ({val!r}). Defaulting to `record`.")
+        return "record"
     return typing.cast(MemoModes, val)
 
 
@@ -65,24 +65,27 @@ def memo(db_name: str = DEFAULT_DB_NAME):
 
             with event_db(db_name) as data:
                 if not data.scenes:
-                    raise RuntimeError('No scene: cannot memoize.')
+                    raise RuntimeError("No scene: cannot memoize.")
 
-                if _MEMO_MODE == 'record':
+                if _MEMO_MODE == "record":
                     memo = data.scenes[-1].context.memos.get(fn.__name__, Memo())
                     memo.calls.append(((memoizable_args, kwargs), propagate()))
                     data.scenes[-1].context.memos[fn.__name__] = memo
 
-                elif _MEMO_MODE == 'replay':
-                    idx = os.environ.get('MEMO_REPLAY_IDX', None)
+                elif _MEMO_MODE == "replay":
+                    idx = os.environ.get("MEMO_REPLAY_IDX", None)
                     if idx is None:
                         raise RuntimeError(
-                            'provide a MEMO_REPLAY_IDX envvar'
-                            'to tell the replay environ which scene to look at')
+                            "provide a MEMO_REPLAY_IDX envvar"
+                            "to tell the replay environ which scene to look at"
+                        )
                     try:
                         idx = int(idx)
                     except TypeError:
-                        raise RuntimeError(f"invalid idx: ({idx}); expecting an integer.")
-                    
+                        raise RuntimeError(
+                            f"invalid idx: ({idx}); expecting an integer."
+                        )
+
                     try:
                         memo = data.scenes[idx].context.memos[fn.__name__]
 
@@ -90,8 +93,9 @@ def memo(db_name: str = DEFAULT_DB_NAME):
                         # if no memo is present for this function, that might mean that
                         # in the recorded session it was not called (this path is new!)
                         warnings.warn(
-                            f'No memo found for {fn.__name__}: '
-                            f'this path must be new.')
+                            f"No memo found for {fn.__name__}: "
+                            f"this path must be new."
+                        )
                         return propagate()
 
                     try:
@@ -103,8 +107,8 @@ def memo(db_name: str = DEFAULT_DB_NAME):
                         # this means the current path is calling the wrapped function
                         # more times than the recorded path did.
                         warnings.warn(
-                            f'Memo cursor {current_cursor} out of bounds for {fn.__name__}: '
-                            f'the path must have changed'
+                            f"Memo cursor {current_cursor} out of bounds for {fn.__name__}: "
+                            f"the path must have changed"
                         )
                         return propagate()
 
@@ -113,8 +117,10 @@ def memo(db_name: str = DEFAULT_DB_NAME):
                     # convert args to list for comparison purposes because memos are
                     # loaded from json, where tuples become lists.
                     if (reco_args, reco_kwargs) != (list(memoizable_args), kwargs):
-                        warnings.warn(f"memoized {fn.__name__} arguments don't match "
-                                      f"the ones received at runtime. This path has diverged.")
+                        warnings.warn(
+                            f"memoized {fn.__name__} arguments don't match "
+                            f"the ones received at runtime. This path has diverged."
+                        )
                         return propagate()
 
                     return reco_out  # happy path!
@@ -173,9 +179,8 @@ class Context:
     @staticmethod
     def from_dict(obj: dict):
         return Context(
-            memos={
-                name: Memo(**content) for name, content in obj['memos'].items()
-            })
+            memos={name: Memo(**content) for name, content in obj["memos"].items()}
+        )
 
 
 @dataclass
@@ -186,8 +191,8 @@ class Scene:
     @staticmethod
     def from_dict(obj):
         return Scene(
-            event=Event(**obj['event']),
-            context=Context.from_dict(obj.get('context', {}))
+            event=Event(**obj["event"]),
+            context=Context.from_dict(obj.get("context", {})),
         )
 
 
@@ -211,8 +216,7 @@ def event_db(file=DEFAULT_DB_NAME) -> Generator[Data, None, None]:
 
 
 def _capture() -> Event:
-    return Event(env=dict(os.environ),
-                 timestamp=datetime.datetime.now().isoformat())
+    return Event(env=dict(os.environ), timestamp=datetime.datetime.now().isoformat())
 
 
 def _reset_replay_cursors(file=DEFAULT_DB_NAME):
@@ -221,7 +225,7 @@ def _reset_replay_cursors(file=DEFAULT_DB_NAME):
             for memo in scene.context.memos.values():
                 memo.cursor = 0
 
-    print('reset all replay cursors')
+    print("reset all replay cursors")
 
 
 def _record_current_event(file):
@@ -233,7 +237,7 @@ def _record_current_event(file):
 
 
 def setup(file=DEFAULT_DB_NAME):
-    if _MEMO_MODE == 'record':
+    if _MEMO_MODE == "record":
         _record_current_event(file)
-    if _MEMO_MODE == 'replay':
+    if _MEMO_MODE == "replay":
         _reset_replay_cursors()

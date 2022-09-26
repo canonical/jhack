@@ -138,11 +138,15 @@ def current_model() -> str:
 @contextlib.contextmanager
 def modify_remote_file(unit: str, path: str):
     # need to create tf in ~ else juju>3.0 scp will break (strict snap)
-    with tempfile.NamedTemporaryFile(dir=Path('~').expanduser()) as tf:
+    with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
         # print(f'fetching remote {path}...')
 
         cmd = [
-            "juju", "ssh", unit, "cat", path,
+            "juju",
+            "ssh",
+            unit,
+            "cat",
+            path,
         ]
         buf = subprocess.check_output(cmd)
         f = Path(tf.name)
@@ -152,7 +156,8 @@ def modify_remote_file(unit: str, path: str):
 
         # print(f'copying back modified {path}...')
         cmd = [
-            "juju", "scp",
+            "juju",
+            "scp",
             tf.name,
             f"{unit}:{path}",
         ]

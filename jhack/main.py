@@ -29,7 +29,13 @@ from jhack.jinx.pack import pack as jinx_pack
 from jhack.logger import LOGLEVEL, logger
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
-from jhack.utils.event_recorder.client import dump_db, emit, list_events, purge_db, install
+from jhack.utils.event_recorder.client import (
+    dump_db,
+    emit,
+    install,
+    list_events,
+    purge_db,
+)
 from jhack.utils.ffwd import fast_forward
 from jhack.utils.fire import fire
 from jhack.utils.nuke import nuke
