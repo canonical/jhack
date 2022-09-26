@@ -1,5 +1,5 @@
+#!/usr/bin/env python3
 import ast
-import functools
 from pathlib import Path
 
 import asttokens

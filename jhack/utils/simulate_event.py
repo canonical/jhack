@@ -114,9 +114,9 @@ def _simulate_event(
     event,
     relation_remote: str = None,
     operator_dispatch: bool = False,
-    env_override: List[str] = None,
+    env_override: str = None,
 ):
-    env = _get_env(
+    env = env_override or _get_env(
         unit,
         event,
         relation_remote=relation_remote,
