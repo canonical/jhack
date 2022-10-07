@@ -32,10 +32,11 @@ from jhack.model.remove import rmodel
 from jhack.utils.event_recorder.client import (
     dump_db,
     emit,
-    list_events
+    install,
+    list_events,
+    purge_db,
 )
 from jhack.utils.ffwd import fast_forward
-from jhack.utils.fire import fire
 from jhack.utils.nuke import nuke
 from jhack.utils.show_relation import sync_show_relation
 from jhack.utils.show_stored import show_stored
@@ -79,6 +80,8 @@ def main():
     charm.command(name="provision")(provision)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")
+    replay.command(name="install", no_args_is_help=True)(install)
+    replay.command(name="purge", no_args_is_help=True)(purge_db)
     replay.command(name="list", no_args_is_help=True)(list_events)
     replay.command(name="dump", no_args_is_help=True)(dump_db)
     replay.command(name="emit", no_args_is_help=True)(emit)
@@ -94,7 +97,6 @@ def main():
     app.command(name="fire", no_args_is_help=True)(simulate_event)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
-    app.command(name="fire", no_args_is_help=True)(fire)
 
     app.add_typer(model, no_args_is_help=True)
     app.add_typer(jinx, no_args_is_help=True)

@@ -3,6 +3,7 @@ import json
 import json as jsn
 import os
 import subprocess
+import tempfile
 from pathlib import Path
 from subprocess import PIPE
 from typing import List
@@ -132,3 +133,32 @@ def current_model() -> str:
     all_models = list_models()
     key = lambda name: name.endswith("*")
     return next(filter(key, all_models)).strip("*")
+
+
+@contextlib.contextmanager
+def modify_remote_file(unit: str, path: str):
+    # need to create tf in ~ else juju>3.0 scp will break (strict snap)
+    with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
+        # print(f'fetching remote {path}...')
+
+        cmd = [
+            "juju",
+            "ssh",
+            unit,
+            "cat",
+            path,
+        ]
+        buf = subprocess.check_output(cmd)
+        f = Path(tf.name)
+        f.write_bytes(buf)
+
+        yield f
+
+        # print(f'copying back modified {path}...')
+        cmd = [
+            "juju",
+            "scp",
+            tf.name,
+            f"{unit}:{path}",
+        ]
+        subprocess.check_call(cmd)

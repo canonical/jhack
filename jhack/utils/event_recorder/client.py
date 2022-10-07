@@ -6,11 +6,16 @@ from typing import Optional, Union
 
 import typer
 
+from jhack.helpers import modify_remote_file
 from jhack.logger import logger
+from jhack.utils.event_recorder.memo_tools import inject_memoizer
 from jhack.utils.event_recorder.recorder import DEFAULT_DB_NAME, event_db
 from jhack.utils.simulate_event import _simulate_event
 
 logger = logger.getChild("event_recorder.client")
+RECORDER_SOURCE = Path(__file__).parent / "recorder.py"
+BROKEN_ENV_KEYS = {"JUJU_API_ADDRESSES", "JUJU_METER_INFO",  # contain whitespace
+                   "JUJU_CONTEXT_ID"}  # need to skip this one else juju exec will whine
 
 
 def _fetch_db(unit: str, remote_db_path: str, local_db_path: Path):
@@ -31,10 +36,10 @@ def _print_events(db_path: Union[str, Path]):
     try:
         with event_db(db_path) as data:
             print("Listing recorded events:")
-            for i, event in enumerate(data.events):
-                print(f"\t({i}) {event.datetime} :: {event.name}")
-            if not data.events:
-                print("\t<no events>")
+            for i, scene in enumerate(data.scenes):
+                print(f"\t({i}) {scene.event.datetime} :: {scene.event.name}")
+            if not data.scenes:
+                print("\t<no scenes>")
 
     except json.JSONDecodeError as e:
         raise RuntimeError(
@@ -59,22 +64,38 @@ def list_events(
 
 
 def _emit(unit: str, idx: int, db_path=DEFAULT_DB_NAME, dry_run: bool = False):
+    # we need to fetch the database to know what event we're talking about, since we're using
+    # _simulate_event to fire the event. We could also shortcut this by embedding the 'simulate_event'
+    # logic in the recorder script.
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
         _fetch_db(unit, remote_db_path=db_path, local_db_path=temp_db)
 
         with event_db(temp_db) as data:
-            event = data.events[idx]
+            event = data.scenes[idx].event
 
     print(
-        f"{'Would replay' if dry_run else 'Replaying'} event ({idx}): {event.name} as originally emitted at {event.timestamp}."
+        f"{'Would replay' if dry_run else 'Replaying'} event ({idx}): "
+        f"{event.name} as originally emitted at {event.timestamp}."
     )
     if dry_run:
         return
 
-    return _simulate_event(
-        unit, event.name, env_override=[f"{k}='{v}'" for k, v in event.env.items()]
+    # fixme: remove this filter when the simulate_event issue is fixed
+    event_env = ((a, b) for a, b in event.env.items() if a not in BROKEN_ENV_KEYS)
+    env = " ".join(
+        [f"{k}='{v}'" for k, v in event_env]
+        + [
+            # this envvar tells the @memo decorators to start replaying
+            # instead of making real backend calls.
+            "MEMO_MODE=replay",
+            # this envvar tells @memo which scene to look at for
+            # the return value emulation
+            f"MEMO_REPLAY_IDX={idx}",
+        ]
     )
+
+    return _simulate_event(unit, event.name, env_override=env)
 
 
 def emit(
@@ -93,7 +114,7 @@ def _dump_db(unit: str, idx: int = -1, db_path=DEFAULT_DB_NAME):
         _fetch_db(unit, db_path, temp_db)
 
         if idx is not None:
-            evt = json.loads(temp_db.read_text()).get("events", {})[idx]
+            evt = json.loads(temp_db.read_text()).get("scenes", {})[idx]
             print(json.dumps(evt, indent=2))
 
         else:
@@ -116,5 +137,103 @@ def dump_db(
     return _dump_db(unit, idx, db_path)
 
 
+def _purge_db(unit: str, idxs: str, db_path: str):
+    unit_sanitized = unit.replace("/", "-")
+    charm_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{db_path}"
+    with modify_remote_file(unit, charm_path) as f:
+        with event_db(f) as data:
+            if idxs:
+                for idx in idxs.split(","):
+                    scene = data.scenes.pop(int(idx))
+                    print(
+                        f"Purged scene {idx}: {scene.event.name} ({scene.event.datetime})"
+                    )
+            else:
+                n_s = len(data.scenes)
+                data.scenes = []
+                print(f"Purged db ({n_s} scenes).")
+
+
+def purge_db(
+    unit: str = typer.Argument(..., help="Target unit."),
+    idx: Optional[str] = typer.Argument(
+        None,
+        help="Comma-separated list f indices of events to purge (as per `list`); "
+        "leave blank to purge the whole db.",
+    ),
+    db_path=DEFAULT_DB_NAME,
+):
+    """Purge the database (by default, all of it) or a specific event."""
+    return _purge_db(unit, idx, db_path)
+
+
+def _copy_recorder_script(unit: str):
+    unit_sanitized = unit.replace("/", "-")
+    cmd = (
+        f"juju scp {RECORDER_SOURCE} "
+        f"{unit}:/var/lib/juju/agents/unit-{unit_sanitized}/charm/src/recorder.py"
+    )
+    check_call(cmd.split())
+
+
+def _inject_memoizer(unit: str):
+    unit_sanitized = unit.replace("/", "-")
+    ops_model_path = (
+        f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/venv/ops/model.py"
+    )
+    with modify_remote_file(unit, ops_model_path) as f:
+        inject_memoizer(Path(f))
+
+
+def inject_record_current_event_call(file):
+    charm_path = Path(file)
+    charm_py_lines = charm_path.read_text().split("\n")
+    mainline = None
+    for idx, line in enumerate(reversed(charm_py_lines)):
+        if "__main__" in line:
+            # presumably, the line immediately after this one is main(MyCharm)
+            mainline = idx
+            break
+
+    if mainline is None:
+        raise RuntimeError(
+            "recorder installation failed: " f"could not find main clause in {file}"
+        )
+
+    charm_py_lines.insert(1, "from recorder import setup")
+    charm_py_lines.insert(-mainline, "    setup()")
+    # in between, somewhere, the `main(MyCharm)` call
+    charm_path.write_text("\n".join(charm_py_lines))
+
+
+def _inject_record_current_event_call(unit):
+    unit_sanitized = unit.replace("/", "-")
+    charm_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/src/charm.py"
+    with modify_remote_file(unit, charm_path) as f:
+        inject_record_current_event_call(Path(f))
+
+    # restore permissions:
+    check_call(["juju", "ssh", unit, "chmod", "+x", charm_path])
+
+
+def _install(unit: str):
+    print("Shelling over recorder script...")
+    _copy_recorder_script(unit)
+
+    print("Injecting record_current_event call in charm source...")
+    _inject_record_current_event_call(unit)
+
+    print("Injecting @memo in ops source...")
+    _inject_memoizer(unit)
+
+    print("Recorder installed.")
+
+
+def install(unit: str):
+    """Install the record spyware on the given unit."""
+    return _install(unit)
+
+
 if __name__ == "__main__":
-    _emit("trfk/0", 15)
+    _copy_recorder_script("trfk/0")
+    # _emit("trfk/0", 23)
