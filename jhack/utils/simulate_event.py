@@ -62,7 +62,7 @@ def _get_env(
 
         relation_id = _get_relation_id(unit, endpoint, relation_remote_app)
         env["JUJU_RELATION"] = endpoint
-        env["JUJU_RELATION_ID"] = relation_id
+        env["JUJU_RELATION_ID"] = str(relation_id)
 
         if event.endswith("-relation-departed"):
             env["JUJU_DEPARTING_UNIT"] = relation_remote
