@@ -966,9 +966,7 @@ def tail_events(
 ):
     """Pretty-print a table with the events that are fired on juju units
     in the current model.
-    Examples:
-        >>> jhack tail mongo-k8s/2
-        >>> jhack tail -d
+    Examples: jhack tail mongo-k8s/2  |  jhack tail -d
     """
     return _tail_events(
         targets=targets,
