@@ -250,7 +250,7 @@ def test_machine_log_with_subordinates():
         length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
     )
     assert len(proc.targets) == 4
-    assert len(proc._raw_tables["mongodb/0"].events) == 12
-    assert len(proc._raw_tables["ceil/0"].events) == 12
-    assert len(proc._raw_tables["prometheus-node-exporter/0"].events) == 7
-    assert len(proc._raw_tables["ubuntu/0"].events) == 12
+    assert len(proc._raw_tables["mongodb/0"].events) == 2  # mock event we added
+    assert len(proc._raw_tables["ceil/0"].events) == 1  # mock event we added
+    assert len(proc._raw_tables["prometheus-node-exporter/0"].events) == 11
+    assert len(proc._raw_tables["ubuntu/0"].events) == 16

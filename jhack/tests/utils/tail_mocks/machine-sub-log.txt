@@ -307,7 +307,28 @@ unit-mongodb-0: 13:24:41 DEBUG unit.mongodb/0.install Get:1 http://archive.ubunt
 unit-mongodb-0: 13:24:41 DEBUG unit.mongodb/0.install Get:2 http://archive.ubuntu.com/ubuntu focal-updates/main amd64 python3-netaddr all 0.7.19-3ubuntu1 [236 kB]
 unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install Fetched 1825 kB in 1s (1473 kB/s)
 unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install Selecting previously unselected package ieee-data.
-unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 32013 files and directories currently installed.)
+unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 32013 files and directories currently installed.)
 unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install Preparing to unpack .../ieee-data_20180805.1_all.deb ...
 unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install Unpacking ieee-data (20180805.1) ...
 unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install Selecting previously unselected package python3-netaddr.
@@ -483,7 +504,28 @@ unit-mongodb-0: 13:24:48 DEBUG unit.mongodb/0.install Get:21 http://archive.ubun
 unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install Fetched 1825 kB in 3s (557 kB/s)
 unit-mongodb-0: 13:24:48 DEBUG unit.mongodb/0.install Get:22 http://archive.ubuntu.com/ubuntu focal-updates/main amd64 libtsan0 amd64 10.3.0-1ubuntu1~20.04 [2009 kB]
 unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install Selecting previously unselected package ieee-data.
-unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 32013 files and directories currently installed.)
+unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 32013 files and directories currently installed.)
 unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install Preparing to unpack .../ieee-data_20180805.1_all.deb ...
 unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install Unpacking ieee-data (20180805.1) ...
 unit-ceil-0: 13:24:49 DEBUG unit.ceil/0.install Selecting previously unselected package python3-netaddr.
@@ -571,7 +613,28 @@ unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Get:49 http://archive.ubun
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Get:50 http://archive.ubuntu.com/ubuntu focal-updates/universe amd64 python3-pip all 20.0.2-5ubuntu1.6 [231 kB]
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Fetched 52.2 MB in 12s (4528 kB/s)
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Selecting previously unselected package binutils-common:amd64.
-unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 32079 files and directories currently installed.)
+unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 32079 files and directories currently installed.)
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Preparing to unpack .../00-binutils-common_2.34-6ubuntu1.3_amd64.deb ...
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Unpacking binutils-common:amd64 (2.34-6ubuntu1.3) ...
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Selecting previously unselected package libbinutils:amd64.
@@ -770,7 +833,28 @@ unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install Fetched 52.2 MB in 14s (3854 kB/
 unit-mongodb-0: 13:25:04 DEBUG unit.mongodb/0.install Setting up fakeroot (1.24-1) ...
 unit-mongodb-0: 13:25:04 DEBUG unit.mongodb/0.install update-alternatives: using /usr/bin/fakeroot-sysv to provide /usr/bin/fakeroot (fakeroot) in auto mode
 unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install Selecting previously unselected package binutils-common:amd64.
-unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 32079 files and directories currently installed.)
+unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 32079 files and directories currently installed.)
 unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install Preparing to unpack .../00-binutils-common_2.34-6ubuntu1.3_amd64.deb ...
 unit-mongodb-0: 13:25:04 DEBUG unit.mongodb/0.install Setting up make (4.2.1-1.2) ...
 unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install Unpacking binutils-common:amd64 (2.34-6ubuntu1.3) ...
@@ -997,7 +1081,28 @@ unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install Fetched 248 kB in 0s (1508
 unit-ceil-0: 13:25:13 DEBUG unit.ceil/0.install Setting up libalgorithm-diff-perl (1.19.03-2) ...
 unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install Selecting previously unselected package python3-bson.
 unit-ceil-0: 13:25:13 DEBUG unit.ceil/0.install Setting up binutils-common:amd64 (2.34-6ubuntu1.3) ...
-unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38192 files and directories currently installed.)
+unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 38192 files and directories currently installed.)
 unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install Preparing to unpack .../python3-bson_3.10.1-0ubuntu2_amd64.deb ...
 unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install Unpacking python3-bson (3.10.1-0ubuntu2) ...
 unit-ceil-0: 13:25:13 DEBUG unit.ceil/0.install Setting up linux-libc-dev:amd64 (5.4.0-125.141) ...
@@ -1086,7 +1191,28 @@ unit-mongodb-0: 13:25:15 DEBUG unit.mongodb/0.install Get:1 http://archive.ubunt
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Get:2 http://archive.ubuntu.com/ubuntu focal/main amd64 python3-packaging all 20.3-1 [26.8 kB]
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Fetched 88.1 kB in 1s (169 kB/s)
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Selecting previously unselected package python3-pyparsing.
-unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38292 files and directories currently installed.)
+unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 38292 files and directories currently installed.)
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Preparing to unpack .../python3-pyparsing_2.4.6-1_all.deb ...
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Unpacking python3-pyparsing (2.4.6-1) ...
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Selecting previously unselected package python3-packaging.
@@ -1158,7 +1284,28 @@ unit-ceil-0: 13:25:21 DEBUG unit.ceil/0.install After this operation, 901 kB of 
 unit-ceil-0: 13:25:21 DEBUG unit.ceil/0.install Get:1 http://archive.ubuntu.com/ubuntu focal/main amd64 python3-psutil amd64 5.5.1-1ubuntu4 [141 kB]
 unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install Fetched 141 kB in 2s (84.1 kB/s)
 unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install Selecting previously unselected package python3-psutil.
-unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38192 files and directories currently installed.)
+unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 38192 files and directories currently installed.)
 unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install Preparing to unpack .../python3-psutil_5.5.1-1ubuntu4_amd64.deb ...
 unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install Unpacking python3-psutil (5.5.1-1ubuntu4) ...
 unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install Setting up python3-psutil (5.5.1-1ubuntu4) ...
@@ -1391,7 +1538,28 @@ unit-ceil-0: 13:25:32 DEBUG unit.ceil/0.install Get:45 http://archive.ubuntu.com
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Get:12 http://archive.ubuntu.com/ubuntu focal-updates/universe amd64 mongodb-server all 1:3.6.9+really3.6.8+90~g8e540c0b6d-0ubuntu5.3 [12.5 kB]
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Fetched 56.8 MB in 12s (4688 kB/s)
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Selecting previously unselected package libboost-filesystem1.71.0:amd64.
-unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38321 files and directories currently installed.)
+unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 38321 files and directories currently installed.)
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Preparing to unpack .../00-libboost-filesystem1.71.0_1.71.0-6ubuntu6_amd64.deb ...
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Unpacking libboost-filesystem1.71.0:amd64 (1.71.0-6ubuntu6) ...
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Selecting previously unselected package libboost-iostreams1.71.0:amd64.
@@ -1699,7 +1867,28 @@ unit-ceil-0: 13:25:41 DEBUG unit.ceil/0.install Get:275 http://archive.ubuntu.co
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Preconfiguring packages ...
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Fetched 65.7 MB in 15s (4455 kB/s)
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Selecting previously unselected package python3-pyparsing.
-unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 38226 files and directories currently installed.)
+unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 38226 files and directories currently installed.)
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Preparing to unpack .../000-python3-pyparsing_2.4.6-1_all.deb ...
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Unpacking python3-pyparsing (2.4.6-1) ...
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Selecting previously unselected package python3-pyperclip.
@@ -2990,7 +3179,28 @@ unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Get:8 http://archive.ubun
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Get:9 http://archive.ubuntu.com/ubuntu focal/universe amd64 python-gi amd64 3.36.0-1 [212 kB]
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Fetched 4118 kB in 2s (2536 kB/s)
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Selecting previously unselected package libpython2.7-minimal:amd64.
-unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 61970 files and directories currently installed.)
+unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 61970 files and directories currently installed.)
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Preparing to unpack .../0-libpython2.7-minimal_2.7.18-1~20.04.3_amd64.deb ...
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Unpacking libpython2.7-minimal:amd64 (2.7.18-1~20.04.3) ...
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Selecting previously unselected package python2.7-minimal.
@@ -3012,7 +3222,28 @@ unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Setting up libpython2.7-m
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Setting up python2.7-minimal (2.7.18-1~20.04.3) ...
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Setting up python2-minimal (2.7.17-2ubuntu4) ...
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Selecting previously unselected package python2.
-unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 62717 files and directories currently installed.)
+unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed (Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 62717 files and directories currently installed.)
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Preparing to unpack .../python2_2.7.17-2ubuntu4_amd64.deb ...
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Unpacking python2 (2.7.17-2ubuntu4) ...
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Selecting previously unselected package python-dbus.
@@ -3152,3 +3383,5 @@ unit-prometheus-node-exporter-0: 13:27:10 DEBUG unit.prometheus-node-exporter/0.
 unit-prometheus-node-exporter-0: 13:27:10 DEBUG unit.prometheus-node-exporter/0.juju-log juju-info:3: yaml does not have libyaml extensions, using slower pure Python yaml loader
 unit-prometheus-node-exporter-0: 13:27:10 DEBUG unit.prometheus-node-exporter/0.juju-log juju-info:3: Using local storage: /var/lib/juju/agents/unit-prometheus-node-exporter-0/charm/.unit-state.db already exists
 unit-prometheus-node-exporter-0: 13:27:10 DEBUG unit.prometheus-node-exporter/0.juju-log juju-info:3: Emitting Juju event juju_info_relation_changed.
+unit-mongodb-0: 13:27:10 DEBUG unit.mongodb/0.juju-log juju-info:3: Emitting Juju event testing-mock.
+unit-ceil-0: 13:27:10 DEBUG unit.ceil/0.juju-log juju-info:3: Emitting Juju event testing-mock.
