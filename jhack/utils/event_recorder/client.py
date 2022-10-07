@@ -14,7 +14,8 @@ from jhack.utils.simulate_event import _simulate_event
 
 logger = logger.getChild("event_recorder.client")
 RECORDER_SOURCE = Path(__file__).parent / "recorder.py"
-BROKEN_ENV_KEYS = {"JUJU_API_ADDRESSES", "JUJU_METER_INFO"}
+BROKEN_ENV_KEYS = {"JUJU_API_ADDRESSES", "JUJU_METER_INFO",  # contain whitespace
+                   "JUJU_CONTEXT_ID"}  # need to skip this one else juju exec will whine
 
 
 def _fetch_db(unit: str, remote_db_path: str, local_db_path: Path):
