@@ -7,6 +7,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
+
 setup(
     name="jhack",
     version="0.5.3.3.42.344",
@@ -18,7 +19,15 @@ setup(
     url="https://github.com/PietroPasotti/jhack",
     packages=find_packages(),
     long_description=read("README.md"),
-    requires=["juju", "ops", "typer", "rich", "parse", "asttokens", "astunparse"],
+    requires=[
+        "typer(==0.4.1)",
+        "ops(==1.5.3)",
+        "rich(==12.0.1)",
+        "parse(==1.19.0)",
+        "juju(==2.9.7)",
+        "asttokens",
+        "astunparse",
+    ],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
