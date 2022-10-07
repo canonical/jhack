@@ -18,7 +18,7 @@ setup(
     url="https://github.com/PietroPasotti/jhack",
     packages=find_packages(),
     long_description=read("README.md"),
-    requires=["juju", "ops", "typer", "rich", "parse"],
+    requires=["juju", "ops", "typer", "rich", "parse", "asttokens", "astunparse"],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
