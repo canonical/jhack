@@ -267,4 +267,3 @@ def setup(file=DEFAULT_DB_NAME):
     if _MEMO_MODE == "replay":
         _reset_replay_cursors()
         print(f"Replaying: reset replay cursors.")
-

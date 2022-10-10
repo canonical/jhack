@@ -1,6 +1,6 @@
+import random
 import sys
 from pathlib import Path
-import random
 
 import pytest
 
@@ -11,13 +11,15 @@ try:
     from runtime import Runtime
 except ModuleNotFoundError:
     import os
+
     from jhack.utils.event_recorder.runtime import RECORDER_MODULE
+
     sys.path.append(str(RECORDER_MODULE.absolute()))
 
 from ops.charm import CharmBase, CharmEvents
 from runtime import Runtime
 
-MEMO_TOOLS_RESOURCES_FOLDER = Path(__file__).parent / 'memo_tools_test_files'
+MEMO_TOOLS_RESOURCES_FOLDER = Path(__file__).parent / "memo_tools_test_files"
 
 
 def charm_type():
@@ -36,7 +38,9 @@ def charm_type():
         def _catchall(self, e):
             self._event = e
 
-    MyCharm.handle_kind = f'MyCharm-test-{str(random.randint(10000000000, 99999999999))}'
+    MyCharm.handle_kind = (
+        f"MyCharm-test-{str(random.randint(10000000000, 99999999999))}"
+    )
     return MyCharm
 
 
@@ -52,14 +56,13 @@ def charm_type():
 )
 def test_run(evt_idx, expected_name):
     charm = charm_type()
-    print(id(charm))
     runtime = Runtime(
         charm,
         meta={
             "name": "foo",
             "requires": {"ingress-per-unit": {"interface": "ingress_per_unit"}},
         },
-        local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / 'trfk-re-relate.json'
+        local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / "trfk-re-relate.json",
     )
     runtime.install()
     charm = runtime.run(evt_idx)

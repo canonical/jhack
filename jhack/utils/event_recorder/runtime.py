@@ -2,7 +2,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 import yaml
 
@@ -15,7 +15,8 @@ from jhack.utils.event_recorder.recorder import (
     MEMO_MODE_KEY,
     MEMO_REPLAY_INDEX_KEY,
     Event,
-    event_db, _reset_replay_cursors,
+    _reset_replay_cursors,
+    event_db,
 )
 
 if TYPE_CHECKING:
@@ -27,14 +28,14 @@ logger = logger.getChild("event_recorder.runtime")
 
 class Runtime:
     def __init__(
-            self,
-            charm_type: Type['CharmType'],
-            local_db_path: Path = None,
-            unit: str = None,
-            remote_db_path: str = DEFAULT_DB_NAME,
-            meta: Optional[Dict[str, Any]] = None,
-            actions: Optional[Dict[str, Any]] = None,
-            install: bool = False,
+        self,
+        charm_type: Type["CharmType"],
+        local_db_path: Path = None,
+        unit: str = None,
+        remote_db_path: str = DEFAULT_DB_NAME,
+        meta: Optional[Dict[str, Any]] = None,
+        actions: Optional[Dict[str, Any]] = None,
+        install: bool = False,
     ):
 
         self._charm_type = charm_type
@@ -76,10 +77,12 @@ class Runtime:
             Nobody will help you fix your borked env.
             Have fun!
         """
-        logger.warning("Installing Runtime... "
-                       "DISCLAIMER: this **might** (most definitely will) corrupt your venv.")
+        logger.warning(
+            "Installing Runtime... "
+            "DISCLAIMER: this **might** (most definitely will) corrupt your venv."
+        )
 
-        from ops import model, main
+        from ops import main, model
 
         ops_model_module = Path(model.__file__)
         inject_memoizer(ops_model_module)
@@ -89,10 +92,7 @@ class Runtime:
         retcharm = "return charm  # added by jhack.replay.Runtime"
         ops_model_module_text = ops_model_module.read_text()
         if retcharm not in ops_model_module_text:
-            ops_model_module.write_text(
-                ops_model_module_text
-                + f"    {retcharm}\n"
-            )
+            ops_model_module.write_text(ops_model_module_text + f"    {retcharm}\n")
 
     def cleanup(self):
         self._local_db_path.unlink()
@@ -104,6 +104,7 @@ class Runtime:
 
     def _is_installed(self):
         from ops import model
+
         if "from recorder import memo" not in Path(model.__file__).read_text():
             logger.error("ops.model does not seem to import recorder.memo.")
             return False
@@ -120,7 +121,9 @@ class Runtime:
         def _patch_logger(*args, **kwargs):
             logger.debug("Hijacked root logger.")
             pass
+
         import ops.main
+
         ops.main.setup_root_logging = _patch_logger
 
     def _clear_env(self):
@@ -147,8 +150,7 @@ class Runtime:
 
         os.environ["JUJU_CHARM_DIR"] = str(charm_root.absolute())
 
-    def run(self, scene_idx: int,
-            fetch_from_unit: Optional[str] = None) -> 'CharmType':
+    def run(self, scene_idx: int, fetch_from_unit: Optional[str] = None) -> "CharmType":
         if not self._is_installed():
             raise sys.exit(
                 "Runtime is not installed. Call `runtime.install()` (and read the fine prints)."
@@ -185,6 +187,7 @@ class Runtime:
         with tempfile.TemporaryDirectory() as cr:
             self._mock_charm_root(Path(cr))
             from ops.main import main
+
             logger.info("Entering ops.main.")
             charm = main(self._charm_type)
 
@@ -202,7 +205,6 @@ if __name__ == "__main__":
 
         def _catchall(self, e):
             print(e)
-
 
     runtime = Runtime(
         MyCharm,

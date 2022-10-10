@@ -59,6 +59,7 @@ except ModuleNotFoundError as e:
 # ==== end block ===
 """
 
+
 def inject_memoizer(source_file: Path):
     memo_token = (
         asttokens.ASTTokens("@memo()\ndef foo():...", parse=True)
