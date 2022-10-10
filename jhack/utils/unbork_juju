@@ -56,15 +56,16 @@ if which juju ; then
         # Unregister the controller from Juju
         juju unregister "${controller_name}" -y
     fi
-
-    sudo snap remove juju
+    echo "purging juju"
+    sudo snap remove --purge juju
 else
     echo "juju not found on this machine"
 fi
 
 # Purge and reinstall microk8s
+echo "purging and reinstalling microk8s"
 sudo bash -c "snap remove --purge microk8s ; \
-snap install --classic microk8s --channel="${microk8s_channel}" ; \
+snap install --classic microk8s --channel=\"${microk8s_channel}\" ; \
 microk8s status --wait-ready ; \
 microk8s enable storage dns registry ; \
 usermod -a -G microk8s ${user} ; \

@@ -335,9 +335,6 @@ def get_local_storage(unit_name: str, machine: bool = False):
                 )
                 print(f"failed to fetch db; aborting. {proc.stderr.read()}")
                 return
-
-            tf_file = Path(tf.name)
-
             yield tf.name
 
 

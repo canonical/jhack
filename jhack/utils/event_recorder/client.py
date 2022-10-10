@@ -5,6 +5,7 @@ from subprocess import CalledProcessError, check_call, check_output
 from typing import Optional, Union
 
 import typer
+from dateutil.utils import today
 
 from jhack.helpers import modify_remote_file
 from jhack.logger import logger
@@ -14,8 +15,11 @@ from jhack.utils.simulate_event import _simulate_event
 
 logger = logger.getChild("event_recorder.client")
 RECORDER_SOURCE = Path(__file__).parent / "recorder.py"
-BROKEN_ENV_KEYS = {"JUJU_API_ADDRESSES", "JUJU_METER_INFO",  # contain whitespace
-                   "JUJU_CONTEXT_ID"}  # need to skip this one else juju exec will whine
+BROKEN_ENV_KEYS = {
+    "JUJU_API_ADDRESSES",
+    "JUJU_METER_INFO",  # contain whitespace
+    "JUJU_CONTEXT_ID",
+}  # need to skip this one else juju exec will whine
 
 
 def _fetch_db(unit: str, remote_db_path: str, local_db_path: Path):
@@ -200,8 +204,12 @@ def inject_record_current_event_call(file):
             "recorder installation failed: " f"could not find main clause in {file}"
         )
 
-    charm_py_lines.insert(1, "from recorder import setup")
-    charm_py_lines.insert(-mainline, "    setup()")
+    charm_py_lines.insert(1, "import recorder")
+    charm_py_lines.insert(
+        -mainline,
+        f"    recorder.setup()  # record current event call, "
+        f"injected by jhack.utils.replay @ {today().isoformat()}",
+    )
     # in between, somewhere, the `main(MyCharm)` call
     charm_path.write_text("\n".join(charm_py_lines))
 
@@ -235,5 +243,5 @@ def install(unit: str):
 
 
 if __name__ == "__main__":
-    _copy_recorder_script("trfk/0")
-    # _emit("trfk/0", 23)
+    # _copy_recorder_script("trfk/0")
+    _emit("trfk/0", 4)

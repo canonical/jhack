@@ -1017,10 +1017,12 @@ def _tail_events(
         logger.debug("targets provided; overruling add_new_targets param.")
         add_new_targets = False
 
-    # if we pass files, we dont't grab targets from the env, we simply read them from the file
+    # if we pass files, we don't grab targets from the env, we simply read them from the file
     targets = parse_targets(targets) if not files else (targets or [])
     if not targets and not add_new_targets:
-        logger.warning('no targets passed and `add_new_targets`=False: you will not see much.')
+        logger.warning(
+            "no targets passed and `add_new_targets`=False: you will not see much."
+        )
         sys.exit(1)
 
     if files and replay:

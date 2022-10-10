@@ -19,13 +19,18 @@ except ModuleNotFoundError:
     jhack_logger = getLogger()
 
 DEFAULT_DB_NAME = "event_db.json"
+MEMO_REPLAY_INDEX_KEY = "MEMO_REPLAY_IDX"
+MEMO_DATABASE_NAME_KEY = "MEMO_DATABASE_NAME"
+MEMO_MODE_KEY = "MEMO_MODE"
+
+
 logger = jhack_logger.getChild("recorder")
 
 MemoModes = Literal["record", "replay"]
 
 
 def _load_memo_mode() -> MemoModes:
-    val = os.getenv("MEMO_MODE", "record")
+    val = os.getenv(MEMO_MODE_KEY, "record")
     if val == "record":
         logger.info("MEMO: recording")
     elif val == "replay":
@@ -36,9 +41,6 @@ def _load_memo_mode() -> MemoModes:
     return typing.cast(MemoModes, val)
 
 
-_MEMO_MODE: MemoModes = _load_memo_mode()
-
-
 def _is_json_serializable(obj: Any):
     try:
         json.dumps(obj)
@@ -47,7 +49,7 @@ def _is_json_serializable(obj: Any):
         return False
 
 
-def memo(db_name: str = DEFAULT_DB_NAME):
+def memo(db_name: str = None):
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
@@ -63,20 +65,24 @@ def memo(db_name: str = DEFAULT_DB_NAME):
                 else:
                     memoizable_args = args
 
-            with event_db(db_name) as data:
+            database = db_name or os.environ.get(
+                MEMO_DATABASE_NAME_KEY, DEFAULT_DB_NAME
+            )
+            with event_db(database) as data:
                 if not data.scenes:
-                    raise RuntimeError("No scene: cannot memoize.")
+                    raise RuntimeError("No scenes: cannot memoize.")
+                idx = int(os.environ.get(MEMO_REPLAY_INDEX_KEY, None))
 
+                _MEMO_MODE: MemoModes = _load_memo_mode()
                 if _MEMO_MODE == "record":
                     memo = data.scenes[-1].context.memos.get(fn.__name__, Memo())
                     memo.calls.append(((memoizable_args, kwargs), propagate()))
                     data.scenes[-1].context.memos[fn.__name__] = memo
 
                 elif _MEMO_MODE == "replay":
-                    idx = os.environ.get("MEMO_REPLAY_IDX", None)
                     if idx is None:
                         raise RuntimeError(
-                            "provide a MEMO_REPLAY_IDX envvar"
+                            f"provide a {MEMO_REPLAY_INDEX_KEY} envvar"
                             "to tell the replay environ which scene to look at"
                         )
                     try:
@@ -141,8 +147,23 @@ class DB:
 
     def load(self):
         text = self._file.read_text()
-        raw = json.loads(text)
-        scenes = [Scene.from_dict(obj) for obj in raw.get("scenes", ())]
+        if not text:
+            logger.debug("database empty; initializing with data=[]")
+            self.data = Data([])
+            return
+
+        try:
+            raw = json.loads(text)
+        except json.JSONDecodeError:
+            raise ValueError(f"database invalid: could not json-decode {self._file}")
+
+        try:
+            scenes = [Scene.from_dict(obj) for obj in raw.get("scenes", ())]
+        except Exception as e:
+            raise RuntimeError(
+                f"database invalid: could not parse Scenes from {raw[:100]!r}..."
+            ) from e
+
         self.data = Data(scenes)
 
     def commit(self):
@@ -219,25 +240,31 @@ def _capture() -> Event:
     return Event(env=dict(os.environ), timestamp=datetime.datetime.now().isoformat())
 
 
-def _reset_replay_cursors(file=DEFAULT_DB_NAME):
+def _reset_replay_cursors(file=DEFAULT_DB_NAME, *scene_idx: int):
+    """Reset the replay cursor for all scenes, or the specified ones."""
     with event_db(file) as data:
-        for scene in data.scenes:
+        to_reset = (data.scenes[idx] for idx in scene_idx) if scene_idx else data.scenes
+        for scene in to_reset:
             for memo in scene.context.memos.values():
                 memo.cursor = 0
 
-    print("reset all replay cursors")
 
-
-def _record_current_event(file):
+def _record_current_event(file) -> Event:
     with event_db(file) as data:
         scenes = data.scenes
         event = _capture()
         scenes.append(Scene(event=event))
-        print(f"Captured event: {event.name}")
+    return event
 
 
 def setup(file=DEFAULT_DB_NAME):
+    _MEMO_MODE: MemoModes = _load_memo_mode()
+
     if _MEMO_MODE == "record":
-        _record_current_event(file)
+        event = _record_current_event(file)
+        print(f"Captured event: {event.name}.")
+
     if _MEMO_MODE == "replay":
         _reset_replay_cursors()
+        print(f"Replaying: reset replay cursors.")
+
