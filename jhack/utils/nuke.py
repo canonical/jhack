@@ -326,7 +326,7 @@ def _nuke(
 
         print_centered(text)
         logger.debug(f"nuking {nukeable} with {nuke}")
-        proc = JPopen(nuke.split(" "), stdout=PIPE, stderr=PIPE)
+        proc = JPopen(nuke.split(" "), stdout=PIPE, stderr=PIPE, shell=True)
         proc.wait()
         while proc.returncode is None:
             sleep(0.1)
