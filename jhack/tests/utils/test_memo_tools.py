@@ -1,6 +1,9 @@
 import os
+import random
 import tempfile
 from pathlib import Path
+
+import pytest
 
 from jhack.utils.event_recorder import recorder
 from jhack.utils.event_recorder.memo_tools import inject_memoizer, memo_import_block
@@ -108,7 +111,6 @@ def test_memoizer_replay():
     os.environ[MEMO_MODE_KEY] = "replay"
 
     with tempfile.NamedTemporaryFile() as temp_db_file:
-        Path(temp_db_file.name).write_text("{}")
         os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
         @memo()
         def my_fn(*args, retval=None, **kwargs):
@@ -146,11 +148,39 @@ def test_memoizer_replay():
             assert ctx.memos["default.my_fn"].cursor == 3
 
 
+def test_memoizer_nonstrict_mode():
+    with tempfile.NamedTemporaryFile() as temp_db_file:
+        with event_db(temp_db_file.name) as data:
+            data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
+
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+
+        _backing = {x: x+1 for x in range(50)}
+
+        @memo(strict=False)
+        def my_fn(m):
+            return _backing[m]
+
+        os.environ[MEMO_MODE_KEY] = "record"
+        for i in range(50):
+            assert my_fn(i) == i + 1
+
+        # clear the backing storage
+        _backing.clear()
+
+        os.environ[MEMO_MODE_KEY] = "replay"
+
+        # check that the function still works, with unordered arguments and repeated ones.
+        values = list(range(50)) * 2
+        random.shuffle(values)
+        for i in values:
+            assert my_fn(i) == i + 1
+
+
 def test_memoizer_classmethod_recording():
     os.environ[MEMO_MODE_KEY] = "record"
 
     with tempfile.NamedTemporaryFile() as temp_db_file:
-        Path(temp_db_file.name).write_text("{}")
         os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
 
         class Foo:

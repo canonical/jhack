@@ -9,7 +9,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Literal, Tuple
+from typing import Any, Dict, Generator, List, Literal, Tuple, Union
 
 try:
     from jhack.logger import logger as jhack_logger
@@ -50,7 +50,7 @@ def _is_json_serializable(obj: Any):
         return False
 
 
-def memo(namespace: str = 'default'):
+def memo(namespace: str = 'default', strict: bool = True):
     def decorator(fn):
         if not inspect.isfunction(fn):
             raise RuntimeError(f'Cannot memoize non-function obj {fn!r}.')
@@ -82,9 +82,17 @@ def memo(namespace: str = 'default'):
 
                 memo_name = f"{namespace}.{fn.__name__}"
                 if _MEMO_MODE == "record":
-                    memo = data.scenes[-1].context.memos.get(memo_name, Memo())
+                    memo = data.scenes[-1].context.memos.get(memo_name)
+                    if memo is None:
+                        memo = Memo(mode='strict' if strict else 'loose')
                     output = propagate()
-                    memo.calls.append(((memoizable_args, kwargs), output))
+                    if strict:
+                        memo.calls.append(((memoizable_args, kwargs), output))
+                    else:
+                        # we can't hash dicts
+                        serial_args_kwargs = json.dumps((memoizable_args, kwargs))
+                        memo.calls[serial_args_kwargs] = output
+
                     data.scenes[-1].context.memos[memo_name] = memo
 
                 elif _MEMO_MODE == "replay":
@@ -112,33 +120,54 @@ def memo(namespace: str = 'default'):
                         )
                         return propagate()
 
-                    try:
-                        current_cursor = memo.cursor
-                        reco = memo.calls[current_cursor]
-                        memo.cursor += 1
-                    except IndexError:
-                        # There is a memo, but its cursor is out of bounds.
-                        # this means the current path is calling the wrapped function
-                        # more times than the recorded path did.
-                        warnings.warn(
-                            f"Memo cursor {current_cursor} out of bounds for {memo_name}: "
-                            f"the path must have changed"
-                        )
-                        return propagate()
-
-                    (reco_args, reco_kwargs), reco_out = reco
-
                     # convert args to list for comparison purposes because memos are
                     # loaded from json, where tuples become lists.
-                    if (reco_args, reco_kwargs) != (list(memoizable_args), kwargs):
-                        warnings.warn(
-                            f"memoized {memo_name} arguments don't match "
-                            f"the ones received at runtime. This path has diverged."
-                        )
-                        # fixme: we could relax this strict ordering req for most hook tool calls.
-                        return propagate()
+                    fn_args_kwargs = [list(memoizable_args), kwargs]
 
-                    return reco_out  # happy path! good for you, path.
+                    if strict:
+                        # in strict mode, fn might return different results every time it is called --
+                        # regardless of the arguments it is called with. So each memo contains a sequence of values,
+                        # and a cursor to keep track of which one is next in the replay routine.
+                        try:
+                            current_cursor = memo.cursor
+                            recording = memo.calls[current_cursor]
+                            memo.cursor += 1
+                        except IndexError:
+                            # There is a memo, but its cursor is out of bounds.
+                            # this means the current path is calling the wrapped function
+                            # more times than the recorded path did.
+                            warnings.warn(
+                                f"Memo cursor {current_cursor} out of bounds for {memo_name}: "
+                                f"the path must have changed"
+                            )
+                            return propagate()
+
+                        recorded_args_kwargs, recorded_output = recording
+
+                        if recorded_args_kwargs != fn_args_kwargs:
+                            warnings.warn(
+                                f"memoized {memo_name} arguments don't match "
+                                f"the ones received at runtime. This path has diverged."
+                            )
+                            return propagate()
+
+                        return recorded_output  # happy path! good for you, path.
+
+                    else:
+                        # in non-strict mode, we don't care about the order in which fn is called: it will return
+                        # values in function of the arguments it is called with, regardless of when it is called.
+                        # so all we have to check is whether the arguments are known.
+                        # in non-strict mode, memo.calls is an inputs/output dict.
+                        serial_fn_args_kwargs = json.dumps(fn_args_kwargs)
+                        recorded_output = memo.calls.get(serial_fn_args_kwargs)
+                        if recorded_output:
+                            return recorded_output  # happy path! good for you, path.
+
+                        warnings.warn(
+                            f"No memo for {memo_name} matches the arguments received at runtime. "
+                            f"This path has diverged."
+                        )
+                        return propagate()
 
                 else:
                     raise ValueError(f"invalid memo mode: {_MEMO_MODE}")
@@ -198,9 +227,17 @@ class Event:
 class Memo:
     # list of (args, kwargs), return-value pairs for this memo
     # warning: in reality it's all lists, no tuples.
-    calls: List[Tuple[Tuple[List, Dict], Any]] = field(default_factory=list)
+    calls: Union[
+        List[Tuple[Tuple[List, Dict], Any]],        # if mode == 'strict'
+        Dict[Tuple[List, Dict], Any],               # if mode == 'loose'
+    ] = field(default_factory=list)
     # indicates the position of the replay cursor if we're replaying the memo
     cursor: int = 0
+    mode: Literal['strict', 'loose'] = 'strict'
+
+    def __post_init__(self):
+        if self.mode == 'loose' and not self.calls:  # first time only!
+            self.calls = {}
 
 
 @dataclass
