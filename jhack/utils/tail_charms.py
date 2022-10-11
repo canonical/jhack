@@ -185,10 +185,11 @@ _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
 _operator_event_color = Color.from_rgb(252, 115, 3)
 _deferral_colors = {
-    'deferred': 'red',
-    'reemitted': 'green',
-    'bounced': Color.from_rgb(252, 115, 3),
+    "deferred": "red",
+    "reemitted": "green",
+    "bounced": Color.from_rgb(252, 115, 3),
 }
+
 
 def _random_color():
     r = random.randint(0, 255)
@@ -366,6 +367,8 @@ class Processor:
             # so we need to _emit it once more.
             self._emit(reemitted)
 
+        raw_table.currently_deferred.remove(deferred)
+
         # start tracking the reemitted event.
         self.tracking[unit].append(reemitted)
         logger.debug(f"reemitted {reemitted.event}")
@@ -467,7 +470,7 @@ class Processor:
             logger.debug(f"{msg.timestamp}: {msg.event} is a duplicate. skipping...")
             return
 
-        if mode in {'emit', 'reemit'}:
+        if mode in {"emit", "reemit"}:
             self._emit(msg)
 
         if not self._is_tracking(msg):
@@ -535,9 +538,9 @@ class Processor:
         for target in targets:
             tgt_grid = Table.grid(*(("",) * n_cols), expand=True, padding=(0, 1, 0, 1))
             raw_table = raw_tables[target.unit_name]
-            for i, (msg, event, n) in enumerate(zip(
-                raw_table.msgs, raw_table.events, raw_table.ns
-            )):
+            for i, (msg, event, n) in enumerate(
+                zip(raw_table.msgs, raw_table.events, raw_table.ns)
+            ):
                 rndr = (
                     Text(event, style=Style(color=self._get_event_color(msg)))
                     if event
@@ -546,9 +549,13 @@ class Processor:
                 row = [rndr]
 
                 if self._show_defer:
-                    deferral_status = raw_table.deferrals[i] or 'null'
+                    deferral_status = raw_table.deferrals[i] or "null"
                     deferral_symbol = self._deferral_status_to_symbol[deferral_status]
-                    style = Style(color=_deferral_colors[deferral_status]) if deferral_status != 'null' else ""
+                    style = (
+                        Style(color=_deferral_colors[deferral_status])
+                        if deferral_status != "null"
+                        else ""
+                    )
                     deferral_rndr = Text(deferral_symbol, style=style)
                     row.append(deferral_rndr)
 
@@ -591,10 +598,10 @@ class Processor:
     _null = ""
 
     _deferral_status_to_symbol = {
-        'null': _null,
-        'deferred': _open,
-        'reemitted': _close,
-        'bounced': _bounce
+        "null": _null,
+        "deferred": _open,
+        "reemitted": _close,
+        "bounced": _bounce,
     }
 
     def update_defers(self, msg: EventLogMsg):
@@ -608,25 +615,35 @@ class Processor:
             try:
                 previous_msg_idx = raw_table.ns.index(msg.n)
             except ValueError:
-                logger.debug(f"Deferring event {msg.n} which is out of scope.")
-                return
+                # are we deferring the last event?
+                previous_msg = raw_table.msgs[0]
+                if (
+                    previous_msg
+                    and previous_msg.event == msg.event
+                    and previous_msg.unit == msg.unit
+                ):
+                    previous_msg_idx = 0
+                else:
+                    logger.debug(f"Deferring event {msg.n} which is out of scope.")
+                    return
 
-            new_state = 'deferred'
-            if raw_table.deferrals[previous_msg_idx] == 'deferred':
-                new_state = 'bounced'
+            new_state = "deferred"
+            if raw_table.deferrals[previous_msg_idx] == "deferred":
+                new_state = "bounced"
             raw_table.deferrals[previous_msg_idx] = new_state
+            raw_table.ns[previous_msg_idx] = msg.n
 
         elif msg.type == "reemitted":
             last = None
             for i, n in enumerate(raw_table.ns):
                 if n == msg.n:
-                    raw_table.deferrals[i] = 'bounced'
+                    raw_table.deferrals[i] = "bounced"
                     last = i
 
             if last is not None:
-                raw_table.deferrals[last] = 'deferred'
+                raw_table.deferrals[last] = "deferred"
 
-            raw_table.deferrals[0] = 'reemitted'  # this event!
+            raw_table.deferrals[0] = "reemitted"  # this event!
 
         else:
             return
@@ -807,7 +824,9 @@ def _tail_events(
     # if we pass files, we dont't grab targets from the env, we simply read them from the file
     targets = parse_targets(targets) if not files else (targets or [])
     if not targets and not add_new_targets:
-        logger.warning('no targets passed and `add_new_targets`=False: you will not see much.')
+        logger.warning(
+            "no targets passed and `add_new_targets`=False: you will not see much."
+        )
         sys.exit(1)
 
     if files and replay:

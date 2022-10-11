@@ -19,7 +19,7 @@ BROKEN_ENV_KEYS = {
     "JUJU_API_ADDRESSES",
     "JUJU_METER_INFO",
     # need to skip this one else juju exec will whine
-    "JUJU_CONTEXT_ID"
+    "JUJU_CONTEXT_ID",
 }
 
 
@@ -68,10 +68,13 @@ def list_events(
     return _list_events(unit, db_path)
 
 
-def _emit(unit: str, idx: int,
-          db_path=DEFAULT_DB_NAME,
-          dry_run: bool = False,
-          operator_dispatch=False):
+def _emit(
+    unit: str,
+    idx: int,
+    db_path=DEFAULT_DB_NAME,
+    dry_run: bool = False,
+    operator_dispatch=False,
+):
     # we need to fetch the database to know what event we're talking about, since we're using
     # _simulate_event to fire the event. We could also shortcut this by embedding the 'simulate_event'
     # logic in the recorder script.
@@ -113,15 +116,17 @@ def emit(
     unit: str = typer.Argument(..., help="Target unit."),
     idx: Optional[int] = typer.Argument(-1, help="Index of the event to re-fire"),
     operator_dispatch: Optional[bool] = typer.Option(
-        False, '-O', '--use-operator-dispatch',
+        False,
+        "-O",
+        "--use-operator-dispatch",
         help="Set the OPERATOR_DISPATCH flag. "
-             "This will flag the event as 'fired by the charm itself.'."),
+        "This will flag the event as 'fired by the charm itself.'.",
+    ),
     db_path=DEFAULT_DB_NAME,
     dry_run: bool = False,
 ):
     """Select the `idx`th event stored on the unit db and re-fire it."""
-    _emit(unit, idx, db_path, dry_run=dry_run,
-          operator_dispatch=operator_dispatch)
+    _emit(unit, idx, db_path, dry_run=dry_run, operator_dispatch=operator_dispatch)
 
 
 def _dump_db(unit: str, idx: int = -1, db_path=DEFAULT_DB_NAME):
