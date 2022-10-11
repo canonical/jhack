@@ -728,7 +728,8 @@ class Processor:
                 )
 
                 for _msg in raw_table.currently_deferred:
-                    if _msg is msg:
+                    if _msg.n == msg.n:
+                        # one of them could be mocked.
                         continue
                     busy_lane = self._get_lane(_msg.n)
                     new_cell = _put(
