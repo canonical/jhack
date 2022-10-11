@@ -104,15 +104,6 @@ def _fake_log_proc(n):
     return proc
 
 
-@pytest.fixture(autouse=True, params=(1, 2, 3, 4))
-def mock_stdout(request):
-    n = request.param
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
-    ) as mock_status:
-        yield
-
-
 @pytest.fixture(autouse=True)
 def silence_console_prints():
     with patch("rich.console.Console.print", wraps=lambda _: None):
@@ -254,3 +245,11 @@ def test_machine_log_with_subordinates():
     assert len(proc._raw_tables["ceil/0"].events) == 1  # mock event we added
     assert len(proc._raw_tables["prometheus-node-exporter/0"].events) == 11
     assert len(proc._raw_tables["ubuntu/0"].events) == 16
+
+
+def test_borky_trfk_log_defer():
+    proc = _tail_events(
+        length=30, replay=True,
+        files=[str(mocks_dir / "trfk_mock_bork_defer.txt")],
+        show_defer=True
+    )

@@ -34,6 +34,8 @@ from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
+import logging
+logger.setLevel(logging.DEBUG)
 
 JUJU_VERSION = juju_version()
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
@@ -310,19 +312,15 @@ class Processor:
                 f"we've not seen it before."
             )
 
-        is_already_deferred = False
-
-        for dfrd in raw_table.currently_deferred:
-            if dfrd.n == deferred.n:
-                # not the first time we defer this boy
-                is_already_deferred = True
-                return dfrd.msg
+        currently_deferred_ns = {d.n for d in raw_table.currently_deferred}
+        is_already_deferred = deferred.n in currently_deferred_ns
 
         if not is_already_deferred:
             logger.debug(f"deferring {deferred}")
             raw_table.currently_deferred.append(deferred)
 
         else:
+            # not the first time we defer this boy
             logger.debug(f"re-deferring {deferred.event}")
 
     def _reemit(self, reemitted: EventReemittedLogMsg):
@@ -362,11 +360,10 @@ class Processor:
 
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more.
-            self._emit(reemitted)
-            # free_lane = max(self._lanes.values() if self._lanes else [0]) + 1
-            # self._cache_lane(reemitted.n, free_lane)
+            # self._emit(reemitted)
 
-        raw_table.currently_deferred.remove(deferred)
+        # else:
+        # raw_table.currently_deferred.remove(deferred)
 
         # start tracking the reemitted event.
         self.tracking[unit].append(reemitted)
@@ -710,7 +707,8 @@ class Processor:
 
                 new_cell = (
                     original_cell.replace(
-                        self._close + self._hline, self._pad + self._bounce
+                        self._close + self._hline,
+                        self._pad + self._bounce
                     )
                     .replace(self._ldown, self._lupdown)
                     .replace(self._vline, self._cross)
@@ -771,7 +769,7 @@ class Processor:
                 self._dpad, self._close + self._hline
             )
 
-            closed_cell = _put(current_cell_new, lane, self._ldown, self._hline)
+            closed_cell = _put(current_cell_new, lane, self._ldown, self._hline).replace(self._open, self._close)
             final_cell = list(closed_cell)
             for ln in range(lane):
                 if final_cell[ln] == self._vline:
@@ -1141,4 +1139,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True)
+    _tail_events(length=30, replay=True, show_defer=True)
