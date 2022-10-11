@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import ast
+from functools import partial
 from pathlib import Path
+from textwrap import dedent
+from typing import Sequence, Set, Dict
 
 import asttokens
 from astunparse import unparse
@@ -36,17 +39,8 @@ BACKEND_CALLS_TO_MEMOIZE = {
 }
 storage = {}
 
-
-def _is_model_backend(token: ast.AST):
-    return isinstance(token, ast.ClassDef) and token.name == "_ModelBackend"
-
-
-def _should_memoize(token: ast.AST):
-    return isinstance(token, ast.FunctionDef) and token.name in BACKEND_CALLS_TO_MEMOIZE
-
-
-memo_import_block = """
-# ==== block added by jhack.replay -- memotools ===
+memo_import_block = dedent(
+"""# ==== block added by jhack.replay -- memotools ===
 try:
     from recorder import memo
 except ModuleNotFoundError as e:
@@ -57,10 +51,10 @@ except ModuleNotFoundError as e:
           "Tread carefully."
     raise RuntimeError(msg) from e
 # ==== end block ===
-"""
+""")
 
 
-def inject_memoizer(source_file: Path):
+def inject_memoizer(source_file: Path, decorate: Dict[str, Set[str]]):
     memo_token = (
         asttokens.ASTTokens("@memo()\ndef foo():...", parse=True)
         .tree.body[0]
@@ -68,15 +62,21 @@ def inject_memoizer(source_file: Path):
     )
 
     atok = asttokens.ASTTokens(source_file.read_text(), parse=True).tree
-    model_backend = next(filter(_is_model_backend, atok.body))
 
-    for method in filter(_should_memoize, model_backend.body):
-        existing_decorators = {
-            token.first_token.string for token in method.decorator_list
-        }
-        # only add the decorator if the function is not already decorated:
-        if memo_token.first_token.string not in existing_decorators:
-            method.decorator_list.append(memo_token)
+    def _should_decorate_class(token: ast.AST):
+        return isinstance(token, ast.ClassDef) and token.name in decorate
+
+    for cls in filter(_should_decorate_class, atok.body):
+        def _should_decorate_method(token: ast.AST):
+            return isinstance(token, ast.FunctionDef) and token.name in decorate[cls.name]
+
+        for method in filter(_should_decorate_method, cls.body):
+            existing_decorators = {
+                token.first_token.string for token in method.decorator_list
+            }
+            # only add the decorator if the function is not already decorated:
+            if memo_token.first_token.string not in existing_decorators:
+                method.decorator_list.append(memo_token)
 
     unparsed_source = unparse(atok)
     if "from recorder import memo" not in unparsed_source:

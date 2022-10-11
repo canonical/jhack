@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 
 from jhack.utils.event_recorder import recorder
-from jhack.utils.event_recorder.memo_tools import inject_memoizer
+from jhack.utils.event_recorder.memo_tools import inject_memoizer, memo_import_block
 from jhack.utils.event_recorder.recorder import (
     Context,
     Event,
@@ -11,13 +11,13 @@ from jhack.utils.event_recorder.recorder import (
     Scene,
     _reset_replay_cursors,
     event_db,
-    memo,
+    memo, MEMO_DATABASE_NAME_KEY, MEMO_MODE_KEY,
 )
 
 # we always replay the last event in the default test env.
 os.environ["MEMO_REPLAY_IDX"] = "-1"
 
-mock_ops = """
+mock_ops_source = """
 import random
 
 class _ModelBackend:
@@ -28,10 +28,17 @@ class _ModelBackend:
     def action_set(self, *args, **kwargs):
         return str(random.random())
     def action_get(self, *args, **kwargs):
-        return str(random.random())"""
+        return str(random.random())
+        
 
-expected_memoized_ops = """from recorder import memo
+class Foo:
+    def bar(self, *args, **kwargs):
+        return str(random.random())
+    def baz(self, *args, **kwargs):
+        return str(random.random())
+"""
 
+expected_decorated_source = f"""{memo_import_block}
 import random
 
 class _ModelBackend():
@@ -49,24 +56,38 @@ class _ModelBackend():
     @memo()
     def action_get(self, *args, **kwargs):
         return str(random.random())
+
+class Foo():
+
+    @memo()
+    def bar(self, *args, **kwargs):
+        return str(random.random())
+
+    def baz(self, *args, **kwargs):
+        return str(random.random())
 """
 
 
 def test_memoizer_injection():
     with tempfile.NamedTemporaryFile() as file:
         target_file = Path(file.name)
-        target_file.write_text(mock_ops)
+        target_file.write_text(mock_ops_source)
 
-        inject_memoizer(target_file)
+        inject_memoizer(target_file,
+                        decorate={
+                            '_ModelBackend': {'action_set', 'action_get'},
+                            'Foo': {'bar'}}
+                        )
 
-        assert target_file.read_text() == expected_memoized_ops
+        assert target_file.read_text() == expected_decorated_source
 
 
 def test_memoizer_recording():
     with tempfile.NamedTemporaryFile() as temp_db_file:
         Path(temp_db_file.name).write_text("{}")
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
 
-        @memo(str(Path(temp_db_file.name).absolute()))
+        @memo()
         def my_fn(*args, retval=None, **kwargs):
             return retval
 
@@ -78,18 +99,18 @@ def test_memoizer_recording():
         with event_db(temp_db_file.name) as data:
             ctx = data.scenes[0].context
             assert ctx.memos
-            assert ctx.memos["my_fn"].calls == [
+            assert ctx.memos["default.my_fn"].calls == [
                 [[[10], {"retval": 10, "foo": "bar"}], 10]
             ]
 
 
 def test_memoizer_replay():
-    recorder._MEMO_MODE = "replay"
+    os.environ[MEMO_MODE_KEY] = "replay"
 
     with tempfile.NamedTemporaryFile() as temp_db_file:
         Path(temp_db_file.name).write_text("{}")
-
-        @memo(str(Path(temp_db_file.name).absolute()))
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+        @memo()
         def my_fn(*args, retval=None, **kwargs):
             return retval
 
@@ -99,7 +120,7 @@ def test_memoizer_replay():
                     event=Event(env={}, timestamp="10:10"),
                     context=Context(
                         memos={
-                            "my_fn": Memo(
+                            "default.my_fn": Memo(
                                 calls=[
                                     [[[10], {"retval": 10, "foo": "bar"}], 20],
                                     [[[10], {"retval": 11, "foo": "baz"}], 21],
@@ -122,17 +143,18 @@ def test_memoizer_replay():
 
         with event_db(temp_db_file.name) as data:
             ctx = data.scenes[0].context
-            assert ctx.memos["my_fn"].cursor == 3
+            assert ctx.memos["default.my_fn"].cursor == 3
 
 
 def test_memoizer_classmethod_recording():
-    recorder._MEMO_MODE = "record"
+    os.environ[MEMO_MODE_KEY] = "record"
 
     with tempfile.NamedTemporaryFile() as temp_db_file:
         Path(temp_db_file.name).write_text("{}")
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
 
         class Foo:
-            @memo(str(Path(temp_db_file.name).absolute()))
+            @memo('foo')
             def my_fn(*args, retval=None, **kwargs):
                 return retval
 
@@ -144,12 +166,12 @@ def test_memoizer_classmethod_recording():
 
         with event_db(temp_db_file.name) as data:
             memos = data.scenes[0].context.memos
-            assert memos["my_fn"].calls == [[[[10], {"retval": 10, "foo": "bar"}], 10]]
+            assert memos["foo.my_fn"].calls == [[[[10], {"retval": 10, "foo": "bar"}], 10]]
 
             # replace return_value for replay test
-            memos["my_fn"].calls = [[[[10], {"retval": 10, "foo": "bar"}], 20]]
+            memos["foo.my_fn"].calls = [[[[10], {"retval": 10, "foo": "bar"}], 20]]
 
-        recorder._MEMO_MODE = "replay"
+        os.environ[MEMO_MODE_KEY] = "replay"
         assert f.my_fn(10, retval=10, foo="bar") == 20
 
         # memos are up
@@ -158,12 +180,12 @@ def test_memoizer_classmethod_recording():
 
 
 def test_reset_replay_cursor():
-    recorder._MEMO_MODE = "replay"
+    os.environ[MEMO_MODE_KEY] = "replay"
 
     with tempfile.NamedTemporaryFile() as temp_db_file:
         Path(temp_db_file.name).write_text("{}")
-
-        @memo(str(Path(temp_db_file.name).absolute()))
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+        @memo()
         def my_fn(*args, retval=None, **kwargs):
             return retval
 

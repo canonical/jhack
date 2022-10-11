@@ -1,13 +1,15 @@
+import logging
 import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Tuple
 
 import yaml
 
+from jhack.helpers import JPopen
 from jhack.logger import logger
-from jhack.utils.event_recorder.client import _fetch_db
+from jhack.utils.event_recorder.client import _fetch_file
 from jhack.utils.event_recorder.memo_tools import inject_memoizer
 from jhack.utils.event_recorder.recorder import (
     DEFAULT_DB_NAME,
@@ -16,7 +18,7 @@ from jhack.utils.event_recorder.recorder import (
     MEMO_REPLAY_INDEX_KEY,
     Event,
     _reset_replay_cursors,
-    event_db,
+    event_db, Scene,
 )
 
 if TYPE_CHECKING:
@@ -27,6 +29,11 @@ logger = logger.getChild("event_recorder.runtime")
 
 
 class Runtime:
+    """Charm runtime wrapper.
+
+    This object bridges a live charm unit and a local environment.
+    """
+
     def __init__(
         self,
         charm_type: Type["CharmType"],
@@ -46,23 +53,26 @@ class Runtime:
 
         self._local_db_path = local_db_path
         self._remote_db_path = remote_db_path
-        if not meta:
-            raise ValueError("We NEED metadata.")
+
         self._meta = meta
         self._actions = actions
 
         if unit:
-            self.fetch_db(unit, remote_db_path)
+            self.load(unit, remote_db_path)
         if install:
             self.install()
 
-    def fetch_db(self, unit: str, remote_db_path=None):
+    def load(self, unit: str, remote_db_path=None):
+        """Fetch event db and charm metadata from the live unit."""
         logger.info(f"Fetching db from {unit}@~/{remote_db_path}.")
-        _fetch_db(
-            unit,
-            remote_db_path or self._remote_db_path,
-            local_db_path=self._local_db_path,
-        )
+        _fetch_file(unit, remote_db_path or self._remote_db_path, local_path=self._local_db_path)
+
+        if not self._meta:
+            logger.info(f"Fetching metadata from {unit}.")
+            self._meta = _fetch_file(unit, 'metadata.yaml')
+        if not self._actions:
+            logger.info(f"Fetching actions metadata from {unit}.")
+            self._actions = _fetch_file(unit, 'actions.yaml')
 
     def install(self):
         """Install the runtime.
@@ -118,15 +128,18 @@ class Runtime:
         return True
 
     def _redirect_root_logger(self):
+        # the root logger set up by ops calls a hook tool: `juju-log`.
+        # that is a problem for us because `juju-log` is itself memoized by `jhack.replay`
+        # which leads to recursion.
         def _patch_logger(*args, **kwargs):
             logger.debug("Hijacked root logger.")
             pass
 
         import ops.main
-
         ops.main.setup_root_logging = _patch_logger
 
-    def _clear_env(self):
+    @staticmethod
+    def _clear_env():
         # cleanup env, in case we'll be firing multiple events, we don't want to accumulate.
         for key in os.environ:
             del os.environ[key]
@@ -150,14 +163,22 @@ class Runtime:
 
         os.environ["JUJU_CHARM_DIR"] = str(charm_root.absolute())
 
-    def run(self, scene_idx: int, fetch_from_unit: Optional[str] = None) -> "CharmType":
+    def run(self,
+            scene_idx: int,
+            fetch_from_unit: Optional[str] = None
+            ) -> Tuple["CharmType", Scene]:
+        """Executes a scene on the charm.
+
+        This will set the environment up and call ops.main.main().
+        After that it's up to ops.
+        """
         if not self._is_installed():
             raise sys.exit(
                 "Runtime is not installed. Call `runtime.install()` (and read the fine prints)."
             )
 
         if fetch_from_unit:
-            self.fetch_db(unit=fetch_from_unit)
+            self.load(unit=fetch_from_unit)
 
         with event_db(self._local_db_path) as data:
             try:
@@ -165,7 +186,7 @@ class Runtime:
             except IndexError:
                 sys.exit(
                     f"Scene ID {scene_idx} not found in the local db ({self._local_db_path}).\n"
-                    f"If you are replaying from a remote unit, you should call `Runtime.fetch_db(<unit-name>)`"
+                    f"If you are replaying from a remote unit, you should call `Runtime.load(<unit-name>)`"
                 )
 
         logger.info(
@@ -191,7 +212,7 @@ class Runtime:
             logger.info("Entering ops.main.")
             charm = main(self._charm_type)
 
-        return charm
+        return charm, scene
 
 
 if __name__ == "__main__":
@@ -214,5 +235,5 @@ if __name__ == "__main__":
         },
     )
     runtime.install()
-    runtime.fetch_db("trfk/0")
+    runtime.load("trfk/0")
     runtime.run(0)

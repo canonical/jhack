@@ -38,9 +38,7 @@ def charm_type():
         def _catchall(self, e):
             self._event = e
 
-    MyCharm.handle_kind = (
-        f"MyCharm-test-{str(random.randint(10000000000, 99999999999))}"
-    )
+
     return MyCharm
 
 
@@ -65,5 +63,40 @@ def test_run(evt_idx, expected_name):
         local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / "trfk-re-relate.json",
     )
     runtime.install()
-    charm = runtime.run(evt_idx)
-    assert charm._event.handle.kind == expected_name
+    charm, scene = runtime.run(evt_idx)
+    assert charm.unit.name == 'trfk/0'
+    assert charm.model.name == 'foo'
+    assert charm._event.handle.kind == scene.event.name == expected_name
+
+
+def test_relation_data():
+    charm = charm_type()
+    runtime = Runtime(
+        charm,
+        meta={
+            "name": "foo",
+            "requires": {"ingress-per-unit": {"interface": "ingress_per_unit"}},
+        },
+        local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / "trfk-re-relate.json",
+    )
+    runtime.install()
+    charm, scene = runtime.run(4)  # ipu-relation-changed
+
+    assert scene.event.name == 'ingress-per-unit-relation-changed'
+
+    rel = charm.model.relations['ingress-per-unit'][0]
+
+    # fixme: we need to access the data in the same ORDER in which we did before.
+    #  for relation-get, it should be safe to ignore the memo ordering,
+    #  since the data is frozen for the hook duration.
+    #  actually it should be fine for most hook tools, except leader and status.
+    #  pebble is a different story.
+
+    remote_unit_data = rel.data[list(rel.units)[0]]
+    assert remote_unit_data['host'] == 'prom-0.prom-endpoints.foo.svc.cluster.local'
+    assert remote_unit_data['port'] == '9090'
+    assert remote_unit_data['model'] == 'foo'
+    assert remote_unit_data['name'] == 'prom/0'
+
+    local_app_data = rel.data[charm.app]
+    assert local_app_data == {}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import datetime
 import functools
+import inspect
 import json
 import os
 import typing
@@ -49,8 +50,11 @@ def _is_json_serializable(obj: Any):
         return False
 
 
-def memo(db_name: str = None):
+def memo(namespace: str = 'default'):
     def decorator(fn):
+        if not inspect.isfunction(fn):
+            raise RuntimeError(f'Cannot memoize non-function obj {fn!r}.')
+
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
             def propagate():
@@ -61,11 +65,12 @@ def memo(db_name: str = None):
             if args:
                 if not _is_json_serializable(args[0]):
                     # probably we're wrapping a method! which means args[0] is `self`
+                    # we can't use `inspect.ismethod(fn)` because at @memo-execution-time, `fn` isn't a method yet!
                     memoizable_args = args[1:]
                 else:
                     memoizable_args = args
 
-            database = db_name or os.environ.get(
+            database = os.environ.get(
                 MEMO_DATABASE_NAME_KEY, DEFAULT_DB_NAME
             )
             with event_db(database) as data:
@@ -74,10 +79,13 @@ def memo(db_name: str = None):
                 idx = int(os.environ.get(MEMO_REPLAY_INDEX_KEY, None))
 
                 _MEMO_MODE: MemoModes = _load_memo_mode()
+
+                memo_name = f"{namespace}.{fn.__name__}"
                 if _MEMO_MODE == "record":
-                    memo = data.scenes[-1].context.memos.get(fn.__name__, Memo())
-                    memo.calls.append(((memoizable_args, kwargs), propagate()))
-                    data.scenes[-1].context.memos[fn.__name__] = memo
+                    memo = data.scenes[-1].context.memos.get(memo_name, Memo())
+                    output = propagate()
+                    memo.calls.append(((memoizable_args, kwargs), output))
+                    data.scenes[-1].context.memos[memo_name] = memo
 
                 elif _MEMO_MODE == "replay":
                     if idx is None:
@@ -93,13 +101,13 @@ def memo(db_name: str = None):
                         )
 
                     try:
-                        memo = data.scenes[idx].context.memos[fn.__name__]
+                        memo = data.scenes[idx].context.memos[memo_name]
 
                     except KeyError:
                         # if no memo is present for this function, that might mean that
                         # in the recorded session it was not called (this path is new!)
                         warnings.warn(
-                            f"No memo found for {fn.__name__}: "
+                            f"No memo found for {memo_name}: "
                             f"this path must be new."
                         )
                         return propagate()
@@ -113,7 +121,7 @@ def memo(db_name: str = None):
                         # this means the current path is calling the wrapped function
                         # more times than the recorded path did.
                         warnings.warn(
-                            f"Memo cursor {current_cursor} out of bounds for {fn.__name__}: "
+                            f"Memo cursor {current_cursor} out of bounds for {memo_name}: "
                             f"the path must have changed"
                         )
                         return propagate()
@@ -124,16 +132,18 @@ def memo(db_name: str = None):
                     # loaded from json, where tuples become lists.
                     if (reco_args, reco_kwargs) != (list(memoizable_args), kwargs):
                         warnings.warn(
-                            f"memoized {fn.__name__} arguments don't match "
+                            f"memoized {memo_name} arguments don't match "
                             f"the ones received at runtime. This path has diverged."
                         )
+                        # fixme: we could relax this strict ordering req for most hook tool calls.
                         return propagate()
 
-                    return reco_out  # happy path!
+                    return reco_out  # happy path! good for you, path.
 
                 else:
-                    raise ValueError(_MEMO_MODE)
-            return propagate()
+                    raise ValueError(f"invalid memo mode: {_MEMO_MODE}")
+
+            return output
 
         return wrapper
 

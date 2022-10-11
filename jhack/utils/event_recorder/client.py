@@ -22,9 +22,9 @@ BROKEN_ENV_KEYS = {
 }  # need to skip this one else juju exec will whine
 
 
-def _fetch_db(unit: str, remote_db_path: str, local_db_path: Path):
+def _fetch_file(unit: str, remote_path: str, local_path: Path = None):
     unit_sanitized = unit.replace("/", "-")
-    cmd = f"juju ssh {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_db_path}"
+    cmd = f"juju ssh {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
     try:
         raw = check_output(cmd.split())
     except CalledProcessError as e:
@@ -33,7 +33,10 @@ def _fetch_db(unit: str, remote_db_path: str, local_db_path: Path):
             "that no event has been fired yet."
         ) from e
 
-    local_db_path.write_bytes(raw)
+    if not local_path:
+        return raw
+
+    local_path.write_bytes(raw)
 
 
 def _print_events(db_path: Union[str, Path]):
@@ -56,7 +59,7 @@ def _print_events(db_path: Union[str, Path]):
 def _list_events(unit: str, db_path=DEFAULT_DB_NAME):
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db_file = Path(temp_db.name)
-        _fetch_db(unit, remote_db_path=db_path, local_db_path=temp_db_file)
+        _fetch_file(unit, remote_path=db_path, local_path=temp_db_file)
         _print_events(temp_db_file)
 
 
@@ -73,7 +76,7 @@ def _emit(unit: str, idx: int, db_path=DEFAULT_DB_NAME, dry_run: bool = False):
     # logic in the recorder script.
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
-        _fetch_db(unit, remote_db_path=db_path, local_db_path=temp_db)
+        _fetch_file(unit, remote_path=db_path, local_path=temp_db)
 
         with event_db(temp_db) as data:
             event = data.scenes[idx].event
@@ -115,7 +118,7 @@ def emit(
 def _dump_db(unit: str, idx: int = -1, db_path=DEFAULT_DB_NAME):
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
-        _fetch_db(unit, db_path, temp_db)
+        _fetch_file(unit, db_path, temp_db)
 
         if idx is not None:
             evt = json.loads(temp_db.read_text()).get("scenes", {})[idx]
