@@ -34,8 +34,6 @@ from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
-import logging
-logger.setLevel(logging.DEBUG)
 
 JUJU_VERSION = juju_version()
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
@@ -232,6 +230,9 @@ class Processor:
             tgt.unit_name: [] for tgt in targets
         }
 
+        # used to check for duplicate log messages (juju bug?)
+        self._duplicate_cache = set()
+
         self._has_just_emitted = False
         self.live = live = Live(console=console)
         live.start()
@@ -272,7 +273,7 @@ class Processor:
         if self._warned_about_orphans:
             return
         logger.warning(
-            f"Error processing {evt.event}({getattr(evt, 'n', '?')}); no "
+            f"Error processing {evt.event} ({getattr(evt, 'n', '?')}); no "
             f"matching deferred event could be found in the currently "
             f"deferred/previously emitted ones. This can happen if you only set "
             f"logging-config to DEBUG after the first events got deferred, "
@@ -361,6 +362,7 @@ class Processor:
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more.
             # self._emit(reemitted)
+            # self.update_defers(reemitted)
 
         # else:
         # raw_table.currently_deferred.remove(deferred)
@@ -442,21 +444,32 @@ class Processor:
         self.targets.append(new_target)
         self._raw_tables[new_target.unit_name] = RawTable()
 
+    def _check_duplicate(self, msg: EventLogMsg):
+        hsh = hash((msg.unit, msg.timestamp, msg.event))
+        if hsh in self._duplicate_cache:
+            return True
+        self._duplicate_cache.add(hsh)
+
     def process(self, log: str) -> Optional[EventLogMsg]:
         """process a log line"""
         if msg := self._match_event_emitted(log):
             mode = "emit"
-            self._emit(msg)
         elif self._show_defer:
             if msg := self._match_event_deferred(log):
                 mode = "defer"
             elif msg := self._match_event_reemitted(log):
-                self._emit(msg)
                 mode = "reemit"
             else:
                 return
         else:
             return
+
+        if self._check_duplicate(msg):
+            logger.debug(f"{msg.timestamp}: {msg.event} is a duplicate. skipping...")
+            return
+
+        if mode in {'emit', 'reemit'}:
+            self._emit(msg)
 
         if not self._is_tracking(msg):
             return
@@ -657,8 +670,8 @@ class Processor:
                     if not known_n == msg.n:
                         logger.error(
                             f"The original log at line {previous_msg_idx} "
-                            f"({raw_table.events[previous_msg_idx]}) has n = {known_n}, "
-                            f"but the message we just parsed ({msg.event}) has n = {msg.n}"
+                            f"({msg.event}) has n = {known_n}, "
+                            f"but the message we just parsed has n = {msg.n}"
                         )
 
                 # store it
@@ -1139,4 +1152,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, show_defer=True)
+    _tail_events(length=300, replay=True, show_defer=True, show_ns=True)
