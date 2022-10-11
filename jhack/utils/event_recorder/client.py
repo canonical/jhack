@@ -14,8 +14,13 @@ from jhack.utils.simulate_event import _simulate_event
 
 logger = logger.getChild("event_recorder.client")
 RECORDER_SOURCE = Path(__file__).parent / "recorder.py"
-BROKEN_ENV_KEYS = {"JUJU_API_ADDRESSES", "JUJU_METER_INFO",  # contain whitespace
-                   "JUJU_CONTEXT_ID"}  # need to skip this one else juju exec will whine
+BROKEN_ENV_KEYS = {
+    # contain whitespace
+    "JUJU_API_ADDRESSES",
+    "JUJU_METER_INFO",
+    # need to skip this one else juju exec will whine
+    "JUJU_CONTEXT_ID",
+}
 
 
 def _fetch_db(unit: str, remote_db_path: str, local_db_path: Path):
@@ -63,7 +68,13 @@ def list_events(
     return _list_events(unit, db_path)
 
 
-def _emit(unit: str, idx: int, db_path=DEFAULT_DB_NAME, dry_run: bool = False):
+def _emit(
+    unit: str,
+    idx: int,
+    db_path=DEFAULT_DB_NAME,
+    dry_run: bool = False,
+    operator_dispatch=False,
+):
     # we need to fetch the database to know what event we're talking about, since we're using
     # _simulate_event to fire the event. We could also shortcut this by embedding the 'simulate_event'
     # logic in the recorder script.
@@ -95,17 +106,27 @@ def _emit(unit: str, idx: int, db_path=DEFAULT_DB_NAME, dry_run: bool = False):
         ]
     )
 
+    if operator_dispatch:
+        env += " OPERATOR_DISPATCH=1"
+
     return _simulate_event(unit, event.name, env_override=env)
 
 
 def emit(
     unit: str = typer.Argument(..., help="Target unit."),
     idx: Optional[int] = typer.Argument(-1, help="Index of the event to re-fire"),
+    operator_dispatch: Optional[bool] = typer.Option(
+        False,
+        "-O",
+        "--use-operator-dispatch",
+        help="Set the OPERATOR_DISPATCH flag. "
+        "This will flag the event as 'fired by the charm itself.'.",
+    ),
     db_path=DEFAULT_DB_NAME,
     dry_run: bool = False,
 ):
     """Select the `idx`th event stored on the unit db and re-fire it."""
-    _emit(unit, idx, db_path, dry_run=dry_run)
+    _emit(unit, idx, db_path, dry_run=dry_run, operator_dispatch=operator_dispatch)
 
 
 def _dump_db(unit: str, idx: int = -1, db_path=DEFAULT_DB_NAME):
