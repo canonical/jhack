@@ -1,0 +1,3739 @@
+{
+  "scenes": [
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-departed-322431871864845821",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-departed",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "prom/0",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:1",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-departed",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "JUJU_DEPARTING_UNIT": "prom/0",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-10T07:50:18.838785"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/ingress-per-unit-relation-departed does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Re-emitting <IngressDataReadyEvent via TraefikIngressCharm/IngressPerUnitProvider[ingress-per-unit]/on/data_provided[21]>."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Provider <charms.traefik_k8s.v1.ingress_per_unit.IngressPerUnitProvider object at 0x7f3ded219fd0> not ready; resetting ingress configurations."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Wiping the ingress setup for the 'ingress-per-unit:1' relation"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_1_prom.yaml ingress configuration file"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Re-emitting <IngressDataReadyEvent via TraefikIngressCharm/IngressPerUnitProvider[ingress-per-unit]/on/data_provided[25]>."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Provider <charms.traefik_k8s.v1.ingress_per_unit.IngressPerUnitProvider object at 0x7f3ded219fd0> not ready; resetting ingress configurations."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Wiping the ingress setup for the 'ingress-per-unit:1' relation"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_1_prom.yaml ingress configuration file"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event ingress_per_unit_relation_departed."
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  1
+                ]
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    1
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_remote_app_name": {
+            "calls": [
+              [
+                [
+                  [
+                    1
+                  ],
+                  {}
+                ],
+                "prom"
+              ]
+            ],
+            "cursor": 1
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    1,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    1,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {
+                    "is_app": false
+                  }
+                ],
+                {
+                  "message": "",
+                  "status": "active",
+                  "status-data": {}
+                }
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-broken-4522719302312203487",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-broken",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:1",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-broken",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-10T07:50:19.509883"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/ingress-per-unit-relation-broken does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event ingress_per_unit_relation_broken."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Wiping the ingress setup for the 'ingress-per-unit:1' relation"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_1_prom.yaml ingress configuration file"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  1
+                ]
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    1
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_remote_app_name": {
+            "calls": [
+              [
+                [
+                  [
+                    1
+                  ],
+                  {}
+                ],
+                "prom"
+              ]
+            ],
+            "cursor": 1
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    1,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-created-7736654744297060123",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-created",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:2",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-created",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-10T07:50:22.354384"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/ingress-per-unit-relation-created does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event ingress_per_unit_relation_created."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Wiping the ingress setup for the 'ingress-per-unit:2' relation"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml ingress configuration file"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_remote_app_name": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                "prom"
+              ]
+            ],
+            "cursor": 1
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-joined-7590648745007930017",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-joined",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "prom/0",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:2",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-joined",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-10T07:50:22.972229"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/ingress-per-unit-relation-joined does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event ingress_per_unit_relation_joined."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-changed-6112836134710546875",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-changed",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "prom/0",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:2",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-changed",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-10T07:50:23.689277"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/ingress-per-unit-relation-changed does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event ingress_per_unit_relation_changed."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 1
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 2
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-update-status-107006602281069553",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/update-status",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "update-status",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
+        },
+        "timestamp": "2022-10-10T07:55:46.401435"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/update-status does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event update_status."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configurations"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ],
+              [
+                [
+                  [
+                    "ingress"
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-update-status-3444000742957682171",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/update-status",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "update-status",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
+        },
+        "timestamp": "2022-10-10T08:01:33.835455"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/update-status does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event update_status."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configurations"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ],
+              [
+                [
+                  [
+                    "ingress"
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-update-status-4367785028968330890",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/update-status",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "update-status",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
+        },
+        "timestamp": "2022-10-10T08:07:08.876432"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/update-status does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event update_status."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configurations"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ],
+              [
+                [
+                  [
+                    "ingress"
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-update-status-8584973023176375256",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/update-status",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "update-status",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
+        },
+        "timestamp": "2022-10-10T08:11:40.831181"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/update-status does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event update_status."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configurations"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ],
+              [
+                [
+                  [
+                    "ingress"
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-update-status-2530133970702625006",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/update-status",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "update-status",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
+        },
+        "timestamp": "2022-10-10T08:16:52.141881"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/update-status does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event update_status."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configurations"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ],
+              [
+                [
+                  [
+                    "ingress"
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-update-status-3679541387914881462",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/update-status",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "update-status",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
+        },
+        "timestamp": "2022-10-10T08:22:09.062134"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/update-status does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event update_status."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configurations"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ],
+              [
+                [
+                  [
+                    "ingress"
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-update-status-6202127696017883587",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/update-status",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "update-status",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "e650e6cf-280d-495b-818e-b1dc93a50044",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
+        },
+        "timestamp": "2022-10-10T08:26:40.907574"
+      },
+      "context": {
+        "memos": {
+          "juju_log": {
+            "calls": [
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Operator Framework 1.5.2 up and running."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Legacy hooks/update-status does not exist."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "yaml does not have libyaml extensions, using slower pure Python yaml loader"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Emitting Juju event update_status."
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updating ingress for relation 'ingress-per-unit:2'"
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "DEBUG",
+                    "Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "config_get": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                {
+                  "external_hostname": "foo.com",
+                  "routing_mode": "path"
+                }
+              ]
+            ],
+            "cursor": 0
+          },
+          "status_set": {
+            "calls": [
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configurations"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "maintenance",
+                    "updating ingress configuration for 'ingress-per-unit:2'"
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    "active",
+                    ""
+                  ],
+                  {
+                    "is_app": false
+                  }
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_ids": {
+            "calls": [
+              [
+                [
+                  [
+                    "ingress-per-unit"
+                  ],
+                  {}
+                ],
+                [
+                  2
+                ]
+              ],
+              [
+                [
+                  [
+                    "ingress"
+                  ],
+                  {}
+                ],
+                []
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_list": {
+            "calls": [
+              [
+                [
+                  [
+                    2
+                  ],
+                  {}
+                ],
+                [
+                  "prom/0"
+                ]
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_get": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "prom/0",
+                    false
+                  ],
+                  {}
+                ],
+                {
+                  "egress-subnets": "10.152.183.132/32",
+                  "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
+                  "ingress-address": "10.152.183.132",
+                  "mode": "http",
+                  "model": "foo",
+                  "name": "prom/0",
+                  "port": "9090",
+                  "private-address": "10.152.183.132"
+                }
+              ],
+              [
+                [
+                  [
+                    2,
+                    "trfk",
+                    true
+                  ],
+                  {}
+                ],
+                {}
+              ]
+            ],
+            "cursor": 0
+          },
+          "is_leader": {
+            "calls": [
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ],
+              [
+                [
+                  [],
+                  {}
+                ],
+                true
+              ]
+            ],
+            "cursor": 0
+          },
+          "relation_set": {
+            "calls": [
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ],
+              [
+                [
+                  [
+                    2,
+                    "ingress",
+                    "prom/0:\n  url: http://foo.com:80/foo-prom-0\n",
+                    true
+                  ],
+                  {}
+                ],
+                null
+              ]
+            ],
+            "cursor": 0
+          }
+        }
+      }
+    }
+  ]
+}

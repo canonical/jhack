@@ -361,11 +361,11 @@ class Processor:
 
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more.
-            # self._emit(reemitted)
             # self.update_defers(reemitted)
 
-        # else:
-        # raw_table.currently_deferred.remove(deferred)
+        else:
+            self._emit(reemitted)
+            raw_table.currently_deferred.remove(deferred)
 
         # start tracking the reemitted event.
         self.tracking[unit].append(reemitted)
@@ -738,12 +738,11 @@ class Processor:
                 raw_table.deferrals[previous_msg_idx] = new_cell
                 try:
                     lane = new_cell.index(self._lupdown)
-                except ValueError:
-                    logger.error(
+                except ValueError as e:
+                    raise ValueError(
                         f"Failed looking up lane by indexing lupdown in {new_cell}"
                         f"something wrong with {raw_table}"
-                    )
-                    raise
+                    ) from e
 
             self._cache_lane(msg.n, lane)
 
