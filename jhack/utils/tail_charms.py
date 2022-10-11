@@ -361,11 +361,9 @@ class Processor:
 
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more.
-            # self.update_defers(reemitted)
-
-        else:
             self._emit(reemitted)
-            raw_table.currently_deferred.remove(deferred)
+
+        # raw_table.currently_deferred.remove(deferred)
 
         # start tracking the reemitted event.
         self.tracking[unit].append(reemitted)
