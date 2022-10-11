@@ -137,7 +137,7 @@ class EventReemittedLogMsg(EventDeferredLogMsg):
 class RawTable:
     msgs: List[EventLogMsg] = field(default_factory=list)
     events: List[str] = field(default_factory=list)
-    deferrals: List[str] = field(default_factory=list)
+    deferrals: List[Optional[str]] = field(default_factory=list)
     ns: List[str] = field(default_factory=list)
     n_colors: Dict[str, str] = field(default_factory=dict)
     currently_deferred: List[EventDeferredLogMsg] = field(default_factory=list)
@@ -148,7 +148,7 @@ class RawTable:
     def add(self, msg: Union[EventLogMsg]):
         self.msgs.insert(0, msg)
         self.events.insert(0, msg.event)
-        self.deferrals.insert(0, "  ")
+        self.deferrals.insert(0, None)
         n = getattr(msg, "n", None)
         self.ns.insert(0, n)
         if n and n not in self.n_colors:
@@ -158,7 +158,7 @@ class RawTable:
         self.msgs.insert(0, None)
         self.ns.insert(0, None)
         self.events.insert(0, None)
-        self.deferrals.insert(0, "  ")
+        self.deferrals.insert(0, None)
 
 
 _event_colors = {
@@ -184,7 +184,11 @@ _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
 _operator_event_color = Color.from_rgb(252, 115, 3)
-
+_deferral_colors = {
+    'deferred': 'red',
+    'reemitted': 'green',
+    'bounced': Color.from_rgb(252, 115, 3),
+}
 
 def _random_color():
     r = random.randint(0, 255)
@@ -273,7 +277,7 @@ class Processor:
         if self._warned_about_orphans:
             return
         logger.warning(
-            f"Error processing {evt.event} ({getattr(evt, 'n', '?')}); no "
+            f"Error processing {evt.event}({getattr(evt, 'n', '?')}); no "
             f"matching deferred event could be found in the currently "
             f"deferred/previously emitted ones. This can happen if you only set "
             f"logging-config to DEBUG after the first events got deferred, "
@@ -357,13 +361,10 @@ class Processor:
                 f"mocking {deferred}: we're reemitting it but "
                 f"we've not seen it before."
             )
-            self.update_defers(deferred)
 
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more.
             self._emit(reemitted)
-
-        # raw_table.currently_deferred.remove(deferred)
 
         # start tracking the reemitted event.
         self.tracking[unit].append(reemitted)
@@ -499,14 +500,6 @@ class Processor:
                 continue
 
             raw_table.add_blank_row()
-            tail = ""
-            for evt in raw_table.currently_deferred:
-                tail = _put(
-                    tail, self._get_lane(evt.n), self._vline, self._nothing_to_report
-                )
-                tail = self._dpad + tail[2:]
-
-            raw_table.deferrals[0] = tail
 
     def _get_event_color(self, msg: EventLogMsg) -> Color:
         event = msg.event
@@ -528,29 +521,44 @@ class Processor:
         table = Table(show_footer=False, expand=True)
         table.add_column(header="timestamp", style="")
         unit_grids = []
+        n_cols = 1
+
         ns_shown = self._show_ns
-        n_cols = 3 if ns_shown else 2
+        dfr_shown = self._show_defer
+        if ns_shown:
+            n_cols += 1
+        if dfr_shown:
+            n_cols += 1
 
         targets = self.targets
         raw_tables = self._raw_tables
         for target in targets:
             tgt_grid = Table.grid(*(("",) * n_cols), expand=True, padding=(0, 1, 0, 1))
             raw_table = raw_tables[target.unit_name]
-            for msg, event, deferral, n in zip(
-                raw_table.msgs, raw_table.events, raw_table.deferrals, raw_table.ns
-            ):
+            for i, (msg, event, n) in enumerate(zip(
+                raw_table.msgs, raw_table.events, raw_table.ns
+            )):
                 rndr = (
                     Text(event, style=Style(color=self._get_event_color(msg)))
                     if event
                     else ""
                 )
-                if ns_shown:
+                row = [rndr]
+
+                if self._show_defer:
+                    deferral_status = raw_table.deferrals[i] or 'null'
+                    deferral_symbol = self._deferral_status_to_symbol[deferral_status]
+                    style = Style(color=_deferral_colors[deferral_status]) if deferral_status != 'null' else ""
+                    deferral_rndr = Text(deferral_symbol, style=style)
+                    row.append(deferral_rndr)
+
+                if self._show_ns:
                     n_rndr = (
                         Text(n, style=Style(color=raw_table.get_color(n))) if n else ""
                     )
-                    tgt_grid.add_row(n_rndr, rndr, deferral)
-                else:
-                    tgt_grid.add_row(rndr, deferral)
+                    row.insert(0, n_rndr)
+
+                tgt_grid.add_row(*row)
 
             table.add_column(header=target.unit_name, style="")
             unit_grids.append(tgt_grid)
@@ -576,282 +584,52 @@ class Processor:
     def _is_tracking(self, msg):
         return msg.unit in self.tracking
 
-    _pad = " "
-    _dpad = _pad * 2
-    _nothing_to_report = "."
-    _vline = "│"
-    _cross = "┼"
-    _lup = "┘"
-    _lupdown = "┤"
-    _ldown = "┐"
-    _hline = "─"
-
     # todo: should we have a "console compatibility mode" using ascii here?
     _bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
     _close = "❮"
     _open = "❯"
+    _null = ""
+
+    _deferral_status_to_symbol = {
+        'null': _null,
+        'deferred': _open,
+        'reemitted': _close,
+        'bounced': _bounce
+    }
 
     def update_defers(self, msg: EventLogMsg):
         # all the events we presently know to be deferred
         unit = msg.unit
         raw_table = self._raw_tables[unit]
 
-        previous_msg_idx = None
-        deferring = msg.type == "deferred"
-        reemitting = msg.type == "reemitted"
-        if deferring or reemitting:
-            if deferring:
-                # if we're deferring, we're not adding a new logline so we can
-                # start searching at 0
-                offset = 0
-            else:
-                # if we're reemitting, we skip the first log because we want to
-                # check the previous time this event was emitted or bounced, and
-                # we just added a logline for this event
-                offset = 1
-
+        if msg.type == "deferred":
+            # if we're deferring, we're not adding a new logline, so we can
+            # start searching at 0
             try:
-                previous_msg_idx = raw_table.ns[offset:].index(msg.n) + offset
+                previous_msg_idx = raw_table.ns.index(msg.n)
             except ValueError:
-                logger.debug(f"n {msg.n} is new.")
-                pass
+                logger.debug(f"Deferring event {msg.n} which is out of scope.")
+                return
 
-        if deferring:
-            assert isinstance(msg, EventDeferredLogMsg)  # type guard
-            # we did not find (in scope) a previous logline emitting
-            # this event by number; let's search by name.
-            if msg.mocked and previous_msg_idx is None:
-                # we are mocking an event whose first emission could be out of scope
-                for idx, (evt, n) in enumerate(zip(raw_table.events, raw_table.ns)):
-                    if evt == msg.event and n is None:
-                        previous_msg_idx = idx
-                        break
+            new_state = 'deferred'
+            if raw_table.deferrals[previous_msg_idx] == 'deferred':
+                new_state = 'bounced'
+            raw_table.deferrals[previous_msg_idx] = new_state
 
-                if previous_msg_idx is None:
-                    logger.debug(
-                        f"Mocked event {msg.event}({msg.n}) is out of scope, and "
-                        f"no not-yet-numbered companion can be "
-                        f"found in the table."
-                    )
-                    # we need to find an empty lane for this new message.
-                    busy = set(self._lanes.values())
-                    free = None
-                    for lane in range(max(busy)):
-                        if lane not in busy:
-                            free = lane
-                            break
-                    if free is None:
-                        free = max(busy) + 1
-                    self._cache_lane(msg.n, free)
-                    return
+        elif msg.type == "reemitted":
+            last = None
+            for i, n in enumerate(raw_table.ns):
+                if n == msg.n:
+                    raw_table.deferrals[i] = 'bounced'
+                    last = i
 
-            if msg.mocked or previous_msg_idx is None:
-                if previous_msg_idx is None:
-                    logger.debug(
-                        "Deferring an event which we don't know it when was "
-                        f"emitted first. Attempting to guess by indexing the "
-                        f"event name ({msg.event}) in the raw table."
-                    )
-                    try:
-                        previous_msg_idx = raw_table.events.index(msg.event)
-                        logger.debug(
-                            f"according to raw table, "
-                            f"our index is {previous_msg_idx}"
-                        )
-                    except ValueError:
-                        # should really not happen; it may mean that earlier logs
-                        # are unavailable (user only got to DEBUG recently).
-                        logger.error(f"{msg.event} not found in raw table")
-                        previous_msg_idx = 0
+            if last is not None:
+                raw_table.deferrals[last] = 'deferred'
 
-                if (known_n := raw_table.ns[previous_msg_idx]) is not None:
-                    if not known_n == msg.n:
-                        logger.error(
-                            f"The original log at line {previous_msg_idx} "
-                            f"({msg.event}) has n = {known_n}, "
-                            f"but the message we just parsed has n = {msg.n}"
-                        )
-
-                # store it
-                raw_table.ns[previous_msg_idx] = msg.n
-                # if previous_msg_idx == 0, that's the case in
-                # which we're deferring the last event we emitted.
-                # otherwise we're deferring something we've re-emitted.
-                original_cell = raw_table.deferrals[previous_msg_idx]
-
-                if previous_msg_idx == 0:
-                    # we're deferring a just-emitted event.
-                    # This means we have to generate the full cell from scratch.
-                    new_cell = self._open + self._hline
-                    for dfrd in raw_table.currently_deferred:
-                        if dfrd is msg:
-                            continue
-
-                        # iterate through the busy lanes, put a cross there,
-                        # leave a hline otherwise
-                        lane = self._get_lane(dfrd.n)
-                        if not lane:
-                            raise ValueError(f"lane not cached for {dfrd}")
-
-                        new_cell = _put(new_cell, lane, self._cross, self._hline)
-
-                    # at the end:
-                    new_cell += self._lup
-
-                else:
-                    # turn all vlines we meet into crosses, add a lup
-                    new_cell = (
-                        original_cell.replace(self._vline, self._cross) + self._lup
-                    )
-
-                raw_table.deferrals[previous_msg_idx] = new_cell
-                lane = new_cell.index(self._lup)
-
-            else:
-                # not the first time we defer you, boy
-                original_cell = raw_table.deferrals[previous_msg_idx]
-                if self._close + self._hline not in original_cell:
-                    raise ValueError(
-                        f"Expected closure not found in original cell: "
-                        f"{original_cell}; something wrong processing {msg}"
-                    )
-
-                new_cell = (
-                    original_cell.replace(
-                        self._close + self._hline,
-                        self._pad + self._bounce
-                    )
-                    .replace(self._ldown, self._lupdown)
-                    .replace(self._vline, self._cross)
-                )
-
-                for _msg in raw_table.currently_deferred:
-                    if _msg.n == msg.n:
-                        # one of them could be mocked.
-                        continue
-                    busy_lane = self._get_lane(_msg.n)
-                    new_cell = _put(
-                        new_cell, busy_lane, self._cross, self._nothing_to_report
-                    )
-
-                raw_table.deferrals[previous_msg_idx] = new_cell
-                try:
-                    lane = new_cell.index(self._lupdown)
-                except ValueError as e:
-                    raise ValueError(
-                        f"Failed looking up lane by indexing lupdown in {new_cell}"
-                        f"something wrong with {raw_table}"
-                    ) from e
-
-            self._cache_lane(msg.n, lane)
-
-        elif reemitting:
-            assert isinstance(msg, EventReemittedLogMsg)  # type guard
-
-            if previous_msg_idx is None:
-                # message must have been cropped away
-                logger.debug(
-                    f"unable to grab fetch previous reemit, "
-                    f"msg {msg.n} must be out of scope"
-                )
-
-            lane = None
-            if previous_msg_idx is not None:
-                original_reemittal_cell = raw_table.deferrals[previous_msg_idx]
-                lane = None
-                for sym in {self._lupdown, self._lup}:
-                    if sym in original_reemittal_cell:
-                        lane = original_reemittal_cell.index(sym)
-                        break  # found
-
-            if lane is None:
-                lane = self._get_lane(msg.n)
-                if lane is None:
-                    raise RuntimeError(
-                        f"lane not cached for {msg.n}, and "
-                        f"message is out of scope. "
-                        f"Unable to proceed."
-                    )
-            self._cache_lane(msg.n, lane)
-
-            # now we look at the newly added cell and add a closure statement.
-            current_cell = raw_table.deferrals[0]
-            current_cell_new = current_cell.replace(
-                self._dpad, self._close + self._hline
-            )
-
-            closed_cell = _put(current_cell_new, lane, self._ldown, self._hline).replace(self._open, self._close)
-            final_cell = list(closed_cell)
-            for ln in range(lane):
-                if final_cell[ln] == self._vline:
-                    final_cell[ln] = self._cross
-            raw_table.deferrals[0] = "".join(final_cell)
-
-            if previous_msg_idx is not None:
-                # we clean up the previous line:
-                # there could be a vline because of the tail present back then,
-                # we need to replace it with cross.
-                # reopen previous reemittal if it's closed
-                previous_reemittal_cell = raw_table.deferrals[previous_msg_idx]
-                for idx in range(2, lane):
-                    previous_reemittal_cell = _put(
-                        previous_reemittal_cell,
-                        idx,
-                        {
-                            self._cross: self._cross,
-                            self._vline: self._cross,
-                            None: self._hline,
-                        },
-                        self._hline,
-                    )
-
-                raw_table.deferrals[previous_msg_idx] = previous_reemittal_cell
-                rng = range(1, previous_msg_idx)
-            else:
-                # until the end of the visible table
-                rng = range(1, len(raw_table.deferrals))
-
-            for ln in rng:
-                raw_table.deferrals[ln] = _put(
-                    raw_table.deferrals[ln],
-                    lane,
-                    {
-                        None: self._vline,
-                        self._hline: self._cross,
-                        self._ldown: self._lupdown,
-                    },
-                    self._nothing_to_report,
-                )
+            raw_table.deferrals[0] = 'reemitted'  # this event!
 
         else:
-            if self._has_just_emitted:
-                # we just emitted twice, without deferring or reemitting anything in between,
-                # that means we can do some cleanup.
-                while raw_table.currently_deferred:
-                    dfrd = raw_table.currently_deferred.pop()
-                    logger.debug(
-                        f"removed spurious deferred event {dfrd.event}({dfrd.n})"
-                    )
-
-            else:
-                tail = raw_table.deferrals[0]
-                for cdef in raw_table.currently_deferred:
-                    lane = self._get_lane(cdef.n)
-                    tail = _put(tail, lane, self._vline, self._nothing_to_report)
-                    tail = self._dpad + tail[2:]
-                raw_table.deferrals[0] = tail
-
-            self._has_just_emitted = True
             return
-
-        self._has_just_emitted = False
-
-    def _get_lane(self, n: str):
-        # todo: check that N is unique across units, else this will get messy
-        return self._lanes.get(n)
-
-    def _cache_lane(self, n: str, lane: int):
-        self._lanes[n] = lane
 
     def _crop(self):
         # crop all:
@@ -1150,4 +928,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=300, replay=True, show_defer=True, show_ns=True)
+    _tail_events(length=30, replay=True, show_defer=True, show_ns=True)
