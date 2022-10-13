@@ -104,20 +104,19 @@ def test_relation_data():
 
     rel = charm.model.relations["ingress-per-unit"][0]
 
-    # fixme: we need to access the data in the same ORDER in which we did before.
-    #  for relation-get, it should be safe to ignore the memo ordering,
-    #  since the data is frozen for the hook duration.
-    #  actually it should be fine for most hook tools, except leader and status.
-    #  pebble is a different story.
+    for _ in range(2):
+        # the order in which we call the hook tools should not matter because
+        # relation-get is cached in 'loose' mode! yay!
+        _ = rel.data[charm.app]
 
-    remote_unit_data = rel.data[list(rel.units)[0]]
-    assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
-    assert remote_unit_data["port"] == "9090"
-    assert remote_unit_data["model"] == "foo"
-    assert remote_unit_data["name"] == "prom/1"
+        remote_unit_data = rel.data[list(rel.units)[0]]
+        assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
+        assert remote_unit_data["port"] == "9090"
+        assert remote_unit_data["model"] == "foo"
+        assert remote_unit_data["name"] == "prom/1"
 
-    local_app_data = rel.data[charm.app]
-    assert local_app_data == {}
+        local_app_data = rel.data[charm.app]
+        assert local_app_data == {}
 
 
 def test_local_run_loose():
