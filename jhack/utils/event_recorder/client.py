@@ -9,7 +9,7 @@ from dateutil.utils import today
 
 from jhack.helpers import modify_remote_file
 from jhack.logger import logger
-from jhack.utils.event_recorder.memo_tools import inject_memoizer
+from jhack.utils.event_recorder.memo_tools import inject_memoizer, DECORATE_MODEL, DECORATE_PEBBLE
 from jhack.utils.event_recorder.recorder import DEFAULT_DB_NAME, event_db
 from jhack.utils.simulate_event import _simulate_event
 
@@ -185,16 +185,27 @@ def _copy_recorder_script(unit: str):
 
 def _inject_memoizer(unit: str):
     unit_sanitized = unit.replace("/", "-")
+
     ops_model_path = (
         f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/venv/ops/model.py"
     )
-    with modify_remote_file(unit, ops_model_path) as f:
-        inject_memoizer(Path(f))
+    with modify_remote_file(unit, ops_model_path) as model_source:
+        inject_memoizer(model_source, decorate=DECORATE_MODEL)
+
+    ops_pebble_path = (
+        f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/venv/ops/pebble.py"
+    )
+    with modify_remote_file(unit, ops_pebble_path) as pebble_source:
+        inject_memoizer(pebble_source, decorate=DECORATE_PEBBLE)
 
 
 def inject_record_current_event_call(file):
     charm_path = Path(file)
     charm_py_lines = charm_path.read_text().split("\n")
+    if charm_py_lines[1] == "import recorder":
+        logger.info('recorder already installed, *I think*. Nothing to do...')
+        return
+
     mainline = None
     for idx, line in enumerate(reversed(charm_py_lines)):
         if "__main__" in line:

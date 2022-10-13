@@ -51,7 +51,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -185,9 +185,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -202,9 +202,9 @@
               ]
             ],
             "cursor": 1,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -217,9 +217,9 @@
               ]
             ],
             "cursor": 1,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_remote_app_name": {
+          "_ModelBackend.relation_remote_app_name": {
             "calls": [
               [
                 [
@@ -232,9 +232,9 @@
               ]
             ],
             "cursor": 1,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -248,9 +248,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -296,9 +296,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -326,9 +326,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_get": {
+          "_ModelBackend.status_get": {
             "calls": [
               [
                 [
@@ -345,7 +345,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -400,7 +400,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -474,9 +474,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -490,10 +490,10 @@
                 ]
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -505,10 +505,10 @@
                 []
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.relation_remote_app_name": {
+          "_ModelBackend.relation_remote_app_name": {
             "calls": [
               [
                 [
@@ -520,10 +520,10 @@
                 "prom"
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -548,9 +548,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -566,7 +566,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -621,7 +621,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -695,9 +695,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -711,10 +711,10 @@
                 ]
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -726,10 +726,10 @@
                 []
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.relation_remote_app_name": {
+          "_ModelBackend.relation_remote_app_name": {
             "calls": [
               [
                 [
@@ -741,10 +741,10 @@
                 "prom"
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -769,9 +769,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -787,7 +787,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -842,7 +842,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -916,9 +916,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -932,10 +932,10 @@
                 ]
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -949,10 +949,10 @@
                 ]
               ]
             ],
-            "cursor": 1,
-            "mode": "strict"
+            "cursor": 0,
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -967,7 +967,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -987,9 +987,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -1003,9 +1003,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -1033,9 +1033,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -1081,9 +1081,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -1111,7 +1111,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -1166,7 +1166,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -1240,9 +1240,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -1257,9 +1257,9 @@
               ]
             ],
             "cursor": 1,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -1274,9 +1274,9 @@
               ]
             ],
             "cursor": 1,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -1291,7 +1291,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -1310,10 +1310,10 @@
                 {}
               ]
             ],
-            "cursor": 0,
-            "mode": "strict"
+            "cursor": 2,
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -1327,9 +1327,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -1357,9 +1357,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -1405,9 +1405,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -1435,7 +1435,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -1486,7 +1486,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -1560,9 +1560,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -1576,9 +1576,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -1618,9 +1618,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -1644,9 +1644,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -1661,9 +1661,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -1678,7 +1678,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -1698,9 +1698,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -1746,9 +1746,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -1776,7 +1776,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -1827,7 +1827,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -1901,9 +1901,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -1917,9 +1917,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -1959,9 +1959,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -1985,9 +1985,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -2002,9 +2002,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -2019,7 +2019,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -2039,9 +2039,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -2087,9 +2087,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -2117,7 +2117,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -2168,7 +2168,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -2242,9 +2242,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -2258,9 +2258,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -2300,9 +2300,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -2326,9 +2326,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -2343,9 +2343,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -2360,7 +2360,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -2380,9 +2380,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -2428,9 +2428,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -2458,7 +2458,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -2509,7 +2509,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -2583,9 +2583,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -2599,9 +2599,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -2641,9 +2641,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -2667,9 +2667,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -2684,9 +2684,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -2701,7 +2701,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -2721,9 +2721,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -2769,9 +2769,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -2799,7 +2799,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -2850,7 +2850,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -2924,9 +2924,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -2940,9 +2940,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -2982,9 +2982,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -3008,9 +3008,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -3025,9 +3025,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -3042,7 +3042,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -3062,9 +3062,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -3110,9 +3110,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -3140,7 +3140,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -3191,7 +3191,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -3265,9 +3265,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -3281,9 +3281,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -3323,9 +3323,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -3349,9 +3349,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -3366,9 +3366,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -3383,7 +3383,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -3403,9 +3403,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -3451,9 +3451,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -3481,7 +3481,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }
@@ -3532,7 +3532,7 @@
       },
       "context": {
         "memos": {
-          "default.juju_log": {
+          "_ModelBackend.juju_log": {
             "calls": [
               [
                 [
@@ -3606,9 +3606,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.config_get": {
+          "_ModelBackend.config_get": {
             "calls": [
               [
                 [
@@ -3622,9 +3622,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.status_set": {
+          "_ModelBackend.status_set": {
             "calls": [
               [
                 [
@@ -3664,9 +3664,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_ids": {
+          "_ModelBackend.relation_ids": {
             "calls": [
               [
                 [
@@ -3690,9 +3690,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_list": {
+          "_ModelBackend.relation_list": {
             "calls": [
               [
                 [
@@ -3707,9 +3707,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_get": {
+          "_ModelBackend.relation_get": {
             "calls": [
               [
                 [
@@ -3724,7 +3724,7 @@
                   "egress-subnets": "10.152.183.132/32",
                   "host": "prom-0.prom-endpoints.foo.svc.cluster.local",
                   "ingress-address": "10.152.183.132",
-                  "mode": "http",
+                  "caching_policy": "http",
                   "model": "foo",
                   "name": "prom/0",
                   "port": "9090",
@@ -3744,9 +3744,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.is_leader": {
+          "_ModelBackend.is_leader": {
             "calls": [
               [
                 [
@@ -3792,9 +3792,9 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           },
-          "default.relation_set": {
+          "_ModelBackend.relation_set": {
             "calls": [
               [
                 [
@@ -3822,7 +3822,7 @@
               ]
             ],
             "cursor": 0,
-            "mode": "strict"
+            "caching_policy": "strict"
           }
         }
       }

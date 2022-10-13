@@ -10,7 +10,7 @@ import yaml
 from jhack.helpers import JPopen
 from jhack.logger import logger
 from jhack.utils.event_recorder.client import _fetch_file
-from jhack.utils.event_recorder.memo_tools import inject_memoizer
+from jhack.utils.event_recorder.memo_tools import inject_memoizer, DECORATE_PEBBLE, DECORATE_MODEL
 from jhack.utils.event_recorder.recorder import (
     DEFAULT_DB_NAME,
     MEMO_DATABASE_NAME_KEY,
@@ -33,43 +33,6 @@ class Runtime:
 
     This object bridges a live charm unit and a local environment.
     """
-
-    DECORATE_MODEL = {
-        '_ModelBackend': frozenset({
-            "relation_ids",
-            "relation_list",
-            "relation_remote_app_name",
-            "relation_get",
-            "update_relation_data",
-            "relation_set",
-            "config_get",
-            "is_leader",
-            "application_version_set",
-            "resource_get",
-            "status_get",
-            "status_set",
-            "storage_list",
-            "storage_get",
-            "storage_add",
-            "action_get",
-            "action_set",
-            "action_log",
-            "action_fail",
-            "network_get",
-            "add_metrics",
-            "juju_log",
-            "planned_units",
-            # 'secret_get',
-            # 'secret_set',
-            # 'secret_grant',
-            # 'secret_remove',
-        })
-    }
-    DECORATE_PEBBLE = {
-        'Client': frozenset({
-            "_request",
-        })
-    }
 
     def __init__(
             self,
@@ -111,7 +74,8 @@ class Runtime:
             logger.info(f"Fetching actions metadata from {unit}.")
             self._actions = _fetch_file(unit, 'actions.yaml')
 
-    def install(self):
+    @staticmethod
+    def install():
         """Install the runtime.
 
         Fine prints:
@@ -132,12 +96,12 @@ class Runtime:
         logger.info('rewriting ops.pebble')
         from ops import pebble
         ops_pebble_module = Path(pebble.__file__)
-        inject_memoizer(ops_pebble_module, decorate=self.DECORATE_PEBBLE)
+        inject_memoizer(ops_pebble_module, decorate=DECORATE_PEBBLE)
 
         logger.info('rewriting ops.model')
         from ops import model
         ops_model_module = Path(model.__file__)
-        inject_memoizer(ops_model_module, decorate=self.DECORATE_MODEL)
+        inject_memoizer(ops_model_module, decorate=DECORATE_MODEL)
 
         logger.info('rewriting ops.main')
         from ops import main
