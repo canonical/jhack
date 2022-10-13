@@ -40,13 +40,19 @@ def _check_caching_policy(policy: _CachingPolicy) -> _CachingPolicy:
     return 'strict'
 
 
+# notify just once of what mode we're running in
+_PRINTED_MODE = False
+
+
 def _load_memo_mode() -> MemoModes:
     val = os.getenv(MEMO_MODE_KEY, "record")
     if val == "record":
         # don't use logger, but print, to avoid recursion issues with juju-log.
-        print("MEMO: recording")
+        if not _PRINTED_MODE:
+            print("MEMO: recording")
     elif val == "replay":
-        print("MEMO: replaying")
+        if not _PRINTED_MODE:
+            print("MEMO: replaying")
     else:
         print(f"[ERROR]: MEMO: invalid value ({val!r}). Defaulting to `record`.")
         return "record"
@@ -59,6 +65,10 @@ def _is_json_serializable(obj: Any):
         return True
     except TypeError:
         return False
+
+
+# flag to mark when a memo cache's return value is not found as opposed to being None
+_NotFound = object()
 
 
 def memo(namespace: str = 'default', caching_policy: _CachingPolicy = 'strict'):
@@ -181,8 +191,8 @@ def memo(namespace: str = 'default', caching_policy: _CachingPolicy = 'strict'):
                         # so all we have to check is whether the arguments are known.
                         #  in non-strict mode, memo.calls is an inputs/output dict.
                         serial_fn_args_kwargs = json.dumps(fn_args_kwargs)
-                        recorded_output = memo.calls.get(serial_fn_args_kwargs)
-                        if recorded_output:
+                        recorded_output = memo.calls.get(serial_fn_args_kwargs, _NotFound)
+                        if recorded_output is not _NotFound:
                             return recorded_output  # happy path! good for you, path.
 
                         warnings.warn(

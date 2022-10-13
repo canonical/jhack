@@ -115,7 +115,7 @@ def emit(
     _emit(unit, idx, db_path, dry_run=dry_run)
 
 
-def _dump_db(unit: str, idx: int = -1, db_path=DEFAULT_DB_NAME):
+def _dump_db(unit: str, idx: Optional[int] = None, db_path=DEFAULT_DB_NAME):
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
         _fetch_file(unit, db_path, temp_db)
@@ -131,16 +131,13 @@ def _dump_db(unit: str, idx: int = -1, db_path=DEFAULT_DB_NAME):
 def dump_db(
     unit: str = typer.Argument(..., help="Target unit."),
     idx: Optional[int] = typer.Argument(
-        -1,
+        None,
         help="Index of the event to dump (as per `list`), or '' if you want "
         "to dump the full db.",
     ),
     db_path=DEFAULT_DB_NAME,
 ):
-    """Dump a single event (by default, the last one).
-
-    Or the whole the db as json (if idx is 'db').
-    """
+    """Dump the whole database or a specific scene as json."""
     return _dump_db(unit, idx, db_path)
 
 
