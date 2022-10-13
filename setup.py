@@ -12,7 +12,7 @@ setup(
     version="0.5.3.3.42.345",
     author="Pietro Pasotti",
     author_email="pietro.pasotti@canonical.com",
-    description=("Cli tool with juju hacks."),
+    description="Chock-full of Juju hackery.",
     license="Apache 2.0",
     keywords="juju hacks cli charm charming",
     url="https://github.com/PietroPasotti/jhack",

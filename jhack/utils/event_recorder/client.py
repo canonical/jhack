@@ -9,7 +9,11 @@ from dateutil.utils import today
 
 from jhack.helpers import modify_remote_file
 from jhack.logger import logger
-from jhack.utils.event_recorder.memo_tools import inject_memoizer, DECORATE_MODEL, DECORATE_PEBBLE
+from jhack.utils.event_recorder.memo_tools import (
+    DECORATE_MODEL,
+    DECORATE_PEBBLE,
+    inject_memoizer,
+)
 from jhack.utils.event_recorder.recorder import DEFAULT_DB_NAME, event_db
 from jhack.utils.simulate_event import _simulate_event
 
@@ -200,7 +204,7 @@ def inject_record_current_event_call(file):
     charm_path = Path(file)
     charm_py_lines = charm_path.read_text().split("\n")
     if charm_py_lines[1] == "import recorder":
-        logger.info('recorder already installed, *I think*. Nothing to do...')
+        logger.info("recorder already installed, *I think*. Nothing to do...")
         return
 
     mainline = None

@@ -8,13 +8,15 @@ import pytest
 from jhack.utils.event_recorder import recorder
 from jhack.utils.event_recorder.memo_tools import inject_memoizer, memo_import_block
 from jhack.utils.event_recorder.recorder import (
+    MEMO_DATABASE_NAME_KEY,
+    MEMO_MODE_KEY,
     Context,
     Event,
     Memo,
     Scene,
     _reset_replay_cursors,
     event_db,
-    memo, MEMO_DATABASE_NAME_KEY, MEMO_MODE_KEY,
+    memo,
 )
 
 # we always replay the last event in the default test env.
@@ -76,11 +78,10 @@ def test_memoizer_injection():
         target_file = Path(file.name)
         target_file.write_text(mock_ops_source)
 
-        inject_memoizer(target_file,
-                        decorate={
-                            '_ModelBackend': {'action_set', 'action_get'},
-                            'Foo': {'bar'}}
-                        )
+        inject_memoizer(
+            target_file,
+            decorate={"_ModelBackend": {"action_set", "action_get"}, "Foo": {"bar"}},
+        )
 
         assert target_file.read_text() == expected_decorated_source
 
@@ -112,6 +113,7 @@ def test_memoizer_replay():
 
     with tempfile.NamedTemporaryFile() as temp_db_file:
         os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+
         @memo()
         def my_fn(*args, retval=None, **kwargs):
             return retval
@@ -155,7 +157,7 @@ def test_memoizer_nonstrict_mode():
 
         os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
 
-        _backing = {x: x+1 for x in range(50)}
+        _backing = {x: x + 1 for x in range(50)}
 
         @memo(strict=False)
         def my_fn(m):
@@ -184,7 +186,7 @@ def test_memoizer_classmethod_recording():
         os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
 
         class Foo:
-            @memo('foo')
+            @memo("foo")
             def my_fn(*args, retval=None, **kwargs):
                 return retval
 
@@ -196,7 +198,9 @@ def test_memoizer_classmethod_recording():
 
         with event_db(temp_db_file.name) as data:
             memos = data.scenes[0].context.memos
-            assert memos["foo.my_fn"].calls == [[[[10], {"retval": 10, "foo": "bar"}], 10]]
+            assert memos["foo.my_fn"].calls == [
+                [[[10], {"retval": 10, "foo": "bar"}], 10]
+            ]
 
             # replace return_value for replay test
             memos["foo.my_fn"].calls = [[[[10], {"retval": 10, "foo": "bar"}], 20]]
@@ -215,6 +219,7 @@ def test_reset_replay_cursor():
     with tempfile.NamedTemporaryFile() as temp_db_file:
         Path(temp_db_file.name).write_text("{}")
         os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+
         @memo()
         def my_fn(*args, retval=None, **kwargs):
             return retval

@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Sequence, Set, Dict, Union, FrozenSet, Literal, Iterable
+from typing import Dict, FrozenSet, Iterable, Literal, Sequence, Set, Union
 
 import asttokens
 from astunparse import unparse
+
 
 @dataclass
 class DecorateSpec:
@@ -16,11 +17,11 @@ class DecorateSpec:
     # different values.
     # Use loose caching mode when the method is guaranteed to return consistent results throughout
     # a single charm execution.
-    caching_policy: Literal['strict', 'loose'] = 'strict'
+    caching_policy: Literal["strict", "loose"] = "strict"
 
 
 DECORATE_MODEL = {
-    '_ModelBackend': {
+    "_ModelBackend": {
         "relation_get": DecorateSpec(),
         "relation_set": DecorateSpec(),
         "is_leader": DecorateSpec(),  # technically could be loose
@@ -28,25 +29,22 @@ DECORATE_MODEL = {
         "status_get": DecorateSpec(),
         "action_get": DecorateSpec(),
         "add_metrics": DecorateSpec(),  # deprecated, I guess
-
-        "action_set": DecorateSpec(caching_policy='loose'),
-        "action_fail": DecorateSpec(caching_policy='loose'),
-        "action_log": DecorateSpec(caching_policy='loose'),
-        "relation_ids": DecorateSpec(caching_policy='loose'),
-        "relation_list": DecorateSpec(caching_policy='loose'),
-        "relation_remote_app_name": DecorateSpec(caching_policy='loose'),
-        "config_get": DecorateSpec(caching_policy='loose'),
-        "resource_get": DecorateSpec(caching_policy='loose'),
-        "storage_list": DecorateSpec(caching_policy='loose'),
-        "storage_get": DecorateSpec(caching_policy='loose'),
-        "network_get": DecorateSpec(caching_policy='loose'),
-
+        "action_set": DecorateSpec(caching_policy="loose"),
+        "action_fail": DecorateSpec(caching_policy="loose"),
+        "action_log": DecorateSpec(caching_policy="loose"),
+        "relation_ids": DecorateSpec(caching_policy="loose"),
+        "relation_list": DecorateSpec(caching_policy="loose"),
+        "relation_remote_app_name": DecorateSpec(caching_policy="loose"),
+        "config_get": DecorateSpec(caching_policy="loose"),
+        "resource_get": DecorateSpec(caching_policy="loose"),
+        "storage_list": DecorateSpec(caching_policy="loose"),
+        "storage_get": DecorateSpec(caching_policy="loose"),
+        "network_get": DecorateSpec(caching_policy="loose"),
         # methods that return None can all be loosely cached
-        "status_set": DecorateSpec(caching_policy='loose'),
-        "storage_add": DecorateSpec(caching_policy='loose'),
-        "juju_log": DecorateSpec(caching_policy='loose'),
-        "planned_units": DecorateSpec(caching_policy='loose'),
-
+        "status_set": DecorateSpec(caching_policy="loose"),
+        "storage_add": DecorateSpec(caching_policy="loose"),
+        "juju_log": DecorateSpec(caching_policy="loose"),
+        "planned_units": DecorateSpec(caching_policy="loose"),
         # 'secret_get',
         # 'secret_set',
         # 'secret_grant',
@@ -54,7 +52,7 @@ DECORATE_MODEL = {
     }
 }
 DECORATE_PEBBLE = {
-    'Client': {
+    "Client": {
         # todo: we could be more fine-grained and decorate individual Container methods,
         #  e.g. can_connect, ... just like in _ModelBackend we don't just memo `_run`.
         "_request": DecorateSpec()
@@ -62,7 +60,7 @@ DECORATE_PEBBLE = {
 }
 
 memo_import_block = dedent(
-"""# ==== block added by jhack.replay -- memotools ===
+    """# ==== block added by jhack.replay -- memotools ===
 try:
     from recorder import memo
 except ModuleNotFoundError as e:
@@ -73,7 +71,8 @@ except ModuleNotFoundError as e:
           "Tread carefully."
     raise RuntimeError(msg) from e
 # ==== end block ===
-""")
+"""
+)
 
 
 def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpec]]):
@@ -98,18 +97,23 @@ def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpe
         return asttokens.ASTTokens(raw, parse=True).tree.body[0].decorator_list[0]
 
     for cls in filter(_should_decorate_class, atok.body):
+
         def _should_decorate_method(token: ast.AST):
-            return isinstance(token, ast.FunctionDef) and token.name in decorate[cls.name]
+            return (
+                isinstance(token, ast.FunctionDef) and token.name in decorate[cls.name]
+            )
 
         for method in filter(_should_decorate_method, cls.body):
             existing_decorators = {
                 token.first_token.string for token in method.decorator_list
             }
             # only add the decorator if the function is not already decorated:
-            if 'memo' not in existing_decorators:
+            if "memo" not in existing_decorators:
                 spec: DecorateSpec = decorate[cls.name][method.name]
-                memo_token = gettoken(f"@memo(namespace='{cls.name}', "
-                                      f"caching_policy='{spec.caching_policy}')\ndef foo():...")
+                memo_token = gettoken(
+                    f"@memo(namespace='{cls.name}', "
+                    f"caching_policy='{spec.caching_policy}')\ndef foo():..."
+                )
 
                 method.decorator_list.append(memo_token)
 

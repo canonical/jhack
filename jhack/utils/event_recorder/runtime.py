@@ -3,22 +3,27 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Tuple, FrozenSet
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Optional, Tuple, Type
 
 import yaml
 
 from jhack.helpers import JPopen
 from jhack.logger import logger
 from jhack.utils.event_recorder.client import _fetch_file
-from jhack.utils.event_recorder.memo_tools import inject_memoizer, DECORATE_PEBBLE, DECORATE_MODEL
+from jhack.utils.event_recorder.memo_tools import (
+    DECORATE_MODEL,
+    DECORATE_PEBBLE,
+    inject_memoizer,
+)
 from jhack.utils.event_recorder.recorder import (
     DEFAULT_DB_NAME,
     MEMO_DATABASE_NAME_KEY,
     MEMO_MODE_KEY,
     MEMO_REPLAY_INDEX_KEY,
     Event,
+    Scene,
     _reset_replay_cursors,
-    event_db, Scene,
+    event_db,
 )
 
 if TYPE_CHECKING:
@@ -35,14 +40,14 @@ class Runtime:
     """
 
     def __init__(
-            self,
-            charm_type: Type["CharmType"],
-            local_db_path: Path = None,
-            unit: str = None,
-            remote_db_path: str = DEFAULT_DB_NAME,
-            meta: Optional[Dict[str, Any]] = None,
-            actions: Optional[Dict[str, Any]] = None,
-            install: bool = False,
+        self,
+        charm_type: Type["CharmType"],
+        local_db_path: Path = None,
+        unit: str = None,
+        remote_db_path: str = DEFAULT_DB_NAME,
+        meta: Optional[Dict[str, Any]] = None,
+        actions: Optional[Dict[str, Any]] = None,
+        install: bool = False,
     ):
 
         self._charm_type = charm_type
@@ -65,14 +70,16 @@ class Runtime:
     def load(self, unit: str, remote_db_path=None):
         """Fetch event db and charm metadata from the live unit."""
         logger.info(f"Fetching db from {unit}@~/{remote_db_path}.")
-        _fetch_file(unit, remote_db_path or self._remote_db_path, local_path=self._local_db_path)
+        _fetch_file(
+            unit, remote_db_path or self._remote_db_path, local_path=self._local_db_path
+        )
 
         if not self._meta:
             logger.info(f"Fetching metadata from {unit}.")
-            self._meta = _fetch_file(unit, 'metadata.yaml')
+            self._meta = _fetch_file(unit, "metadata.yaml")
         if not self._actions:
             logger.info(f"Fetching actions metadata from {unit}.")
-            self._actions = _fetch_file(unit, 'actions.yaml')
+            self._actions = _fetch_file(unit, "actions.yaml")
 
     @staticmethod
     def install():
@@ -93,18 +100,21 @@ class Runtime:
             "DISCLAIMER: this **might** (most definitely will) corrupt your venv."
         )
 
-        logger.info('rewriting ops.pebble')
+        logger.info("rewriting ops.pebble")
         from ops import pebble
+
         ops_pebble_module = Path(pebble.__file__)
         inject_memoizer(ops_pebble_module, decorate=DECORATE_PEBBLE)
 
-        logger.info('rewriting ops.model')
+        logger.info("rewriting ops.model")
         from ops import model
+
         ops_model_module = Path(model.__file__)
         inject_memoizer(ops_model_module, decorate=DECORATE_MODEL)
 
-        logger.info('rewriting ops.main')
+        logger.info("rewriting ops.main")
         from ops import main
+
         # make main return the charm instance, for testing
         ops_main_module = Path(main.__file__)
         retcharm = "return charm  # added by jhack.replay.Runtime"
@@ -144,6 +154,7 @@ class Runtime:
             pass
 
         import ops.main
+
         ops.main.setup_root_logging = _patch_logger
 
     @staticmethod
@@ -171,10 +182,9 @@ class Runtime:
 
         os.environ["JUJU_CHARM_DIR"] = str(charm_root.absolute())
 
-    def run(self,
-            scene_idx: int,
-            fetch_from_unit: Optional[str] = None
-            ) -> Tuple["CharmType", Scene]:
+    def run(
+        self, scene_idx: int, fetch_from_unit: Optional[str] = None
+    ) -> Tuple["CharmType", Scene]:
         """Executes a scene on the charm.
 
         This will set the environment up and call ops.main.main().
@@ -226,7 +236,6 @@ class Runtime:
 if __name__ == "__main__":
     from ops.charm import CharmBase
 
-
     class MyCharm(CharmBase):
         def __init__(self, framework, key: Optional[str] = None):
             super().__init__(framework, key)
@@ -235,7 +244,6 @@ if __name__ == "__main__":
 
         def _catchall(self, e):
             print(e)
-
 
     runtime = Runtime(
         MyCharm,

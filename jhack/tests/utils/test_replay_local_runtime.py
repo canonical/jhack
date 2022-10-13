@@ -24,20 +24,21 @@ from runtime import Runtime
 MEMO_TOOLS_RESOURCES_FOLDER = Path(__file__).parent / "memo_tools_test_files"
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def runtime_ctx():
     # helper to install the runtime and try and
     #    prevent ops from being destroyed every time
     import ops
+
     ops_dir = Path(ops.__file__).parent
     with tempfile.TemporaryDirectory() as td:
         # stash away the ops source
-        Popen(f'cp -r {ops_dir} {td}'.split())
+        Popen(f"cp -r {ops_dir} {td}".split())
 
         Runtime.install()
         yield
 
-        Popen(f'cp -r {td} {ops_dir}'.split())
+        Popen(f"cp -r {td} {ops_dir}".split())
 
 
 def charm_type():
@@ -55,7 +56,6 @@ def charm_type():
 
         def _catchall(self, e):
             self._event = e
-
 
     return MyCharm
 
@@ -81,9 +81,11 @@ def test_run(evt_idx, expected_name):
         local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / "trfk-re-relate.json",
     )
     charm, scene = runtime.run(evt_idx)
-    assert charm.unit.name == 'trfk/0'
-    assert charm.model.name == 'foo'
-    assert charm._event.handle.kind == scene.event.name.replace('-', '_') == expected_name
+    assert charm.unit.name == "trfk/0"
+    assert charm.model.name == "foo"
+    assert (
+        charm._event.handle.kind == scene.event.name.replace("-", "_") == expected_name
+    )
 
 
 def test_relation_data():
@@ -98,9 +100,9 @@ def test_relation_data():
     )
     charm, scene = runtime.run(4)  # ipu-relation-changed
 
-    assert scene.event.name == 'ingress-per-unit-relation-changed'
+    assert scene.event.name == "ingress-per-unit-relation-changed"
 
-    rel = charm.model.relations['ingress-per-unit'][0]
+    rel = charm.model.relations["ingress-per-unit"][0]
 
     # fixme: we need to access the data in the same ORDER in which we did before.
     #  for relation-get, it should be safe to ignore the memo ordering,
@@ -109,10 +111,10 @@ def test_relation_data():
     #  pebble is a different story.
 
     remote_unit_data = rel.data[list(rel.units)[0]]
-    assert remote_unit_data['host'] == 'prom-1.prom-endpoints.foo.svc.cluster.local'
-    assert remote_unit_data['port'] == '9090'
-    assert remote_unit_data['model'] == 'foo'
-    assert remote_unit_data['name'] == 'prom/1'
+    assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
+    assert remote_unit_data["port"] == "9090"
+    assert remote_unit_data["model"] == "foo"
+    assert remote_unit_data["name"] == "prom/1"
 
     local_app_data = rel.data[charm.app]
     assert local_app_data == {}
@@ -130,9 +132,9 @@ def test_local_run_loose():
     )
     charm, scene = runtime.run(4)  # ipu-relation-changed
 
-    assert scene.event.name == 'ingress-per-unit-relation-changed'
+    assert scene.event.name == "ingress-per-unit-relation-changed"
 
-    rel = charm.model.relations['ingress-per-unit'][0]
+    rel = charm.model.relations["ingress-per-unit"][0]
 
     # fixme: we need to access the data in the same ORDER in which we did before.
     #  for relation-get, it should be safe to ignore the memo ordering,
@@ -141,10 +143,10 @@ def test_local_run_loose():
     #  pebble is a different story.
 
     remote_unit_data = rel.data[list(rel.units)[0]]
-    assert remote_unit_data['host'] == 'prom-1.prom-endpoints.foo.svc.cluster.local'
-    assert remote_unit_data['port'] == '9090'
-    assert remote_unit_data['model'] == 'foo'
-    assert remote_unit_data['name'] == 'prom/1'
+    assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
+    assert remote_unit_data["port"] == "9090"
+    assert remote_unit_data["model"] == "foo"
+    assert remote_unit_data["name"] == "prom/1"
 
     local_app_data = rel.data[charm.app]
     assert local_app_data == {}

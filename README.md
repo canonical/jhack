@@ -396,7 +396,8 @@ By using this tool you acknowledge the possibility of it bricking your model or 
 This command offers facilities to capture runtime event contexts and use them to 're-fire' "the same event" later on.
 The flow consists of two main steps:
 - inject code that captures any event, serializes it and dumps it to a db on the unit.
-- whenever you like trigger a charm execution reusing a recorded context.
+- whenever you like, trigger a charm execution reusing a recorded context.
+
 
 ## install
 
@@ -434,11 +435,11 @@ or if no events have been fired yet:
 
 Tip: to quickly get some events in, you could `jhack fire trfr/0 update-status`.
 
-## refire
+## emit
 
 This command is used to re-fire a recorded event onto the same unit.
 
-    jhack replay refire trfk/0 2
+    jhack replay emit trfk/0 2
 
 Note that the index needs to match that of some recorded event (you can inspect those with `jhack replay list`).
 
@@ -451,13 +452,20 @@ Example run:
         (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created 
         (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined  
         (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed 
-    $ jhack replay refire trfk/0 2
+    $ jhack replay emit trfk/0 2
     Replaying event (3): ingress-per-unit-relation-joined as originally emitted at 2022-09-12 11:54:03.293178.
 
 ## dump
 
 Dump a recorded event (raw json).
 Interesting if you want to inspect the event context, or if you want to re-use it in other scripts (e.g. with `jhack utils fire`).
+
+
+## Runtime
+
+In `jhack.utils.event_recorder.runtime` you can find a Runtime class. That object can be used, in combination with the json database you obtained via `replay dump`, to locally execute a charm by simulating the context "exactly" as it occurred during the recorded execution.
+
+At some point it will be moved to a charm lib.
 
 
 # model
