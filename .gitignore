@@ -8,3 +8,4 @@ dist
 *.snap
 local_snap_install
 *.dbdump
+.coverage

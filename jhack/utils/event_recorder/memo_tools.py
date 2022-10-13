@@ -3,40 +3,11 @@ import ast
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Sequence, Set, Dict
+from typing import Sequence, Set, Dict, Union, FrozenSet
 
 import asttokens
 from astunparse import unparse
 
-BACKEND_CALLS_TO_MEMOIZE = {
-    "relation_ids",
-    "relation_list",
-    "relation_remote_app_name",
-    "relation_get",
-    "update_relation_data",
-    "relation_set",
-    "config_get",
-    "is_leader",
-    "application_version_set",
-    "resource_get",
-    "status_get",
-    "status_set",
-    "storage_list",
-    "storage_get",
-    "storage_add",
-    "action_get",
-    "action_set",
-    "action_log",
-    "action_fail",
-    "network_get",
-    "add_metrics",
-    "juju_log",
-    "planned_units",
-    # 'secret_get',
-    # 'secret_set',
-    # 'secret_grant',
-    # 'secret_remove',
-}
 storage = {}
 
 memo_import_block = dedent(
@@ -54,7 +25,13 @@ except ModuleNotFoundError as e:
 """)
 
 
-def inject_memoizer(source_file: Path, decorate: Dict[str, Set[str]]):
+def inject_memoizer(source_file: Path, decorate: Dict[str, Union[FrozenSet[str], Set[str], Sequence[str]]]):
+    """Rewrite source_file by decorating methods in a number of classes.
+
+    Decorate: a dict mapping class names to methods of that class that should be decorated.
+    Example::
+        >>> inject_memoizer(Path('foo.py'), {'MyClass': ['do_x', 'is_ready', 'refresh', 'bar']})
+    """
     memo_token = (
         asttokens.ASTTokens("@memo()\ndef foo():...", parse=True)
         .tree.body[0]

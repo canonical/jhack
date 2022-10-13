@@ -66,7 +66,7 @@ def test_run(evt_idx, expected_name):
     charm, scene = runtime.run(evt_idx)
     assert charm.unit.name == 'trfk/0'
     assert charm.model.name == 'foo'
-    assert charm._event.handle.kind == scene.event.name == expected_name
+    assert charm._event.handle.kind == scene.event.name.replace('-', '_') == expected_name
 
 
 def test_relation_data():

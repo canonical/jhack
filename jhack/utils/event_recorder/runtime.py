@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, Tuple, FrozenSet
 
 import yaml
 
@@ -34,15 +34,52 @@ class Runtime:
     This object bridges a live charm unit and a local environment.
     """
 
+    DECORATE_MODEL = {
+        '_ModelBackend': frozenset({
+            "relation_ids",
+            "relation_list",
+            "relation_remote_app_name",
+            "relation_get",
+            "update_relation_data",
+            "relation_set",
+            "config_get",
+            "is_leader",
+            "application_version_set",
+            "resource_get",
+            "status_get",
+            "status_set",
+            "storage_list",
+            "storage_get",
+            "storage_add",
+            "action_get",
+            "action_set",
+            "action_log",
+            "action_fail",
+            "network_get",
+            "add_metrics",
+            "juju_log",
+            "planned_units",
+            # 'secret_get',
+            # 'secret_set',
+            # 'secret_grant',
+            # 'secret_remove',
+        })
+    }
+    DECORATE_PEBBLE = {
+        'Client': frozenset({
+            "_request",
+        })
+    }
+
     def __init__(
-        self,
-        charm_type: Type["CharmType"],
-        local_db_path: Path = None,
-        unit: str = None,
-        remote_db_path: str = DEFAULT_DB_NAME,
-        meta: Optional[Dict[str, Any]] = None,
-        actions: Optional[Dict[str, Any]] = None,
-        install: bool = False,
+            self,
+            charm_type: Type["CharmType"],
+            local_db_path: Path = None,
+            unit: str = None,
+            remote_db_path: str = DEFAULT_DB_NAME,
+            meta: Optional[Dict[str, Any]] = None,
+            actions: Optional[Dict[str, Any]] = None,
+            install: bool = False,
     ):
 
         self._charm_type = charm_type
@@ -92,17 +129,24 @@ class Runtime:
             "DISCLAIMER: this **might** (most definitely will) corrupt your venv."
         )
 
-        from ops import main, model
+        logger.info('rewriting ops.pebble')
+        from ops import pebble
+        ops_pebble_module = Path(pebble.__file__)
+        inject_memoizer(ops_pebble_module, decorate=self.DECORATE_PEBBLE)
 
+        logger.info('rewriting ops.model')
+        from ops import model
         ops_model_module = Path(model.__file__)
-        inject_memoizer(ops_model_module)
+        inject_memoizer(ops_model_module, decorate=self.DECORATE_MODEL)
 
+        logger.info('rewriting ops.main')
+        from ops import main
         # make main return the charm instance, for testing
-        ops_model_module = Path(main.__file__)
+        ops_main_module = Path(main.__file__)
         retcharm = "return charm  # added by jhack.replay.Runtime"
-        ops_model_module_text = ops_model_module.read_text()
-        if retcharm not in ops_model_module_text:
-            ops_model_module.write_text(ops_model_module_text + f"    {retcharm}\n")
+        ops_main_module_text = ops_main_module.read_text()
+        if retcharm not in ops_main_module_text:
+            ops_main_module.write_text(ops_main_module_text + f"    {retcharm}\n")
 
     def cleanup(self):
         self._local_db_path.unlink()
@@ -218,6 +262,7 @@ class Runtime:
 if __name__ == "__main__":
     from ops.charm import CharmBase
 
+
     class MyCharm(CharmBase):
         def __init__(self, framework, key: Optional[str] = None):
             super().__init__(framework, key)
@@ -226,6 +271,7 @@ if __name__ == "__main__":
 
         def _catchall(self, e):
             print(e)
+
 
     runtime = Runtime(
         MyCharm,
