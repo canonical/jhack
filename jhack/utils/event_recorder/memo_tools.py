@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, Literal, Optional
+from typing import Dict, Literal, Optional, Tuple, Union
 
 import asttokens
 from asttokens.util import Token
@@ -30,7 +30,9 @@ class DecorateSpec:
     name: Optional[str] = None
 
     # (de) serializer for the return object of the decorated function
-    serializer: Optional["SUPPORTED_SERIALIZERS"] = "json"
+    serializer: Union[
+        "SUPPORTED_SERIALIZERS", Tuple["SUPPORTED_SERIALIZERS", "SUPPORTED_SERIALIZERS"]
+    ] = "json"
 
     def as_token(self, default_namespace: str) -> Token:
         name = f"'{self.name}'" if self.name else "None"
@@ -85,8 +87,8 @@ DECORATE_PEBBLE = {
         "_request": DecorateSpec(),
         # some methods such as pebble.pull use _request_raw directly,
         # and deal in objects that cannot be json-serialized
-        "pull": DecorateSpec(serializer="pickle"),
-        "push": DecorateSpec(serializer="pickle"),
+        "pull": DecorateSpec(serializer=("json", "io")),
+        "push": DecorateSpec(serializer=("PebblePush", "json")),
     }
 }
 

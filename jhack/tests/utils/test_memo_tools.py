@@ -2,6 +2,7 @@ import json
 import os
 import random
 import tempfile
+from io import BufferedIOBase, TextIOWrapper
 from pathlib import Path
 from unittest.mock import patch
 
@@ -89,7 +90,9 @@ def test_memoizer_injection():
             decorate={
                 "_ModelBackend": {
                     "action_set": DecorateSpec(),
-                    "action_get": DecorateSpec(caching_policy="loose", serializer='pickle'),
+                    "action_get": DecorateSpec(
+                        caching_policy="loose", serializer="pickle"
+                    ),
                 },
                 "Foo": {"bar": DecorateSpec(namespace="Bar", caching_policy="loose")},
             },
@@ -116,7 +119,7 @@ def test_memoizer_recording():
             ctx = data.scenes[0].context
             assert ctx.memos
             assert ctx.memos[f"{DEFAULT_NAMESPACE}.my_fn"].calls == [
-                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), '10']
+                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), "10"]
             ]
 
 
@@ -154,11 +157,26 @@ def test_memoizer_replay():
                         memos={
                             f"{DEFAULT_NAMESPACE}.my_fn": Memo(
                                 calls=[
-                                    [json.dumps([[10], {"retval": 10, "foo": "bar"}]), '20'],
-                                    [json.dumps([[10], {"retval": 11, "foo": "baz"}]), '21'],
                                     [
-                                        json.dumps([[11], {"retval": 10, "foo": "baq", "a": "b"}]),
-                                        '22',
+                                        json.dumps(
+                                            [[10], {"retval": 10, "foo": "bar"}]
+                                        ),
+                                        "20",
+                                    ],
+                                    [
+                                        json.dumps(
+                                            [[10], {"retval": 11, "foo": "baz"}]
+                                        ),
+                                        "21",
+                                    ],
+                                    [
+                                        json.dumps(
+                                            [
+                                                [11],
+                                                {"retval": 10, "foo": "baq", "a": "b"},
+                                            ]
+                                        ),
+                                        "22",
                                     ],
                                 ]
                             )
@@ -173,7 +191,7 @@ def test_memoizer_replay():
             caught_calls.append((args, kwargs))
 
         with patch(
-                "jhack.utils.event_recorder.recorder._log_memo", new=_catch_log_call
+            "jhack.utils.event_recorder.recorder._log_memo", new=_catch_log_call
         ):
             assert my_fn(10, retval=10, foo="bar") == 20
             assert my_fn(10, retval=11, foo="baz") == 21
@@ -182,11 +200,14 @@ def test_memoizer_replay():
             assert my_fn(11, retval=10, foo="baq", a="b") == 10
 
         assert caught_calls == [
-            (((10,), {"foo": "bar", "retval": 10}, '20'), {"cache_hit": True}),
-            (((10,), {"foo": "baz", "retval": 11}, '21'), {"cache_hit": True}),
-            (((11,), {"a": "b", "foo": "baq", "retval": 10}, '22'), {"cache_hit": True}),
+            (((10,), {"foo": "bar", "retval": 10}, "20"), {"cache_hit": True}),
+            (((10,), {"foo": "baz", "retval": 11}, "21"), {"cache_hit": True}),
             (
-                ((11,), {"a": "b", "foo": "baq", "retval": 10}, "n/a"),
+                ((11,), {"a": "b", "foo": "baq", "retval": 10}, "22"),
+                {"cache_hit": True},
+            ),
+            (
+                ((11,), {"a": "b", "foo": "baq", "retval": 10}, "<propagated>"),
                 {"cache_hit": False},
             ),
         ]
@@ -205,7 +226,7 @@ def test_memoizer_loose_caching():
 
         _backing = {x: x + 1 for x in range(50)}
 
-        @memo(caching_policy="loose")
+        @memo(caching_policy="loose", log_on_replay=True)
         def my_fn(m):
             return _backing[m]
 
@@ -246,11 +267,13 @@ def test_memoizer_classmethod_recording():
         with event_db(temp_db_file.name) as data:
             memos = data.scenes[0].context.memos
             assert memos["foo.my_fn"].calls == [
-                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), '10']
+                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), "10"]
             ]
 
             # replace return_value for replay test
-            memos["foo.my_fn"].calls = [[json.dumps([[10], {"retval": 10, "foo": "bar"}]), '20']]
+            memos["foo.my_fn"].calls = [
+                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), "20"]
+            ]
 
         os.environ[MEMO_MODE_KEY] = "replay"
         assert f.my_fn(10, retval=10, foo="bar") == 20
@@ -302,11 +325,16 @@ class Foo:
     pass
 
 
-@pytest.mark.parametrize('obj',
-                         (b'1234',
-                          object(),
-                          Foo()))
-def test_memo_exotic_types(obj):
+@pytest.mark.parametrize(
+    "obj, serializer",
+    (
+        (b"1234", "pickle"),
+        (object(), "pickle"),
+        ("<buf>", ("pickle", "io")),
+        (Foo(), "pickle"),
+    ),
+)
+def test_memo_exotic_types(obj, serializer):
     with tempfile.NamedTemporaryFile() as temp_db_file:
         os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
         os.environ[MEMO_MODE_KEY] = "record"
@@ -314,13 +342,51 @@ def test_memo_exotic_types(obj):
         with event_db(temp_db_file.name) as data:
             data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
 
-        @memo(serializer='pickle')
+        @memo(serializer=serializer)
         def my_fn(_obj):
             return _obj
+
+        _bufmode = obj == "<buf>"
+        if _bufmode:
+            tf = tempfile.NamedTemporaryFile()
+            Path(tf.name).write_text("helloworld")
+            obj = open(tf.name)
 
         assert obj is my_fn(obj)
 
         os.environ[MEMO_MODE_KEY] = "replay"
 
-        assert obj is not my_fn(obj)
-        assert obj == my_fn(obj)
+        replay_output = my_fn(obj)
+        assert obj is not replay_output
+
+        if _bufmode:
+            assert replay_output.read() == "helloworld"
+        else:
+            assert type(obj) is type(replay_output)
+
+
+def test_memo_pebble_push():
+    with tempfile.NamedTemporaryFile() as temp_db_file:
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+        os.environ[MEMO_MODE_KEY] = "record"
+
+        with event_db(temp_db_file.name) as data:
+            data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
+
+        _storage = 42
+
+        @memo(serializer=("PebblePush", "json"))
+        def my_fn(foo, bar, baz="qux"):
+            return _storage
+
+        tf = tempfile.NamedTemporaryFile()
+        Path(tf.name).write_text("helloworld")
+
+        obj = open(tf.name)
+        my_fn(12, obj, baz="lolz")
+
+        os.environ[MEMO_MODE_KEY] = "replay"
+        _storage = 12
+
+        obj = open(tf.name)
+        assert my_fn(12, obj, baz="lolz") == 42

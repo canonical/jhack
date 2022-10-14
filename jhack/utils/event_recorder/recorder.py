@@ -3,6 +3,7 @@ import base64
 import datetime
 import functools
 import inspect
+import io
 import json
 import os
 import pickle
@@ -27,7 +28,8 @@ MEMO_DATABASE_NAME_KEY = "MEMO_DATABASE_NAME"
 MEMO_MODE_KEY = "MEMO_MODE"
 DEFAULT_NAMESPACE = "<DEFAULT>"
 LOGFILE = "jhack-replay-logs.txt"
-SUPPORTED_SERIALIZERS = Literal["pickle", "json"]
+SUPPORTED_SERIALIZERS = Literal["pickle", "json", "io", "PebblePush"]
+SUPPORTED_SERIALIZERS_LIST = ["pickle", "json", "io", "PebblePush"]
 
 logger = jhack_logger.getChild("recorder")
 
@@ -110,8 +112,34 @@ def _log_memo(
 
     log_fn(
         f"@memo[{hit}]: replaying {fn_repr}(*{args}, **{kwargs})"
-        f"\n\t --> {trim!r}{trimmed}"
+        f"\n\t --> {trim}{trimmed}"
     )
+
+
+def _check_serializer(
+    serializer: Union[
+        SUPPORTED_SERIALIZERS, Tuple[SUPPORTED_SERIALIZERS, SUPPORTED_SERIALIZERS]
+    ]
+) -> Tuple[SUPPORTED_SERIALIZERS, SUPPORTED_SERIALIZERS]:
+    if isinstance(serializer, str):
+        input_serializer = output_serializer = serializer
+    else:
+        input_serializer, output_serializer = serializer
+
+    if input_serializer not in SUPPORTED_SERIALIZERS_LIST:
+        warnings.warn(
+            f"invalid input serializer name: {input_serializer}; "
+            f"falling back to `json`."
+        )
+        input_serializer = "json"
+    if output_serializer not in SUPPORTED_SERIALIZERS_LIST:
+        warnings.warn(
+            f"invalid output serializer name: {input_serializer}; "
+            f"falling back to `json`."
+        )
+        output_serializer = "json"
+
+    return input_serializer, output_serializer
 
 
 def memo(
@@ -119,7 +147,9 @@ def memo(
     name: str = None,
     caching_policy: _CachingPolicy = "strict",
     log_on_replay: bool = True,
-    serializer: Optional[SUPPORTED_SERIALIZERS] = "json",
+    serializer: Union[
+        SUPPORTED_SERIALIZERS, Tuple[SUPPORTED_SERIALIZERS, SUPPORTED_SERIALIZERS]
+    ] = "json",
 ):
     def decorator(fn):
         if not inspect.isfunction(fn):
@@ -129,35 +159,69 @@ def memo(
         def wrapper(*args, **kwargs):
 
             _MEMO_MODE: MemoModes = _load_memo_mode()
+            input_serializer, output_serializer = _check_serializer(serializer)
 
-            def _load(obj: str):
-                if serializer == "pickle":
+            def _load(obj: str, method: SUPPORTED_SERIALIZERS):
+                if log_on_replay and _MEMO_MODE == "replay":
+                    _log_memo(fn, args, kwargs, recorded_output, cache_hit=True)
+                if method == "pickle":
                     byt = base64.b64decode(obj)
                     return pickle.loads(byt)
-                elif serializer == "json":
+                elif method == "json":
                     return json.loads(obj)
-                raise ValueError(f"Invalid serializer: {serializer!r}")
+                elif method == "io":
+                    byt = base64.b64decode(obj)
+                    raw = pickle.loads(byt)
+                    byio = io.StringIO(raw)
+                    return byio
+                raise ValueError(f"Invalid method: {method!r}")
 
-            def _dump(obj: Any):
-                if serializer == "pickle":
+            def _dump(obj: Any, method: SUPPORTED_SERIALIZERS):
+                if method == "pickle":
+                    if isinstance(obj, io.TextIOWrapper):
+                        pass
                     byt = pickle.dumps(obj)
-                    return base64.b64encode(byt).decode('utf-8')
-                elif serializer == "json":
+                    return base64.b64encode(byt).decode("utf-8")
+                elif method == "json":
                     return json.dumps(obj)
-                raise ValueError(f"Invalid serializer: {serializer!r}")
+                elif method == "PebblePush":
+                    _args, _kwargs = obj
+                    assert len(_args) == 2
+                    source = _args[1]
+                    # pebble._Client.push's second argument:
+                    #  source: Union[bytes, str, BinaryIO, TextIO]
+
+                    if isinstance(source, (bytes, str)):
+                        source = pickle.dumps(source)
+                        return _dump(((_args[0], source), _kwargs), "pickle")
+                    else:  # AnyIO:
+                        source = _dump(source, "io")
+                        return _dump(((_args[0], source), _kwargs), "pickle")
+
+                elif method == "io":
+                    if not hasattr(obj, "read"):
+                        raise TypeError(
+                            "you can only serialize with `io` "
+                            "stuff that has a .read method."
+                        )
+                    byt = pickle.dumps(obj.read())
+                    return base64.b64encode(byt).decode("utf-8")
+                raise ValueError(f"Invalid method: {method!r}")
 
             def propagate():
                 """Make the real wrapped call."""
 
                 if _MEMO_MODE == "replay" and log_on_replay:
-                    _log_memo(fn, args, kwargs, "n/a", cache_hit=False)
+                    _log_memo(fn, args, kwargs, "<propagated>", cache_hit=False)
 
                 # todo: if we are replaying, should we be caching this result?
                 return fn(*args, **kwargs)
 
             memoizable_args = args
             if args:
-                if not _is_serializable(args[0], dumper=_dump):
+                if input_serializer is not "PebblePush" and not _is_serializable(
+                    args[0], dumper=functools.partial(_dump, method=input_serializer)
+                ):
                     # probably we're wrapping a method! which means args[0] is `self`
                     # we can't use `inspect.ismethod(fn)` because at @memo-execution-time,
                     # `fn` isn't a method yet!
@@ -185,14 +249,16 @@ def memo(
                         cpolicy_name = typing.cast(
                             _CachingPolicy, "strict" if strict_caching else "loose"
                         )
-                        memo = Memo(caching_policy=cpolicy_name, serializer='json')
+                        memo = Memo(caching_policy=cpolicy_name, serializer=serializer)
 
                     output = propagate()
 
                     # we can't hash dicts, so we dump args and kwargs
                     # regardless of what they are
-                    serialized_args_kwargs = _dump((memo_args, kwargs))
-                    serialized_output = _dump(output)
+                    serialized_args_kwargs = _dump(
+                        (memo_args, kwargs), input_serializer
+                    )
+                    serialized_output = _dump(output, output_serializer)
 
                     memo.cache_call(serialized_args_kwargs, serialized_output)
                     data.scenes[-1].context.memos[memo_name] = memo
@@ -222,20 +288,28 @@ def memo(
                         )
                         return propagate()
 
-                    if not memo.caching_policy == caching_policy:
+                    if not all(
+                        (
+                            memo.caching_policy == caching_policy,
+                            tuple(memo.serializer) == serializer,
+                        )
+                    ):
                         warnings.warn(
-                            f"stored memo has caching policy {memo.caching_policy} while "
-                            f"the method is decorated with {caching_policy}. "
+                            f"Stored memo params differ from those passed to @memo at runtime. "
                             f"The database must have been generated by an outdated version of "
-                            f"memo-tools. Falling back to stored memo "
-                            f"policy: ({memo.caching_policy})..."
+                            f"memo-tools. Falling back to stored memo: \n "
+                            f"\tpolicy: ({memo.caching_policy}), \n"
+                            f"\tserializer: ({memo.serializer})..."
                         )
                         strict_caching = (
                             _check_caching_policy(memo.caching_policy) == "strict"
                         )
+                        input_serializer, output_serializer = _check_serializer(
+                            memo.serializer
+                        )
 
                     # we serialize args and kwargs to compare them with the memoed ones
-                    fn_args_kwargs = _dump((memo_args, kwargs))
+                    fn_args_kwargs = _dump((memo_args, kwargs), input_serializer)
 
                     if strict_caching:
                         # in strict mode, fn might return different results every time it is called --
@@ -267,10 +341,9 @@ def memo(
                             )
                             return propagate()
 
-                        if log_on_replay:
-                            _log_memo(fn, args, kwargs, recorded_output, cache_hit=True)
-
-                        return _load(recorded_output)  # happy path! good for you, path.
+                        return _load(
+                            recorded_output, output_serializer
+                        )  # happy path! good for you, path.
 
                     else:
                         # in non-strict mode, we don't care about the order in which fn is called:
@@ -280,7 +353,9 @@ def memo(
                         #  in non-strict mode, memo.calls is an inputs/output dict.
                         recorded_output = memo.calls.get(fn_args_kwargs, _NotFound)
                         if recorded_output is not _NotFound:
-                            return _load(recorded_output)  # happy path! good for you, path.
+                            return _load(
+                                recorded_output, output_serializer
+                            )  # happy path! good for you, path.
 
                         warnings.warn(
                             f"No memo for {memo_name} matches the arguments received at runtime. "
@@ -293,7 +368,7 @@ def memo(
                     warnings.warn(msg)
                     raise ValueError(msg)
 
-            raise RuntimeError('Unhandled memo path.')
+            raise RuntimeError("Unhandled memo path.")
 
         return wrapper
 
@@ -359,7 +434,9 @@ class Memo:
         Literal["n/a"],  # if caching_policy == 'loose'
     ] = 0
     caching_policy: _CachingPolicy = "strict"
-    serializer: SUPPORTED_SERIALIZERS = "json"
+    serializer: Union[
+        SUPPORTED_SERIALIZERS, Tuple[SUPPORTED_SERIALIZERS, SUPPORTED_SERIALIZERS]
+    ] = "json"
 
     def __post_init__(self):
         if self.caching_policy == "loose" and not self.calls:  # first time only!
