@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, FrozenSet, Iterable, Literal, Sequence, Set, Union
+from typing import Dict, FrozenSet, Iterable, Literal, Sequence, Set, Union, Optional
 
 import asttokens
 from astunparse import unparse
@@ -18,6 +18,9 @@ class DecorateSpec:
     # Use loose caching mode when the method is guaranteed to return consistent results throughout
     # a single charm execution.
     caching_policy: Literal["strict", "loose"] = "strict"
+
+    # the memo's namespace will default to the class name it's being defined in if not provided
+    namespace: Optional[str] = None
 
 
 DECORATE_MODEL = {
@@ -111,7 +114,7 @@ def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpe
             if "memo" not in existing_decorators:
                 spec: DecorateSpec = decorate[cls.name][method.name]
                 memo_token = gettoken(
-                    f"@memo(namespace='{cls.name}', "
+                    f"@memo(namespace='{spec.namespace or cls.name}', "
                     f"caching_policy='{spec.caching_policy}')\ndef foo():..."
                 )
 

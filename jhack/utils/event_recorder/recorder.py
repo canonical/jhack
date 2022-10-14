@@ -9,7 +9,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Literal, Tuple, Union
+from typing import Any, Dict, Generator, List, Literal, Tuple, Union, Callable, Optional
 
 try:
     from jhack.logger import logger as jhack_logger
@@ -23,12 +23,18 @@ DEFAULT_DB_NAME = "event_db.json"
 MEMO_REPLAY_INDEX_KEY = "MEMO_REPLAY_IDX"
 MEMO_DATABASE_NAME_KEY = "MEMO_DATABASE_NAME"
 MEMO_MODE_KEY = "MEMO_MODE"
-
+DEFAULT_NAMESPACE = "<DEFAULT>"
 
 logger = jhack_logger.getChild("recorder")
 
 MemoModes = Literal["record", "replay"]
 _CachingPolicy = Literal["strict", "loose"]
+
+# notify just once of what mode we're running in
+_PRINTED_MODE = False
+
+# flag to mark when a memo cache's return value is not found as opposed to being None
+_NotFound = object()
 
 
 def _check_caching_policy(policy: _CachingPolicy) -> _CachingPolicy:
@@ -39,10 +45,6 @@ def _check_caching_policy(policy: _CachingPolicy) -> _CachingPolicy:
             f"invalid caching policy: {policy!r}. " f"defaulting to `strict`"
         )
     return "strict"
-
-
-# notify just once of what mode we're running in
-_PRINTED_MODE = False
 
 
 def _load_memo_mode() -> MemoModes:
@@ -68,19 +70,45 @@ def _is_json_serializable(obj: Any):
         return False
 
 
-# flag to mark when a memo cache's return value is not found as opposed to being None
-_NotFound = object()
+def _log_memo(
+        fn, args, kwargs,
+        recorded_output: Any = None,
+        cache_hit: bool = False,
+        log_fn: Callable[[str], None] = print):
+    try:
+        output_repr = repr(recorded_output)
+    except:  # noqa catchall
+        output_repr = "<repr failed: cannot repr(memoized output).>"
+
+    trim = output_repr[:100]
+    trimmed = "[...]" if len(output_repr) > 100 else ""
+    hit = "hit" if cache_hit else "miss"
+
+    # use print, not logger calls, else the root logger will recurse if
+    # juju-log calls are being @memo'd.
+    log_fn(f"@memo[{hit}]: replaying {fn}(*{args}, **{kwargs})"
+           f"\n\t --> {trim!r}{trimmed}")
 
 
-def memo(namespace: str = "default", caching_policy: _CachingPolicy = "strict"):
+def memo(namespace: str = DEFAULT_NAMESPACE,
+         caching_policy: _CachingPolicy = "strict",
+         log_on_replay: bool = False):
+
     def decorator(fn):
         if not inspect.isfunction(fn):
             raise RuntimeError(f"Cannot memoize non-function obj {fn!r}.")
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
+
+            _MEMO_MODE: MemoModes = _load_memo_mode()
+
             def propagate():
                 """Make the real wrapped call."""
+
+                if _MEMO_MODE == 'replay' and log_on_replay:
+                    _log_memo(fn, args, kwargs, "n/a", cache_hit=False)
+
                 return fn(*args, **kwargs)
 
             memoizable_args = args
@@ -97,8 +125,6 @@ def memo(namespace: str = "default", caching_policy: _CachingPolicy = "strict"):
                 if not data.scenes:
                     raise RuntimeError("No scenes: cannot memoize.")
                 idx = os.environ.get(MEMO_REPLAY_INDEX_KEY, None)
-
-                _MEMO_MODE: MemoModes = _load_memo_mode()
 
                 strict_caching = _check_caching_policy(caching_policy) == "strict"
 
@@ -184,6 +210,9 @@ def memo(namespace: str = "default", caching_policy: _CachingPolicy = "strict"):
                                 f"the ones received at runtime. This path has diverged."
                             )
                             return propagate()
+
+                        if log_on_replay:
+                            _log_memo(fn, args, kwargs, recorded_output, cache_hit=True)
 
                         return recorded_output  # happy path! good for you, path.
 
