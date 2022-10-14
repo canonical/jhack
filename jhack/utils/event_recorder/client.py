@@ -1,13 +1,14 @@
 import json
+import sys
 import tempfile
 from pathlib import Path
-from subprocess import CalledProcessError, check_call, check_output
+from subprocess import PIPE, CalledProcessError, check_call
 from typing import Optional, Union
 
 import typer
 from dateutil.utils import today
 
-from jhack.helpers import modify_remote_file
+from jhack.helpers import fetch_file, modify_remote_file
 from jhack.logger import logger
 from jhack.utils.event_recorder.memo_tools import (
     DECORATE_MODEL,
@@ -26,21 +27,22 @@ BROKEN_ENV_KEYS = {
 }  # need to skip this one else juju exec will whine
 
 
-def _fetch_file(unit: str, remote_path: str, local_path: Path = None):
-    unit_sanitized = unit.replace("/", "-")
-    cmd = f"juju ssh {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+def _check_installed(unit):
+    if not _is_installed(unit):
+        sys.exit(
+            f"Recorder is not installed. Do so with `jhack replay install {unit}`."
+        )
+
+
+def fetch_db(unit: str, remote_path: str, local_path: Path = None):
+    _check_installed(unit)
+
     try:
-        raw = check_output(cmd.split())
-    except CalledProcessError as e:
+        return fetch_file(unit=unit, remote_path=remote_path, local_path=local_path)
+    except RuntimeError as e:
         raise RuntimeError(
-            "Failed to fetch DB file. This might mean "
-            "that no event has been fired yet."
+            "Probably no event has fired yet. " "Try simulating one with jhack fire."
         ) from e
-
-    if not local_path:
-        return raw
-
-    local_path.write_bytes(raw)
 
 
 def _print_events(db_path: Union[str, Path]):
@@ -63,7 +65,7 @@ def _print_events(db_path: Union[str, Path]):
 def _list_events(unit: str, db_path=DEFAULT_DB_NAME):
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db_file = Path(temp_db.name)
-        _fetch_file(unit, remote_path=db_path, local_path=temp_db_file)
+        fetch_db(unit, remote_path=db_path, local_path=temp_db_file)
         _print_events(temp_db_file)
 
 
@@ -71,6 +73,7 @@ def list_events(
     unit: str = typer.Argument(..., help="Target unit."), db_path=DEFAULT_DB_NAME
 ):
     """List the events that have been captured on the unit and are stored in the database."""
+    _check_installed(unit)
     return _list_events(unit, db_path)
 
 
@@ -80,7 +83,7 @@ def _emit(unit: str, idx: int, db_path=DEFAULT_DB_NAME, dry_run: bool = False):
     # logic in the recorder script.
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
-        _fetch_file(unit, remote_path=db_path, local_path=temp_db)
+        fetch_db(unit, remote_path=db_path, local_path=temp_db)
 
         with event_db(temp_db) as data:
             event = data.scenes[idx].event
@@ -106,7 +109,13 @@ def _emit(unit: str, idx: int, db_path=DEFAULT_DB_NAME, dry_run: bool = False):
         ]
     )
 
-    return _simulate_event(unit, event.name, env_override=env)
+    return _simulate_event(
+        unit,
+        event.name,
+        env_override=env,
+        print_captured_stderr=True,
+        print_captured_stdout=True,
+    )
 
 
 def emit(
@@ -116,13 +125,14 @@ def emit(
     dry_run: bool = False,
 ):
     """Select the `idx`th event stored on the unit db and re-fire it."""
+    _check_installed(unit)
     _emit(unit, idx, db_path, dry_run=dry_run)
 
 
 def _dump_db(unit: str, idx: Optional[int] = None, db_path=DEFAULT_DB_NAME):
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
-        _fetch_file(unit, db_path, temp_db)
+        fetch_db(unit, db_path, temp_db)
 
         if idx is not None:
             evt = json.loads(temp_db.read_text()).get("scenes", {})[idx]
@@ -142,6 +152,7 @@ def dump_db(
     db_path=DEFAULT_DB_NAME,
 ):
     """Dump the whole database or a specific scene as json."""
+    _check_installed(unit)
     return _dump_db(unit, idx, db_path)
 
 
@@ -172,6 +183,7 @@ def purge_db(
     db_path=DEFAULT_DB_NAME,
 ):
     """Purge the database (by default, all of it) or a specific event."""
+    _check_installed(unit)
     return _purge_db(unit, idx, db_path)
 
 
@@ -200,7 +212,7 @@ def _inject_memoizer(unit: str):
         inject_memoizer(pebble_source, decorate=DECORATE_PEBBLE)
 
 
-def inject_record_current_event_call(file):
+def _inject_record_current_event_call(file):
     charm_path = Path(file)
     charm_py_lines = charm_path.read_text().split("\n")
     if charm_py_lines[1] == "import recorder":
@@ -229,22 +241,61 @@ def inject_record_current_event_call(file):
     charm_path.write_text("\n".join(charm_py_lines))
 
 
-def _inject_record_current_event_call(unit):
+def _insert_record_current_event_call(unit):
     unit_sanitized = unit.replace("/", "-")
     charm_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/src/charm.py"
     with modify_remote_file(unit, charm_path) as f:
-        inject_record_current_event_call(Path(f))
+        _inject_record_current_event_call(Path(f))
 
     # restore permissions:
     check_call(["juju", "ssh", unit, "chmod", "+x", charm_path])
 
 
+def _is_installed(unit: str):
+    unit_sanitized = unit.replace("/", "-")
+    cmd = f"juju ssh {unit} ls /var/lib/juju/agents/unit-{unit_sanitized}/charm/src/recorder.py"
+
+    try:
+        check_call(cmd.split(), stderr=PIPE, stdout=PIPE)
+    except CalledProcessError:
+        return False
+    return True
+
+
 def _install(unit: str):
+    recorder_only = False
+    if _is_installed(unit):
+        while True:
+            choice = input(
+                f"Recorder is already set up on {unit}. "
+                f"Reinstalling it might (probably will) break stuff. You can: \n"
+                f"\n\a - Proceed anyway [p]"
+                f"\n\a - Only update the recorder [r]"
+                f"\n\a - Abort [a]"
+                f"\n\n your choice: "
+            )
+            if choice == "a":
+                print("Aborted.")
+                return
+            elif choice == "r":
+                recorder_only = True
+                break
+            elif choice == "p":
+                break
+            else:
+                print(f"Invalid choice ({choice!r}. Possible options are ['p'|'r'|'a']")
+
+        print("Alright.")
+
     print("Shelling over recorder script...")
     _copy_recorder_script(unit)
 
+    if recorder_only:
+        print("Recorder script refreshed. " "Skipping remaining steps.")
+        return
+
     print("Injecting record_current_event call in charm source...")
-    _inject_record_current_event_call(unit)
+    _insert_record_current_event_call(unit)
 
     print("Injecting @memo in ops source...")
     _inject_memoizer(unit)

@@ -115,6 +115,8 @@ def _simulate_event(
     relation_remote: str = None,
     operator_dispatch: bool = False,
     env_override: str = None,
+    print_captured_stdout: bool = False,
+    print_captured_stderr: bool = False,
 ):
     env = env_override or _get_env(
         unit,
@@ -132,6 +134,11 @@ def _simulate_event(
         logger.error(f"cmd {cmd} terminated with {proc.returncode}")
         logger.error(f"stdout={proc.stdout.read()}")
         logger.error(f"stderr={proc.stderr.read()}")
+    else:
+        if print_captured_stdout and (stdout := proc.stdout.read()):
+            print(f"[captured stdout: ]\n{stdout.decode('utf-8')}")
+        if print_captured_stderr and (stderr := proc.stderr.read()):
+            print(f"[captured stderr: ]\n{stderr.decode('utf-8')}")
 
     print(f"Fired {event} on {unit}.")
     return

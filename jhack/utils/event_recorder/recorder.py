@@ -4,12 +4,13 @@ import functools
 import inspect
 import json
 import os
+import pickle
 import typing
 import warnings
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Literal, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Literal, Optional, Tuple, Union
 
 try:
     from jhack.logger import logger as jhack_logger
@@ -24,6 +25,8 @@ MEMO_REPLAY_INDEX_KEY = "MEMO_REPLAY_IDX"
 MEMO_DATABASE_NAME_KEY = "MEMO_DATABASE_NAME"
 MEMO_MODE_KEY = "MEMO_MODE"
 DEFAULT_NAMESPACE = "<DEFAULT>"
+LOGFILE = "jhack-replay-logs.txt"
+SUPPORTED_SERIALIZERS = Literal["pickle", "json"]
 
 logger = jhack_logger.getChild("recorder")
 
@@ -48,6 +51,8 @@ def _check_caching_policy(policy: _CachingPolicy) -> _CachingPolicy:
 
 
 def _load_memo_mode() -> MemoModes:
+    global _PRINTED_MODE
+
     val = os.getenv(MEMO_MODE_KEY, "record")
     if val == "record":
         # don't use logger, but print, to avoid recursion issues with juju-log.
@@ -57,8 +62,13 @@ def _load_memo_mode() -> MemoModes:
         if not _PRINTED_MODE:
             print("MEMO: replaying")
     else:
-        print(f"[ERROR]: MEMO: invalid value ({val!r}). Defaulting to `record`.")
+        warnings.warn(
+            f"[ERROR]: MEMO: invalid value ({val!r}). Defaulting to `record`."
+        )
+        _PRINTED_MODE = True
         return "record"
+
+    _PRINTED_MODE = True
     return typing.cast(MemoModes, val)
 
 
@@ -71,11 +81,13 @@ def _is_json_serializable(obj: Any):
 
 
 def _log_memo(
-    fn,
+    fn: Callable,
     args,
     kwargs,
     recorded_output: Any = None,
     cache_hit: bool = False,
+    # use print, not logger calls, else the root logger will recurse if
+    # juju-log calls are being @memo'd.
     log_fn: Callable[[str], None] = print,
 ):
     try:
@@ -87,10 +99,16 @@ def _log_memo(
     trimmed = "[...]" if len(output_repr) > 100 else ""
     hit = "hit" if cache_hit else "miss"
 
-    # use print, not logger calls, else the root logger will recurse if
-    # juju-log calls are being @memo'd.
+    fn_name = getattr(fn, "__name__", str(fn))
+
+    if _self := getattr(fn, "__self__", None):
+        # it's a method
+        fn_repr = type(_self).__name__ + fn_name
+    else:
+        fn_repr = fn_name
+
     log_fn(
-        f"@memo[{hit}]: replaying {fn}(*{args}, **{kwargs})"
+        f"@memo[{hit}]: replaying {fn_repr}(*{args}, **{kwargs})"
         f"\n\t --> {trim!r}{trimmed}"
     )
 
@@ -99,7 +117,8 @@ def memo(
     namespace: str = DEFAULT_NAMESPACE,
     name: str = None,
     caching_policy: _CachingPolicy = "strict",
-    log_on_replay: bool = False,
+    log_on_replay: bool = True,
+    serializer: Optional[SUPPORTED_SERIALIZERS] = "json",
 ):
     def decorator(fn):
         if not inspect.isfunction(fn):
@@ -110,12 +129,27 @@ def memo(
 
             _MEMO_MODE: MemoModes = _load_memo_mode()
 
+            def _load(obj):
+                if serializer == "pickle":
+                    return pickle.loads(obj)
+                elif serializer == "json":
+                    return json.loads(obj)
+                raise ValueError(f"Invalid serializer: {serializer!r}")
+
+            def _dump(obj):
+                if serializer == "pickle":
+                    return pickle.dumps(obj)
+                elif serializer == "json":
+                    return json.dumps(obj)
+                raise ValueError(f"Invalid serializer: {serializer!r}")
+
             def propagate():
                 """Make the real wrapped call."""
 
                 if _MEMO_MODE == "replay" and log_on_replay:
                     _log_memo(fn, args, kwargs, "n/a", cache_hit=False)
 
+                # todo: if we are replaying, should we be caching this result?
                 return fn(*args, **kwargs)
 
             memoizable_args = args
@@ -153,9 +187,10 @@ def memo(
                     if strict_caching:
                         memo.calls.append(((memo_args, kwargs), output))
                     else:
-                        # we can't hash dicts, so we dump args and kwargs to json
-                        serialized_args_kwargs = json.dumps((memo_args, kwargs))
-                        memo.calls[serialized_args_kwargs] = output
+                        # we can't hash dicts, so we dump args and kwargs
+                        # regardless of what they are
+                        serialized_args_kwargs = _dump((memo_args, kwargs))
+                        memo.calls[serialized_args_kwargs] = _dump(output)
 
                     data.scenes[-1].context.memos[memo_name] = memo
 
@@ -209,25 +244,28 @@ def memo(
                             # There is a memo, but its cursor is out of bounds.
                             # this means the current path is calling the wrapped function
                             # more times than the recorded path did.
+                            # if this happens while replaying locally, of course, game over.
                             warnings.warn(
                                 f"Memo cursor {current_cursor} out of bounds for {memo_name}: "
-                                f"the path must have changed"
+                                f"this path must have diverged. Propagating call..."
                             )
                             return propagate()
 
                         recorded_args_kwargs, recorded_output = recording
 
                         if recorded_args_kwargs != fn_args_kwargs:
+                            # if this happens while replaying locally, of course, game over.
                             warnings.warn(
-                                f"memoized {memo_name} arguments don't match "
-                                f"the ones received at runtime. This path has diverged."
+                                f"memoized {memo_name} arguments ({recorded_args_kwargs}) "
+                                f"don't match the ones received at runtime ({fn_args_kwargs}). "
+                                f"This path has diverged. Propagating call..."
                             )
                             return propagate()
 
                         if log_on_replay:
                             _log_memo(fn, args, kwargs, recorded_output, cache_hit=True)
 
-                        return recorded_output  # happy path! good for you, path.
+                        return _load(recorded_output)  # happy path! good for you, path.
 
                     else:
                         # in non-strict mode, we don't care about the order in which fn is called:
@@ -235,12 +273,14 @@ def memo(
                         #  regardless of when it is called.
                         # so all we have to check is whether the arguments are known.
                         #  in non-strict mode, memo.calls is an inputs/output dict.
-                        serialized_fn_args_kwargs = json.dumps(fn_args_kwargs)
+                        serialized_fn_args_kwargs = _dump(fn_args_kwargs)
                         recorded_output = memo.calls.get(
                             serialized_fn_args_kwargs, _NotFound
                         )
                         if recorded_output is not _NotFound:
-                            return recorded_output  # happy path! good for you, path.
+                            return _load(
+                                recorded_output
+                            )  # happy path! good for you, path.
 
                         warnings.warn(
                             f"No memo for {memo_name} matches the arguments received at runtime. "
@@ -317,6 +357,7 @@ class Memo:
         Literal["n/a"],  # if caching_policy == 'loose'
     ] = 0
     caching_policy: _CachingPolicy = "strict"
+    serializer: SUPPORTED_SERIALIZERS = "json"
 
     def __post_init__(self):
         if self.caching_policy == "loose" and not self.calls:  # first time only!

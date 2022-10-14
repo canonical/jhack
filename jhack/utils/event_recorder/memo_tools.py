@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 import ast
+import typing
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
 from typing import Dict, Literal, Optional
 
 import asttokens
+from asttokens.util import Token
 from astunparse import unparse
+
+if typing.TYPE_CHECKING:
+    from recorder import SUPPORTED_SERIALIZERS
 
 
 @dataclass
@@ -18,8 +23,27 @@ class DecorateSpec:
     # a single charm execution.
     caching_policy: Literal["strict", "loose"] = "strict"
 
-    # the memo's namespace will default to the class name it's being defined in if not provided
+    # the memo's namespace will default to the class name it's being defined in
     namespace: Optional[str] = None
+
+    # the memo's name will default to the memoized function's __name__
+    name: Optional[str] = None
+
+    # (de) serializer for the return object of the decorated function
+    serializer: Optional["SUPPORTED_SERIALIZERS"] = "json"
+
+    def as_token(self, default_namespace: str) -> Token:
+        name = f"'{self.name}'" if self.name else "None"
+
+        raw = dedent(
+            f"""@memo(
+            name={name}, 
+            namespace='{self.namespace or default_namespace}', 
+            caching_policy='{self.caching_policy}',
+            serializer='{self.serializer}',
+            )\ndef foo():..."""
+        )
+        return asttokens.ASTTokens(raw, parse=True).tree.body[0].decorator_list[0]
 
 
 DECORATE_MODEL = {
@@ -53,13 +77,19 @@ DECORATE_MODEL = {
         # 'secret_remove',
     }
 }
+
 DECORATE_PEBBLE = {
     "Client": {
         # todo: we could be more fine-grained and decorate individual Container methods,
         #  e.g. can_connect, ... just like in _ModelBackend we don't just memo `_run`.
-        "_request": DecorateSpec()
+        "_request": DecorateSpec(),
+        # some methods such as pebble.pull use _request_raw directly,
+        # and deal in objects that cannot be json-serialized
+        "pull": DecorateSpec(serializer="pickle"),
+        "push": DecorateSpec(serializer="pickle"),
     }
 }
+
 
 memo_import_block = dedent(
     """# ==== block added by jhack.replay -- memotools ===
@@ -95,9 +125,6 @@ def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpe
     def _should_decorate_class(token: ast.AST):
         return isinstance(token, ast.ClassDef) and token.name in decorate
 
-    def gettoken(raw):
-        return asttokens.ASTTokens(raw, parse=True).tree.body[0].decorator_list[0]
-
     for cls in filter(_should_decorate_class, atok.body):
 
         def _should_decorate_method(token: ast.AST):
@@ -111,13 +138,10 @@ def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpe
             }
             # only add the decorator if the function is not already decorated:
             if "memo" not in existing_decorators:
-                spec: DecorateSpec = decorate[cls.name][method.name]
-                memo_token = gettoken(
-                    f"@memo(namespace='{spec.namespace or cls.name}', "
-                    f"caching_policy='{spec.caching_policy}')\ndef foo():..."
+                spec_token = decorate[cls.name][method.name].as_token(
+                    default_namespace=cls.name
                 )
-
-                method.decorator_list.append(memo_token)
+                method.decorator_list.append(spec_token)
 
     unparsed_source = unparse(atok)
     if "from recorder import memo" not in unparsed_source:

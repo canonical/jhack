@@ -1,13 +1,24 @@
+import contextlib
 import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ContextManager,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+)
 
 import yaml
+from ops.charm import CharmBase
 
+from jhack.helpers import fetch_file
 from jhack.logger import logger
-from jhack.utils.event_recorder.client import _fetch_file
 from jhack.utils.event_recorder.memo_tools import (
     DECORATE_MODEL,
     DECORATE_PEBBLE,
@@ -68,20 +79,22 @@ class Runtime:
     def load(self, unit: str, remote_db_path=None):
         """Fetch event db and charm metadata from the live unit."""
         logger.info(f"Fetching db from {unit}@~/{remote_db_path}.")
-        _fetch_file(
+        fetch_file(
             unit, remote_db_path or self._remote_db_path, local_path=self._local_db_path
         )
 
         if not self._meta:
             logger.info(f"Fetching metadata from {unit}.")
-            self._meta = _fetch_file(unit, "metadata.yaml")
+            self._meta = yaml.safe_load(fetch_file(unit, "metadata.yaml"))
         if not self._actions:
             logger.info(f"Fetching actions metadata from {unit}.")
-            self._actions = _fetch_file(unit, "actions.yaml")
+            self._actions = yaml.safe_load(fetch_file(unit, "actions.yaml"))
+
+        return self
 
     @staticmethod
-    def install():
-        """Install the runtime.
+    def install(force=False):
+        """Install the runtime LOCALLY.
 
         Fine prints:
           - this will **REWRITE** your local ops.model module to include a @memo decorator
@@ -93,9 +106,17 @@ class Runtime:
             Nobody will help you fix your borked env.
             Have fun!
         """
+        if not force and Runtime._is_installed:
+            logger.warning(
+                "Runtime is already installed. "
+                "Pass `force=True` if you wish to proceed anyway. "
+                "Skipping..."
+            )
+            return
+
         logger.warning(
             "Installing Runtime... "
-            "DISCLAIMER: this **might** (most definitely will) corrupt your venv."
+            "DISCLAIMER: this **might** (aka: most definitely will) corrupt your venv."
         )
 
         logger.info("rewriting ops.pebble")
@@ -128,7 +149,8 @@ class Runtime:
     def __delete__(self, instance):
         self.cleanup()
 
-    def _is_installed(self):
+    @staticmethod
+    def _is_installed():
         from ops import model
 
         if "from recorder import memo" not in Path(model.__file__).read_text():
@@ -226,30 +248,77 @@ class Runtime:
             from ops.main import main
 
             logger.info("Entering ops.main.")
-            charm = main(self._charm_type)
+
+            try:
+                charm = main(self._charm_type)
+            except Exception as e:
+                raise RuntimeError("Uncaught error in operator/charm code.") from e
 
         return charm, scene
 
 
+@contextlib.contextmanager
+def live_unit_runtime(
+    unit_name: str,
+    local_charm_src: Path,
+    charm_cls_name: str,
+    patch: Callable[["CharmType"], "CharmType"] = lambda x: x,
+) -> ContextManager[Runtime]:
+
+    unit_sanitized = unit_name.replace("/", "-")
+
+    with tempfile.TemporaryDirectory(
+        dir=Path("~").expanduser(), prefix=f".jhack_{unit_sanitized}_src"
+    ) as td:
+
+        sys.path.extend((str(local_charm_src / "src"), str(local_charm_src / "lib")))
+
+        ldict = {}
+
+        try:
+            exec(
+                f"from charm import {charm_cls_name} as my_charm_type", globals(), ldict
+            )
+        except ModuleNotFoundError as e:
+            raise RuntimeError(
+                f"Failed to load charm {charm_cls_name}. "
+                f"Probably some dependency is missing. "
+                f"Try `pip install -r {local_charm_src / 'requirements.txt'}`"
+            ) from e
+
+        my_charm_type: Type[CharmBase] = ldict["my_charm_type"]
+
+        charm_type = patch(my_charm_type)
+
+        yield Runtime(
+            charm_type,
+            # omitting these would mean Runtime will fetch them from the live unit
+            meta=yaml.safe_load((local_charm_src / "metadata.yaml").read_text()),
+            actions=yaml.safe_load((local_charm_src / "actions.yaml").read_text()),
+        ).load(unit_name)
+
+
 if __name__ == "__main__":
-    from ops.charm import CharmBase
+    Runtime.install()
 
-    class MyCharm(CharmBase):
-        def __init__(self, framework, key: Optional[str] = None):
-            super().__init__(framework, key)
-            for evt in self.on.events().values():
-                self.framework.observe(evt, self._catchall)
+    def _patch_traefik_charm(charm: "CharmType"):
+        from charms.observability_libs.v0 import kubernetes_service_patch  # noqa
 
-        def _catchall(self, e):
-            print(e)
+        def _do_nothing(*args, **kwargs):
+            print("KubernetesServicePatch call skipped")
 
-    runtime = Runtime(
-        MyCharm,
-        meta={
-            "name": "foo",
-            "requires": {"ingress-per-unit": {"interface": "ingress_per_unit"}},
-        },
-    )
-    runtime.install()
-    runtime.load("trfk/0")
-    runtime.run(0)
+        def _null_evt_handler(self, event):
+            print(f"event {event} received and skipped")
+
+        kubernetes_service_patch.KubernetesServicePatch._service_object = _do_nothing
+        kubernetes_service_patch.KubernetesServicePatch._patch = _null_evt_handler
+        return charm
+
+    with live_unit_runtime(
+        "trfk/0",
+        local_charm_src=Path("/home/pietro/canonical/traefik-k8s-operator"),
+        charm_cls_name="TraefikIngressCharm",
+        patch=_patch_traefik_charm,
+    ) as runtime:
+
+        runtime.run(2)

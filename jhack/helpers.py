@@ -5,8 +5,8 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from subprocess import PIPE
-from typing import List
+from subprocess import PIPE, CalledProcessError, check_output
+from typing import List, Optional
 
 from juju.model import Model
 
@@ -162,3 +162,17 @@ def modify_remote_file(unit: str, path: str):
             f"{unit}:{path}",
         ]
         subprocess.check_call(cmd)
+
+
+def fetch_file(unit: str, remote_path: str, local_path: Path = None) -> Optional[str]:
+    unit_sanitized = unit.replace("/", "-")
+    cmd = f"juju ssh {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+    try:
+        raw = check_output(cmd.split())
+    except CalledProcessError as e:
+        raise RuntimeError(f"Failed to fetch {remote_path}.") from e
+
+    if not local_path:
+        return raw.decode("utf-8")
+
+    local_path.write_bytes(raw)
