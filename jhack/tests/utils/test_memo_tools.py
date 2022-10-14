@@ -4,8 +4,13 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from jhack.utils.event_recorder.memo_tools import inject_memoizer, memo_import_block, DecorateSpec
+from jhack.utils.event_recorder.memo_tools import (
+    DecorateSpec,
+    inject_memoizer,
+    memo_import_block,
+)
 from jhack.utils.event_recorder.recorder import (
+    DEFAULT_NAMESPACE,
     MEMO_DATABASE_NAME_KEY,
     MEMO_MODE_KEY,
     Context,
@@ -14,7 +19,7 @@ from jhack.utils.event_recorder.recorder import (
     Scene,
     _reset_replay_cursors,
     event_db,
-    memo, DEFAULT_NAMESPACE,
+    memo,
 )
 
 # we always replay the last event in the default test env.
@@ -79,9 +84,11 @@ def test_memoizer_injection():
         inject_memoizer(
             target_file,
             decorate={
-                "_ModelBackend": {"action_set": DecorateSpec(),
-                                  "action_get": DecorateSpec(caching_policy='loose')},
-                "Foo": {"bar": DecorateSpec(namespace='Bar', caching_policy='loose')}
+                "_ModelBackend": {
+                    "action_set": DecorateSpec(),
+                    "action_get": DecorateSpec(caching_policy="loose"),
+                },
+                "Foo": {"bar": DecorateSpec(namespace="Bar", caching_policy="loose")},
             },
         )
 
@@ -146,8 +153,9 @@ def test_memoizer_replay():
         def _catch_log_call(_, *args, **kwargs):
             caught_calls.append((args, kwargs))
 
-        with patch("jhack.utils.event_recorder.recorder._log_memo",
-                   new=_catch_log_call):
+        with patch(
+            "jhack.utils.event_recorder.recorder._log_memo", new=_catch_log_call
+        ):
             assert my_fn(10, retval=10, foo="bar") == 20
             assert my_fn(10, retval=11, foo="baz") == 21
             assert my_fn(11, retval=10, foo="baq", a="b") == 22
@@ -155,22 +163,14 @@ def test_memoizer_replay():
             assert my_fn(11, retval=10, foo="baq", a="b") == 10
 
         assert caught_calls == [
-            (((10,),
-              {'foo': 'bar', 'retval': 10},
-              20),
-             {'cache_hit': True}),
-            (((10,),
-              {'foo': 'baz', 'retval': 11},
-              21),
-             {'cache_hit': True}),
-            (((11,),
-              {'a': 'b', 'foo': 'baq', 'retval': 10},
-              22),
-             {'cache_hit': True}),
-            (((11,),
-              {'a': 'b', 'foo': 'baq', 'retval': 10},
-              'n/a'),
-             {'cache_hit': False})]
+            (((10,), {"foo": "bar", "retval": 10}, 20), {"cache_hit": True}),
+            (((10,), {"foo": "baz", "retval": 11}, 21), {"cache_hit": True}),
+            (((11,), {"a": "b", "foo": "baq", "retval": 10}, 22), {"cache_hit": True}),
+            (
+                ((11,), {"a": "b", "foo": "baq", "retval": 10}, "n/a"),
+                {"cache_hit": False},
+            ),
+        ]
 
         with event_db(temp_db_file.name) as data:
             ctx = data.scenes[0].context
@@ -186,7 +186,7 @@ def test_memoizer_loose_caching():
 
         _backing = {x: x + 1 for x in range(50)}
 
-        @memo(caching_policy='loose')
+        @memo(caching_policy="loose")
         def my_fn(m):
             return _backing[m]
 

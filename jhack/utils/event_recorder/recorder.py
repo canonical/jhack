@@ -9,7 +9,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Literal, Tuple, Union, Callable, Optional
+from typing import Any, Callable, Dict, Generator, List, Literal, Optional, Tuple, Union
 
 try:
     from jhack.logger import logger as jhack_logger
@@ -71,10 +71,13 @@ def _is_json_serializable(obj: Any):
 
 
 def _log_memo(
-        fn, args, kwargs,
-        recorded_output: Any = None,
-        cache_hit: bool = False,
-        log_fn: Callable[[str], None] = print):
+    fn,
+    args,
+    kwargs,
+    recorded_output: Any = None,
+    cache_hit: bool = False,
+    log_fn: Callable[[str], None] = print,
+):
     try:
         output_repr = repr(recorded_output)
     except:  # noqa catchall
@@ -86,14 +89,17 @@ def _log_memo(
 
     # use print, not logger calls, else the root logger will recurse if
     # juju-log calls are being @memo'd.
-    log_fn(f"@memo[{hit}]: replaying {fn}(*{args}, **{kwargs})"
-           f"\n\t --> {trim!r}{trimmed}")
+    log_fn(
+        f"@memo[{hit}]: replaying {fn}(*{args}, **{kwargs})"
+        f"\n\t --> {trim!r}{trimmed}"
+    )
 
 
-def memo(namespace: str = DEFAULT_NAMESPACE,
-         caching_policy: _CachingPolicy = "strict",
-         log_on_replay: bool = False):
-
+def memo(
+    namespace: str = DEFAULT_NAMESPACE,
+    caching_policy: _CachingPolicy = "strict",
+    log_on_replay: bool = False,
+):
     def decorator(fn):
         if not inspect.isfunction(fn):
             raise RuntimeError(f"Cannot memoize non-function obj {fn!r}.")
@@ -106,7 +112,7 @@ def memo(namespace: str = DEFAULT_NAMESPACE,
             def propagate():
                 """Make the real wrapped call."""
 
-                if _MEMO_MODE == 'replay' and log_on_replay:
+                if _MEMO_MODE == "replay" and log_on_replay:
                     _log_memo(fn, args, kwargs, "n/a", cache_hit=False)
 
                 return fn(*args, **kwargs)

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, FrozenSet, Iterable, Literal, Sequence, Set, Union, Optional
+from typing import Dict, FrozenSet, Iterable, Literal, Optional, Sequence, Set, Union
 
 import asttokens
 from astunparse import unparse
