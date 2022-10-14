@@ -117,6 +117,22 @@ def test_memoizer_recording():
             ]
 
 
+def test_memo_args():
+    with tempfile.NamedTemporaryFile() as temp_db_file:
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+        with event_db(temp_db_file.name) as data:
+            data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
+
+        @memo(namespace="foo", name="bar", caching_policy="loose")
+        def my_fn(*args, retval=None, **kwargs):
+            return retval
+
+        my_fn(10, retval=10, foo="bar")
+
+        with event_db(temp_db_file.name) as data:
+            assert data.scenes[0].context.memos["foo.bar"].caching_policy == "loose"
+
+
 def test_memoizer_replay():
     os.environ[MEMO_MODE_KEY] = "replay"
 
@@ -194,7 +210,8 @@ def test_memoizer_loose_caching():
         for i in range(50):
             assert my_fn(i) == i + 1
 
-        # clear the backing storage
+        # clear the backing storage, so that a cache miss would raise a
+        # KeyError. my_fn is, as of now, totally useless
         _backing.clear()
 
         os.environ[MEMO_MODE_KEY] = "replay"
