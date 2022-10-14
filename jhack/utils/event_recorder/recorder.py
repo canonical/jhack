@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import base64
 import datetime
 import functools
 import inspect
@@ -72,11 +73,11 @@ def _load_memo_mode() -> MemoModes:
     return typing.cast(MemoModes, val)
 
 
-def _is_json_serializable(obj: Any):
+def _is_serializable(obj: Any, dumper: Callable[[Any], str]):
     try:
-        json.dumps(obj)
+        dumper(obj)
         return True
-    except TypeError:
+    except Exception:  # noqa
         return False
 
 
@@ -129,16 +130,18 @@ def memo(
 
             _MEMO_MODE: MemoModes = _load_memo_mode()
 
-            def _load(obj):
+            def _load(obj: str):
                 if serializer == "pickle":
-                    return pickle.loads(obj)
+                    byt = base64.b64decode(obj)
+                    return pickle.loads(byt)
                 elif serializer == "json":
                     return json.loads(obj)
                 raise ValueError(f"Invalid serializer: {serializer!r}")
 
-            def _dump(obj):
+            def _dump(obj: Any):
                 if serializer == "pickle":
-                    return pickle.dumps(obj)
+                    byt = pickle.dumps(obj)
+                    return base64.b64encode(byt).decode('utf-8')
                 elif serializer == "json":
                     return json.dumps(obj)
                 raise ValueError(f"Invalid serializer: {serializer!r}")
@@ -154,7 +157,7 @@ def memo(
 
             memoizable_args = args
             if args:
-                if not _is_json_serializable(args[0]):
+                if not _is_serializable(args[0], dumper=_dump):
                     # probably we're wrapping a method! which means args[0] is `self`
                     # we can't use `inspect.ismethod(fn)` because at @memo-execution-time,
                     # `fn` isn't a method yet!
@@ -175,24 +178,25 @@ def memo(
                 strict_caching = _check_caching_policy(caching_policy) == "strict"
 
                 memo_name = f"{namespace}.{name or fn.__name__}"
+
                 if _MEMO_MODE == "record":
                     memo = data.scenes[-1].context.memos.get(memo_name)
                     if memo is None:
                         cpolicy_name = typing.cast(
                             _CachingPolicy, "strict" if strict_caching else "loose"
                         )
-                        memo = Memo(caching_policy=cpolicy_name)
+                        memo = Memo(caching_policy=cpolicy_name, serializer='json')
 
                     output = propagate()
-                    if strict_caching:
-                        memo.calls.append(((memo_args, kwargs), output))
-                    else:
-                        # we can't hash dicts, so we dump args and kwargs
-                        # regardless of what they are
-                        serialized_args_kwargs = _dump((memo_args, kwargs))
-                        memo.calls[serialized_args_kwargs] = _dump(output)
 
+                    # we can't hash dicts, so we dump args and kwargs
+                    # regardless of what they are
+                    serialized_args_kwargs = _dump((memo_args, kwargs))
+                    serialized_output = _dump(output)
+
+                    memo.cache_call(serialized_args_kwargs, serialized_output)
                     data.scenes[-1].context.memos[memo_name] = memo
+                    return output
 
                 elif _MEMO_MODE == "replay":
                     if idx is None:
@@ -218,8 +222,6 @@ def memo(
                         )
                         return propagate()
 
-                    fn_args_kwargs = [memo_args, kwargs]
-
                     if not memo.caching_policy == caching_policy:
                         warnings.warn(
                             f"stored memo has caching policy {memo.caching_policy} while "
@@ -231,6 +233,9 @@ def memo(
                         strict_caching = (
                             _check_caching_policy(memo.caching_policy) == "strict"
                         )
+
+                    # we serialize args and kwargs to compare them with the memoed ones
+                    fn_args_kwargs = _dump((memo_args, kwargs))
 
                     if strict_caching:
                         # in strict mode, fn might return different results every time it is called --
@@ -273,14 +278,9 @@ def memo(
                         #  regardless of when it is called.
                         # so all we have to check is whether the arguments are known.
                         #  in non-strict mode, memo.calls is an inputs/output dict.
-                        serialized_fn_args_kwargs = _dump(fn_args_kwargs)
-                        recorded_output = memo.calls.get(
-                            serialized_fn_args_kwargs, _NotFound
-                        )
+                        recorded_output = memo.calls.get(fn_args_kwargs, _NotFound)
                         if recorded_output is not _NotFound:
-                            return _load(
-                                recorded_output
-                            )  # happy path! good for you, path.
+                            return _load(recorded_output)  # happy path! good for you, path.
 
                         warnings.warn(
                             f"No memo for {memo_name} matches the arguments received at runtime. "
@@ -289,9 +289,11 @@ def memo(
                         return propagate()
 
                 else:
-                    raise ValueError(f"invalid memo mode: {_MEMO_MODE}")
+                    msg = f"invalid memo mode: {_MEMO_MODE}"
+                    warnings.warn(msg)
+                    raise ValueError(msg)
 
-            return output
+            raise RuntimeError('Unhandled memo path.')
 
         return wrapper
 
@@ -348,7 +350,7 @@ class Memo:
     # list of (args, kwargs), return-value pairs for this memo
     # warning: in reality it's all lists, no tuples.
     calls: Union[
-        List[Tuple[Tuple[List, Dict], Any]],  # if caching_policy == 'strict'
+        List[Tuple[str, Any]],  # if caching_policy == 'strict'
         Dict[str, Any],  # if caching_policy == 'loose'
     ] = field(default_factory=list)
     # indicates the position of the replay cursor if we're replaying the memo
@@ -363,6 +365,15 @@ class Memo:
         if self.caching_policy == "loose" and not self.calls:  # first time only!
             self.calls = {}
             self.cursor = "n/a"
+
+    def cache_call(self, input: str, output: str):
+        assert isinstance(input, str), input
+        assert isinstance(output, str), output
+
+        if self.caching_policy == "loose":
+            self.calls[input] = output
+        else:
+            self.calls.append((input, output))
 
 
 @dataclass

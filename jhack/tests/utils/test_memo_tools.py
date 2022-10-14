@@ -1,8 +1,11 @@
+import json
 import os
 import random
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from jhack.utils.event_recorder.memo_tools import (
     DecorateSpec,
@@ -57,17 +60,17 @@ class _ModelBackend():
     def other_method(self):
         pass
 
-    @memo(namespace='_ModelBackend', caching_policy='strict')
+    @memo(name=None, namespace='_ModelBackend', caching_policy='strict', serializer='json')
     def action_set(self, *args, **kwargs):
         return str(random.random())
 
-    @memo(namespace='_ModelBackend', caching_policy='loose')
+    @memo(name=None, namespace='_ModelBackend', caching_policy='loose', serializer='pickle')
     def action_get(self, *args, **kwargs):
         return str(random.random())
 
 class Foo():
 
-    @memo(namespace='Bar', caching_policy='loose')
+    @memo(name=None, namespace='Bar', caching_policy='loose', serializer='json')
     def bar(self, *args, **kwargs):
         return str(random.random())
 
@@ -86,7 +89,7 @@ def test_memoizer_injection():
             decorate={
                 "_ModelBackend": {
                     "action_set": DecorateSpec(),
-                    "action_get": DecorateSpec(caching_policy="loose"),
+                    "action_get": DecorateSpec(caching_policy="loose", serializer='pickle'),
                 },
                 "Foo": {"bar": DecorateSpec(namespace="Bar", caching_policy="loose")},
             },
@@ -113,7 +116,7 @@ def test_memoizer_recording():
             ctx = data.scenes[0].context
             assert ctx.memos
             assert ctx.memos[f"{DEFAULT_NAMESPACE}.my_fn"].calls == [
-                [[[10], {"retval": 10, "foo": "bar"}], 10]
+                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), '10']
             ]
 
 
@@ -151,11 +154,11 @@ def test_memoizer_replay():
                         memos={
                             f"{DEFAULT_NAMESPACE}.my_fn": Memo(
                                 calls=[
-                                    [[[10], {"retval": 10, "foo": "bar"}], 20],
-                                    [[[10], {"retval": 11, "foo": "baz"}], 21],
+                                    [json.dumps([[10], {"retval": 10, "foo": "bar"}]), '20'],
+                                    [json.dumps([[10], {"retval": 11, "foo": "baz"}]), '21'],
                                     [
-                                        [[11], {"retval": 10, "foo": "baq", "a": "b"}],
-                                        22,
+                                        json.dumps([[11], {"retval": 10, "foo": "baq", "a": "b"}]),
+                                        '22',
                                     ],
                                 ]
                             )
@@ -170,7 +173,7 @@ def test_memoizer_replay():
             caught_calls.append((args, kwargs))
 
         with patch(
-            "jhack.utils.event_recorder.recorder._log_memo", new=_catch_log_call
+                "jhack.utils.event_recorder.recorder._log_memo", new=_catch_log_call
         ):
             assert my_fn(10, retval=10, foo="bar") == 20
             assert my_fn(10, retval=11, foo="baz") == 21
@@ -179,9 +182,9 @@ def test_memoizer_replay():
             assert my_fn(11, retval=10, foo="baq", a="b") == 10
 
         assert caught_calls == [
-            (((10,), {"foo": "bar", "retval": 10}, 20), {"cache_hit": True}),
-            (((10,), {"foo": "baz", "retval": 11}, 21), {"cache_hit": True}),
-            (((11,), {"a": "b", "foo": "baq", "retval": 10}, 22), {"cache_hit": True}),
+            (((10,), {"foo": "bar", "retval": 10}, '20'), {"cache_hit": True}),
+            (((10,), {"foo": "baz", "retval": 11}, '21'), {"cache_hit": True}),
+            (((11,), {"a": "b", "foo": "baq", "retval": 10}, '22'), {"cache_hit": True}),
             (
                 ((11,), {"a": "b", "foo": "baq", "retval": 10}, "n/a"),
                 {"cache_hit": False},
@@ -243,11 +246,11 @@ def test_memoizer_classmethod_recording():
         with event_db(temp_db_file.name) as data:
             memos = data.scenes[0].context.memos
             assert memos["foo.my_fn"].calls == [
-                [[[10], {"retval": 10, "foo": "bar"}], 10]
+                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), '10']
             ]
 
             # replace return_value for replay test
-            memos["foo.my_fn"].calls = [[[[10], {"retval": 10, "foo": "bar"}], 20]]
+            memos["foo.my_fn"].calls = [[json.dumps([[10], {"retval": 10, "foo": "bar"}]), '20']]
 
         os.environ[MEMO_MODE_KEY] = "replay"
         assert f.my_fn(10, retval=10, foo="bar") == 20
@@ -293,3 +296,31 @@ def test_reset_replay_cursor():
             _memo = data.scenes[0].context.memos["my_fn"]
             assert _memo.cursor == 0
             assert _memo.calls == calls
+
+
+class Foo:
+    pass
+
+
+@pytest.mark.parametrize('obj',
+                         (b'1234',
+                          object(),
+                          Foo()))
+def test_memo_exotic_types(obj):
+    with tempfile.NamedTemporaryFile() as temp_db_file:
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+        os.environ[MEMO_MODE_KEY] = "record"
+
+        with event_db(temp_db_file.name) as data:
+            data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
+
+        @memo(serializer='pickle')
+        def my_fn(_obj):
+            return _obj
+
+        assert obj is my_fn(obj)
+
+        os.environ[MEMO_MODE_KEY] = "replay"
+
+        assert obj is not my_fn(obj)
+        assert obj == my_fn(obj)

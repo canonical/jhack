@@ -60,7 +60,8 @@
               "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_departed.\"], {}]": null
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_ids": {
             "calls": {
@@ -69,21 +70,24 @@
               ]
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_list": {
             "calls": {
               "[[2], {}]": []
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_remote_app_name": {
             "calls": {
               "[[2], {}]": "prom"
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           }
         }
       }
@@ -149,7 +153,8 @@
               "[[\"DEBUG\", \"Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml ingress configuration file\"], {}]": null
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_ids": {
             "calls": {
@@ -158,21 +163,24 @@
               ]
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_list": {
             "calls": {
               "[[2], {}]": []
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_remote_app_name": {
             "calls": {
               "[[2], {}]": "prom"
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "Client._request": {
             "calls": [
@@ -225,7 +233,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.is_leader": {
             "calls": [
@@ -252,7 +261,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.relation_set": {
             "calls": [
@@ -270,7 +280,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           }
         }
       }
@@ -336,7 +347,8 @@
               "[[\"DEBUG\", \"Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml ingress configuration file\"], {}]": null
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_ids": {
             "calls": {
@@ -345,21 +357,24 @@
               ]
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_list": {
             "calls": {
               "[[3], {}]": []
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_remote_app_name": {
             "calls": {
               "[[3], {}]": "prom"
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "Client._request": {
             "calls": [
@@ -412,7 +427,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.is_leader": {
             "calls": [
@@ -439,7 +455,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.relation_set": {
             "calls": [
@@ -457,7 +474,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           }
         }
       }
@@ -523,7 +541,8 @@
               "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml\"], {}]": null
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_ids": {
             "calls": {
@@ -532,7 +551,8 @@
               ]
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_list": {
             "calls": {
@@ -541,7 +561,8 @@
               ]
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_get": {
             "calls": [
@@ -578,7 +599,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.config_get": {
             "calls": {
@@ -588,7 +610,8 @@
               }
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "Client._request": {
             "calls": [
@@ -678,7 +701,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.status_set": {
             "calls": {
@@ -686,7 +710,8 @@
               "[[\"active\", \"\"], {\"is_app\": false}]": null
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.is_leader": {
             "calls": [
@@ -734,7 +759,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.relation_set": {
             "calls": [
@@ -764,7 +790,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           }
         }
       }
@@ -830,7 +857,8 @@
               "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml\"], {}]": null
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_ids": {
             "calls": {
@@ -839,7 +867,8 @@
               ]
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_list": {
             "calls": {
@@ -848,7 +877,8 @@
               ]
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_get": {
             "calls": [
@@ -884,8 +914,9 @@
                 {}
               ]
             ],
-            "cursor": 2,
-            "caching_policy": "strict"
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.config_get": {
             "calls": {
@@ -895,7 +926,8 @@
               }
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "Client._request": {
             "calls": [
@@ -985,7 +1017,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.status_set": {
             "calls": {
@@ -993,7 +1026,8 @@
               "[[\"active\", \"\"], {\"is_app\": false}]": null
             },
             "cursor": 0,
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.is_leader": {
             "calls": [
@@ -1041,7 +1075,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.relation_set": {
             "calls": [
@@ -1071,7 +1106,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           }
         }
       }
@@ -1133,7 +1169,8 @@
               "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml\"], {}]": null
             },
             "cursor": "n/a",
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.config_get": {
             "calls": {
@@ -1143,7 +1180,8 @@
               }
             },
             "cursor": "n/a",
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "Client._request": {
             "calls": [
@@ -1233,7 +1271,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.status_set": {
             "calls": {
@@ -1242,7 +1281,8 @@
               "[[\"active\", \"\"], {\"is_app\": false}]": null
             },
             "cursor": "n/a",
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_ids": {
             "calls": {
@@ -1252,7 +1292,8 @@
               "[[\"ingress\"], {}]": []
             },
             "cursor": "n/a",
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_list": {
             "calls": {
@@ -1261,7 +1302,8 @@
               ]
             },
             "cursor": "n/a",
-            "caching_policy": "loose"
+            "caching_policy": "loose",
+            "serializer": "json"
           },
           "_ModelBackend.relation_get": {
             "calls": [
@@ -1298,7 +1340,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.is_leader": {
             "calls": [
@@ -1346,7 +1389,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           },
           "_ModelBackend.relation_set": {
             "calls": [
@@ -1376,7 +1420,8 @@
               ]
             ],
             "cursor": 0,
-            "caching_policy": "strict"
+            "caching_policy": "strict",
+            "serializer": "json"
           }
         }
       }
