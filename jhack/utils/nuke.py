@@ -7,7 +7,7 @@ from typing import Callable, List, Literal, Optional
 
 import typer
 from rich.align import Align
-from rich.console import Console, Group
+from rich.console import Console
 from rich.style import Style
 from rich.text import Text
 

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import ast
 from dataclasses import dataclass
-from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, FrozenSet, Iterable, Literal, Optional, Sequence, Set, Union
+from typing import Dict, Literal, Optional
 
 import asttokens
 from astunparse import unparse

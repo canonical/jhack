@@ -1,11 +1,8 @@
-import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from itertools import chain
-from multiprocessing import Pool
 from pathlib import Path
-from subprocess import PIPE
-from typing import Iterable, Optional, Tuple, Union
+from typing import Iterable, Optional, Union
 
 import typer
 

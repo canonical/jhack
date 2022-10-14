@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import pytest
 
-from jhack.utils.show_relation import _sync_show_relation, sync_show_relation
+from jhack.utils.show_relation import _sync_show_relation
 
 
 def fake_juju_status(app_name, model=None, json: bool = False):

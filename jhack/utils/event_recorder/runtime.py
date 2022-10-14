@@ -1,13 +1,11 @@
-import logging
 import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, FrozenSet, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type
 
 import yaml
 
-from jhack.helpers import JPopen
 from jhack.logger import logger
 from jhack.utils.event_recorder.client import _fetch_file
 from jhack.utils.event_recorder.memo_tools import (

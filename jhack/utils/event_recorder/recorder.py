@@ -9,7 +9,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Literal, Tuple, Union
 
 try:
     from jhack.logger import logger as jhack_logger

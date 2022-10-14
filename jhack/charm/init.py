@@ -1,7 +1,7 @@
 from os import mkdir
 from pathlib import Path
 from subprocess import call
-from tempfile import mkdtemp, tempdir
+from tempfile import mkdtemp
 
 from jhack.charm.utilities import cwd
 

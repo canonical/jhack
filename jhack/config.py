@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from subprocess import CalledProcessError, check_call, check_output
+from subprocess import CalledProcessError, check_output
 
 from jhack.logger import logger
 
