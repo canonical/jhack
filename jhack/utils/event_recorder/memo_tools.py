@@ -37,12 +37,17 @@ class DecorateSpec:
     def as_token(self, default_namespace: str) -> Token:
         name = f"'{self.name}'" if self.name else "None"
 
+        if isinstance(self.serializer, str):
+            serializer = f"'{self.serializer}'"
+        else:
+            serializer = f"{str(self.serializer)}"
+
         raw = dedent(
             f"""@memo(
             name={name}, 
             namespace='{self.namespace or default_namespace}', 
             caching_policy='{self.caching_policy}',
-            serializer='{self.serializer}',
+            serializer={serializer},
             )\ndef foo():..."""
         )
         return asttokens.ASTTokens(raw, parse=True).tree.body[0].decorator_list[0]

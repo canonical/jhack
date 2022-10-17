@@ -28,6 +28,10 @@ MEMO_DATABASE_NAME_KEY = "MEMO_DATABASE_NAME"
 MEMO_MODE_KEY = "MEMO_MODE"
 DEFAULT_NAMESPACE = "<DEFAULT>"
 LOGFILE = "jhack-replay-logs.txt"
+
+# fixme: generalize the serializer by allowing to pass in a (pickled?) arbitrary callable.
+#  right now we have this PebblePush nonsense because that's the only special case.
+
 SUPPORTED_SERIALIZERS = Literal["pickle", "json", "io", "PebblePush"]
 SUPPORTED_SERIALIZERS_LIST = ["pickle", "json", "io", "PebblePush"]
 

@@ -71,7 +71,7 @@ class _ModelBackend():
 
 class Foo():
 
-    @memo(name=None, namespace='Bar', caching_policy='loose', serializer='json')
+    @memo(name=None, namespace='Bar', caching_policy='loose', serializer=('json', 'io'))
     def bar(self, *args, **kwargs):
         return str(random.random())
 
@@ -94,7 +94,9 @@ def test_memoizer_injection():
                         caching_policy="loose", serializer="pickle"
                     ),
                 },
-                "Foo": {"bar": DecorateSpec(namespace="Bar", caching_policy="loose")},
+                "Foo": {"bar": DecorateSpec(namespace="Bar",
+                                            caching_policy="loose",
+                                            serializer=('json', 'io'))},
             },
         )
 
