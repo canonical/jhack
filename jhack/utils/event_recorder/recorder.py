@@ -176,7 +176,7 @@ def memo(
                     return byio
                 raise ValueError(f"Invalid method: {method!r}")
 
-            def _dump(obj: Any, method: SUPPORTED_SERIALIZERS):
+            def _dump(obj: Any, method: SUPPORTED_SERIALIZERS, output_=None):
                 if method == "pickle":
                     if isinstance(obj, io.TextIOWrapper):
                         pass
@@ -192,11 +192,23 @@ def memo(
                     #  source: Union[bytes, str, BinaryIO, TextIO]
 
                     if isinstance(source, (bytes, str)):
-                        source = pickle.dumps(source)
-                        return _dump(((_args[0], source), _kwargs), "pickle")
+                        source_ = pickle.dumps(source)
+                        return _dump(((_args[0], source_), _kwargs), "pickle")
                     else:  # AnyIO:
-                        source = _dump(source, "io")
-                        return _dump(((_args[0], source), _kwargs), "pickle")
+                        if not output_:
+                            if _MEMO_MODE == "record":
+                                raise ValueError(
+                                    "we serialize AnyIO by just caching the contents. "
+                                    "Output required."
+                                )
+                            # attempt to obtain it by reading the obj
+                            try:
+                                output_ = source.read()
+                            except Exception as e:
+                                raise RuntimeError(
+                                    f"Cannot read source: {source}; unable to compare to cache"
+                                ) from e
+                        return _dump(((_args[0], output_), _kwargs), "pickle")
 
                 elif method == "io":
                     if not hasattr(obj, "read"):
@@ -219,7 +231,7 @@ def memo(
 
             memoizable_args = args
             if args:
-                if input_serializer is not "PebblePush" and not _is_serializable(
+                if input_serializer != "PebblePush" and not _is_serializable(
                     args[0], dumper=functools.partial(_dump, method=input_serializer)
                 ):
                     # probably we're wrapping a method! which means args[0] is `self`
@@ -256,7 +268,7 @@ def memo(
                     # we can't hash dicts, so we dump args and kwargs
                     # regardless of what they are
                     serialized_args_kwargs = _dump(
-                        (memo_args, kwargs), input_serializer
+                        (memo_args, kwargs), input_serializer, output_=output
                     )
                     serialized_output = _dump(output, output_serializer)
 

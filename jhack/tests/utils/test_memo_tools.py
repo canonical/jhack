@@ -373,20 +373,22 @@ def test_memo_pebble_push():
         with event_db(temp_db_file.name) as data:
             data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
 
-        _storage = 42
-
         @memo(serializer=("PebblePush", "json"))
         def my_fn(foo, bar, baz="qux"):
-            return _storage
+            return bar.read()
 
-        tf = tempfile.NamedTemporaryFile()
+        tf = tempfile.NamedTemporaryFile(delete=False)
         Path(tf.name).write_text("helloworld")
 
         obj = open(tf.name)
-        my_fn(12, obj, baz="lolz")
+        assert my_fn(12, obj, baz="lolz") == "helloworld"
+        obj.close()
 
         os.environ[MEMO_MODE_KEY] = "replay"
-        _storage = 12
 
         obj = open(tf.name)
-        assert my_fn(12, obj, baz="lolz") == 42
+        assert my_fn(12, obj, baz="lolz") == "helloworld"
+        obj.close()
+
+        tf.close()
+        del tf
