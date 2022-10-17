@@ -299,7 +299,7 @@ def live_unit_runtime(
 
 
 if __name__ == "__main__":
-    Runtime.install()
+    Runtime.install(force=True)
 
     def _patch_traefik_charm(charm: "CharmType"):
         from charms.observability_libs.v0 import kubernetes_service_patch  # noqa
@@ -321,4 +321,4 @@ if __name__ == "__main__":
         patch=_patch_traefik_charm,
     ) as runtime:
 
-        runtime.run(2)
+        runtime.run(15)

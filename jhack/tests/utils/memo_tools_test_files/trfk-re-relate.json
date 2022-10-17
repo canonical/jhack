@@ -6,12 +6,103 @@
           "JUJU_UNIT_NAME": "trfk/0",
           "KUBERNETES_PORT": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT": "443",
-          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_VERSION": "3.0-rc1",
           "JUJU_CHARM_HTTP_PROXY": "",
           "APT_LISTCHANGES_FRONTEND": "none",
-          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-departed-2986716416013396857",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-departed-1795949904885399515",
           "JUJU_AGENT_SOCKET_NETWORK": "unix",
-          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-departed",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "prom/0",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:6",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-departed",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "JUJU_DEPARTING_UNIT": "prom/0",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-17T10:13:45.039171"
+      },
+      "context": {
+        "memos": {
+          "_ModelBackend.juju_log": {
+            "calls": {
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-departed does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_departed.\"], {}]": "null"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_ids": {
+            "calls": {
+              "[[\"ingress-per-unit\"], {}]": "[6]"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_list": {
+            "calls": {
+              "[[6], {}]": "[\"prom/1\"]"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-rc1",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-departed-946689164995003826",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
           "JUJU_CHARM_HTTPS_PROXY": "",
           "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
           "JUJU_MODEL_NAME": "foo",
@@ -23,7 +114,7 @@
           "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
           "JUJU_RELATION": "ingress-per-unit",
           "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
-          "JUJU_RELATION_ID": "ingress-per-unit:2",
+          "JUJU_RELATION_ID": "ingress-per-unit:6",
           "KUBERNETES_PORT_443_TCP_PORT": "443",
           "JUJU_METER_STATUS": "AMBER",
           "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
@@ -35,7 +126,7 @@
           "JUJU_DEPARTING_UNIT": "prom/1",
           "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT_HTTPS": "443",
-          "JUJU_MODEL_UUID": "62f2bf65-4e77-445b-85d3-e95b02c2a720",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
           "KUBERNETES_SERVICE_HOST": "10.152.183.1",
           "JUJU_MACHINE_ID": "",
           "JUJU_CHARM_FTP_PROXY": "",
@@ -47,47 +138,57 @@
           "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
           "JUJU_REMOTE_APP": "prom"
         },
-        "timestamp": "2022-10-13T09:42:36.298278"
+        "timestamp": "2022-10-17T10:13:45.604602"
       },
       "context": {
         "memos": {
           "_ModelBackend.juju_log": {
             "calls": {
-              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": null,
-              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-departed does not exist.\"], {}]": null,
-              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": null,
-              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": null,
-              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_departed.\"], {}]": null
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-departed does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_departed.\"], {}]": "null"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_ids": {
             "calls": {
-              "[[\"ingress-per-unit\"], {}]": [
-                2
-              ]
+              "[[\"ingress-per-unit\"], {}]": "[6]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_list": {
             "calls": {
-              "[[2], {}]": []
+              "[[6], {}]": "[]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_remote_app_name": {
             "calls": {
-              "[[2], {}]": "prom"
+              "[[6], {}]": "\"prom\""
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           }
         }
       }
@@ -98,12 +199,12 @@
           "JUJU_UNIT_NAME": "trfk/0",
           "KUBERNETES_PORT": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT": "443",
-          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_VERSION": "3.0-rc1",
           "JUJU_CHARM_HTTP_PROXY": "",
           "APT_LISTCHANGES_FRONTEND": "none",
-          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-broken-1525911699953452418",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-broken-2034376736364358588",
           "JUJU_AGENT_SOCKET_NETWORK": "unix",
-          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
           "JUJU_CHARM_HTTPS_PROXY": "",
           "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
           "JUJU_MODEL_NAME": "foo",
@@ -115,7 +216,7 @@
           "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
           "JUJU_RELATION": "ingress-per-unit",
           "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
-          "JUJU_RELATION_ID": "ingress-per-unit:2",
+          "JUJU_RELATION_ID": "ingress-per-unit:6",
           "KUBERNETES_PORT_443_TCP_PORT": "443",
           "JUJU_METER_STATUS": "AMBER",
           "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
@@ -126,7 +227,7 @@
           "JUJU_SLA": "unsupported",
           "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT_HTTPS": "443",
-          "JUJU_MODEL_UUID": "62f2bf65-4e77-445b-85d3-e95b02c2a720",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
           "KUBERNETES_SERVICE_HOST": "10.152.183.1",
           "JUJU_MACHINE_ID": "",
           "JUJU_CHARM_FTP_PROXY": "",
@@ -138,150 +239,113 @@
           "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
           "JUJU_REMOTE_APP": "prom"
         },
-        "timestamp": "2022-10-13T09:42:36.846257"
+        "timestamp": "2022-10-17T10:13:46.189538"
       },
       "context": {
         "memos": {
           "_ModelBackend.juju_log": {
             "calls": {
-              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": null,
-              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-broken does not exist.\"], {}]": null,
-              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": null,
-              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": null,
-              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_broken.\"], {}]": null,
-              "[[\"DEBUG\", \"Wiping the ingress setup for the 'ingress-per-unit:2' relation\"], {}]": null,
-              "[[\"DEBUG\", \"Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml ingress configuration file\"], {}]": null
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-broken does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_broken.\"], {}]": "null",
+              "[[\"DEBUG\", \"Wiping the ingress setup for the 'ingress-per-unit:6' relation\"], {}]": "null",
+              "[[\"DEBUG\", \"Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_6_prom.yaml ingress configuration file\"], {}]": "null"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_ids": {
             "calls": {
-              "[[\"ingress-per-unit\"], {}]": [
-                2
-              ]
+              "[[\"ingress-per-unit\"], {}]": "[6]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_list": {
             "calls": {
-              "[[2], {}]": []
+              "[[6], {}]": "[]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_remote_app_name": {
             "calls": {
-              "[[2], {}]": "prom"
+              "[[6], {}]": "\"prom\""
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "Client._request": {
             "calls": [
               [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
               ],
               [
-                [
-                  [
-                    "POST",
-                    "/v1/files",
-                    null,
-                    {
-                      "action": "remove",
-                      "paths": [
-                        {
-                          "path": "/opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml",
-                          "recursive": true
-                        }
-                      ]
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "path": "/opt/traefik/juju/juju_ingress_ingress-per-unit_2_prom.yaml"
-                    }
-                  ]
-                }
+                "[[\"POST\", \"/v1/files\", null, {\"action\": \"remove\", \"paths\": [{\"path\": \"/opt/traefik/juju/juju_ingress_ingress-per-unit_6_prom.yaml\", \"recursive\": true}]}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"path\": \"/opt/traefik/juju/juju_ingress_ingress-per-unit_6_prom.yaml\"}]}"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.is_leader": {
             "calls": [
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_set": {
             "calls": [
               [
-                [
-                  [
-                    2,
-                    "ingress",
-                    "",
-                    true
-                  ],
-                  {}
-                ],
-                null
+                "[[6, \"ingress\", \"\", true], {}]",
+                "null"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           }
         }
       }
@@ -292,12 +356,12 @@
           "JUJU_UNIT_NAME": "trfk/0",
           "KUBERNETES_PORT": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT": "443",
-          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_VERSION": "3.0-rc1",
           "JUJU_CHARM_HTTP_PROXY": "",
           "APT_LISTCHANGES_FRONTEND": "none",
-          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-created-6424414435895681177",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-created-8019211125724820191",
           "JUJU_AGENT_SOCKET_NETWORK": "unix",
-          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
           "JUJU_CHARM_HTTPS_PROXY": "",
           "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
           "JUJU_MODEL_NAME": "foo",
@@ -309,7 +373,7 @@
           "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
           "JUJU_RELATION": "ingress-per-unit",
           "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
-          "JUJU_RELATION_ID": "ingress-per-unit:3",
+          "JUJU_RELATION_ID": "ingress-per-unit:7",
           "KUBERNETES_PORT_443_TCP_PORT": "443",
           "JUJU_METER_STATUS": "AMBER",
           "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
@@ -320,7 +384,7 @@
           "JUJU_SLA": "unsupported",
           "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT_HTTPS": "443",
-          "JUJU_MODEL_UUID": "62f2bf65-4e77-445b-85d3-e95b02c2a720",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
           "KUBERNETES_SERVICE_HOST": "10.152.183.1",
           "JUJU_MACHINE_ID": "",
           "JUJU_CHARM_FTP_PROXY": "",
@@ -332,150 +396,113 @@
           "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
           "JUJU_REMOTE_APP": "prom"
         },
-        "timestamp": "2022-10-13T09:42:43.859924"
+        "timestamp": "2022-10-17T10:13:49.648766"
       },
       "context": {
         "memos": {
           "_ModelBackend.juju_log": {
             "calls": {
-              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": null,
-              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-created does not exist.\"], {}]": null,
-              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": null,
-              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": null,
-              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_created.\"], {}]": null,
-              "[[\"DEBUG\", \"Wiping the ingress setup for the 'ingress-per-unit:3' relation\"], {}]": null,
-              "[[\"DEBUG\", \"Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml ingress configuration file\"], {}]": null
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-created does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_created.\"], {}]": "null",
+              "[[\"DEBUG\", \"Wiping the ingress setup for the 'ingress-per-unit:7' relation\"], {}]": "null",
+              "[[\"DEBUG\", \"Deleted orphaned /opt/traefik/juju/juju_ingress_ingress-per-unit_7_prom.yaml ingress configuration file\"], {}]": "null"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_ids": {
             "calls": {
-              "[[\"ingress-per-unit\"], {}]": [
-                3
-              ]
+              "[[\"ingress-per-unit\"], {}]": "[7]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_list": {
             "calls": {
-              "[[3], {}]": []
+              "[[7], {}]": "[]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_remote_app_name": {
             "calls": {
-              "[[3], {}]": "prom"
+              "[[7], {}]": "\"prom\""
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "Client._request": {
             "calls": [
               [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
               ],
               [
-                [
-                  [
-                    "POST",
-                    "/v1/files",
-                    null,
-                    {
-                      "action": "remove",
-                      "paths": [
-                        {
-                          "path": "/opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml",
-                          "recursive": true
-                        }
-                      ]
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "path": "/opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml"
-                    }
-                  ]
-                }
+                "[[\"POST\", \"/v1/files\", null, {\"action\": \"remove\", \"paths\": [{\"path\": \"/opt/traefik/juju/juju_ingress_ingress-per-unit_7_prom.yaml\", \"recursive\": true}]}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"path\": \"/opt/traefik/juju/juju_ingress_ingress-per-unit_7_prom.yaml\"}]}"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.is_leader": {
             "calls": [
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_set": {
             "calls": [
               [
-                [
-                  [
-                    3,
-                    "ingress",
-                    "",
-                    true
-                  ],
-                  {}
-                ],
-                null
+                "[[7, \"ingress\", \"\", true], {}]",
+                "null"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           }
         }
       }
@@ -486,12 +513,462 @@
           "JUJU_UNIT_NAME": "trfk/0",
           "KUBERNETES_PORT": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT": "443",
-          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_VERSION": "3.0-rc1",
           "JUJU_CHARM_HTTP_PROXY": "",
           "APT_LISTCHANGES_FRONTEND": "none",
-          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-joined-2962228317980008173",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-joined-2469845282828122536",
           "JUJU_AGENT_SOCKET_NETWORK": "unix",
-          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-joined",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "prom/0",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:7",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-joined",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-17T10:13:50.300944"
+      },
+      "context": {
+        "memos": {
+          "_ModelBackend.juju_log": {
+            "calls": {
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-joined does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_joined.\"], {}]": "null",
+              "[[\"DEBUG\", \"Updating ingress for relation 'ingress-per-unit:7'\"], {}]": "null",
+              "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_7_prom.yaml\"], {}]": "null"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_ids": {
+            "calls": {
+              "[[\"ingress-per-unit\"], {}]": "[7]"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_list": {
+            "calls": {
+              "[[7], {}]": "[\"prom/0\"]"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_get": {
+            "calls": [
+              [
+                "[[7, \"prom/0\", false], {}]",
+                "{\"egress-subnets\": \"10.152.183.134/32\", \"host\": \"prom-0.prom-endpoints.foo.svc.cluster.local\", \"ingress-address\": \"10.152.183.134\", \"mode\": \"http\", \"model\": \"foo\", \"name\": \"prom/0\", \"port\": \"9090\", \"private-address\": \"10.152.183.134\"}"
+              ],
+              [
+                "[[7, \"trfk\", true], {}]",
+                "{}"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.config_get": {
+            "calls": {
+              "[[], {}]": "{\"external_hostname\": \"foo.com\", \"routing_mode\": \"path\"}"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "Client._request": {
+            "calls": [
+              [
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
+              ],
+              [
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
+              ],
+              [
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
+              ],
+              [
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.status_set": {
+            "calls": {
+              "[[\"maintenance\", \"updating ingress configuration for 'ingress-per-unit:7'\"], {\"is_app\": false}]": "null",
+              "[[\"active\", \"\"], {\"is_app\": false}]": "null"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.is_leader": {
+            "calls": [
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_set": {
+            "calls": [
+              [
+                "[[7, \"ingress\", \"\", true], {}]",
+                "null"
+              ],
+              [
+                "[[7, \"ingress\", \"prom/0:\\n  url: http://foo.com:80/foo-prom-0\\n\", true], {}]",
+                "null"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "Client.push": {
+            "calls": [
+              [
+                "gASV5AEAAAAAAACMOy9vcHQvdHJhZWZpay9qdWp1L2p1anVfaW5ncmVzc19pbmdyZXNzLXBlci11bml0XzdfcHJvbS55YW1slEJAAQAAgASVNQEAAAAAAABYLgEAAGh0dHA6CiAgcm91dGVyczoKICAgIGp1anUtZm9vLXByb20tMC1yb3V0ZXI6CiAgICAgIGVudHJ5UG9pbnRzOgogICAgICAtIHdlYgogICAgICBydWxlOiBQYXRoUHJlZml4KGAvZm9vLXByb20tMGApCiAgICAgIHNlcnZpY2U6IGp1anUtZm9vLXByb20tMC1zZXJ2aWNlCiAgc2VydmljZXM6CiAgICBqdWp1LWZvby1wcm9tLTAtc2VydmljZToKICAgICAgbG9hZEJhbGFuY2VyOgogICAgICAgIHNlcnZlcnM6CiAgICAgICAgLSB1cmw6IGh0dHA6Ly9wcm9tLTAucHJvbS1lbmRwb2ludHMuZm9vLnN2Yy5jbHVzdGVyLmxvY2FsOjkwOTAKlC6UhpR9lCiMCGVuY29kaW5nlIwFdXRmLTiUjAltYWtlX2RpcnOUiIwLcGVybWlzc2lvbnOUTowHdXNlcl9pZJROjAR1c2VylE6MCGdyb3VwX2lklE6MBWdyb3VwlE51hpQu",
+                "null"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "PebblePush",
+              "json"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-rc1",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-changed-7344172640150335391",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
+          "JUJU_CHARM_HTTPS_PROXY": "",
+          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
+          "JUJU_MODEL_NAME": "foo",
+          "JUJU_DISPATCH_PATH": "hooks/ingress-per-unit-relation-changed",
+          "JUJU_AVAILABILITY_ZONE": "",
+          "JUJU_REMOTE_UNIT": "prom/0",
+          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "TERM": "tmux-256color",
+          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
+          "JUJU_RELATION": "ingress-per-unit",
+          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
+          "JUJU_RELATION_ID": "ingress-per-unit:7",
+          "KUBERNETES_PORT_443_TCP_PORT": "443",
+          "JUJU_METER_STATUS": "AMBER",
+          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
+          "JUJU_HOOK_NAME": "ingress-per-unit-relation-changed",
+          "LANG": "C.UTF-8",
+          "CLOUD_API_VERSION": "1.25.0",
+          "DEBIAN_FRONTEND": "noninteractive",
+          "JUJU_SLA": "unsupported",
+          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
+          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
+          "JUJU_MACHINE_ID": "",
+          "JUJU_CHARM_FTP_PROXY": "",
+          "JUJU_METER_INFO": "not set",
+          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_PRINCIPAL_UNIT": "",
+          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
+          "PYTHONPATH": "lib:venv",
+          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
+          "JUJU_REMOTE_APP": "prom"
+        },
+        "timestamp": "2022-10-17T10:13:51.033888"
+      },
+      "context": {
+        "memos": {
+          "_ModelBackend.juju_log": {
+            "calls": {
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-changed does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_changed.\"], {}]": "null",
+              "[[\"DEBUG\", \"Updating ingress for relation 'ingress-per-unit:7'\"], {}]": "null",
+              "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_7_prom.yaml\"], {}]": "null"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_ids": {
+            "calls": {
+              "[[\"ingress-per-unit\"], {}]": "[7]"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_list": {
+            "calls": {
+              "[[7], {}]": "[\"prom/0\"]"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_get": {
+            "calls": [
+              [
+                "[[7, \"prom/0\", false], {}]",
+                "{\"egress-subnets\": \"10.152.183.134/32\", \"host\": \"prom-0.prom-endpoints.foo.svc.cluster.local\", \"ingress-address\": \"10.152.183.134\", \"mode\": \"http\", \"model\": \"foo\", \"name\": \"prom/0\", \"port\": \"9090\", \"private-address\": \"10.152.183.134\"}"
+              ],
+              [
+                "[[7, \"trfk\", true], {}]",
+                "{}"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.config_get": {
+            "calls": {
+              "[[], {}]": "{\"external_hostname\": \"foo.com\", \"routing_mode\": \"path\"}"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "Client._request": {
+            "calls": [
+              [
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
+              ],
+              [
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
+              ],
+              [
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
+              ],
+              [
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.status_set": {
+            "calls": {
+              "[[\"maintenance\", \"updating ingress configuration for 'ingress-per-unit:7'\"], {\"is_app\": false}]": "null",
+              "[[\"active\", \"\"], {\"is_app\": false}]": "null"
+            },
+            "cursor": "n/a",
+            "caching_policy": "loose",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.is_leader": {
+            "calls": [
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "_ModelBackend.relation_set": {
+            "calls": [
+              [
+                "[[7, \"ingress\", \"\", true], {}]",
+                "null"
+              ],
+              [
+                "[[7, \"ingress\", \"prom/0:\\n  url: http://foo.com:80/foo-prom-0\\n\", true], {}]",
+                "null"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "Client.push": {
+            "calls": [
+              [
+                "gASV5AEAAAAAAACMOy9vcHQvdHJhZWZpay9qdWp1L2p1anVfaW5ncmVzc19pbmdyZXNzLXBlci11bml0XzdfcHJvbS55YW1slEJAAQAAgASVNQEAAAAAAABYLgEAAGh0dHA6CiAgcm91dGVyczoKICAgIGp1anUtZm9vLXByb20tMC1yb3V0ZXI6CiAgICAgIGVudHJ5UG9pbnRzOgogICAgICAtIHdlYgogICAgICBydWxlOiBQYXRoUHJlZml4KGAvZm9vLXByb20tMGApCiAgICAgIHNlcnZpY2U6IGp1anUtZm9vLXByb20tMC1zZXJ2aWNlCiAgc2VydmljZXM6CiAgICBqdWp1LWZvby1wcm9tLTAtc2VydmljZToKICAgICAgbG9hZEJhbGFuY2VyOgogICAgICAgIHNlcnZlcnM6CiAgICAgICAgLSB1cmw6IGh0dHA6Ly9wcm9tLTAucHJvbS1lbmRwb2ludHMuZm9vLnN2Yy5jbHVzdGVyLmxvY2FsOjkwOTAKlC6UhpR9lCiMCGVuY29kaW5nlIwFdXRmLTiUjAltYWtlX2RpcnOUiIwLcGVybWlzc2lvbnOUTowHdXNlcl9pZJROjAR1c2VylE6MCGdyb3VwX2lklE6MBWdyb3VwlE51hpQu",
+                "null"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "PebblePush",
+              "json"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "env": {
+          "JUJU_UNIT_NAME": "trfk/0",
+          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
+          "KUBERNETES_SERVICE_PORT": "443",
+          "JUJU_VERSION": "3.0-rc1",
+          "JUJU_CHARM_HTTP_PROXY": "",
+          "APT_LISTCHANGES_FRONTEND": "none",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-joined-6834839307837365529",
+          "JUJU_AGENT_SOCKET_NETWORK": "unix",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
           "JUJU_CHARM_HTTPS_PROXY": "",
           "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
           "JUJU_MODEL_NAME": "foo",
@@ -503,7 +980,7 @@
           "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
           "JUJU_RELATION": "ingress-per-unit",
           "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
-          "JUJU_RELATION_ID": "ingress-per-unit:3",
+          "JUJU_RELATION_ID": "ingress-per-unit:7",
           "KUBERNETES_PORT_443_TCP_PORT": "443",
           "JUJU_METER_STATUS": "AMBER",
           "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
@@ -514,7 +991,7 @@
           "JUJU_SLA": "unsupported",
           "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT_HTTPS": "443",
-          "JUJU_MODEL_UUID": "62f2bf65-4e77-445b-85d3-e95b02c2a720",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
           "KUBERNETES_SERVICE_HOST": "10.152.183.1",
           "JUJU_MACHINE_ID": "",
           "JUJU_CHARM_FTP_PROXY": "",
@@ -526,272 +1003,201 @@
           "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
           "JUJU_REMOTE_APP": "prom"
         },
-        "timestamp": "2022-10-13T09:42:44.423458"
+        "timestamp": "2022-10-17T10:13:51.761688"
       },
       "context": {
         "memos": {
           "_ModelBackend.juju_log": {
             "calls": {
-              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": null,
-              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-joined does not exist.\"], {}]": null,
-              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": null,
-              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": null,
-              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_joined.\"], {}]": null,
-              "[[\"DEBUG\", \"Updating ingress for relation 'ingress-per-unit:3'\"], {}]": null,
-              "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml\"], {}]": null
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-joined does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_joined.\"], {}]": "null",
+              "[[\"DEBUG\", \"Updating ingress for relation 'ingress-per-unit:7'\"], {}]": "null",
+              "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_7_prom.yaml\"], {}]": "null"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_ids": {
             "calls": {
-              "[[\"ingress-per-unit\"], {}]": [
-                3
-              ]
+              "[[\"ingress-per-unit\"], {}]": "[7]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_list": {
             "calls": {
-              "[[3], {}]": [
-                "prom/1"
-              ]
+              "[[7], {}]": "[\"prom/0\", \"prom/1\"]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_get": {
             "calls": [
               [
-                [
-                  [
-                    3,
-                    "prom/1",
-                    false
-                  ],
-                  {}
-                ],
-                {
-                  "egress-subnets": "10.152.183.197/32",
-                  "host": "prom-1.prom-endpoints.foo.svc.cluster.local",
-                  "ingress-address": "10.152.183.197",
-                  "mode": "http",
-                  "model": "foo",
-                  "name": "prom/1",
-                  "port": "9090",
-                  "private-address": "10.152.183.197"
-                }
+                "[[7, \"prom/1\", false], {}]",
+                "{\"egress-subnets\": \"10.152.183.134/32\", \"host\": \"prom-1.prom-endpoints.foo.svc.cluster.local\", \"ingress-address\": \"10.152.183.134\", \"mode\": \"http\", \"model\": \"foo\", \"name\": \"prom/1\", \"port\": \"9090\", \"private-address\": \"10.152.183.134\"}"
               ],
               [
-                [
-                  [
-                    3,
-                    "trfk",
-                    true
-                  ],
-                  {}
-                ],
-                {}
+                "[[7, \"prom/0\", false], {}]",
+                "{\"egress-subnets\": \"10.152.183.134/32\", \"host\": \"prom-0.prom-endpoints.foo.svc.cluster.local\", \"ingress-address\": \"10.152.183.134\", \"mode\": \"http\", \"model\": \"foo\", \"name\": \"prom/0\", \"port\": \"9090\", \"private-address\": \"10.152.183.134\"}"
+              ],
+              [
+                "[[7, \"trfk\", true], {}]",
+                "{}"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.config_get": {
             "calls": {
-              "[[], {}]": {
-                "external_hostname": "foo.com",
-                "routing_mode": "path"
-              }
+              "[[], {}]": "{\"external_hostname\": \"foo.com\", \"routing_mode\": \"path\"}"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "Client._request": {
             "calls": [
               [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
               ],
               [
-                [
-                  [
-                    "GET",
-                    "/v1/services",
-                    {
-                      "names": "traefik"
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "name": "traefik",
-                      "startup": "enabled",
-                      "current": "active"
-                    }
-                  ]
-                }
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
               ],
               [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
               ],
               [
-                [
-                  [
-                    "GET",
-                    "/v1/services",
-                    {
-                      "names": "traefik"
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "name": "traefik",
-                      "startup": "enabled",
-                      "current": "active"
-                    }
-                  ]
-                }
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.status_set": {
             "calls": {
-              "[[\"maintenance\", \"updating ingress configuration for 'ingress-per-unit:3'\"], {\"is_app\": false}]": null,
-              "[[\"active\", \"\"], {\"is_app\": false}]": null
+              "[[\"maintenance\", \"updating ingress configuration for 'ingress-per-unit:7'\"], {\"is_app\": false}]": "null",
+              "[[\"active\", \"\"], {\"is_app\": false}]": "null"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.is_leader": {
             "calls": [
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_set": {
             "calls": [
               [
-                [
-                  [
-                    3,
-                    "ingress",
-                    "",
-                    true
-                  ],
-                  {}
-                ],
-                null
+                "[[7, \"ingress\", \"\", true], {}]",
+                "null"
               ],
               [
-                [
-                  [
-                    3,
-                    "ingress",
-                    "prom/1:\n  url: http://foo.com:80/foo-prom-1\n",
-                    true
-                  ],
-                  {}
-                ],
-                null
+                "[[7, \"ingress\", \"prom/1:\\n  url: http://foo.com:80/foo-prom-1\\n\", true], {}]",
+                "null"
+              ],
+              [
+                "[[7, \"ingress\", \"prom/0:\\n  url: http://foo.com:80/foo-prom-0\\nprom/1:\\n  url: http://foo.com:80/foo-prom-1\\n\", true], {}]",
+                "null"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
+          },
+          "Client.push": {
+            "calls": [
+              [
+                "gASV9QIAAAAAAACMOy9vcHQvdHJhZWZpay9qdWp1L2p1anVfaW5ncmVzc19pbmdyZXNzLXBlci11bml0XzdfcHJvbS55YW1slEJRAgAAgASVRgIAAAAAAABYPwIAAGh0dHA6CiAgcm91dGVyczoKICAgIGp1anUtZm9vLXByb20tMC1yb3V0ZXI6CiAgICAgIGVudHJ5UG9pbnRzOgogICAgICAtIHdlYgogICAgICBydWxlOiBQYXRoUHJlZml4KGAvZm9vLXByb20tMGApCiAgICAgIHNlcnZpY2U6IGp1anUtZm9vLXByb20tMC1zZXJ2aWNlCiAgICBqdWp1LWZvby1wcm9tLTEtcm91dGVyOgogICAgICBlbnRyeVBvaW50czoKICAgICAgLSB3ZWIKICAgICAgcnVsZTogUGF0aFByZWZpeChgL2Zvby1wcm9tLTFgKQogICAgICBzZXJ2aWNlOiBqdWp1LWZvby1wcm9tLTEtc2VydmljZQogIHNlcnZpY2VzOgogICAganVqdS1mb28tcHJvbS0wLXNlcnZpY2U6CiAgICAgIGxvYWRCYWxhbmNlcjoKICAgICAgICBzZXJ2ZXJzOgogICAgICAgIC0gdXJsOiBodHRwOi8vcHJvbS0wLnByb20tZW5kcG9pbnRzLmZvby5zdmMuY2x1c3Rlci5sb2NhbDo5MDkwCiAgICBqdWp1LWZvby1wcm9tLTEtc2VydmljZToKICAgICAgbG9hZEJhbGFuY2VyOgogICAgICAgIHNlcnZlcnM6CiAgICAgICAgLSB1cmw6IGh0dHA6Ly9wcm9tLTEucHJvbS1lbmRwb2ludHMuZm9vLnN2Yy5jbHVzdGVyLmxvY2FsOjkwOTAKlC6UhpR9lCiMCGVuY29kaW5nlIwFdXRmLTiUjAltYWtlX2RpcnOUiIwLcGVybWlzc2lvbnOUTowHdXNlcl9pZJROjAR1c2VylE6MCGdyb3VwX2lklE6MBWdyb3VwlE51hpQu",
+                "null"
+              ]
+            ],
+            "cursor": 0,
+            "caching_policy": "strict",
+            "serializer": [
+              "PebblePush",
+              "json"
+            ]
           }
         }
       }
@@ -802,12 +1208,12 @@
           "JUJU_UNIT_NAME": "trfk/0",
           "KUBERNETES_PORT": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT": "443",
-          "JUJU_VERSION": "3.0-beta4",
+          "JUJU_VERSION": "3.0-rc1",
           "JUJU_CHARM_HTTP_PROXY": "",
           "APT_LISTCHANGES_FRONTEND": "none",
-          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-changed-1399769587857169676",
+          "JUJU_CONTEXT_ID": "trfk/0-ingress-per-unit-relation-changed-4831212155790521078",
           "JUJU_AGENT_SOCKET_NETWORK": "unix",
-          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
+          "JUJU_API_ADDRESSES": "10.152.183.180:17070 controller-service.controller-mk8scloud3.svc.cluster.local:17070",
           "JUJU_CHARM_HTTPS_PROXY": "",
           "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
           "JUJU_MODEL_NAME": "foo",
@@ -819,7 +1225,7 @@
           "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
           "JUJU_RELATION": "ingress-per-unit",
           "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
-          "JUJU_RELATION_ID": "ingress-per-unit:3",
+          "JUJU_RELATION_ID": "ingress-per-unit:7",
           "KUBERNETES_PORT_443_TCP_PORT": "443",
           "JUJU_METER_STATUS": "AMBER",
           "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
@@ -830,7 +1236,7 @@
           "JUJU_SLA": "unsupported",
           "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
           "KUBERNETES_SERVICE_PORT_HTTPS": "443",
-          "JUJU_MODEL_UUID": "62f2bf65-4e77-445b-85d3-e95b02c2a720",
+          "JUJU_MODEL_UUID": "c949f54e-0586-4713-883f-9c93a9965f36",
           "KUBERNETES_SERVICE_HOST": "10.152.183.1",
           "JUJU_MACHINE_ID": "",
           "JUJU_CHARM_FTP_PROXY": "",
@@ -842,586 +1248,201 @@
           "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
           "JUJU_REMOTE_APP": "prom"
         },
-        "timestamp": "2022-10-13T09:42:45.105974"
+        "timestamp": "2022-10-17T10:13:52.521880"
       },
       "context": {
         "memos": {
           "_ModelBackend.juju_log": {
             "calls": {
-              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": null,
-              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-changed does not exist.\"], {}]": null,
-              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": null,
-              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": null,
-              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_changed.\"], {}]": null,
-              "[[\"DEBUG\", \"Updating ingress for relation 'ingress-per-unit:3'\"], {}]": null,
-              "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml\"], {}]": null
+              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": "null",
+              "[[\"DEBUG\", \"Legacy hooks/ingress-per-unit-relation-changed does not exist.\"], {}]": "null",
+              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": "null",
+              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": "null",
+              "[[\"DEBUG\", \"Emitting Juju event ingress_per_unit_relation_changed.\"], {}]": "null",
+              "[[\"DEBUG\", \"Updating ingress for relation 'ingress-per-unit:7'\"], {}]": "null",
+              "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_7_prom.yaml\"], {}]": "null"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_ids": {
             "calls": {
-              "[[\"ingress-per-unit\"], {}]": [
-                3
-              ]
+              "[[\"ingress-per-unit\"], {}]": "[7]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_list": {
             "calls": {
-              "[[3], {}]": [
-                "prom/1"
-              ]
+              "[[7], {}]": "[\"prom/0\", \"prom/1\"]"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_get": {
             "calls": [
               [
-                [
-                  [
-                    3,
-                    "prom/1",
-                    false
-                  ],
-                  {}
-                ],
-                {
-                  "egress-subnets": "10.152.183.197/32",
-                  "host": "prom-1.prom-endpoints.foo.svc.cluster.local",
-                  "ingress-address": "10.152.183.197",
-                  "mode": "http",
-                  "model": "foo",
-                  "name": "prom/1",
-                  "port": "9090",
-                  "private-address": "10.152.183.197"
-                }
+                "[[7, \"prom/1\", false], {}]",
+                "{\"egress-subnets\": \"10.152.183.134/32\", \"host\": \"prom-1.prom-endpoints.foo.svc.cluster.local\", \"ingress-address\": \"10.152.183.134\", \"mode\": \"http\", \"model\": \"foo\", \"name\": \"prom/1\", \"port\": \"9090\", \"private-address\": \"10.152.183.134\"}"
               ],
               [
-                [
-                  [
-                    3,
-                    "trfk",
-                    true
-                  ],
-                  {}
-                ],
-                {}
+                "[[7, \"prom/0\", false], {}]",
+                "{\"egress-subnets\": \"10.152.183.134/32\", \"host\": \"prom-0.prom-endpoints.foo.svc.cluster.local\", \"ingress-address\": \"10.152.183.134\", \"mode\": \"http\", \"model\": \"foo\", \"name\": \"prom/0\", \"port\": \"9090\", \"private-address\": \"10.152.183.134\"}"
+              ],
+              [
+                "[[7, \"trfk\", true], {}]",
+                "{}"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.config_get": {
             "calls": {
-              "[[], {}]": {
-                "external_hostname": "foo.com",
-                "routing_mode": "path"
-              }
+              "[[], {}]": "{\"external_hostname\": \"foo.com\", \"routing_mode\": \"path\"}"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "Client._request": {
             "calls": [
               [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
               ],
               [
-                [
-                  [
-                    "GET",
-                    "/v1/services",
-                    {
-                      "names": "traefik"
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "name": "traefik",
-                      "startup": "enabled",
-                      "current": "active"
-                    }
-                  ]
-                }
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
               ],
               [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
+                "[[\"GET\", \"/v1/system-info\"], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": {\"boot-id\": \"90bc72ac-982c-0e3d-a4f8-cc84d5cbe119\", \"version\": \"unknown\"}}"
               ],
               [
-                [
-                  [
-                    "GET",
-                    "/v1/services",
-                    {
-                      "names": "traefik"
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "name": "traefik",
-                      "startup": "enabled",
-                      "current": "active"
-                    }
-                  ]
-                }
+                "[[\"GET\", \"/v1/services\", {\"names\": \"traefik\"}], {}]",
+                "{\"type\": \"sync\", \"status-code\": 200, \"status\": \"OK\", \"result\": [{\"name\": \"traefik\", \"startup\": \"enabled\", \"current\": \"active\"}]}"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.status_set": {
             "calls": {
-              "[[\"maintenance\", \"updating ingress configuration for 'ingress-per-unit:3'\"], {\"is_app\": false}]": null,
-              "[[\"active\", \"\"], {\"is_app\": false}]": null
+              "[[\"maintenance\", \"updating ingress configuration for 'ingress-per-unit:7'\"], {\"is_app\": false}]": "null",
+              "[[\"active\", \"\"], {\"is_app\": false}]": "null"
             },
-            "cursor": 0,
+            "cursor": "n/a",
             "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.is_leader": {
             "calls": [
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
               ],
               [
-                [
-                  [],
-                  {}
-                ],
-                true
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
+              ],
+              [
+                "[[], {}]",
+                "true"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
           "_ModelBackend.relation_set": {
             "calls": [
               [
-                [
-                  [
-                    3,
-                    "ingress",
-                    "",
-                    true
-                  ],
-                  {}
-                ],
-                null
+                "[[7, \"ingress\", \"\", true], {}]",
+                "null"
               ],
               [
-                [
-                  [
-                    3,
-                    "ingress",
-                    "prom/1:\n  url: http://foo.com:80/foo-prom-1\n",
-                    true
-                  ],
-                  {}
-                ],
-                null
+                "[[7, \"ingress\", \"prom/1:\\n  url: http://foo.com:80/foo-prom-1\\n\", true], {}]",
+                "null"
+              ],
+              [
+                "[[7, \"ingress\", \"prom/0:\\n  url: http://foo.com:80/foo-prom-0\\nprom/1:\\n  url: http://foo.com:80/foo-prom-1\\n\", true], {}]",
+                "null"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
-          }
-        }
-      }
-    },
-    {
-      "event": {
-        "env": {
-          "JUJU_UNIT_NAME": "trfk/0",
-          "KUBERNETES_PORT": "tcp://10.152.183.1:443",
-          "KUBERNETES_SERVICE_PORT": "443",
-          "JUJU_VERSION": "3.0-beta4",
-          "JUJU_CHARM_HTTP_PROXY": "",
-          "APT_LISTCHANGES_FRONTEND": "none",
-          "JUJU_CONTEXT_ID": "trfk/0-update-status-8231415363078597241",
-          "JUJU_AGENT_SOCKET_NETWORK": "unix",
-          "JUJU_API_ADDRESSES": "10.152.183.162:17070 controller-service.controller-mk8scloud.svc.cluster.local:17070",
-          "JUJU_CHARM_HTTPS_PROXY": "",
-          "JUJU_AGENT_SOCKET_ADDRESS": "@/var/lib/juju/agents/unit-trfk-0/agent.socket",
-          "JUJU_MODEL_NAME": "foo",
-          "JUJU_DISPATCH_PATH": "hooks/update-status",
-          "JUJU_AVAILABILITY_ZONE": "",
-          "JUJU_CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm",
-          "TERM": "tmux-256color",
-          "KUBERNETES_PORT_443_TCP_ADDR": "10.152.183.1",
-          "PATH": "/var/lib/juju/tools/unit-trfk-0:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/charm/bin",
-          "KUBERNETES_PORT_443_TCP_PORT": "443",
-          "JUJU_METER_STATUS": "AMBER",
-          "KUBERNETES_PORT_443_TCP_PROTO": "tcp",
-          "JUJU_HOOK_NAME": "update-status",
-          "LANG": "C.UTF-8",
-          "CLOUD_API_VERSION": "1.25.0",
-          "DEBIAN_FRONTEND": "noninteractive",
-          "JUJU_SLA": "unsupported",
-          "KUBERNETES_PORT_443_TCP": "tcp://10.152.183.1:443",
-          "KUBERNETES_SERVICE_PORT_HTTPS": "443",
-          "JUJU_MODEL_UUID": "62f2bf65-4e77-445b-85d3-e95b02c2a720",
-          "KUBERNETES_SERVICE_HOST": "10.152.183.1",
-          "JUJU_MACHINE_ID": "",
-          "JUJU_CHARM_FTP_PROXY": "",
-          "JUJU_METER_INFO": "not set",
-          "PWD": "/var/lib/juju/agents/unit-trfk-0/charm",
-          "JUJU_PRINCIPAL_UNIT": "",
-          "JUJU_CHARM_NO_PROXY": "127.0.0.1,localhost,::1",
-          "PYTHONPATH": "lib:venv",
-          "CHARM_DIR": "/var/lib/juju/agents/unit-trfk-0/charm"
-        },
-        "timestamp": "2022-10-13T09:47:04.956642"
-      },
-      "context": {
-        "memos": {
-          "_ModelBackend.juju_log": {
-            "calls": {
-              "[[\"DEBUG\", \"Operator Framework 1.5.2 up and running.\"], {}]": null,
-              "[[\"DEBUG\", \"Legacy hooks/update-status does not exist.\"], {}]": null,
-              "[[\"DEBUG\", \"yaml does not have libyaml extensions, using slower pure Python yaml loader\"], {}]": null,
-              "[[\"DEBUG\", \"Using local storage: /var/lib/juju/agents/unit-trfk-0/charm/.unit-state.db already exists\"], {}]": null,
-              "[[\"DEBUG\", \"Emitting Juju event update_status.\"], {}]": null,
-              "[[\"DEBUG\", \"Updating ingress for relation 'ingress-per-unit:3'\"], {}]": null,
-              "[[\"DEBUG\", \"Updated ingress configuration file: /opt/traefik/juju/juju_ingress_ingress-per-unit_3_prom.yaml\"], {}]": null
-            },
-            "cursor": "n/a",
-            "caching_policy": "loose",
-            "serializer": "json"
+            "serializer": [
+              "json",
+              "json"
+            ]
           },
-          "_ModelBackend.config_get": {
-            "calls": {
-              "[[], {}]": {
-                "external_hostname": "foo.com",
-                "routing_mode": "path"
-              }
-            },
-            "cursor": "n/a",
-            "caching_policy": "loose",
-            "serializer": "json"
-          },
-          "Client._request": {
+          "Client.push": {
             "calls": [
               [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
-              ],
-              [
-                [
-                  [
-                    "GET",
-                    "/v1/services",
-                    {
-                      "names": "traefik"
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "name": "traefik",
-                      "startup": "enabled",
-                      "current": "active"
-                    }
-                  ]
-                }
-              ],
-              [
-                [
-                  [
-                    "GET",
-                    "/v1/system-info"
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": {
-                    "boot-id": "ae659017-623e-660f-f157-8fcecb60d695",
-                    "version": "unknown"
-                  }
-                }
-              ],
-              [
-                [
-                  [
-                    "GET",
-                    "/v1/services",
-                    {
-                      "names": "traefik"
-                    }
-                  ],
-                  {}
-                ],
-                {
-                  "type": "sync",
-                  "status-code": 200,
-                  "status": "OK",
-                  "result": [
-                    {
-                      "name": "traefik",
-                      "startup": "enabled",
-                      "current": "active"
-                    }
-                  ]
-                }
+                "gASV9QIAAAAAAACMOy9vcHQvdHJhZWZpay9qdWp1L2p1anVfaW5ncmVzc19pbmdyZXNzLXBlci11bml0XzdfcHJvbS55YW1slEJRAgAAgASVRgIAAAAAAABYPwIAAGh0dHA6CiAgcm91dGVyczoKICAgIGp1anUtZm9vLXByb20tMC1yb3V0ZXI6CiAgICAgIGVudHJ5UG9pbnRzOgogICAgICAtIHdlYgogICAgICBydWxlOiBQYXRoUHJlZml4KGAvZm9vLXByb20tMGApCiAgICAgIHNlcnZpY2U6IGp1anUtZm9vLXByb20tMC1zZXJ2aWNlCiAgICBqdWp1LWZvby1wcm9tLTEtcm91dGVyOgogICAgICBlbnRyeVBvaW50czoKICAgICAgLSB3ZWIKICAgICAgcnVsZTogUGF0aFByZWZpeChgL2Zvby1wcm9tLTFgKQogICAgICBzZXJ2aWNlOiBqdWp1LWZvby1wcm9tLTEtc2VydmljZQogIHNlcnZpY2VzOgogICAganVqdS1mb28tcHJvbS0wLXNlcnZpY2U6CiAgICAgIGxvYWRCYWxhbmNlcjoKICAgICAgICBzZXJ2ZXJzOgogICAgICAgIC0gdXJsOiBodHRwOi8vcHJvbS0wLnByb20tZW5kcG9pbnRzLmZvby5zdmMuY2x1c3Rlci5sb2NhbDo5MDkwCiAgICBqdWp1LWZvby1wcm9tLTEtc2VydmljZToKICAgICAgbG9hZEJhbGFuY2VyOgogICAgICAgIHNlcnZlcnM6CiAgICAgICAgLSB1cmw6IGh0dHA6Ly9wcm9tLTEucHJvbS1lbmRwb2ludHMuZm9vLnN2Yy5jbHVzdGVyLmxvY2FsOjkwOTAKlC6UhpR9lCiMCGVuY29kaW5nlIwFdXRmLTiUjAltYWtlX2RpcnOUiIwLcGVybWlzc2lvbnOUTowHdXNlcl9pZJROjAR1c2VylE6MCGdyb3VwX2lklE6MBWdyb3VwlE51hpQu",
+                "null"
               ]
             ],
             "cursor": 0,
             "caching_policy": "strict",
-            "serializer": "json"
-          },
-          "_ModelBackend.status_set": {
-            "calls": {
-              "[[\"maintenance\", \"updating ingress configurations\"], {\"is_app\": false}]": null,
-              "[[\"maintenance\", \"updating ingress configuration for 'ingress-per-unit:3'\"], {\"is_app\": false}]": null,
-              "[[\"active\", \"\"], {\"is_app\": false}]": null
-            },
-            "cursor": "n/a",
-            "caching_policy": "loose",
-            "serializer": "json"
-          },
-          "_ModelBackend.relation_ids": {
-            "calls": {
-              "[[\"ingress-per-unit\"], {}]": [
-                3
-              ],
-              "[[\"ingress\"], {}]": []
-            },
-            "cursor": "n/a",
-            "caching_policy": "loose",
-            "serializer": "json"
-          },
-          "_ModelBackend.relation_list": {
-            "calls": {
-              "[[3], {}]": [
-                "prom/1"
-              ]
-            },
-            "cursor": "n/a",
-            "caching_policy": "loose",
-            "serializer": "json"
-          },
-          "_ModelBackend.relation_get": {
-            "calls": [
-              [
-                [
-                  [
-                    3,
-                    "prom/1",
-                    false
-                  ],
-                  {}
-                ],
-                {
-                  "egress-subnets": "10.152.183.197/32",
-                  "host": "prom-1.prom-endpoints.foo.svc.cluster.local",
-                  "ingress-address": "10.152.183.197",
-                  "mode": "http",
-                  "model": "foo",
-                  "name": "prom/1",
-                  "port": "9090",
-                  "private-address": "10.152.183.197"
-                }
-              ],
-              [
-                [
-                  [
-                    3,
-                    "trfk",
-                    true
-                  ],
-                  {}
-                ],
-                {}
-              ]
-            ],
-            "cursor": 0,
-            "caching_policy": "strict",
-            "serializer": "json"
-          },
-          "_ModelBackend.is_leader": {
-            "calls": [
-              [
-                [
-                  [],
-                  {}
-                ],
-                true
-              ],
-              [
-                [
-                  [],
-                  {}
-                ],
-                true
-              ],
-              [
-                [
-                  [],
-                  {}
-                ],
-                true
-              ],
-              [
-                [
-                  [],
-                  {}
-                ],
-                true
-              ],
-              [
-                [
-                  [],
-                  {}
-                ],
-                true
-              ],
-              [
-                [
-                  [],
-                  {}
-                ],
-                true
-              ]
-            ],
-            "cursor": 0,
-            "caching_policy": "strict",
-            "serializer": "json"
-          },
-          "_ModelBackend.relation_set": {
-            "calls": [
-              [
-                [
-                  [
-                    3,
-                    "ingress",
-                    "",
-                    true
-                  ],
-                  {}
-                ],
-                null
-              ],
-              [
-                [
-                  [
-                    3,
-                    "ingress",
-                    "prom/1:\n  url: http://foo.com:80/foo-prom-1\n",
-                    true
-                  ],
-                  {}
-                ],
-                null
-              ]
-            ],
-            "cursor": 0,
-            "caching_policy": "strict",
-            "serializer": "json"
+            "serializer": [
+              "PebblePush",
+              "json"
+            ]
           }
         }
       }

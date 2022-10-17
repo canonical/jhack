@@ -231,6 +231,7 @@ def _inject_record_current_event_call(file):
             "recorder installation failed: " f"could not find main clause in {file}"
         )
 
+    # line 0 is #!/usr/bin/env python3
     charm_py_lines.insert(1, "import recorder")
     charm_py_lines.insert(
         -mainline,

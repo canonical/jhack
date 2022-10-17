@@ -2,7 +2,7 @@ import json
 import os
 import random
 import tempfile
-from io import BufferedIOBase, TextIOWrapper
+from io import BufferedIOBase, StringIO, TextIOWrapper
 from pathlib import Path
 from unittest.mock import patch
 
@@ -379,22 +379,67 @@ def test_memo_pebble_push():
         with event_db(temp_db_file.name) as data:
             data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
 
-        @memo(serializer=("PebblePush", "json"))
-        def my_fn(foo, bar, baz="qux"):
-            return bar.read()
+        stored = None
+
+        class Foo:
+            @memo(serializer=("PebblePush", "json"))
+            def push(
+                self,
+                path,
+                source,
+                *,
+                encoding: str = "utf-8",
+                make_dirs: bool = False,
+                permissions=42,
+                user_id=42,
+                user=42,
+                group_id=42,
+                group=42,
+            ):
+
+                nonlocal stored
+                stored = source.read()
+                return stored
 
         tf = tempfile.NamedTemporaryFile(delete=False)
         Path(tf.name).write_text("helloworld")
 
         obj = open(tf.name)
-        assert my_fn(12, obj, baz="lolz") == "helloworld"
+        assert Foo().push(42, obj, user="lolz") == stored == "helloworld"
         obj.close()
+        stored = None
 
         os.environ[MEMO_MODE_KEY] = "replay"
 
         obj = open(tf.name)
-        assert my_fn(12, obj, baz="lolz") == "helloworld"
+        assert Foo().push(42, obj, user="lolz") == "helloworld"
+        assert stored == None
         obj.close()
 
         tf.close()
         del tf
+
+
+def test_memo_pebble_pull():
+    with tempfile.NamedTemporaryFile() as temp_db_file:
+        os.environ[MEMO_DATABASE_NAME_KEY] = temp_db_file.name
+        os.environ[MEMO_MODE_KEY] = "record"
+
+        with event_db(temp_db_file.name) as data:
+            data.scenes.append(Scene(event=Event(env={}, timestamp="10:10")))
+
+        class Foo:
+            @memo(serializer=("json", "io"))
+            def pull(self, foo: str):
+                tf = tempfile.NamedTemporaryFile()
+                Path(tf.name).write_text("helloworld")
+                return open(tf.name)
+
+            def getfile(self, foo: str):
+                return self.pull(foo).read()
+
+        assert Foo().getfile(foo="helloworld") == "helloworld"
+
+        os.environ[MEMO_MODE_KEY] = "replay"
+
+        assert Foo().getfile(foo="helloworld") == "helloworld"
