@@ -94,9 +94,13 @@ def test_memoizer_injection():
                         caching_policy="loose", serializer="pickle"
                     ),
                 },
-                "Foo": {"bar": DecorateSpec(namespace="Bar",
-                                            caching_policy="loose",
-                                            serializer=('json', 'io'))},
+                "Foo": {
+                    "bar": DecorateSpec(
+                        namespace="Bar",
+                        caching_policy="loose",
+                        serializer=("json", "io"),
+                    )
+                },
             },
         )
 
