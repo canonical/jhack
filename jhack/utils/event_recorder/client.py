@@ -216,8 +216,10 @@ def _inject_record_current_event_call(file):
     charm_path = Path(file)
     charm_py = charm_path.read_text()
 
-    recorder_call = f"    import recorder; recorder.setup()  # record current event call, " \
-                    f"injected by jhack.utils.replay @ {today().isoformat()}"
+    recorder_call = (
+        f"    import recorder; recorder.setup()  # record current event call, "
+        f"injected by jhack.utils.replay @ {today().isoformat()}"
+    )
 
     if recorder_call in charm_py:
         logger.info("recorder already installed, *I think*. Nothing to do...")

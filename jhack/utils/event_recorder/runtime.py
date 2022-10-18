@@ -265,42 +265,38 @@ def live_unit_runtime(
     patch: Callable[["CharmType"], "CharmType"] = lambda x: x,
 ) -> ContextManager[Runtime]:
 
-    unit_sanitized = unit_name.replace("/", "-")
+    sys.path.extend((str(local_charm_src / "src"), str(local_charm_src / "lib")))
 
-    with tempfile.TemporaryDirectory(
-        dir=Path("~").expanduser(), prefix=f".jhack_{unit_sanitized}_src"
-    ) as td:
+    ldict = {}
 
-        sys.path.extend((str(local_charm_src / "src"), str(local_charm_src / "lib")))
+    try:
+        exec(f"from charm import {charm_cls_name} as my_charm_type", globals(), ldict)
+    except ModuleNotFoundError as e:
+        raise RuntimeError(
+            f"Failed to load charm {charm_cls_name}. "
+            f"Probably some dependency is missing. "
+            f"Try `pip install -r {local_charm_src / 'requirements.txt'}`"
+        ) from e
 
-        ldict = {}
+    my_charm_type: Type[CharmBase] = ldict["my_charm_type"]
 
-        try:
-            exec(
-                f"from charm import {charm_cls_name} as my_charm_type", globals(), ldict
-            )
-        except ModuleNotFoundError as e:
-            raise RuntimeError(
-                f"Failed to load charm {charm_cls_name}. "
-                f"Probably some dependency is missing. "
-                f"Try `pip install -r {local_charm_src / 'requirements.txt'}`"
-            ) from e
+    charm_type = patch(my_charm_type)
 
-        my_charm_type: Type[CharmBase] = ldict["my_charm_type"]
-
-        charm_type = patch(my_charm_type)
-
-        yield Runtime(
-            charm_type,
-            # omitting these would mean Runtime will fetch them from the live unit
-            meta=yaml.safe_load((local_charm_src / "metadata.yaml").read_text()),
-            actions=yaml.safe_load((local_charm_src / "actions.yaml").read_text()),
-        ).load(unit_name)
+    yield Runtime(
+        charm_type,
+        # omitting these would mean Runtime will fetch them from the live unit
+        meta=yaml.safe_load((local_charm_src / "metadata.yaml").read_text()),
+        actions=yaml.safe_load((local_charm_src / "actions.yaml").read_text()),
+    ).load(unit_name)
 
 
 if __name__ == "__main__":
-    Runtime.install(force=True)
+    # install Runtime **in your current venv** so that all
+    # relevant pebble.Client | model._ModelBackend juju/container-facing calls are
+    # @memo-decorated and can be used in "replay" mode to reproduce a remote run.
+    Runtime.install(force=False)
 
+    # IRL one would probably manually @memo the annoying ksp calls.
     def _patch_traefik_charm(charm: "CharmType"):
         from charms.observability_libs.v0 import kubernetes_service_patch  # noqa
 
@@ -314,11 +310,18 @@ if __name__ == "__main__":
         kubernetes_service_patch.KubernetesServicePatch._patch = _null_evt_handler
         return charm
 
+    # here's the magic:
+    # this env grabs the event db from the "trfk/0" unit (assuming the unit is available
+    # in the currently switched-to juju model/controller).
     with live_unit_runtime(
         "trfk/0",
         local_charm_src=Path("/home/pietro/canonical/traefik-k8s-operator"),
         charm_cls_name="TraefikIngressCharm",
         patch=_patch_traefik_charm,
     ) as runtime:
-
-        runtime.run(15)
+        # then it will grab the TraefikIngressCharm from that local path and simulate the whole
+        # remote runtime env by calling `ops.main.main()` on it.
+        # this tells the runtime which event to replay. Right now, #0 of the
+        # `jhack replay list trfk/0` queue. Switch it to whatever number you like to
+        # locally replay that event.
+        runtime.run(0)
