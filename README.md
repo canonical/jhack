@@ -412,7 +412,7 @@ However, if all of your event handlers truly are idempotent (hem hem) you should
 
 # replay
 This command offers facilities to capture runtime event contexts and use them to 're-fire' "the same event" later on.
-Unlike `jhack utils fire`, which uses a synthetic (i.e. built from scratch, minimal) environment, this command family gets a hold of a 'real' environment, serializes it, and reuses it as needed. So the env is more complete. 
+Unlike `jhack utils fire`, which uses a synthetic (i.e. built from scratch, minimal) environment, this command family gets a hold of a 'real' environment, serializes it, and reuses it as needed. So the env is more complete, and the simulation, more realistic. 
 The flow consists of two main steps:
 - inject code that captures any event, serializes it and dumps it to a db on the unit.
 - whenever you like, trigger a charm execution reusing a recorded context.
