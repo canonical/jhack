@@ -467,6 +467,25 @@ In `jhack.utils.event_recorder.runtime` you can find a Runtime class. That objec
 
 At some point it will be moved to a charm lib.
 
+The main use cases for Runtime are:
+- regression testing: 
+  - install replay on some unit, 
+  - wait for some event to bork your charm
+  - grab the event db and put it in some /tests/replay_data folder 
+  - use Runtime to mock a charm execution using that backing database so that the charm will 
+    run again "exactly as it did back then"
+  - Assert that the charm does not bork exactly as it did back then
+- local debugging:
+  - use your favourite ide debugger tool to step through charm code without having to do 
+    any mocking **at all**: all juju-facing calls will return 'as they did in real life'.
+
+Future work:
+- make it easier to manually edit the contents of the event database, to turn Runtime into a 
+  Scenario mocking lib. What if instead of returning True, leader-get returned False at that point?
+- Reuse the @memo injection facilities to reroute locally originating juju/pebble client calls 
+  to a specific remote controller and pebble server. Goal: be able to run a charm ANYWHERE but 
+  have it talk to a real backend living somewhere else.
+
 
 # model
 ## clear
