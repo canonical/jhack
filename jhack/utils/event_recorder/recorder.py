@@ -82,9 +82,9 @@ def _load_memo_mode() -> MemoModes:
 
 def _is_bound_method(fn: Any):
     try:
-        return next(iter(inspect.signature(fn).parameters.items()))[0] != "self"
+        return next(iter(inspect.signature(fn).parameters.items()))[0] == "self"
     except:
-        return True
+        return False
 
 
 def _log_memo(
@@ -190,8 +190,8 @@ def memo(
                     return json.dumps(obj)
                 elif method == "PebblePush":
                     _args, _kwargs = obj
-                    assert len(_args) == 3
-                    path, source = _args[1:]
+                    assert len(_args) == 2
+                    path, source = _args
                     # pebble._Client.push's second argument:
                     #  source: Union[bytes, str, BinaryIO, TextIO]
 
@@ -235,7 +235,7 @@ def memo(
 
             memoizable_args = args
             if args:
-                if not _is_bound_method(fn):
+                if _is_bound_method(fn):
                     # which means args[0] is `self`
                     memoizable_args = args[1:]
                 else:

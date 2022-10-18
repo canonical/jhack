@@ -214,10 +214,16 @@ def _inject_memoizer(unit: str):
 
 def _inject_record_current_event_call(file):
     charm_path = Path(file)
-    charm_py_lines = charm_path.read_text().split("\n")
-    if charm_py_lines[1] == "import recorder":
+    charm_py = charm_path.read_text()
+
+    recorder_call = f"    import recorder; recorder.setup()  # record current event call, " \
+                    f"injected by jhack.utils.replay @ {today().isoformat()}"
+
+    if recorder_call in charm_py:
         logger.info("recorder already installed, *I think*. Nothing to do...")
         return
+
+    charm_py_lines = charm_path.read_text().split("\n")
 
     mainline = None
     for idx, line in enumerate(reversed(charm_py_lines)):
@@ -231,13 +237,7 @@ def _inject_record_current_event_call(file):
             "recorder installation failed: " f"could not find main clause in {file}"
         )
 
-    # line 0 is #!/usr/bin/env python3
-    charm_py_lines.insert(1, "import recorder")
-    charm_py_lines.insert(
-        -mainline,
-        f"    recorder.setup()  # record current event call, "
-        f"injected by jhack.utils.replay @ {today().isoformat()}",
-    )
+    charm_py_lines.insert(-mainline, recorder_call)
     # in between, somewhere, the `main(MyCharm)` call
     charm_path.write_text("\n".join(charm_py_lines))
 

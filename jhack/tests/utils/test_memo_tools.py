@@ -261,7 +261,7 @@ def test_memoizer_classmethod_recording():
 
         class Foo:
             @memo("foo")
-            def my_fn(*args, retval=None, **kwargs):
+            def my_fn(self, *args, retval=None, **kwargs):
                 return retval
 
         with event_db(temp_db_file.name) as data:
@@ -336,7 +336,6 @@ class Foo:
     (
         (b"1234", "pickle"),
         (object(), "pickle"),
-        ("<buf>", ("pickle", "io")),
         (Foo(), "pickle"),
     ),
 )
@@ -352,12 +351,6 @@ def test_memo_exotic_types(obj, serializer):
         def my_fn(_obj):
             return _obj
 
-        _bufmode = obj == "<buf>"
-        if _bufmode:
-            tf = tempfile.NamedTemporaryFile()
-            Path(tf.name).write_text("helloworld")
-            obj = open(tf.name)
-
         assert obj is my_fn(obj)
 
         os.environ[MEMO_MODE_KEY] = "replay"
@@ -365,10 +358,7 @@ def test_memo_exotic_types(obj, serializer):
         replay_output = my_fn(obj)
         assert obj is not replay_output
 
-        if _bufmode:
-            assert replay_output.read() == "helloworld"
-        else:
-            assert type(obj) is type(replay_output)
+        assert type(obj) is type(replay_output)
 
 
 def test_memo_pebble_push():

@@ -37,7 +37,7 @@ def runtime_ctx():
         Runtime.install()
         yield
 
-        Popen(f"cp -r {td} {ops_dir}".split())
+        Popen(f"mv {Path(td) / 'ops'} {ops_dir}".split())
 
 
 def charm_type():
@@ -109,10 +109,10 @@ def test_relation_data():
         _ = rel.data[charm.app]
 
         remote_unit_data = rel.data[list(rel.units)[0]]
-        assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
+        assert remote_unit_data["host"] == "prom-0.prom-endpoints.foo.svc.cluster.local"
         assert remote_unit_data["port"] == "9090"
         assert remote_unit_data["model"] == "foo"
-        assert remote_unit_data["name"] == "prom/1"
+        assert remote_unit_data["name"] == "prom/0"
 
         local_app_data = rel.data[charm.app]
         assert local_app_data == {}
@@ -141,10 +141,10 @@ def test_local_run_loose():
     #  pebble is a different story.
 
     remote_unit_data = rel.data[list(rel.units)[0]]
-    assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
+    assert remote_unit_data["host"] == "prom-0.prom-endpoints.foo.svc.cluster.local"
     assert remote_unit_data["port"] == "9090"
     assert remote_unit_data["model"] == "foo"
-    assert remote_unit_data["name"] == "prom/1"
+    assert remote_unit_data["name"] == "prom/0"
 
     local_app_data = rel.data[charm.app]
     assert local_app_data == {}
