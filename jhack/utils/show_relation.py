@@ -157,7 +157,9 @@ def get_metadata_from_status(
                 f"You might need to wait for all units to be allocated."
             )
         leader_id = unit_ids[0]
-        logger.debug(f"no leader elected yet, guessing it's the only unit out there: {leader_id}")
+        logger.debug(
+            f"no leader elected yet, guessing it's the only unit out there: {leader_id}"
+        )
 
     # we gotta do this because json status --format json does not include the interface
     raw_text_status = _juju_status(app_name, model=model)

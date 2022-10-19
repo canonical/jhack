@@ -470,7 +470,7 @@ class Processor:
             logger.debug(f"{msg.timestamp}: {msg.event} is a duplicate. skipping...")
             return
 
-        if mode in {'emit', 'reemit'}:
+        if mode in {"emit", "reemit"}:
             self._emit(msg)
 
         if not self._is_tracking(msg):

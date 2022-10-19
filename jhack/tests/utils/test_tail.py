@@ -91,11 +91,6 @@ with open(mocks_dir / "real-trfk-log.txt", mode="rb") as f:
 with open(mocks_dir / "real-trfk-cropped.txt", mode="rb") as f:
     logs = f.read()
     MOCK_JDL["cropped"] = logs
-#
-# with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-log-borky.txt',
-#           mode='rb') as f:
-#     logs = f.read()
-#     MOCK_JDL['borky'] = logs
 
 
 def _fake_log_proc(n):
@@ -104,7 +99,7 @@ def _fake_log_proc(n):
     return proc
 
 
-@pytest.fixture(autouse=True, params=(1, 2, 3, 4))
+@pytest.fixture(params=(1, 2, 3, 4))
 def mock_stdout(request):
     n = request.param
     with patch(
@@ -131,7 +126,7 @@ def silence_console_prints():
 
 @pytest.mark.parametrize("deferrals", (True, False))
 @pytest.mark.parametrize("length", (3, 10, 100))
-def test_tail(deferrals, length):
+def test_tail(deferrals, length, mock_stdout):
     _tail_events(targets="myapp/0", length=length, show_defer=deferrals, watch=False)
 
 
@@ -252,5 +247,5 @@ def test_machine_log_with_subordinates():
     assert len(proc.targets) == 4
     assert len(proc._raw_tables["mongodb/0"].events) == 2  # mock event we added
     assert len(proc._raw_tables["ceil/0"].events) == 1  # mock event we added
-    assert len(proc._raw_tables["prometheus-node-exporter/0"].events) == 11
-    assert len(proc._raw_tables["ubuntu/0"].events) == 16
+    assert len(proc._raw_tables["prometheus-node-exporter/0"].events) == 9
+    assert len(proc._raw_tables["ubuntu/0"].events) == 14
