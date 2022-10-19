@@ -325,8 +325,10 @@ def _nuke(
         )
 
         print_centered(text)
+
+        # todo split model nukes to a separate process and pass there shell=True
         logger.debug(f"nuking {nukeable} with {nuke}")
-        proc = JPopen(nuke.split(" "), stdout=PIPE, stderr=PIPE)
+        proc = JPopen(nuke.split(" "))
         proc.wait()
         while proc.returncode is None:
             sleep(0.1)

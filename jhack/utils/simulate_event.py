@@ -132,6 +132,9 @@ def _simulate_event(
     proc.wait()
     if proc.returncode != 0:
         logger.error(f"cmd {cmd} terminated with {proc.returncode}")
+        # todo consider
+        #  ❯ j exec -u trfk/0 -- juju-log --log-level DEBUG Charm called itself via hooks/<event>
+        #    so that tail will display something has been replayed.
         logger.error(f"stdout={proc.stdout.read()}")
         logger.error(f"stderr={proc.stderr.read()}")
     else:
