@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from subprocess import Popen
 from time import sleep
 
 from typer import Argument

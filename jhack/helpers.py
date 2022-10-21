@@ -6,8 +6,8 @@ import subprocess
 import tempfile
 from functools import lru_cache
 from pathlib import Path
-from subprocess import PIPE
-from typing import List, Tuple
+from subprocess import PIPE, CalledProcessError, check_output
+from typing import List, Optional, Tuple
 
 from juju.model import Model
 
@@ -76,6 +76,12 @@ def _JPopen(args: Tuple[str], wait: bool, **kwargs):  # noqa
         logger.error(msg)
 
     return proc
+
+
+def juju_log(unit: str, msg: str, model: str = None, debug=True):
+    m = f" -m {model}" if model else ""
+    d = " --debug" if debug else ""
+    JPopen(f"juju exec -u {unit}{m} -- juju-log{d}".split() + [msg])
 
 
 @lru_cache
@@ -176,3 +182,17 @@ def modify_remote_file(unit: str, path: str):
             f"{unit}:{path}",
         ]
         subprocess.check_call(cmd)
+
+
+def fetch_file(unit: str, remote_path: str, local_path: Path = None) -> Optional[str]:
+    unit_sanitized = unit.replace("/", "-")
+    cmd = f"juju ssh {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+    try:
+        raw = check_output(cmd.split())
+    except CalledProcessError as e:
+        raise RuntimeError(f"Failed to fetch {remote_path}.") from e
+
+    if not local_path:
+        return raw.decode("utf-8")
+
+    local_path.write_bytes(raw)

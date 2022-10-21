@@ -1,16 +1,13 @@
 import importlib
-import json
-import os
 import re
 import sys
 import tempfile
 import time
 from abc import ABC, abstractmethod
 from functools import partial, singledispatch
-from io import StringIO
 from os.path import expanduser
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Literal, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, Literal, Optional, Union
 
 import typer
 import yaml
@@ -335,9 +332,6 @@ def get_local_storage(unit_name: str, machine: bool = False):
                 )
                 print(f"failed to fetch db; aborting. {proc.stderr.read()}")
                 return
-
-            tf_file = Path(tf.name)
-
             yield tf.name
 
 

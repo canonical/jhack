@@ -39,49 +39,65 @@ def _mock_emit(
     return emit.format(**defaults)
 
 
+def mock_uniter_events_only(value: bool = True):
+    if value:
+        jhack.utils.tail_charms.MODEL_LOGLEVEL = "WARNING"
+        # this will make the parser only try to match "unit.myapp/0.juju-log Emitting Juju event..".
+    else:
+        jhack.utils.tail_charms.MODEL_LOGLEVEL = "TRACE"
+
+
 MOCK_JDL = {
     # scenario 1: emit, defer, reemit
-    1: b"""unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+    1: b"""unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/update_status[0]>.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/update_status[0]>.
         """,
     # scenario 2: defer "the same event" twice.
-    2: b"""unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "a" hook (via hook dispatching script: dispatch)
+    2: b"""unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event a.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/a[0]>.
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "b" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event b.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/a[0]>.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/a[0]>.
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "c" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event c.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/a[0]>.
         """,
     3:
     # scenario 3: defer "the same event" twice, but messily.
-    b"""unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "a" hook (via hook dispatching script: dispatch)
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "b" hook (via hook dispatching script: dispatch)
+    b"""unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event a.
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event b.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/b[0]>.
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "c" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event c.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/b[0]>.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/b[0]>.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/c[1]>.
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "d" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event d.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/b[0]>.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/c[1]>.
         """,
     # scenario 4: interleaving.
-    4: b"""unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+    4: b"""unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event install.
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/update_status[0]>.
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "bork" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event bork.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/update_status[0]>.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/update_status[0]>.
         unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/bork[1]>.
-        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/bork[1]>.
         unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/update_status[0]>.
         """,
 }
+
+MOCK_JDL_UNITER_EVTS_ONLY = {
+    1: b"""unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+        unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+        """,
+}
+
 
 mocks_dir = Path(__file__).parent / "tail_mocks"
 with open(mocks_dir / "real-trfk-log.txt", mode="rb") as f:
@@ -91,17 +107,21 @@ with open(mocks_dir / "real-trfk-log.txt", mode="rb") as f:
 with open(mocks_dir / "real-trfk-cropped.txt", mode="rb") as f:
     logs = f.read()
     MOCK_JDL["cropped"] = logs
-#
-# with open(Path(__file__).parent / 'tail_mocks' / 'real-trfk-log-borky.txt',
-#           mode='rb') as f:
-#     logs = f.read()
-#     MOCK_JDL['borky'] = logs
 
 
 def _fake_log_proc(n):
     proc = MagicMock()
     proc.stdout.readlines.return_value = MOCK_JDL[n].split(b"\n")
     return proc
+
+
+@pytest.fixture(params=(1, 2, 3, 4))
+def mock_stdout(request):
+    n = request.param
+    with patch(
+        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
+    ) as mock_status:
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -122,7 +142,7 @@ def silence_console_prints():
 
 @pytest.mark.parametrize("deferrals", (True, False))
 @pytest.mark.parametrize("length", (3, 10, 100))
-def test_tail(deferrals, length):
+def test_tail(deferrals, length, mock_stdout):
     _tail_events(targets="myapp/0", length=length, show_defer=deferrals, watch=False)
 
 
@@ -188,7 +208,37 @@ def test_tracking():
     assert len(raw_table.currently_deferred) == 0
 
 
+def test_tracking_uniter_logs():
+    mock_uniter_events_only()
+    p = Processor([Target("myapp", 0)], show_defer=True)
+    l1, l2, l3 = [
+        line.decode("utf-8").strip()
+        for line in MOCK_JDL_UNITER_EVTS_ONLY[1].split(b"\n")[:-1]
+    ]
+    raw_table = p._raw_tables["myapp/0"]
+
+    p.process(l1)
+    assert raw_table.deferrals == [None]
+    assert raw_table.ns == [None]
+    assert raw_table.events == ["start"]
+    assert raw_table.currently_deferred == []
+
+    p.process(l2)
+    assert raw_table.deferrals == [None, None]
+    assert raw_table.ns == [None, None]
+    assert raw_table.events == ["install", "start"]
+    assert raw_table.currently_deferred == []
+
+    p.process(l3)
+    assert raw_table.deferrals == [None, None, None]
+    assert raw_table.ns == [None, None, None]
+    assert raw_table.events == ["update_status", "install", "start"]
+    assert raw_table.currently_deferred == []
+
+
 def test_tracking_reemit_only():
+    mock_uniter_events_only(False)
+
     # we only process a `Re-emitting` log, this should cause Processor to mock a defer,
     # and mock an emit before that.
     p = Processor([Target("myapp", 0)], show_defer=True)
@@ -237,6 +287,7 @@ def test_tail_event_filter(pattern, log, match):
 
 
 def test_machine_log_with_subordinates():
+    mock_uniter_events_only(False)
     proc = _tail_events(
         length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
     )

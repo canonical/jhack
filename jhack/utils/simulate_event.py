@@ -2,7 +2,7 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, current_model, juju_version, show_unit
+from jhack.helpers import JPopen, current_model, juju_log, juju_version, show_unit
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
@@ -115,6 +115,9 @@ def _simulate_event(
     relation_remote: str = None,
     operator_dispatch: bool = False,
     env_override: str = None,
+    print_captured_stdout: bool = False,
+    print_captured_stderr: bool = False,
+    emit_juju_log: bool = True,
 ):
     env = env_override or _get_env(
         unit,
@@ -130,12 +133,21 @@ def _simulate_event(
     proc.wait()
     if proc.returncode != 0:
         logger.error(f"cmd {cmd} terminated with {proc.returncode}")
-    # todo consider
-    #  ❯ j exec -u trfk/0 -- juju-log --log-level DEBUG Charm called itself via hooks/<event>
-    #    so that tail will display something has been replayed.
-    # gress-per-unit-relation-changed.
+        # todo consider
+        #  ❯ j exec -u trfk/0 -- juju-log --log-level DEBUG Charm called itself via hooks/<event>
+        #    so that tail will display something has been replayed.
+        logger.error(f"stdout={proc.stdout.read()}")
+        logger.error(f"stderr={proc.stderr.read()}")
+    else:
+        if print_captured_stdout and (stdout := proc.stdout.read()):
+            print(f"[captured stdout: ]\n{stdout.decode('utf-8')}")
+        if print_captured_stderr and (stderr := proc.stderr.read()):
+            print(f"[captured stderr: ]\n{stderr.decode('utf-8')}")
+
     print(f"Fired {event} on {unit}.")
-    return
+
+    if emit_juju_log:
+        juju_log(unit, f"The previous {event} was fired by jhack.")
 
 
 def simulate_event(

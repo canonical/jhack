@@ -1,6 +1,5 @@
 import shutil
 from pathlib import Path
-from subprocess import Popen
 from time import sleep
 
 from jhack.helpers import JPopen

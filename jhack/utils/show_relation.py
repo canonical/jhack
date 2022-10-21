@@ -178,9 +178,14 @@ def get_metadata_from_status(
             leader_id = unit_id
         unit_ids.append(unit_id)
     if leader_id is None:
-        raise RuntimeError(
-            f"could not identify leader among units {unit_ids}. "
-            f"You might need to wait for all units to be allocated."
+        if len(unit_ids) > 1:
+            raise RuntimeError(
+                f"could not identify leader among units {unit_ids}. "
+                f"You might need to wait for all units to be allocated."
+            )
+        leader_id = unit_ids[0]
+        logger.debug(
+            f"no leader elected yet, guessing it's the only unit out there: {leader_id}"
         )
 
     # we gotta do this because json status --format json does not include the interface

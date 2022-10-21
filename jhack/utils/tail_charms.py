@@ -7,7 +7,6 @@ from collections import Counter
 from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
-from subprocess import PIPE, STDOUT
 from typing import (
     Callable,
     Dict,
@@ -16,6 +15,7 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    Tuple,
     Union,
     cast,
 )
@@ -36,7 +36,29 @@ from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 logger = jhacklogger.getChild(__file__)
 
 JUJU_VERSION = juju_version()
+BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
+
+
+def model_loglevel():
+    lc = JPopen("juju model-config logging-config".split())
+    logging_config = lc.stdout.read().decode("utf-8")
+    for key, val in (cfg.split("=") for cfg in logging_config.split(";")):
+        if key == "unit":
+            val = val.strip()
+            if val not in BEST_LOGLEVELS:
+                print(BEST_LOGLEVELS)
+                logger.warning(
+                    f"unit loglevel is {val}, which means tail will not be able to "
+                    f"track Operator Framework debug logs for deferrals, reemittals, etc. "
+                    f"Using juju uniter logs to track emissions. To fix this, run "
+                    f"`juju model-config logging-config=<root>=WARNING;unit=TRACE`"
+                )
+            return val
+    raise RuntimeError(f"could not determine unit loglevel from {logging_config}")
+
+
+MODEL_LOGLEVEL = model_loglevel()
 
 
 @dataclass
@@ -111,13 +133,15 @@ class EventLogMsg:
     event: str
     mocked: bool
 
+    tags: Tuple[str] = ()
+
     # we don't have any use for these, and they're only present if this event
     # has been (re)emitted/deferred during a relation hook call.
     endpoint: str = ""
     endpoint_id: str = ""
 
-    # whether this event is an operator event (charm calling itself)
-    operator_event: bool = False
+    # special for jhack-replay-emitted loglines
+    jhack_replayed_evt_timestamp: str = ""
 
 
 @dataclass
@@ -184,6 +208,9 @@ _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
 _operator_event_color = Color.from_rgb(252, 115, 3)
+_jhack_event_color = Color.from_rgb(200, 200, 50)
+_jhack_fire_event_color = Color.from_rgb(250, 200, 50)
+_jhack_replay_event_color = Color.from_rgb(100, 100, 150)
 _deferral_colors = {
     "deferred": "red",
     "reemitted": "green",
@@ -196,6 +223,103 @@ def _random_color():
     g = random.randint(0, 255)
     b = random.randint(0, 255)
     return Color.from_rgb(r, g, b)
+
+
+class LogLineParser:
+    base_pattern = "^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) unit\.(?P<unit>\S+)\.juju-log "
+    base_relation_pattern = base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
+
+    operator_event_suffix = "Charm called itself via hooks/(?P<event>\S+)\."
+    operator_event = re.compile(base_pattern + operator_event_suffix)
+
+    event_suffix = "Emitting Juju event (?P<event>\S+)\."
+    event_emitted = re.compile(base_pattern + event_suffix)
+    event_emitted_from_relation = re.compile(base_relation_pattern + event_suffix)
+
+    # modifiers
+    jhack_fire_evt_suffix = "The previous (?P<event>\S+) was fired by jhack\."
+    event_fired_jhack = re.compile(base_pattern + jhack_fire_evt_suffix)
+    jhack_replay_evt_suffix = "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
+    event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
+
+    event_repr = (
+        "<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
+    )
+    defer_suffix = "Deferring " + event_repr
+    event_deferred = re.compile(base_pattern + defer_suffix)
+    event_deferred_from_relation = re.compile(base_relation_pattern + defer_suffix)
+
+    reemitted_suffix = "Re-emitting " + event_repr
+    event_reemitted = re.compile(base_pattern + reemitted_suffix)
+    event_reemitted_from_relation = re.compile(base_relation_pattern + reemitted_suffix)
+
+    uniter_event = re.compile(
+        '^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook \(via hook dispatching script: dispatch\)'
+    )
+
+    tags = {
+        operator_event: ("operator",),
+        event_fired_jhack: ("jhack", "fire"),
+        event_replayed_jhack: ("jhack", "replay"),
+    }
+
+    @property
+    def uniter_events_only(self) -> bool:
+        return MODEL_LOGLEVEL not in BEST_LOGLEVELS
+
+    @staticmethod
+    def _uniform_event(event: str):
+        return event.replace("-", "_")
+
+    def _match(self, msg, *matchers) -> Optional[Dict[str, str]]:
+        for matcher in matchers:
+            if match := matcher.match(msg):
+                tags = self.tags.get(matcher, ())
+                dct = match.groupdict()
+                dct["tags"] = tags
+                dct["event"] = self._uniform_event(dct["event"])
+                return dct
+        return None
+
+    def match_event_deferred(self, msg):
+        if self.uniter_events_only:
+            return None
+        return self._match(msg, self.event_deferred, self.event_deferred_from_relation)
+
+    def match_event_emitted(self, msg):
+        if self.uniter_events_only:
+            match = self._match(msg, self.uniter_event)
+            if not match:
+                return None
+            unit = match.pop("unit_name")
+            n = match.pop("unit_number")
+            match["pod_name"] = f"{unit}-{n}"
+            match["unit"] = f"{unit}/{n}"
+            if "date" in match:
+                del match["date"]
+            return match
+
+        return self._match(
+            msg,
+            self.event_emitted,
+            self.event_emitted_from_relation,
+            self.operator_event,
+        )
+
+    def match_jhack_modifiers(self, msg):
+        # jhack fire/replay may emit some loglines that aim at modifying the meaning of
+        # previously parsed loglines
+        if self.uniter_events_only:
+            return
+        match = self._match(msg, self.event_fired_jhack, self.event_replayed_jhack)
+        return match
+
+    def match_event_reemitted(self, msg):
+        if self.uniter_events_only:
+            return None
+        return self._match(
+            msg, self.event_reemitted, self.event_reemitted_from_relation
+        )
 
 
 class Processor:
@@ -244,34 +368,7 @@ class Processor:
 
         self._warned_about_orphans = False
 
-        base_pattern = "^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) unit\.(?P<unit>\S+)\.juju-log "
-        base_relation_pattern = (
-            base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
-        )
-
-        operator_event_suffix = "Charm called itself via hooks/(?P<event>\S+)\."
-        self.operator_event = re.compile(base_pattern + operator_event_suffix)
-
-        event_suffix = "Emitting Juju event (?P<event>\S+)\."
-        self.event = re.compile(base_pattern + event_suffix)
-        self.event_from_relation = re.compile(base_relation_pattern + event_suffix)
-
-        self.uniter_event = re.compile(
-            '^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook \(via hook dispatching script: dispatch\)'
-        )
-
-        event_repr = "<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
-        defer_suffix = "Deferring " + event_repr
-        self.event_deferred = re.compile(base_pattern + defer_suffix)
-        self.event_deferred_from_relation = re.compile(
-            base_relation_pattern + defer_suffix
-        )
-
-        reemitted_suffix = "Re-emitting " + event_repr
-        self.event_reemitted = re.compile(base_pattern + reemitted_suffix)
-        self.event_reemitted_from_relation = re.compile(
-            base_relation_pattern + reemitted_suffix
-        )
+        self.parser = LogLineParser()
         self._rendered = False
 
     def _warn_about_orphaned_event(self, evt):
@@ -373,9 +470,6 @@ class Processor:
         self.tracking[unit].append(reemitted)
         logger.debug(f"reemitted {reemitted.event}")
 
-    def _uniform_event(self, event: str):
-        return event.replace("-", "_")
-
     def _match_filter(self, event_name: str) -> bool:
         """If the user specified an event name regex filter, run it."""
         if not self.event_filter_re:
@@ -386,57 +480,34 @@ class Processor:
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         if "Deferring" not in log:
             return
-        match = self.event_deferred.match(
-            log
-        ) or self.event_deferred_from_relation.match(log)
+        match = self.parser.match_event_deferred(log)
         if match:
-            params = match.groupdict()
-            params["event"] = event = self._uniform_event(params["event"])
-            if not self._match_filter(event):
+            if not self._match_filter(match["event"]):
                 return
-            return EventDeferredLogMsg(**params, mocked=False)
+            return EventDeferredLogMsg(**match, mocked=False)
 
     def _match_event_reemitted(self, log: str) -> Optional[EventReemittedLogMsg]:
         if "Re-emitting" not in log:
             return
-        match = self.event_reemitted.match(
-            log
-        ) or self.event_reemitted_from_relation.match(log)
+        match = self.parser.match_event_reemitted(log)
         if match:
-            params = match.groupdict()
-            params["event"] = event = self._uniform_event(params["event"])
-            if not self._match_filter(event):
+            if not self._match_filter(match["event"]):
                 return
-            return EventReemittedLogMsg(**params, mocked=False)
+            return EventReemittedLogMsg(**match, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
-        if match := self.event.match(log) or self.event_from_relation.match(log):
-            params = match.groupdict()
+        match = self.parser.match_event_emitted(log)
+        if match:
+            if not self._match_filter(match["event"]):
+                return
+            return EventLogMsg(**match, mocked=False)
 
-        elif match := self.operator_event.match(log):
-            params = match.groupdict()
-            params["operator_event"] = True
-
-        # TODO: in juju2, sometimes we need to match events in a
-        #  different way: understand why.
-        elif JUJU_VERSION < "3.0" and (match := self.uniter_event.match(log)):
-            params = match.groupdict()
-            unit = params.pop("unit_name")
-            n = params.pop("unit_number")
-            params["pod_name"] = f"{unit}-{n}"
-            params["unit"] = f"{unit}/{n}"
-
-        else:
-            return
-
-        params["event"] = event = self._uniform_event(params["event"])
-        if not self._match_filter(event):
-            return
-
-        # Ignore the unused date parameter
-        if "date" in params:
-            del params["date"]
-        return EventLogMsg(**params, mocked=False)
+    def _match_jhack_modifiers(self, log: str) -> Optional[EventLogMsg]:
+        match = self.parser.match_jhack_modifiers(log)
+        if match:
+            if not self._match_filter(match["event"]):
+                return
+            return EventLogMsg(**match, mocked=False)
 
     def _add_new_target(self, msg: EventLogMsg):
         logger.info(f"adding new unit {msg.unit}")
@@ -452,9 +523,47 @@ class Processor:
             return True
         self._duplicate_cache.add(hsh)
 
+    def _apply_jhack_mod(self, msg: EventLogMsg):
+        if "fire" in msg.tags:
+            # the previous event of this type was fired by jhack.
+            raw_table = self._raw_tables[msg.unit]
+            idx = raw_table.events.index(msg.event)
+            # copy over the tags
+            raw_table.msgs[idx].tags = msg.tags
+
+        elif "replay" in msg.tags:
+            # the previous event of this type was replayed by jhack.
+            # we log as if we emitted one.
+            self._emit(msg)
+
+            original_evt_timestamp = msg.jhack_replayed_evt_timestamp
+            raw_table = self._raw_tables[msg.unit]
+            original_evt_idx = None
+            for i, msg in enumerate(raw_table.msgs):
+                if msg and msg.timestamp == original_evt_timestamp:
+                    original_evt_idx = i
+                    break
+
+            if original_evt_idx:
+                ori_event = raw_table.msgs[original_evt_idx]
+                # add tags: if the original event was jhack-fired, we don't want to lose that info.
+                ori_event.tags += ("jhack", "replay", "source")
+            else:
+                logger.debug(
+                    f"original event out of scope: {original_evt_timestamp} is too far in the past."
+                )
+
+            newly_emitted_evt = raw_table.msgs[0]
+            newly_emitted_evt.tags = ("jhack", "replay", "replayed")
+
+        else:
+            raise ValueError(f"unsupported jhack modifier tags: {msg.tags}")
+
     def process(self, log: str) -> Optional[EventLogMsg]:
         """process a log line"""
-        if msg := self._match_event_emitted(log):
+        if msg := self._match_jhack_modifiers(log):
+            mode = "jhack-mod"
+        elif msg := self._match_event_emitted(log):
             mode = "emit"
         elif self._show_defer:
             if msg := self._match_event_deferred(log):
@@ -466,7 +575,7 @@ class Processor:
         else:
             return
 
-        if self._check_duplicate(msg):
+        if mode != "jhack-mod" and self._check_duplicate(msg):
             logger.debug(f"{msg.timestamp}: {msg.event} is a duplicate. skipping...")
             return
 
@@ -480,6 +589,8 @@ class Processor:
             self._defer(msg)
         elif mode == "reemit":
             self._reemit(msg)
+        elif mode == "jhack-mod":
+            self._apply_jhack_mod(msg)
 
         if mode in {"reemit", "emit"}:
             self._timestamps.insert(0, msg.timestamp)
@@ -488,7 +599,7 @@ class Processor:
             self._extend_other_tables(msg)
             self._crop()
 
-        if self._show_defer and self._is_tracking(msg):
+        if mode != "jhack-mod" and self._show_defer and self._is_tracking(msg):
             logger.info(f"updating defer for {msg.event}")
             self.update_defers(msg)
 
@@ -506,8 +617,15 @@ class Processor:
 
     def _get_event_color(self, msg: EventLogMsg) -> Color:
         event = msg.event
-        if msg.operator_event:
+        if "operator" in msg.tags:
             return _operator_event_color
+        if "jhack" in msg.tags:
+            if "fire" in msg.tags:
+                return _jhack_fire_event_color
+            elif "replay" in msg.tags:
+                return _jhack_replay_event_color
+            return _jhack_event_color
+
         if event in _event_colors:
             return _event_colors.get(event, _default_event_color)
         else:
@@ -515,6 +633,24 @@ class Processor:
                 if event.endswith(_e):
                     return _event_colors[_e]
         return _default_event_color
+
+    _fire_symbol = "🔥"
+    _replay_symbol = "⟳"
+
+    @classmethod
+    def _get_event_text(cls, event: str, msg: EventLogMsg):
+        event_text = event
+        if "jhack" in msg.tags:
+            if "fire" in msg.tags:
+                event_text += f" {cls._fire_symbol}"
+            if "replay" in msg.tags:
+                if "source" in msg.tags:
+                    event_text += f" (↑)"
+                elif "replayed" in msg.tags:
+                    event_text += (
+                        f" ({cls._replay_symbol}:{msg.jhack_replayed_evt_timestamp} ↓)"
+                    )
+        return event
 
     def render(self, _debug=False) -> Align:
         # we're rendering the table and flipping it every time. more efficient
@@ -542,7 +678,10 @@ class Processor:
                 zip(raw_table.msgs, raw_table.events, raw_table.ns)
             ):
                 rndr = (
-                    Text(event, style=Style(color=self._get_event_color(msg)))
+                    Text(
+                        self._get_event_text(event, msg),
+                        style=Style(color=self._get_event_color(msg)),
+                    )
                     if event
                     else ""
                 )
@@ -785,6 +924,11 @@ def tail_events(
     )
 
 
+def _get_debug_log(cmd):
+    # to easily allow mocking in tests
+    return JPopen(cmd)
+
+
 def _tail_events(
     targets: str = None,
     add_new_targets: bool = True,
@@ -817,7 +961,7 @@ def _tail_events(
         logger.debug("targets provided; overruling add_new_targets param.")
         add_new_targets = False
 
-    # if we pass files, we dont't grab targets from the env, we simply read them from the file
+    # if we pass files, we don't grab targets from the env, we simply read them from the file
     targets = parse_targets(targets) if not files else (targets or [])
     if not targets and not add_new_targets:
         logger.warning(
@@ -874,7 +1018,7 @@ def _tail_events(
                     return ""
 
         else:
-            proc = JPopen(cmd)
+            proc = _get_debug_log(cmd)
 
             if not watch:
                 stdout = iter(proc.stdout.readlines())
@@ -943,4 +1087,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, show_defer=True, show_ns=True)
+    _tail_events(length=30, replay=True, targets="indico/0")

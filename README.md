@@ -392,11 +392,31 @@ By using this tool you acknowledge the possibility of it bricking your model or 
   So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.
 
 
+# fire
+
+This command is used to simulate a specific event on a live unit. It works by building up an environment from scratch and tricking the charm to think a specific event is running by using `juju exec`. You can use it to simulate `update-status`, and other 'simple' events that have no special requirements in terms of envvars being set, but also more complex events are supported (relation events, workload events).
+
+Examples:
+
+`jhack fire traefik/0 update-status`
+
+`jhack fire traefik/0 ingress-per-unit-relation-changed`
+
+Pro tip: use `fire` it in combination with `jhack sync` to quickly iterate and repeatedly execute the charm 'as if' a specific event was being fired.
+
+Caveats:
+careless usage can rapidly and irrevocably bork your charm, since the events being fired in this way are not real juju events, therefore the charm state and the juju state can rapidly desync. E.g. Juju thinks everything is fine with the charm, but you just simulated a 'remove' event, following which the charm duly stopped all workload services, cleared a database and got ready to gracefully teardown. If after that Juju decides to fire any event, the charm will rightfully be surprised because it thought it was about to be killed.
+
+However, if all of your event handlers truly are idempotent (hem hem) you should be *fine*.
+
+
 # replay
 This command offers facilities to capture runtime event contexts and use them to 're-fire' "the same event" later on.
+Unlike `jhack utils fire`, which uses a synthetic (i.e. built from scratch, minimal) environment, this command family gets a hold of a 'real' environment, serializes it, and reuses it as needed. So the env is more complete, and the simulation, more realistic. 
 The flow consists of two main steps:
 - inject code that captures any event, serializes it and dumps it to a db on the unit.
-- whenever you like trigger a charm execution reusing a recorded context.
+- whenever you like, trigger a charm execution reusing a recorded context.
+
 
 ## install
 
@@ -434,11 +454,11 @@ or if no events have been fired yet:
 
 Tip: to quickly get some events in, you could `jhack fire trfr/0 update-status`.
 
-## refire
+## emit
 
 This command is used to re-fire a recorded event onto the same unit.
 
-    jhack replay refire trfk/0 2
+    jhack replay emit trfk/0 2
 
 Note that the index needs to match that of some recorded event (you can inspect those with `jhack replay list`).
 
@@ -451,13 +471,39 @@ Example run:
         (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created 
         (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined  
         (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed 
-    $ jhack replay refire trfk/0 2
+    $ jhack replay emit trfk/0 2
     Replaying event (3): ingress-per-unit-relation-joined as originally emitted at 2022-09-12 11:54:03.293178.
 
 ## dump
 
 Dump a recorded event (raw json).
 Interesting if you want to inspect the event context, or if you want to re-use it in other scripts (e.g. with `jhack utils fire`).
+
+
+## Runtime
+
+In `jhack.utils.event_recorder.runtime` you can find a Runtime class. That object can be used, in combination with the json database you obtained via `replay dump`, to locally execute a charm by simulating the context "exactly" as it occurred during the recorded execution.
+
+At some point it will be moved to a charm lib.
+
+The main use cases for Runtime are:
+- regression testing: 
+  - install replay on some unit, 
+  - wait for some event to bork your charm
+  - grab the event db and put it in some /tests/replay_data folder 
+  - use Runtime to mock a charm execution using that backing database so that the charm will 
+    run again "exactly as it did back then"
+  - Assert that the charm does not bork exactly as it did back then
+- local debugging:
+  - use your favourite ide debugger tool to step through charm code without having to do 
+    any mocking **at all**: all juju-facing calls will return 'as they did in real life'.
+
+Future work:
+- make it easier to manually edit the contents of the event database, to turn Runtime into a 
+  Scenario mocking lib. What if instead of returning True, leader-get returned False at that point?
+- Reuse the @memo injection facilities to reroute locally originating juju/pebble client calls 
+  to a specific remote controller and pebble server. Goal: be able to run a charm ANYWHERE but 
+  have it talk to a real backend living somewhere else.
 
 
 # model

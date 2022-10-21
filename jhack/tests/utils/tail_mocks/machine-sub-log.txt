@@ -143,6 +143,10 @@ unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Operator Framework 1.5.0 up
 unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Legacy hooks/update-status does not exist.
 unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log yaml does not have libyaml extensions, using slower pure Python yaml loader
 unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Using local storage: /var/lib/juju/agents/unit-ubuntu-0/charm/.unit-state.db already exists
+unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Emitting Juju event install.
+unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Emitting Juju event leader_elected.
+unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Emitting Juju event config_changed.
+unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Emitting Juju event start.
 unit-ubuntu-0: 15:48:03 DEBUG unit.ubuntu/0.juju-log Emitting Juju event update_status.
 unit-ubuntu-0: 15:48:53 WARNING juju.worker.uniter.operation we should run a leader-deposed hook here, but we can't yet
 controller-0: 15:48:55 ERROR juju.worker.provisioner failed to remove dead machine "0"
