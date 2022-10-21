@@ -703,10 +703,6 @@ class Processor:
         self.live.update("Listening for events...", refresh=True)
 
 
-def _get_debug_log(cmd):
-    return JPopen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-
-
 def tail_events(
     targets: str = typer.Argument(
         None,
@@ -878,7 +874,7 @@ def _tail_events(
                     return ""
 
         else:
-            proc = _get_debug_log(cmd)
+            proc = JPopen(cmd)
 
             if not watch:
                 stdout = iter(proc.stdout.readlines())

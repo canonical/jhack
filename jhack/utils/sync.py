@@ -147,10 +147,10 @@ async def push_to_remote_juju_unit(
     if not machine_charm:
         container_opt = f"--container {container_name} " if container_name else ""
         cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
-        proc = JPopen(cmd.split(" "), stdout=PIPE, stderr=PIPE)
+        proc = JPopen(cmd.split(" "))
     else:
         cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
-        proc = JPopen([cmd], stdout=PIPE, stderr=PIPE, shell=True)
+        proc = JPopen([cmd], shell=True)
 
     retcode = proc.returncode
     if retcode != None:

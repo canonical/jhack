@@ -59,9 +59,9 @@ def _juju_status(*args, **kwargs):
 
 def _show_unit(unit_name, model: str = None):
     if model:
-        proc = JPopen(f"juju show-unit -m {model} {unit_name}".split(), stdout=PIPE)
+        proc = JPopen(f"juju show-unit -m {model} {unit_name}".split())
     else:
-        proc = JPopen(f"juju show-unit {unit_name}".split(), stdout=PIPE)
+        proc = JPopen(f"juju show-unit {unit_name}".split())
     return proc.stdout.read().decode("utf-8").strip()
 
 
