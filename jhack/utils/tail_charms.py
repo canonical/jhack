@@ -26,7 +26,7 @@ from rich.color import Color
 from rich.console import Console
 from rich.live import Live
 from rich.style import Style
-from rich.table import Table
+from rich.table import Table, Column
 from rich.text import Text
 
 from jhack.helpers import JPopen, juju_status, juju_version
@@ -672,7 +672,8 @@ class Processor:
         targets = self.targets
         raw_tables = self._raw_tables
         for target in targets:
-            tgt_grid = Table.grid(*(("",) * n_cols), expand=True, padding=(0, 1, 0, 1))
+            tgt_grid = Table.grid(*(Column("", no_wrap=True) for _ in range(n_cols)),
+                                  expand=True, padding=(0, 1, 0, 1))
             raw_table = raw_tables[target.unit_name]
             for i, (msg, event, n) in enumerate(
                 zip(raw_table.msgs, raw_table.events, raw_table.ns)
