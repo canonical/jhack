@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.3.1'
+version: '0.3.2'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -58,3 +58,8 @@ plugs:
   # required to use multiprocessing semaphores
   shared-memory:
     private: true
+
+  # read access to $HOME. Required for sync and other commands that manipulate
+  #  your local code projects.
+  home-read:
+    interface: home
