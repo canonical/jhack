@@ -19,6 +19,33 @@ _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
 
+def get_interface(
+    raw_status, app_name, relation_name, other_app_name, other_relation_name
+):
+    # get the interface name from juju status.
+    relations_re = re.compile(
+        r"([\w\-]+):([\w\-]+)\s+([\w\-]+):([\w\-]+)\s+([\w\-]+)\s+([\w\-]+).*"
+    )
+    relations = relations_re.findall(raw_status)
+
+    endpoint1 = app_name, relation_name
+    endpoint2 = other_app_name, other_relation_name
+
+    for app1, rname1, app2, rname2, interface, _ in relations:
+        ep1 = app1, rname1
+        ep2 = app2, rname2
+        if (ep1 == endpoint1 and ep2 == endpoint2) or (
+            ep1 == endpoint2 and ep2 == endpoint1
+        ):
+            return interface
+
+    raise RuntimeError(
+        f"unable to find interface for "
+        f"{app_name}:{relation_name} <--> "
+        f"{other_app_name}:{other_relation_name}"
+    )
+
+
 def purge(data: dict):
     for key in _JUJU_KEYS:
         if key in data:
@@ -164,9 +191,13 @@ def get_metadata_from_status(
     # we gotta do this because json status --format json does not include the interface
     raw_text_status = _juju_status(app_name, model=model)
 
-    re_safe_app_name = app_name.replace("-", r"\-")
-    intf_re = rf"(({re_safe_app_name}:{relation_name}\s+{other_app_name}:{other_relation_name})|({other_app_name}:{other_relation_name}\s+{app_name}:{relation_name}))\s+([\w\-]+)"
-    interface = re.compile(intf_re).findall(raw_text_status)[0][-1]
+    interface = get_interface(
+        raw_text_status,
+        app_name=app_name,
+        relation_name=relation_name,
+        other_app_name=other_app_name,
+        other_relation_name=other_relation_name,
+    )
     return Metadata(scale, tuple(unit_ids), leader_id, interface)
 
 
