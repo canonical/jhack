@@ -129,7 +129,15 @@ def _emit(
         emit_juju_log=False,  # we emit our own
     )
 
-    juju_log(unit, f"{event} ({event.timestamp.split(' ')[1]}) was replayed by jhack.")
+    try:
+        # e.g. 10/12/2022T13:30:05.998884
+        ts_hr = event.timestamp.split('T')[1].split('.')[0]
+    except IndexError:
+        logger.error(f'event timestamp invalid: {event.timestamp}, '
+                     f'expected datetime.datetime.isoformat(sep="T").'
+                     f'Jhack tail will not be able to pick this up.')
+        ts_hr = event.timestamp
+    juju_log(unit, f"{event.name} ({ts_hr}) was replayed by jhack.")
 
 
 def emit(

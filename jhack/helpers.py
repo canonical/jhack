@@ -190,7 +190,7 @@ def fetch_file(unit: str, remote_path: str, local_path: Path = None) -> Optional
     try:
         raw = check_output(cmd.split())
     except CalledProcessError as e:
-        raise RuntimeError(f"Failed to fetch {remote_path}.") from e
+        raise RuntimeError(f"Failed to fetch {remote_path} from {unit_sanitized}.") from e
 
     if not local_path:
         return raw.decode("utf-8")
