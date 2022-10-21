@@ -104,15 +104,6 @@ def _fake_log_proc(n):
     return proc
 
 
-@pytest.fixture(autouse=True, params=(1, 2, 3, 4))
-def mock_stdout(request):
-    n = request.param
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
-    ) as mock_status:
-        yield
-
-
 @pytest.fixture(autouse=True)
 def silence_console_prints():
     with patch("rich.console.Console.print", wraps=lambda _: None):
@@ -169,28 +160,28 @@ def test_tracking():
     raw_table = p._raw_tables["myapp/0"]
 
     p.process(l1)
-    assert raw_table.deferrals == [p._dpad]
+    assert raw_table.deferrals == [None]
     assert raw_table.ns == [None]
     assert raw_table.events == ["start"]
     assert raw_table.currently_deferred == []
 
     p.process(l2)
-    assert raw_table.deferrals == [p._dpad, p._dpad]
+    assert raw_table.deferrals == [None, None]
     assert raw_table.ns == [None, None]
     assert raw_table.events == ["update_status", "start"]
     assert raw_table.currently_deferred == []
 
     p.process(l3)
-    assert raw_table.deferrals == [p._open + p._hline + p._lup, p._dpad]
+    assert raw_table.deferrals == ["deferred", None]
     assert raw_table.ns == ["0", None]
     assert raw_table.events == ["update_status", "start"]
     assert len(raw_table.currently_deferred) == 1
 
     p.process(l4)
     assert raw_table.deferrals == [
-        p._close + p._hline + p._ldown,
-        p._open + p._hline + p._lup,
-        p._dpad,
+        "reemitted",
+        "deferred",
+        None,
     ]
     assert raw_table.ns == ["0", "0", None]
     assert raw_table.events == ["update_status", "update_status", "start"]
@@ -206,8 +197,8 @@ def test_tracking_reemit_only():
 
     p.process(reemittal)
     assert raw_table.deferrals == [
-        p._close + p._hline + p._ldown,
-        p._open + p._hline + p._lup,
+        "reemitted",
+        "deferred",
     ]
     assert raw_table.ns == ["0", "0"]
     assert raw_table.events == ["update_status", "update_status"]
@@ -250,7 +241,45 @@ def test_machine_log_with_subordinates():
         length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
     )
     assert len(proc.targets) == 4
-    assert len(proc._raw_tables["mongodb/0"].events) == 2  # mock event we added
-    assert len(proc._raw_tables["ceil/0"].events) == 1  # mock event we added
-    assert len(proc._raw_tables["prometheus-node-exporter/0"].events) == 11
-    assert len(proc._raw_tables["ubuntu/0"].events) == 16
+
+    assert proc._raw_tables["mongodb/0"].events == [
+        None,
+        "testing_mock",
+    ]  # mock event we added
+    assert proc._raw_tables["ceil/0"].events == ["testing_mock"]  # mock event we added
+    assert proc._raw_tables["prometheus-node-exporter/0"].events == [
+        None,
+        None,
+        "juju_info_relation_changed",
+        "juju_info_relation_joined",
+        "start",
+        "config_changed",
+        "leader_elected",
+        "juju_info_relation_created",
+        "install",
+    ]
+    assert proc._raw_tables["ubuntu/0"].events == [
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "update_status",
+        "start",
+        "config_changed",
+        "leader_elected",
+        "install",
+    ]
+
+
+def test_borky_trfk_log_defer():
+    proc = _tail_events(
+        length=30,
+        replay=True,
+        files=[str(mocks_dir / "trfk_mock_bork_defer.txt")],
+        show_defer=True,
+    )

@@ -86,9 +86,11 @@ def main():
     replay.command(name="dump", no_args_is_help=True)(dump_db)
     replay.command(name="emit", no_args_is_help=True)(emit)
 
-    app = typer.Typer(name="jhack",
-                      help="Hacky, wacky, but ultimately charming.",
-                      no_args_is_help=True)
+    app = typer.Typer(
+        name="jhack",
+        help="Hacky, wacky, but ultimately charming.",
+        no_args_is_help=True,
+    )
     app.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
     app.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
     app.command(name="show-stored", no_args_is_help=True)(show_stored)
