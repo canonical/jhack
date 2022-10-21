@@ -650,7 +650,7 @@ class Processor:
                     event_text += (
                         f" ({cls._replay_symbol}:{msg.jhack_replayed_evt_timestamp} ↓)"
                     )
-        return event
+        return event_text
 
     def render(self, _debug=False) -> Align:
         # we're rendering the table and flipping it every time. more efficient
