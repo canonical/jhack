@@ -324,4 +324,4 @@ if __name__ == "__main__":
         # this tells the runtime which event to replay. Right now, #0 of the
         # `jhack replay list trfk/0` queue. Switch it to whatever number you like to
         # locally replay that event.
-        runtime.run(0)
+        runtime.run(2)

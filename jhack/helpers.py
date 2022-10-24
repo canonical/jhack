@@ -15,7 +15,6 @@ from jhack.config import IS_SNAPPED
 from jhack.logger import logger
 
 
-@lru_cache
 def get_models():
     cmd = f"juju models --format json"
     proc = JPopen(cmd.split())
@@ -50,7 +49,6 @@ def JPopen(args: List[str], wait=False, **kwargs):  # noqa
     return _JPopen(tuple(args), wait, **kwargs)
 
 
-@lru_cache
 def _JPopen(args: Tuple[str], wait: bool, **kwargs):  # noqa
     # Env-passing-down Popen
     proc = subprocess.Popen(
@@ -93,7 +91,6 @@ def juju_version():
     return raw
 
 
-@lru_cache
 def juju_status(app_name=None, model: str = None, json: bool = False):
     cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
@@ -107,7 +104,6 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
     return raw
 
 
-@lru_cache
 def is_k8s_model(status=None):
     status = status or juju_status(json=True)
     if status["applications"]:
@@ -125,20 +121,17 @@ def is_k8s_model(status=None):
     return "k8s" in cloud_name
 
 
-@lru_cache
 def juju_models() -> str:
     proc = JPopen(f"juju models".split())
     return proc.stdout.read().decode("utf-8")
 
 
-@lru_cache
 def show_unit(unit: str):
     proc = JPopen(f"juju show-unit {unit} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[unit]
 
 
-@lru_cache
 def list_models(strip_star=False) -> List[str]:
     raw = juju_models()
     lines = raw.split("\n")[3:]
@@ -148,7 +141,6 @@ def list_models(strip_star=False) -> List[str]:
     return models
 
 
-@lru_cache
 def current_model() -> str:
     all_models = list_models()
     key = lambda name: name.endswith("*")

@@ -2,7 +2,6 @@ import asyncio
 import re
 import time
 from dataclasses import dataclass
-from subprocess import PIPE
 from typing import Dict, List, Literal, Optional, Tuple
 
 import typer
@@ -644,4 +643,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=0)
+    _sync_show_relation(n=1, watch=True)
