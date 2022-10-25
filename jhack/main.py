@@ -6,6 +6,7 @@ from pathlib import Path
 
 import typer
 
+
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
 
@@ -36,6 +37,7 @@ from jhack.utils.event_recorder.client import (
     list_events,
     purge_db,
 )
+from jhack.utils import integrate
 from jhack.utils.ffwd import fast_forward
 from jhack.utils.nuke import nuke
 from jhack.utils.show_relation import sync_show_relation
@@ -86,6 +88,12 @@ def main():
     replay.command(name="dump", no_args_is_help=True)(dump_db)
     replay.command(name="emit", no_args_is_help=True)(emit)
 
+    relations = typer.Typer(name="relations",
+                            help="Commands to view and manage integrations.")
+    relations.command(name="show")(integrate.show)
+    relations.command(name="link")(integrate.link)
+    relations.command(name="clear")(integrate.clear)
+
     app = typer.Typer(
         name="jhack",
         help="Hacky, wacky, but ultimately charming.",
@@ -105,6 +113,7 @@ def main():
     app.add_typer(charm, no_args_is_help=True)
     app.add_typer(utils, no_args_is_help=True)
     app.add_typer(replay, no_args_is_help=True)
+    app.add_typer(relations, no_args_is_help=True)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):

@@ -7,12 +7,24 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_output
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Literal
 
+import typer
 from juju.model import Model
 
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
+
+
+RichSupportedColorOptions = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
+ColorOption = typer.Option(
+        "auto",
+        "-c",
+        "--color",
+        help="Color scheme to adopt. Supported options: "
+        "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
+        "no: disable colors entirely.",
+    )
 
 
 def get_models():
@@ -130,6 +142,12 @@ def show_unit(unit: str):
     proc = JPopen(f"juju show-unit {unit} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[unit]
+
+
+def show_application(application: str):
+    proc = JPopen(f"juju show-application {application} --format json".split())
+    raw = json.loads(proc.stdout.read().decode("utf-8"))
+    return raw[application]
 
 
 def list_models(strip_star=False) -> List[str]:
