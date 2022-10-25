@@ -7,7 +7,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 import typer
 import yaml
 
-from jhack.helpers import JPopen, juju_status, ColorOption, RichSupportedColorOptions
+from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions, juju_status
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
