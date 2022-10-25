@@ -590,3 +590,52 @@ Downloads the jinx source.
 `jhack jinx init`
 
 Basically `jinxcraft init`.
+
+
+# imatrix
+
+This subcommand is used to view and manage the Integration Matrix of a model, that is, for each 
+application pair, the _possible_ (not just the _currently active_) relations. 
+Whether a relation is possible or not is determined based on whether the interface name matches, 
+same as juju does. 
+
+Todo: extend this model to CMRs.
+
+## view
+
+`jhack imatrix view` will pretty-print the Integration Matrix itself:
+
+```txt
+                            integration  v0.1                              
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓ 
+┃ providers\requirers ┃ prom                    ┃ trfk                   ┃ 
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩ 
+│ prom                │ -n/a-                   │ ┌────────────────────┐ │ 
+│                     │                         │ │ - no interfaces -  │ │ 
+│                     │                         │ └────────────────────┘ │ 
+│ trfk                │ ┌─────────────────────┐ │ -n/a-                  │ 
+│                     │ │ ingress_per_unit N  │ │                        │ 
+│                     │ │ prometheus_scrape Y │ │                        │ 
+│                     │ └─────────────────────┘ │                        │ 
+└─────────────────────┴─────────────────────────┴────────────────────────┘ 
+```
+
+This representation should tell you:
+- there are two applications in this model: `trfk` and `prom`
+- `trfk` exposes two relation endpoints (as a provider) that have a potential of interfacing 
+  with `prom` (who is a requirer): `ingress_per_unit` and `prometheus_scrape`
+- of these two endpoints, only `prometheus_scrape` is presently active, i.e. `trfk` is related to
+  `prom` via that endpoint.
+- `prom` provides no endpoints that `trfk` requires
+
+
+TODO: allow ignoring the directionality of the relation: show shared interfaces for which both apps
+have the same role (since juju will allow relating over those... won't it?)
+
+## fill
+
+`jhack imatrix fill` will try to cross-relate all applications with one another in all possible ways.
+
+## clear
+
+`jhack imatrix clear` is the opposite of fill: it will attempt to remove all relations in the matrix.
