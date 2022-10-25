@@ -121,16 +121,16 @@ class IntegrationMatrix:
     def _render_shared(self, app: str, shared: List[List[str]]):
         out = []
         for remote, lst in zip(self._apps, shared):
-            if not lst and remote != app:
-                out.append("-")
-                continue
-
             t = Table(show_header=False, expand=True)
             t.add_column("")
 
-            if remote == app:
+            if not lst and remote != app:
                 out.append(t)
-                t.add_row(Text("-no interfaces-", style="orange"))
+                t.add_row(Text("- no interfaces - ", style="orange"))
+                continue
+
+            if remote == app:
+                out.append(Text("-n/a-", style="orange"))
                 continue
 
             for obj in lst:
@@ -236,7 +236,7 @@ class IntegrationMatrix:
                         )
                         continue
 
-                if prov not in targets:
+                if prov not in target_apps:
                     logger.debug(f"skipping {prov}: not a target")
                     continue
 
@@ -250,7 +250,7 @@ class IntegrationMatrix:
             return
 
         if dry_run:
-            print(f"would {verb}: {targets}")
+            print(f"would {verb}: {target_apps}")
 
         cmd_list: List[str] = []
         for ep1, ep2 in target_interfaces:
@@ -298,13 +298,13 @@ def link(
         None,
         "--include",
         "-i",
-        help="Regex an application will have to match to be included in the target pool",
+        help="Regex a provider will have to match to be included in the target pool",
     ),
     exclude: str = typer.Option(
         None,
         "--exclude",
         "-e",
-        help="Regex an application will have to NOT match to be included in the target pool",
+        help="Regex a provider will have to NOT match to be included in the target pool",
     ),
     dry_run: bool = False,
     model: str = typer.Option(
@@ -368,5 +368,5 @@ if __name__ == "__main__":
     mtrx = IntegrationMatrix()
     # mtrx.watch()
     # mtrx.pprint()
-    # mtrx.connect(dry_run=True)
+    mtrx.connect(dry_run=True, include="prom")
     mtrx.disconnect(dry_run=True)

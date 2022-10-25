@@ -87,12 +87,12 @@ def main():
     replay.command(name="dump", no_args_is_help=True)(dump_db)
     replay.command(name="emit", no_args_is_help=True)(emit)
 
-    relations = typer.Typer(
-        name="relations", help="Commands to view and manage integrations."
+    integration_matrix = typer.Typer(
+        name="imatrix", help="Commands to view and manage the integration matrix."
     )
-    relations.command(name="show")(integrate.show)
-    relations.command(name="link")(integrate.link)
-    relations.command(name="clear")(integrate.clear)
+    integration_matrix.command(name="view")(integrate.show)
+    integration_matrix.command(name="fill")(integrate.link)
+    integration_matrix.command(name="clear")(integrate.clear)
 
     app = typer.Typer(
         name="jhack",
@@ -113,7 +113,7 @@ def main():
     app.add_typer(charm, no_args_is_help=True)
     app.add_typer(utils, no_args_is_help=True)
     app.add_typer(replay, no_args_is_help=True)
-    app.add_typer(relations, no_args_is_help=True)
+    app.add_typer(integration_matrix, no_args_is_help=True)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):
