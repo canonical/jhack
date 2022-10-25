@@ -7,15 +7,27 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_output
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
+import typer
 from juju.model import Model
 
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
 
+RichSupportedColorOptions = Optional[
+    Literal["auto", "standard", "256", "truecolor", "windows", "no"]
+]
+ColorOption = typer.Option(
+    "auto",
+    "-c",
+    "--color",
+    help="Color scheme to adopt. Supported options: "
+    "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
+    "no: disable colors entirely.",
+)
 
-@lru_cache
+
 def get_models():
     cmd = f"juju models --format json"
     proc = JPopen(cmd.split())
@@ -50,7 +62,6 @@ def JPopen(args: List[str], wait=False, **kwargs):  # noqa
     return _JPopen(tuple(args), wait, **kwargs)
 
 
-@lru_cache
 def _JPopen(args: Tuple[str], wait: bool, **kwargs):  # noqa
     # Env-passing-down Popen
     proc = subprocess.Popen(
@@ -93,7 +104,6 @@ def juju_version():
     return raw
 
 
-@lru_cache
 def juju_status(app_name=None, model: str = None, json: bool = False):
     cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
@@ -107,7 +117,6 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
     return raw
 
 
-@lru_cache
 def is_k8s_model(status=None):
     status = status or juju_status(json=True)
     if status["applications"]:
@@ -125,20 +134,23 @@ def is_k8s_model(status=None):
     return "k8s" in cloud_name
 
 
-@lru_cache
 def juju_models() -> str:
     proc = JPopen(f"juju models".split())
     return proc.stdout.read().decode("utf-8")
 
 
-@lru_cache
 def show_unit(unit: str):
     proc = JPopen(f"juju show-unit {unit} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[unit]
 
 
-@lru_cache
+def show_application(application: str):
+    proc = JPopen(f"juju show-application {application} --format json".split())
+    raw = json.loads(proc.stdout.read().decode("utf-8"))
+    return raw[application]
+
+
 def list_models(strip_star=False) -> List[str]:
     raw = juju_models()
     lines = raw.split("\n")[3:]
@@ -148,7 +160,6 @@ def list_models(strip_star=False) -> List[str]:
     return models
 
 
-@lru_cache
 def current_model() -> str:
     all_models = list_models()
     key = lambda name: name.endswith("*")
@@ -190,7 +201,9 @@ def fetch_file(unit: str, remote_path: str, local_path: Path = None) -> Optional
     try:
         raw = check_output(cmd.split())
     except CalledProcessError as e:
-        raise RuntimeError(f"Failed to fetch {remote_path} from {unit_sanitized}.") from e
+        raise RuntimeError(
+            f"Failed to fetch {remote_path} from {unit_sanitized}."
+        ) from e
 
     if not local_path:
         return raw.decode("utf-8")

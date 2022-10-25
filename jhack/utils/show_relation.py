@@ -2,21 +2,18 @@ import asyncio
 import re
 import time
 from dataclasses import dataclass
-from subprocess import PIPE
 from typing import Dict, List, Literal, Optional, Tuple
 
 import typer
 import yaml
 
-from jhack.helpers import JPopen, juju_status
+from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions, juju_status
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
 
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
-
-_Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
 
 def get_interface(
@@ -560,14 +557,7 @@ def sync_show_relation(
         False, "-w", "--watch", help="Keep watching for changes."
     ),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
-    color: Optional[str] = typer.Option(
-        "auto",
-        "-c",
-        "--color",
-        help="Color scheme to adopt. Supported options: "
-        "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
-        "no: disable colors entirely.",
-    ),
+    color: Optional[str] = ColorOption,
 ):
     """Displays the databags of two applications or units involved in a relation.
 
@@ -599,7 +589,7 @@ def _sync_show_relation(
     hide_empty_databags: bool = False,
     model: str = None,
     watch: bool = False,
-    color: _Color = "auto",
+    color: RichSupportedColorOptions = "auto",
 ):
     try:
         import rich  # noqa
@@ -644,4 +634,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=0)
+    _sync_show_relation(n=1, watch=True)

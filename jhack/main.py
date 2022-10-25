@@ -29,6 +29,7 @@ from jhack.jinx.pack import pack as jinx_pack
 from jhack.logger import LOGLEVEL, logger
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
+from jhack.utils import integrate
 from jhack.utils.event_recorder.client import (
     dump_db,
     emit,
@@ -86,6 +87,13 @@ def main():
     replay.command(name="dump", no_args_is_help=True)(dump_db)
     replay.command(name="emit", no_args_is_help=True)(emit)
 
+    integration_matrix = typer.Typer(
+        name="imatrix", help="Commands to view and manage the integration matrix."
+    )
+    integration_matrix.command(name="view")(integrate.show)
+    integration_matrix.command(name="fill")(integrate.link)
+    integration_matrix.command(name="clear")(integrate.clear)
+
     app = typer.Typer(
         name="jhack",
         help="Hacky, wacky, but ultimately charming.",
@@ -105,6 +113,7 @@ def main():
     app.add_typer(charm, no_args_is_help=True)
     app.add_typer(utils, no_args_is_help=True)
     app.add_typer(replay, no_args_is_help=True)
+    app.add_typer(integration_matrix, no_args_is_help=True)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):
