@@ -55,7 +55,7 @@ def model_loglevel():
                     f"`juju model-config logging-config=<root>=WARNING;unit=TRACE`"
                 )
             return val
-    raise RuntimeError(f"could not determine unit loglevel from {logging_config}")
+    return 'WARNING'  # the default
 
 
 MODEL_LOGLEVEL = model_loglevel()
