@@ -439,10 +439,10 @@ def show_stored(
         is_flag=True,
     ),
     filter_: Optional[str] = typer.Option(
-        None,
+        '.*StoredStateData.*',
         "-f",
         "--filter",
-        help="State prefix regex for filtering which states should be shown.",
+        help="State prefix regex for filtering which snapshots should be shown.",
     ),
     adapters: Optional[str] = typer.Option(
         None,
@@ -498,5 +498,5 @@ def show_stored(
 
 if __name__ == "__main__":
     # _show_stored("prom/0", watch=False, adapters="/home/pietro/.config/JetBrains/PyCharmCE2022.2/scratches/scratch_5.py")
-    _show_stored("hello/0")
+    _show_stored("traefik/0", filter_re='.*StoredStateData.*')
     # _show_stored('/home/pietro/hacking/jhack/jhack/tests/utils/show_stored_mocks/trfk-0.dbdump')  # noqa
