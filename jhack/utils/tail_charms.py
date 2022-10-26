@@ -55,7 +55,7 @@ def model_loglevel():
                     f"`juju model-config logging-config=<root>=WARNING;unit=TRACE`"
                 )
             return val
-    return 'WARNING'  # the default
+    return "WARNING"  # the default
 
 
 MODEL_LOGLEVEL = model_loglevel()
