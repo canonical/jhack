@@ -44,7 +44,6 @@ def model_loglevel():
     try:
         lc = JPopen("juju model-config logging-config".split())
         logging_config = lc.stdout.read().decode("utf-8")
-        print(logging_config)
         for key, val in (cfg.split("=") for cfg in logging_config.split(";")):
             if key == "unit":
                 val = val.strip()
