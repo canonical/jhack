@@ -321,7 +321,7 @@ if __name__ == "__main__":
     ) as runtime:
         # then it will grab the TraefikIngressCharm from that local path and simulate the whole
         # remote runtime env by calling `ops.main.main()` on it.
-        # this tells the runtime which event to replay. Right now, #0 of the
+        # this tells the runtime which event to replay. Right now, #X of the
         # `jhack replay list trfk/0` queue. Switch it to whatever number you like to
         # locally replay that event.
         runtime.run(2)

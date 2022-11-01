@@ -595,7 +595,7 @@ class Processor:
         elif mode == "jhack-mod":
             self._apply_jhack_mod(msg)
 
-        if mode in {"reemit", "emit"}:
+        if mode in {"reemit", "emit"} or (mode == "jhack-mod" and 'replay' in msg.tags):
             self._timestamps.insert(0, msg.timestamp)
             # we need to update all *other* tables as well, to insert a
             # blank line where this event would appear
