@@ -10,8 +10,8 @@ import yaml
 from rich.align import Align
 from rich.console import Console
 from rich.live import Live
-from rich.table import Table
 from rich.prompt import Prompt
+from rich.table import Table
 from rich.text import Text
 
 from jhack.helpers import (
@@ -398,35 +398,46 @@ def cmr(remote, local=None, external_hostname: str = None, dry_run: bool = False
             print(f"({i}.{j}) := \t {prov} <-[{interface}]-> {req} ")
             opts[f"{i}.{j}"] = (prov, interface, req)
 
-    cmr = Prompt.ask("Pick a CMR",
-                     choices=list(opts),
-                     default=list(opts)[0])
+    cmr = Prompt.ask("Pick a CMR", choices=list(opts), default=list(opts)[0])
 
     prov, interface, req = opts[cmr]
-    prov_endpoint = mtrx1._get_endpoint(prov, 'provides', interface)
-    req_endpoint = mtrx2._get_endpoint(req, 'requires', interface)
+    prov_endpoint = mtrx1._get_endpoint(prov, "provides", interface)
+    req_endpoint = mtrx2._get_endpoint(req, "requires", interface)
 
     def fmt_endpoint(model, app, endpoint):
-        return Text(model or '<this model>', style='red') + '.' + \
-               Text(app, style='purple') + ':' + \
-               Text(endpoint, style='cyan')
+        return (
+            Text(model or "<this model>", style="red")
+            + "."
+            + Text(app, style="purple")
+            + ":"
+            + Text(endpoint, style="cyan")
+        )
 
     c = Console()
-    txt = Text("relating ") + fmt_endpoint(local, prov, prov_endpoint) + " <-[" + \
-          Text(interface, style='green') + "]-> " + fmt_endpoint(remote, req, req_endpoint)
+    txt = (
+        Text("relating ")
+        + fmt_endpoint(local, prov, prov_endpoint)
+        + " <-["
+        + Text(interface, style="green")
+        + "]-> "
+        + fmt_endpoint(remote, req, req_endpoint)
+    )
     c.print(txt)
 
     script = [
-        f'juju offer {remote}.{req}:{req_endpoint}',
-        f'juju consume admin/{remote}.{req}',
-        f'juju relate {req}:{req_endpoint} {prov}:{prov_endpoint}'
+        f"juju offer {remote}.{req}:{req_endpoint}",
+        f"juju consume admin/{remote}.{req}",
+        f"juju relate {req}:{req_endpoint} {prov}:{prov_endpoint}",
     ]
     if external_hostname:
-        script.insert(0, f"juju config -m {remote} {req} "
-                         f"juju-external-hostname={external_hostname}")
+        script.insert(
+            0,
+            f"juju config -m {remote} {req} "
+            f"juju-external-hostname={external_hostname}",
+        )
 
     if dry_run:
-        print('would run:', '\n\t'.join(script))
+        print("would run:", "\n\t".join(script))
         return
 
     for cmd in script:

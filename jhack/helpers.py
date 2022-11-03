@@ -195,7 +195,9 @@ def modify_remote_file(unit: str, path: str):
         subprocess.check_call(cmd)
 
 
-def fetch_file(unit: str, remote_path: str, local_path: Path = None, model: str = None) -> Optional[str]:
+def fetch_file(
+    unit: str, remote_path: str, local_path: Path = None, model: str = None
+) -> Optional[str]:
     unit_sanitized = unit.replace("/", "-")
     model_arg = f" -m {model}" if model else ""
     cmd = f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"

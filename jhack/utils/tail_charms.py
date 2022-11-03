@@ -57,7 +57,9 @@ def model_loglevel():
                     )
                 return val
     except Exception as e:
-        logger.error(f"failed to determine model loglevel: {e}. Guessing `WARNING` for now.")
+        logger.error(
+            f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
+        )
     return "WARNING"  # the default
 
 
@@ -595,7 +597,7 @@ class Processor:
         elif mode == "jhack-mod":
             self._apply_jhack_mod(msg)
 
-        if mode in {"reemit", "emit"} or (mode == "jhack-mod" and 'replay' in msg.tags):
+        if mode in {"reemit", "emit"} or (mode == "jhack-mod" and "replay" in msg.tags):
             self._timestamps.insert(0, msg.timestamp)
             # we need to update all *other* tables as well, to insert a
             # blank line where this event would appear
