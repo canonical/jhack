@@ -1,5 +1,6 @@
 import itertools
 import re
+import sys
 import time
 from functools import partial
 from typing import Dict, List, Optional, Sequence, Set, Tuple, TypedDict
@@ -10,6 +11,7 @@ from rich.align import Align
 from rich.console import Console
 from rich.live import Live
 from rich.table import Table
+from rich.prompt import Prompt
 from rich.text import Text
 
 from jhack.helpers import (
@@ -39,13 +41,17 @@ def _gather_endpoints(model=None, apps=()) -> Dict[AppName, _AppEndpoints]:
             return []
         return app["relations"].get(endpoint, [])
 
-    for app_name, app in status["applications"].items():
+    apps = status.get("applications")
+    if not apps:
+        sys.exit(f"No applications found in model {model}; does the model exist?")
+
+    for app_name, app in apps.items():
         if apps and app_name not in apps:
             continue
 
         app_eps = {}
         unit = next(iter(app["units"]))
-        metadata = fetch_file(unit, "metadata.yaml")
+        metadata = fetch_file(unit, "metadata.yaml", model=model)
         meta = yaml.safe_load(metadata)
 
         for role in ("requires", "provides"):
@@ -362,6 +368,71 @@ def show(
         mtrx.watch(refresh_rate=refresh_rate)
     else:
         mtrx.pprint()
+
+
+def cmr(remote, local=None, external_hostname: str = None, dry_run: bool = False):
+    mtrx1 = IntegrationMatrix(model=local)
+    mtrx2 = IntegrationMatrix(model=remote)
+    apps1 = mtrx1._apps
+    apps2 = mtrx2._apps
+
+    cmrs = {}
+
+    for provider, requirer in itertools.product(apps1, apps2):
+        provides = mtrx1._endpoints[provider]["provides"]
+        requires = mtrx2._endpoints[requirer]["requires"]
+        shared = sorted(
+            set(intf[0] for intf in provides.values()).intersection(
+                set(intf[0] for intf in requires.values())
+            ),
+            # sort by endpoint name
+            key=lambda o: o[0],
+        )
+
+        if shared:
+            cmrs[(provider, requirer)] = shared
+
+    opts = {}
+    for i, ((prov, req), interfaces) in enumerate(cmrs.items()):
+        for j, interface in enumerate(interfaces):
+            print(f"({i}.{j}) := \t {prov} <-[{interface}]-> {req} ")
+            opts[f"{i}.{j}"] = (prov, interface, req)
+
+    cmr = Prompt.ask("Pick a CMR",
+                     choices=list(opts),
+                     default=list(opts)[0])
+
+    prov, interface, req = opts[cmr]
+    prov_endpoint = mtrx1._get_endpoint(prov, 'provides', interface)
+    req_endpoint = mtrx2._get_endpoint(req, 'requires', interface)
+
+    def fmt_endpoint(model, app, endpoint):
+        return Text(model or '<this model>', style='red') + '.' + \
+               Text(app, style='purple') + ':' + \
+               Text(endpoint, style='cyan')
+
+    c = Console()
+    txt = Text("relating ") + fmt_endpoint(local, prov, prov_endpoint) + " <-[" + \
+          Text(interface, style='green') + "]-> " + fmt_endpoint(remote, req, req_endpoint)
+    c.print(txt)
+
+    script = [
+        f'juju offer {remote}.{req}:{req_endpoint}',
+        f'juju consume admin/{remote}.{req}',
+        f'juju relate {req}:{req_endpoint} {prov}:{prov_endpoint}'
+    ]
+    if external_hostname:
+        script.insert(0, f"juju config -m {remote} {req} "
+                         f"juju-external-hostname={external_hostname}")
+
+    if dry_run:
+        print('would run:', '\n\t'.join(script))
+        return
+
+    for cmd in script:
+        if JPopen(cmd.split()).wait() != 0:
+            print(f"{cmd} failed. Aborting...")
+            return
 
 
 if __name__ == "__main__":
