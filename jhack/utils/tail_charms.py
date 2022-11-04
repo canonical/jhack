@@ -202,6 +202,7 @@ _event_colors = {
     "_relation_broken": Color.from_rgb(184, 80, 50),
     "_storage_attached": Color.from_rgb(184, 139, 26),
     "_storage_detaching": Color.from_rgb(184, 139, 26),
+    "_action": Color.from_rgb(200, 200, 50),
     "stop": Color.from_rgb(184, 26, 71),
     "remove": Color.from_rgb(171, 81, 21),
     "start": Color.from_rgb(20, 147, 186),
