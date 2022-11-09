@@ -370,7 +370,20 @@ def show(
         mtrx.pprint()
 
 
-def cmr(remote, local=None, external_hostname: str = None, dry_run: bool = False):
+def cmr(remote, local=None, dry_run: bool = False):
+    """Command to pull a CMR over from some other model to the current one.
+
+    Usage: jhack pull-cmr some-model
+
+    A prompt will show, requesting you to pick which relation to create.
+    Select one and you should be good to go! Enjoy.
+    """
+    return _cmr(remote,
+                local=local,
+                dry_run=dry_run)
+
+
+def _cmr(remote, local=None, dry_run: bool = False):
     mtrx1 = IntegrationMatrix(model=local)
     mtrx2 = IntegrationMatrix(model=remote)
     apps1 = mtrx1._apps
@@ -429,12 +442,6 @@ def cmr(remote, local=None, external_hostname: str = None, dry_run: bool = False
         f"juju consume admin/{remote}.{req}",
         f"juju relate {req}:{req_endpoint} {prov}:{prov_endpoint}",
     ]
-    if external_hostname:
-        script.insert(
-            0,
-            f"juju config -m {remote} {req} "
-            f"juju-external-hostname={external_hostname}",
-        )
 
     if dry_run:
         print("would run:", "\n\t".join(script))
