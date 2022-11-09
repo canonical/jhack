@@ -30,6 +30,7 @@ from jhack.logger import LOGLEVEL, logger
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
 from jhack.utils import integrate
+from jhack.utils.unleash import vanity
 from jhack.utils.event_recorder.client import (
     dump_db,
     emit,
@@ -109,6 +110,7 @@ def main():
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
+    app.command(name="jhack", hidden=True)(vanity)
 
     app.add_typer(model, no_args_is_help=True)
     app.add_typer(jinx, no_args_is_help=True)
