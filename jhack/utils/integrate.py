@@ -378,9 +378,7 @@ def cmr(remote, local=None, dry_run: bool = False):
     A prompt will show, requesting you to pick which relation to create.
     Select one and you should be good to go! Enjoy.
     """
-    return _cmr(remote,
-                local=local,
-                dry_run=dry_run)
+    return _cmr(remote, local=local, dry_run=dry_run)
 
 
 def _cmr(remote, local=None, dry_run: bool = False):

@@ -34,9 +34,8 @@ PIETRO_APPROVES = """                                .***************.
 
 
 def vanity():
-    Console().print(Align(Text(PIETRO_APPROVES, style='red bold')))
+    Console().print(Align(Text(PIETRO_APPROVES, style="red bold")))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     vanity()
-    

@@ -2,11 +2,11 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, current_model, juju_log, juju_version, show_unit
+from jhack.helpers import JPopen, current_model, juju_log, juju_agent_version, show_unit
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
-_J_EXEC_CMD = "juju-exec" if juju_version() >= "0.3" else "juju-run"
+_J_EXEC_CMD = "juju-exec" if juju_agent_version() >= (3, 0) else "juju-run"
 _RELATION_EVENT_SUFFIXES = {
     "-relation-changed",
     "-relation-created",

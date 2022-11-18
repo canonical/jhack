@@ -29,13 +29,12 @@ from rich.style import Style
 from rich.table import Column, Table
 from rich.text import Text
 
-from jhack.helpers import JPopen, juju_status, juju_version
+from jhack.helpers import JPopen, juju_status
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
-JUJU_VERSION = juju_version()
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
