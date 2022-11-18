@@ -576,6 +576,30 @@ application name to target with the refresh.
 `jhack charm repack --root /where/my/charm/root/is --name juju-app-name`
 
 
+# pull-cmr
+
+Ever went to the trouble of `juju offer`, then `juju consume`, `juju relate`? Done it once, and 
+never ever want to do it again because you keep forgetting the commands, the arguments, the syntax?
+Well, search no more. `jhack pull-cmr some-model`. You'll see something like:
+
+```commandline
+ ~                                                                                                           
+❯ ljhack pull-cmr cos                                                                                         
+(0.0) :=         prom <-[grafana_datasource]-> grafana                                                        
+(0.1) :=         prom <-[grafana_dashboard]-> grafana                                                         
+(1.0) :=         prom <-[prometheus_scrape]-> prometheus                                                      
+(2.0) :=         trfk <-[ingress]-> alertmanager                                                              
+(3.0) :=         trfk <-[ingress]-> catalogue                                                                 
+(4.0) :=         trfk <-[traefik_route]-> grafana                                                             
+(5.0) :=         trfk <-[ingress_per_unit]-> loki                                                             
+(6.0) :=         trfk <-[ingress_per_unit]-> prometheus                                                       
+(6.1) :=         trfk <-[prometheus_scrape]-> prometheus                                                      
+Pick a CMR [0.0/0.1/1.0/2.0/3.0/4.0/5.0/6.0/6.1] (0.0): 1.0                                                   
+relating <this model>.prom:self-metrics-endpoint <-[prometheus_scrape]-> cos.prometheus:metrics-endpoint      
+```
+
+[img.png](jhack/resources/img.png)
+
 # jinx
 Used to play around with [jinx (YAMLess Charms)](https://github.com/PietroPasotti/jinx)
 

@@ -95,15 +95,6 @@ def juju_log(unit: str, msg: str, model: str = None, debug=True):
     JPopen(f"juju exec -u {unit}{m} -- juju-log{d}".split() + [msg])
 
 
-@lru_cache
-def juju_version():
-    proc = JPopen("juju version".split())
-    raw = proc.stdout.read().decode("utf-8").strip()
-    if "-" in raw:
-        return raw.split("-")[0]
-    return raw
-
-
 def juju_status(app_name=None, model: str = None, json: bool = False):
     cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
@@ -132,6 +123,26 @@ def is_k8s_model(status=None):
         f"guessing it based on the cloud name ({cloud_name})"
     )
     return "k8s" in cloud_name
+
+
+@lru_cache
+def juju_client_version() -> Tuple[int, ...]:
+    proc = JPopen("juju version".split())
+    raw = proc.stdout.read().decode("utf-8").strip()
+    if "-" in raw:
+        version = raw.split("-")[0]
+    else:
+        version = raw
+    return tuple(map(int, version.split(".")))
+
+
+@lru_cache
+def juju_agent_version() -> Tuple[int, ...]:
+    proc = JPopen(f"juju controllers --format json".split())
+    raw = json.loads(proc.stdout.read().decode("utf-8"))
+    current_ctrl = raw["current-controller"]
+    agent_version = raw["controllers"][current_ctrl]["agent-version"]
+    return tuple(map(int, agent_version.split(".")))
 
 
 def juju_models() -> str:
@@ -195,9 +206,12 @@ def modify_remote_file(unit: str, path: str):
         subprocess.check_call(cmd)
 
 
-def fetch_file(unit: str, remote_path: str, local_path: Path = None) -> Optional[str]:
+def fetch_file(
+    unit: str, remote_path: str, local_path: Path = None, model: str = None
+) -> Optional[str]:
     unit_sanitized = unit.replace("/", "-")
-    cmd = f"juju ssh {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+    model_arg = f" -m {model}" if model else ""
+    cmd = f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
     try:
         raw = check_output(cmd.split())
     except CalledProcessError as e:

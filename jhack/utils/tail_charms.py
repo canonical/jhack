@@ -29,13 +29,12 @@ from rich.style import Style
 from rich.table import Column, Table
 from rich.text import Text
 
-from jhack.helpers import JPopen, juju_status, juju_version
+from jhack.helpers import JPopen, juju_status
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
-JUJU_VERSION = juju_version()
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
@@ -57,7 +56,9 @@ def model_loglevel():
                     )
                 return val
     except Exception as e:
-        logger.error(f"failed to determine model loglevel: {e}. Guessing `WARNING` for now.")
+        logger.error(
+            f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
+        )
     return "WARNING"  # the default
 
 
@@ -200,6 +201,7 @@ _event_colors = {
     "_relation_broken": Color.from_rgb(184, 80, 50),
     "_storage_attached": Color.from_rgb(184, 139, 26),
     "_storage_detaching": Color.from_rgb(184, 139, 26),
+    "_action": Color.from_rgb(200, 200, 50),
     "stop": Color.from_rgb(184, 26, 71),
     "remove": Color.from_rgb(171, 81, 21),
     "start": Color.from_rgb(20, 147, 186),
@@ -595,7 +597,7 @@ class Processor:
         elif mode == "jhack-mod":
             self._apply_jhack_mod(msg)
 
-        if mode in {"reemit", "emit"} or (mode == "jhack-mod" and 'replay' in msg.tags):
+        if mode in {"reemit", "emit"} or (mode == "jhack-mod" and "replay" in msg.tags):
             self._timestamps.insert(0, msg.timestamp)
             # we need to update all *other* tables as well, to insert a
             # blank line where this event would appear

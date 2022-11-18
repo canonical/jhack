@@ -6,8 +6,7 @@ import pytest
 
 import jhack.utils.tail_charms
 
-# these tests target juju2. TODO: make a juju3 version
-jhack.utils.tail_charms.JUJU_VERSION = "2.0"
+jhack.utils.tail_charms.MODEL_LOGLEVEL = "DEBUG"
 from jhack.utils.tail_charms import Processor, Target, _tail_events
 
 

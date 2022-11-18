@@ -17,12 +17,12 @@ logger = logger.getChild(__file__)
 
 
 def watch(
-        paths,
-        on_change: typing.Callable,
-        include_files: str = None,
-        recursive: bool = True,
-        refresh_rate: float = 1.0,
-        dry_run: bool = False
+    paths,
+    on_change: typing.Callable,
+    include_files: str = None,
+    recursive: bool = True,
+    refresh_rate: float = 1.0,
+    dry_run: bool = False,
 ):
     """Watches a directory for changes; on any, calls on_change back with them."""
 
@@ -75,13 +75,15 @@ def watch(
 
 
 def ignore_hidden_dirs(file: Path):
-    return not file.name.startswith('.')
+    return not file.name.startswith(".")
 
 
-def walk(path: Path, recursive: bool,
-         check_file: typing.Callable[[Path], bool],
-         check_dir: typing.Callable[[Path], bool] = ignore_hidden_dirs,
-         ) -> List[Path]:
+def walk(
+    path: Path,
+    recursive: bool,
+    check_file: typing.Callable[[Path], bool],
+    check_dir: typing.Callable[[Path], bool] = ignore_hidden_dirs,
+) -> List[Path]:
     """Recursively explore a directory for files matching check_file"""
     walked = []
     for path_ in path.iterdir():
@@ -94,16 +96,17 @@ def walk(path: Path, recursive: bool,
                 logger.warning(f"skipped {path_}")
     return walked
 
+
 def _sync(
-        unit: str,
-        source_dirs: str = './src;./lib',
-        remote_root: str = None,
-        container_name: str = "charm",
-        machine_charm: bool = False,
-        refresh_rate: float = 1,
-        recursive: bool = True,
-        dry_run: bool = False,
-        include_files: str = '.*\.py$',
+    unit: str,
+    source_dirs: str = "./src;./lib",
+    remote_root: str = None,
+    container_name: str = "charm",
+    machine_charm: bool = False,
+    refresh_rate: float = 1,
+    recursive: bool = True,
+    dry_run: bool = False,
+    include_files: str = ".*\.py$",
 ):
     spec = unit.split("/")
 
@@ -122,62 +125,84 @@ def _sync(
             jasyncio.gather(
                 *(
                     push_to_remote_juju_unit(
-                        changed, remote_root, app, unit,
-                        container_name, machine_charm,
-                        dry_run=dry_run
+                        changed,
+                        remote_root,
+                        app,
+                        unit,
+                        container_name,
+                        machine_charm,
+                        dry_run=dry_run,
                     )
                     for changed in changed_files
                 )
             )
         )
         time.sleep(refresh_rate)
-    source_folders = source_dirs.split(';')
-    watch(source_folders, on_change, include_files,
-          recursive, refresh_rate,
-          dry_run=dry_run)
+
+    source_folders = source_dirs.split(";")
+    watch(
+        source_folders,
+        on_change,
+        include_files,
+        recursive,
+        refresh_rate,
+        dry_run=dry_run,
+    )
 
 
 def sync(
-        unit: str = typer.Argument(
-            ...,
-            help='The unit that you wish to sync to. '
-                 'Example: traefik/0.'
-        ),
-        source_dirs: str = typer.Option(
-            './src;./lib', '--source-dirs', '-s',
-            help='Local directories to watch for changes. '
-                 'Semicolon-separated list of directories.'
-        ),
-        remote_root: str = typer.Option(
-            None, '--remote-root', '-r',
-            help='The remote path to be interpreted as root relative to which the local '
-                 'changes will be pushed. E.g. if the local `./src/charm.py` changes, and the '
-                 'remote-root is `/var/log/`, the file will be '
-                 'pushed to {unit}:/var/log/src/charm.py`'
-        ),
-        container_name: str = typer.Option(
-            "charm", '--container', '-c',
-            help="Container to scp to."),
-        machine_charm: bool = typer.Option(
-            False, '--machine', '-m', is_flag=True,
-            help='Is this a machine charm? Jhack cannot determine it on its own, '
-                 'and things behave slightly differently.'
-        ),
-        refresh_rate: float = typer.Option(
-            1, '--refresh-rate',
-            help="Rate at which we will check for changes, in seconds."),
-        recursive: bool = typer.Option(
-            True, '--recursive', is_flag=True,
-            help='Whether we should watch the directories recursively for changes.'
-        ),
-        dry_run: bool = typer.Option(
-            False, '--dry-run', is_flag=True,
-            help="Don't actually *do* anything, just print what you would have done."
-        ),
-        include_files: str = typer.Option(
-            r'.*\.py$', '--include-files', '-i',
-            help="A regex to filter the watchable files with. By defauly, we only sync *.py "
-                 "files.")
+    unit: str = typer.Argument(
+        ..., help="The unit that you wish to sync to. " "Example: traefik/0."
+    ),
+    source_dirs: str = typer.Option(
+        "./src;./lib",
+        "--source-dirs",
+        "-s",
+        help="Local directories to watch for changes. "
+        "Semicolon-separated list of directories.",
+    ),
+    remote_root: str = typer.Option(
+        None,
+        "--remote-root",
+        "-r",
+        help="The remote path to be interpreted as root relative to which the local "
+        "changes will be pushed. E.g. if the local `./src/charm.py` changes, and the "
+        "remote-root is `/var/log/`, the file will be "
+        "pushed to {unit}:/var/log/src/charm.py`",
+    ),
+    container_name: str = typer.Option(
+        "charm", "--container", "-c", help="Container to scp to."
+    ),
+    machine_charm: bool = typer.Option(
+        False,
+        "--machine",
+        "-m",
+        is_flag=True,
+        help="Is this a machine charm? Jhack cannot determine it on its own, "
+        "and things behave slightly differently.",
+    ),
+    refresh_rate: float = typer.Option(
+        1, "--refresh-rate", help="Rate at which we will check for changes, in seconds."
+    ),
+    recursive: bool = typer.Option(
+        True,
+        "--recursive",
+        is_flag=True,
+        help="Whether we should watch the directories recursively for changes.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        is_flag=True,
+        help="Don't actually *do* anything, just print what you would have done.",
+    ),
+    include_files: str = typer.Option(
+        r".*\.py$",
+        "--include-files",
+        "-i",
+        help="A regex to filter the watchable files with. By defauly, we only sync *.py "
+        "files.",
+    ),
 ):
     """Syncs a local folder to a remote juju unit via juju scp.
 
@@ -204,18 +229,23 @@ def sync(
         recursive=recursive,
         dry_run=dry_run,
         include_files=include_files,
-)
+    )
 
 
 async def push_to_remote_juju_unit(
-        file: Path, remote_root: str, app, unit,
-        container_name, machine_charm: bool, dry_run: bool = False
+    file: Path,
+    remote_root: str,
+    app,
+    unit,
+    container_name,
+    machine_charm: bool,
+    dry_run: bool = False,
 ):
-    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1:]
+    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1 :]
 
     if not machine_charm:
         if dry_run:
-            print(f'would scp: {file} --> {app}/{unit}:{remote_file_path}')
+            print(f"would scp: {file} --> {app}/{unit}:{remote_file_path}")
             return
 
         container_opt = f"--container {container_name} " if container_name else ""
@@ -224,7 +254,7 @@ async def push_to_remote_juju_unit(
 
     else:
         if dry_run:
-            print(f'would scp: {file} --> {app}/{unit}:{remote_file_path}')
+            print(f"would scp: {file} --> {app}/{unit}:{remote_file_path}")
             return
 
         cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
@@ -241,6 +271,5 @@ async def push_to_remote_juju_unit(
     print(f"synced {file}")
 
 
-if __name__ == '__main__':
-    _sync(unit='traefik/0',
-          dry_run=True)
+if __name__ == "__main__":
+    _sync(unit="traefik/0", dry_run=True)
