@@ -10,3 +10,4 @@ local_snap_install
 *.dbdump
 event_db.json
 .coverage
+/venv
