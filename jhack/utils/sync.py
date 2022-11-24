@@ -3,6 +3,7 @@ import os
 import re
 import time
 import typing
+from itertools import chain, product
 from pathlib import Path
 from subprocess import PIPE
 from typing import List
@@ -10,7 +11,7 @@ from typing import List
 import typer
 from juju import jasyncio
 
-from jhack.helpers import JPopen
+from jhack.helpers import JPopen, juju_status
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -98,7 +99,7 @@ def walk(
 
 
 def _sync(
-    unit: str,
+    target: str,
     source_dirs: str = "./src;./lib",
     remote_root: str = None,
     container_name: str = "charm",
@@ -108,14 +109,16 @@ def _sync(
     dry_run: bool = False,
     include_files: str = ".*\.py$",
 ):
-    spec = unit.split("/")
+    app, _, unit_tgt = target.rpartition("/")
 
-    if len(spec) == 2:
-        app, unit = spec
+    if not app:
+        app = unit_tgt
+        status = juju_status(json=True)
+        units = [a.split('/')[1] for a in list(status["applications"][app].get("units", {}))]
     else:
-        app = spec[0]
-        unit = 0
-    remote_root = remote_root or f"/var/lib/juju/agents/unit-{app}-{unit}/charm/"
+        units = [unit_tgt]
+
+    remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit}/charm/"
 
     def on_change(changed_files):
         if not changed_files:
@@ -133,7 +136,7 @@ def _sync(
                         machine_charm,
                         dry_run=dry_run,
                     )
-                    for changed in changed_files
+                    for unit, changed in product(units, changed_files)
                 )
             )
         )
@@ -151,8 +154,9 @@ def _sync(
 
 
 def sync(
-    unit: str = typer.Argument(
-        ..., help="The unit that you wish to sync to. " "Example: traefik/0."
+    target: str = typer.Argument(
+        ..., help="The unit or app that you wish to sync to. " "Example: traefik/0."
+                  "If syncing to an app, the changes will be pushed to every unit."
     ),
     source_dirs: str = typer.Option(
         "./src;./lib",
@@ -220,7 +224,7 @@ def sync(
       control over.
     """
     return _sync(
-        unit=unit,
+        target=target,
         source_dirs=source_dirs,
         remote_root=remote_root,
         container_name=container_name,
@@ -236,12 +240,12 @@ async def push_to_remote_juju_unit(
     file: Path,
     remote_root: str,
     app,
-    unit,
+    unit: str,
     container_name,
     machine_charm: bool,
     dry_run: bool = False,
 ):
-    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1 :]
+    remote_file_path = (remote_root + str(file)[len(os.getcwd()) + 1 :]).format(unit=unit, app=app)
 
     if not machine_charm:
         if dry_run:
