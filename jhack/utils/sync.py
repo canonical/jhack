@@ -23,7 +23,6 @@ def watch(
     include_files: str = None,
     recursive: bool = True,
     refresh_rate: float = 1.0,
-    dry_run: bool = False,
 ):
     """Watches a directory for changes; on any, calls on_change back with them."""
 
@@ -47,10 +46,8 @@ def watch(
         return
 
     msg = "watching: \n\t%s" % "\n\t".join(map(str, watch_list))
-    if dry_run:
-        print(msg)
-    logger.info(msg)
-    logger.info("Ctrl+C to interrupt")
+    print(msg)
+    print("Ctrl+C to interrupt")
 
     hashes = {}
     while True:
@@ -149,7 +146,6 @@ def _sync(
         include_files,
         recursive,
         refresh_rate,
-        dry_run=dry_run,
     )
 
 
