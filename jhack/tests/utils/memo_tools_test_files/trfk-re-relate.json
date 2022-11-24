@@ -832,7 +832,7 @@
                 "{}"
               ]
             ],
-            "cursor": 0,
+            "cursor": 2,
             "caching_policy": "strict",
             "serializer": [
               "json",
