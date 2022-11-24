@@ -238,25 +238,31 @@ def get_content(
     other_unit_name = next(iter(status["applications"][other_app_name]["units"]))
     # we might have a different number of units and other units, and it doesn't
     # matter which 'other' we pass to get the databags for 'this one'.
-    # in peer relations, show-unit luckily reports 'local-unit', so we're good.
 
-    leader_unit_data = None
     app_data = None
-    units_data = {}
-    r_id = None
-    for unit_id in units:
-        unit_name = f"{app_name}/{unit_id}"
-        unit_data, app_data, r_id_ = get_databags(
-            unit_name, other_unit_name, endpoint, other_endpoint, model=model, peer=peer
+
+    if peer:
+        # in peer relations, show-unit luckily reports 'local-unit', so we're good.
+        unit_name = f"{app_name}/{units[0]}"  # any unit will do
+        units_data, app_data, r_id = get_databags(
+            unit_name, other_unit_name, endpoint, other_endpoint, model=model, peer=True
         )
+    else:
+        units_data = {}
+        r_id = None
+        for unit_id in units:
+            unit_name = f"{app_name}/{unit_id}"
+            unit_data, app_data, r_id_ = get_databags(
+                unit_name, other_unit_name, endpoint, other_endpoint, model=model
+            )
 
-        if r_id is not None:
-            assert r_id == r_id_, f"mismatching relation IDs: {r_id, r_id_}"
-        r_id = r_id_
+            if r_id is not None:
+                assert r_id == r_id_, f"mismatching relation IDs: {r_id, r_id_}"
+            r_id = r_id_
 
-        if not include_default_juju_keys:
-            purge(unit_data)
-        units_data[unit_id] = unit_data
+            if not include_default_juju_keys:
+                purge(unit_data)
+            units_data[unit_id] = unit_data
 
     return AppRelationData(
         app_name=app_name,
@@ -290,7 +296,10 @@ def get_databags(
         relation_info, local_endpoint, remote_endpoint, local_unit, peer=peer
     )
     if peer:
-        unit_data = raw_data["local-unit"]["data"]
+        # we can grab them all in a single call.
+        unit_data = {local_unit: raw_data["local-unit"]["data"], **{
+            u: raw_data["related-units"][u]["data"] for u in raw_data["related-units"]
+        }}
     else:
         unit_data = raw_data["related-units"][local_unit]["data"]
     app_data = raw_data["application-data"]
@@ -634,4 +643,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=1, watch=True)
+    _sync_show_relation(endpoint1="tester/0:replicas", watch=True)

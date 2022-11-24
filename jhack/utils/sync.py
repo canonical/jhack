@@ -38,7 +38,7 @@ def watch(
     watch_list = []
     for path in resolved:
         if not path.is_dir():
-            logger.error(f"not a directory: {path} cannot watch.")
+            logger.error(f"not a directory: cannot watch {path}.")
             continue
         watch_list += walk(path, recursive, check_file)
 
@@ -94,7 +94,7 @@ def walk(
             if path_.is_dir() and (not check_dir or check_dir(path_)):
                 walked.extend(walk(path_, recursive, check_file))
             else:
-                logger.warning(f"skipped {path_}")
+                logger.debug(f"skipped {path_}: not a dir or invalid pattern")
     return walked
 
 
@@ -272,7 +272,7 @@ async def push_to_remote_juju_unit(
             f"\nstderr={proc.stderr.read()}"
         )
 
-    print(f"synced {file}")
+    print(f"synced {file} -> {app}/{unit}")
 
 
 if __name__ == "__main__":
