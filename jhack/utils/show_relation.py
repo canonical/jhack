@@ -297,9 +297,13 @@ def get_databags(
     )
     if peer:
         # we can grab them all in a single call.
-        unit_data = {local_unit: raw_data["local-unit"]["data"], **{
-            u: raw_data["related-units"][u]["data"] for u in raw_data["related-units"]
-        }}
+        unit_data = {
+            local_unit: raw_data["local-unit"]["data"],
+            **{
+                u: raw_data["related-units"][u]["data"]
+                for u in raw_data["related-units"]
+            },
+        }
     else:
         unit_data = raw_data["related-units"][local_unit]["data"]
     app_data = raw_data["application-data"]

@@ -111,7 +111,9 @@ def _sync(
     if not app:
         app = unit_tgt
         status = juju_status(json=True)
-        units = [a.split('/')[1] for a in list(status["applications"][app].get("units", {}))]
+        units = [
+            a.split("/")[1] for a in list(status["applications"][app].get("units", {}))
+        ]
     else:
         units = [unit_tgt]
 
@@ -151,8 +153,10 @@ def _sync(
 
 def sync(
     target: str = typer.Argument(
-        ..., help="The unit or app that you wish to sync to. " "Example: traefik/0."
-                  "If syncing to an app, the changes will be pushed to every unit."
+        ...,
+        help="The unit or app that you wish to sync to. "
+        "Example: traefik/0."
+        "If syncing to an app, the changes will be pushed to every unit.",
     ),
     source_dirs: str = typer.Option(
         "./src;./lib",
@@ -241,7 +245,9 @@ async def push_to_remote_juju_unit(
     machine_charm: bool,
     dry_run: bool = False,
 ):
-    remote_file_path = (remote_root + str(file)[len(os.getcwd()) + 1 :]).format(unit=unit, app=app)
+    remote_file_path = (remote_root + str(file)[len(os.getcwd()) + 1 :]).format(
+        unit=unit, app=app
+    )
 
     if not machine_charm:
         if dry_run:

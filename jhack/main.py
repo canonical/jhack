@@ -30,7 +30,6 @@ from jhack.logger import LOGLEVEL, logger
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
 from jhack.utils import integrate
-from jhack.utils.unleash import vanity
 from jhack.utils.event_recorder.client import (
     dump_db,
     emit,
@@ -46,6 +45,7 @@ from jhack.utils.simulate_event import simulate_event
 from jhack.utils.sync import sync as sync_deployed_charm
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
+from jhack.utils.unleash import vanity
 
 
 def main():

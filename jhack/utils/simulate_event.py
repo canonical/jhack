@@ -2,7 +2,7 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, current_model, juju_log, juju_agent_version, show_unit
+from jhack.helpers import JPopen, current_model, juju_agent_version, juju_log, show_unit
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
