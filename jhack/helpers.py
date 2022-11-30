@@ -44,7 +44,7 @@ def check_command_available(cmd: str):
         logger.error(e, exc_info=True)
         return False
     if err := proc.stderr.read():
-        logger.error(err.decode('utf-8'))
+        logger.error(err.decode("utf-8"))
     return proc.returncode == 0
 
 
