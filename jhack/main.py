@@ -22,6 +22,7 @@ from jhack.charm.record import record
 from jhack.charm.repack import refresh
 from jhack.charm.sync import sync as sync_packed_charm
 from jhack.charm.update import update
+from jhack.charm.vinfo import vinfo
 from jhack.jinx.cleanup import cleanup as jinx_cleanup
 from jhack.jinx.init import init_jinx as jinx_init
 from jhack.jinx.install import install as jinx_install
@@ -80,6 +81,7 @@ def main():
     charm.command(name="init", no_args_is_help=True)(init)
     charm.command(name="func", no_args_is_help=True)(functional.run)
     charm.command(name="sync", no_args_is_help=True)(sync_packed_charm)
+    charm.command(name="vinfo", no_args_is_help=True)(vinfo)
     charm.command(name="provision")(provision)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")
