@@ -119,23 +119,24 @@ class Runtime:
             "DISCLAIMER: this **might** (aka: most definitely will) corrupt your venv."
         )
 
-        logger.info("rewriting ops.pebble")
         from ops import pebble
 
         ops_pebble_module = Path(pebble.__file__)
+        logger.info(f"rewriting ops.pebble ({ops_pebble_module})")
         inject_memoizer(ops_pebble_module, decorate=DECORATE_PEBBLE)
 
-        logger.info("rewriting ops.model")
         from ops import model
 
         ops_model_module = Path(model.__file__)
+        logger.info(f"rewriting ops.model ({ops_model_module})")
         inject_memoizer(ops_model_module, decorate=DECORATE_MODEL)
 
-        logger.info("rewriting ops.main")
+        # make main return the charm instance, for testing
         from ops import main
 
-        # make main return the charm instance, for testing
         ops_main_module = Path(main.__file__)
+        logger.info(f"rewriting ops.main ({ops_main_module})")
+
         retcharm = "return charm  # added by jhack.replay.Runtime"
         ops_main_module_text = ops_main_module.read_text()
         if retcharm not in ops_main_module_text:
@@ -153,8 +154,12 @@ class Runtime:
     def _is_installed():
         from ops import model
 
-        if "from recorder import memo" not in Path(model.__file__).read_text():
-            logger.error("ops.model does not seem to import recorder.memo.")
+        model_path = Path(model.__file__)
+
+        if "from recorder import memo" not in model_path.read_text():
+            logger.error(
+                f"ops.model ({model_path} does not seem to import recorder.memo."
+            )
             return False
 
         try:
@@ -163,6 +168,7 @@ class Runtime:
             logger.error("Could not `import recorder`.")
             return False
 
+        logger.info(f"Recorder is installed at {model_path}")
         return True
 
     def _redirect_root_logger(self):
@@ -210,7 +216,7 @@ class Runtime:
         This will set the environment up and call ops.main.main().
         After that it's up to ops.
         """
-        if not self._is_installed():
+        if not Runtime._is_installed():
             raise sys.exit(
                 "Runtime is not installed. Call `runtime.install()` (and read the fine prints)."
             )
@@ -252,7 +258,9 @@ class Runtime:
             try:
                 charm = main(self._charm_type)
             except Exception as e:
-                raise RuntimeError("Uncaught error in operator/charm code.") from e
+                raise RuntimeError(
+                    f"Uncaught error in operator/charm code: {e}."
+                ) from e
 
         return charm, scene
 

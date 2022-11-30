@@ -3,6 +3,7 @@ import os
 import re
 import time
 import typing
+from itertools import chain, product
 from pathlib import Path
 from subprocess import PIPE
 from typing import List
@@ -10,7 +11,7 @@ from typing import List
 import typer
 from juju import jasyncio
 
-from jhack.helpers import JPopen
+from jhack.helpers import JPopen, juju_status
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -22,7 +23,6 @@ def watch(
     include_files: str = None,
     recursive: bool = True,
     refresh_rate: float = 1.0,
-    dry_run: bool = False,
 ):
     """Watches a directory for changes; on any, calls on_change back with them."""
 
@@ -37,7 +37,7 @@ def watch(
     watch_list = []
     for path in resolved:
         if not path.is_dir():
-            logger.error(f"not a directory: {path} cannot watch.")
+            logger.error(f"not a directory: cannot watch {path}.")
             continue
         watch_list += walk(path, recursive, check_file)
 
@@ -46,10 +46,8 @@ def watch(
         return
 
     msg = "watching: \n\t%s" % "\n\t".join(map(str, watch_list))
-    if dry_run:
-        print(msg)
-    logger.info(msg)
-    logger.info("Ctrl+C to interrupt")
+    print(msg)
+    print("Ctrl+C to interrupt")
 
     hashes = {}
     while True:
@@ -93,12 +91,12 @@ def walk(
             if path_.is_dir() and (not check_dir or check_dir(path_)):
                 walked.extend(walk(path_, recursive, check_file))
             else:
-                logger.warning(f"skipped {path_}")
+                logger.debug(f"skipped {path_}: not a dir or invalid pattern")
     return walked
 
 
 def _sync(
-    unit: str,
+    target: str,
     source_dirs: str = "./src;./lib",
     remote_root: str = None,
     container_name: str = "charm",
@@ -108,14 +106,18 @@ def _sync(
     dry_run: bool = False,
     include_files: str = ".*\.py$",
 ):
-    spec = unit.split("/")
+    app, _, unit_tgt = target.rpartition("/")
 
-    if len(spec) == 2:
-        app, unit = spec
+    if not app:
+        app = unit_tgt
+        status = juju_status(json=True)
+        units = [
+            a.split("/")[1] for a in list(status["applications"][app].get("units", {}))
+        ]
     else:
-        app = spec[0]
-        unit = 0
-    remote_root = remote_root or f"/var/lib/juju/agents/unit-{app}-{unit}/charm/"
+        units = [unit_tgt]
+
+    remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit}/charm/"
 
     def on_change(changed_files):
         if not changed_files:
@@ -133,7 +135,7 @@ def _sync(
                         machine_charm,
                         dry_run=dry_run,
                     )
-                    for changed in changed_files
+                    for unit, changed in product(units, changed_files)
                 )
             )
         )
@@ -146,13 +148,15 @@ def _sync(
         include_files,
         recursive,
         refresh_rate,
-        dry_run=dry_run,
     )
 
 
 def sync(
-    unit: str = typer.Argument(
-        ..., help="The unit that you wish to sync to. " "Example: traefik/0."
+    target: str = typer.Argument(
+        ...,
+        help="The unit or app that you wish to sync to. "
+        "Example: traefik/0."
+        "If syncing to an app, the changes will be pushed to every unit.",
     ),
     source_dirs: str = typer.Option(
         "./src;./lib",
@@ -220,7 +224,7 @@ def sync(
       control over.
     """
     return _sync(
-        unit=unit,
+        target=target,
         source_dirs=source_dirs,
         remote_root=remote_root,
         container_name=container_name,
@@ -236,12 +240,14 @@ async def push_to_remote_juju_unit(
     file: Path,
     remote_root: str,
     app,
-    unit,
+    unit: str,
     container_name,
     machine_charm: bool,
     dry_run: bool = False,
 ):
-    remote_file_path = remote_root + str(file)[len(os.getcwd()) + 1 :]
+    remote_file_path = (remote_root + str(file)[len(os.getcwd()) + 1 :]).format(
+        unit=unit, app=app
+    )
 
     if not machine_charm:
         if dry_run:
@@ -268,7 +274,7 @@ async def push_to_remote_juju_unit(
             f"\nstderr={proc.stderr.read()}"
         )
 
-    print(f"synced {file}")
+    print(f"synced {file} -> {app}/{unit}")
 
 
 if __name__ == "__main__":

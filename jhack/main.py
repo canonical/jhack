@@ -22,6 +22,7 @@ from jhack.charm.record import record
 from jhack.charm.repack import refresh
 from jhack.charm.sync import sync as sync_packed_charm
 from jhack.charm.update import update
+from jhack.charm.vinfo import vinfo
 from jhack.jinx.cleanup import cleanup as jinx_cleanup
 from jhack.jinx.init import init_jinx as jinx_init
 from jhack.jinx.install import install as jinx_install
@@ -30,7 +31,6 @@ from jhack.logger import LOGLEVEL, logger
 from jhack.model.clear import sync_clear_model
 from jhack.model.remove import rmodel
 from jhack.utils import integrate
-from jhack.utils.unleash import vanity
 from jhack.utils.event_recorder.client import (
     dump_db,
     emit,
@@ -46,6 +46,7 @@ from jhack.utils.simulate_event import simulate_event
 from jhack.utils.sync import sync as sync_deployed_charm
 from jhack.utils.tail_charms import tail_events
 from jhack.utils.unbork_juju import unbork_juju
+from jhack.utils.unleash import vanity
 
 
 def main():
@@ -80,6 +81,7 @@ def main():
     charm.command(name="init", no_args_is_help=True)(init)
     charm.command(name="func", no_args_is_help=True)(functional.run)
     charm.command(name="sync", no_args_is_help=True)(sync_packed_charm)
+    charm.command(name="vinfo", no_args_is_help=True)(vinfo)
     charm.command(name="provision")(provision)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")

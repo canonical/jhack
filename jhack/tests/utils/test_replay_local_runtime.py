@@ -63,10 +63,11 @@ def charm_type():
     "evt_idx, expected_name",
     (
         (0, "ingress_per_unit_relation_departed"),
-        (1, "ingress_per_unit_relation_broken"),
-        (2, "ingress_per_unit_relation_created"),
-        (3, "ingress_per_unit_relation_joined"),
-        (4, "ingress_per_unit_relation_changed"),
+        (1, "ingress_per_unit_relation_departed"),
+        (2, "ingress_per_unit_relation_broken"),
+        (3, "ingress_per_unit_relation_created"),
+        (4, "ingress_per_unit_relation_joined"),
+        (5, "ingress_per_unit_relation_changed"),
     ),
 )
 def test_run(evt_idx, expected_name):
@@ -78,7 +79,9 @@ def test_run(evt_idx, expected_name):
             "requires": {"ingress-per-unit": {"interface": "ingress_per_unit"}},
         },
         local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / "trfk-re-relate.json",
+        install=True,
     )
+
     charm, scene = runtime.run(evt_idx)
     assert charm.unit.name == "trfk/0"
     assert charm.model.name == "foo"
@@ -97,7 +100,7 @@ def test_relation_data():
         },
         local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / "trfk-re-relate.json",
     )
-    charm, scene = runtime.run(4)  # ipu-relation-changed
+    charm, scene = runtime.run(5)  # ipu-relation-changed
 
     assert scene.event.name == "ingress-per-unit-relation-changed"
 
@@ -109,26 +112,25 @@ def test_relation_data():
         _ = rel.data[charm.app]
 
         remote_unit_data = rel.data[list(rel.units)[0]]
-        assert remote_unit_data["host"] == "prom-0.prom-endpoints.foo.svc.cluster.local"
+        assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
         assert remote_unit_data["port"] == "9090"
         assert remote_unit_data["model"] == "foo"
-        assert remote_unit_data["name"] == "prom/0"
+        assert remote_unit_data["name"] == "prom/1"
 
         local_app_data = rel.data[charm.app]
         assert local_app_data == {}
 
 
 def test_local_run_loose():
-    charm = charm_type()
     runtime = Runtime(
-        charm,
+        charm_type(),
         meta={
             "name": "foo",
             "requires": {"ingress-per-unit": {"interface": "ingress_per_unit"}},
         },
         local_db_path=MEMO_TOOLS_RESOURCES_FOLDER / "trfk-re-relate.json",
     )
-    charm, scene = runtime.run(4)  # ipu-relation-changed
+    charm, scene = runtime.run(5)  # ipu-relation-changed
 
     assert scene.event.name == "ingress-per-unit-relation-changed"
 
@@ -141,10 +143,10 @@ def test_local_run_loose():
     #  pebble is a different story.
 
     remote_unit_data = rel.data[list(rel.units)[0]]
-    assert remote_unit_data["host"] == "prom-0.prom-endpoints.foo.svc.cluster.local"
+    assert remote_unit_data["host"] == "prom-1.prom-endpoints.foo.svc.cluster.local"
     assert remote_unit_data["port"] == "9090"
     assert remote_unit_data["model"] == "foo"
-    assert remote_unit_data["name"] == "prom/0"
+    assert remote_unit_data["name"] == "prom/1"
 
     local_app_data = rel.data[charm.app]
     assert local_app_data == {}
