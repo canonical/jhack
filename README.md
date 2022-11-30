@@ -575,6 +575,50 @@ application name to target with the refresh.
 
 `jhack charm repack --root /where/my/charm/root/is --name juju-app-name`
 
+## vinfo
+`vinfo` is a command to show in tabular format the full version fingerprint of a charmed unit 
+or application. 
+
+`jhack vinfo my-app` will show (for example):
+
+```commandline
+                               vinfo v0.1                               
+┌─────────────────────────────────────────────┬────────────────────────┐
+│ app name                                    │ my-app/0               │
+│ charm                                       │ my-app: v33 - stable   │
+│ model                                       │ foo                    │
+│ workload version                            │ 0.3.42                 │
+├─────────────────────────────────────────────┼────────────────────────┤
+│ grafana_k8s:grafana_dashboard               │ 0.13                   │
+│ prometheus_k8s:prometheus_scrape            │ 0.21                   │
+│ loki_k8s:loki_push_api                      │ 0.12                   │
+│ parca:parca_scrape                          │ 0.2                    │
+│ traefik_k8s:ingress                         │ 1.3                    │
+│ observability_libs:kubernetes_service_patch │ 0.6                    │
+│ observability_libs:juju_topology            │ 0.2                    │
+└─────────────────────────────────────────────┴────────────────────────┘
+```
+
+
+To also check the charm lib versions against the latest available upstream:
+`jhack charm vinfo -o my-app`
+
+```commandline
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ app name                                    ┃ my-app/0               ┃
+│ charm                                       │ my-app: v33 - stable   │
+│ model                                       │ foo                    │
+│ workload version                            │ 0.3.42                 │
+├─────────────────────────────────────────────┼────────────────────────┤
+│ grafana_k8s:grafana_dashboard               │ 0.13    < (0.17)       │
+│ prometheus_k8s:prometheus_scrape            │ 0.21    < (0.25)       │
+│ loki_k8s:loki_push_api                      │ 0.12    ==             │
+│ parca:parca_scrape                          │ 0.2     < (0.3)        │
+│ traefik_k8s:ingress                         │ 1.3     < (1.5)        │
+│ observability_libs:kubernetes_service_patch │ 0.6     < (1.5)        │
+│ observability_libs:juju_topology            │ 0.2     < (0.4)        │
+└─────────────────────────────────────────────┴────────────────────────┘
+```
 
 # pull-cmr
 

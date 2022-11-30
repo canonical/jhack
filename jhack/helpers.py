@@ -36,6 +36,18 @@ def get_models():
     return data
 
 
+def check_command_available(cmd: str):
+    try:
+        proc = JPopen(f"which {cmd}".split())
+        proc.wait()
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        return False
+    if err := proc.stderr.read():
+        logger.error(err.decode('utf-8'))
+    return proc.returncode == 0
+
+
 @contextlib.asynccontextmanager
 async def get_current_model() -> Model:
     model = Model()
