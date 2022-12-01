@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="jhack",
-    version="0.3.2",
+    version="0.3.3",
     author="Pietro Pasotti",
     author_email="pietro.pasotti@canonical.com",
     description="Chock-full of Juju hackery.",

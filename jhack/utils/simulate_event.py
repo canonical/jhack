@@ -170,6 +170,11 @@ def simulate_event(
         " - fire foo-relation-changed --remote bar  # some bar unit touched the 'foo' relation data."
         " - fire foo-relation-departed --remote bar/0  # the remote bar/0 unit left the 'foo' relation.",
     ),
+    show_output: bool = typer.Option(
+        True, "-s", "--show-output",
+        help="Whether to show the stdout/stderr captured during the scope of the event. "
+             "If False, it should show up anyway in the juju debug-log."
+    ),
     env_override: List[str] = typer.Option(
         None,
         "--env",
@@ -184,9 +189,15 @@ def simulate_event(
     Especially useful in combination with jhack charm sync and/or debug-code/debug-hooks.
     """
     return _simulate_event(
-        unit, event, relation_remote=relation_remote, env_override=env_override
+        unit, event,
+        relation_remote=relation_remote,
+        env_override=env_override,
+        print_captured_stdout=show_output,
+        print_captured_stderr=show_output,
     )
 
 
 if __name__ == "__main__":
-    _simulate_event("trfk/0", "update-status")
+    _simulate_event("trfk/0", "update-status",
+                    print_captured_stdout=True,
+                    print_captured_stderr=True)
