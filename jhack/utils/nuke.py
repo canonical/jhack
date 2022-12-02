@@ -5,6 +5,9 @@ from subprocess import PIPE
 from time import sleep
 from typing import Callable, List, Literal, Optional
 
+import signal
+from contextlib import contextmanager
+
 import typer
 from rich.align import Align
 from rich.console import Console
@@ -39,6 +42,26 @@ NUKE_ASCII_ART = """
                          <|i::|i|`.
                         (` ^'"`-' ")
 """
+
+
+class TimeoutException(Exception):
+    pass
+
+
+@contextmanager
+def timeout(seconds, raise_=False):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    except TimeoutException as e:
+        if raise_:
+            raise e
+        return None
+    finally:
+        signal.alarm(0)
 
 
 @dataclass
@@ -350,8 +373,10 @@ def _nuke(
         res = tp.apply_async(fire, (nukeable, nuke))
         results.append(res)
 
-    tp.close()
-    tp.join()
+    with timeout(1):
+        tp.close()
+        tp.join()
+
     for res in results:
         if not res.ready():
             print_centered(f"{ICBM} {nukeable} still in flight")
