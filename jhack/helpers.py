@@ -141,10 +141,7 @@ def is_k8s_model(status=None):
 def juju_client_version() -> Tuple[int, ...]:
     proc = JPopen("juju version".split())
     raw = proc.stdout.read().decode("utf-8").strip()
-    if "-" in raw:
-        version = raw.split("-")[0]
-    else:
-        version = raw
+    version = raw.split("-")[0]
     return tuple(map(int, version.split(".")))
 
 
@@ -154,7 +151,8 @@ def juju_agent_version() -> Tuple[int, ...]:
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     current_ctrl = raw["current-controller"]
     agent_version = raw["controllers"][current_ctrl]["agent-version"]
-    return tuple(map(int, agent_version.split(".")))
+    version = agent_version.split("-")[0]
+    return tuple(map(int, version.split(".")))
 
 
 def juju_models() -> str:
