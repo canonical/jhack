@@ -642,7 +642,7 @@ Pick a CMR [0.0/0.1/1.0/2.0/3.0/4.0/5.0/6.0/6.1] (0.0): 1.0
 relating <this model>.prom:self-metrics-endpoint <-[prometheus_scrape]-> cos.prometheus:metrics-endpoint      
 ```
 
-[img.png](jhack/resources/img.png)
+![img.png](jhack/resources/img.png)
 
 # jinx
 Used to play around with [jinx (YAMLess Charms)](https://github.com/PietroPasotti/jinx)
