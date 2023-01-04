@@ -6,6 +6,9 @@
 This is a homegrown collection of opinionated scripts and utilities to make the
 charm dev's life somewhat easier.
 
+This README is meant as overview of what's there, and high-level documentation of the commands.
+More extensive documentation is provided in the cli itself. All commands can be called with `--help` and will provide more information than what is included here.
+
 #### Installation:
 ##### from sources (dev setup):
 Clone the repo; alias '/path/to/jhack/main.py' as 'jhack', or something.
@@ -39,8 +42,9 @@ Happy hacking!
 
 `jhack utils sync ./src application-name/0`
 
-Will watch the ./src folder for changes and push any to application-name/0
-under /charm/src/.
+Will watch the `./src` and `./lib` folders (recursively, by default) for changes and push any to the `application-name/0` unit.
+
+Pro tip: `jhack utils sync ./src application-name` will sync to all units of `application-name`!
 
 ## unbork-juju
 
