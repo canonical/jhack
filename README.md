@@ -395,9 +395,11 @@ By using this tool you acknowledge the possibility of it bricking your model or 
 
   So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.
 
+### YOLO mode
+- use `jhack conf` to create your very own `~/.jhack_config.toml` and set `nuke.ask_for_confirmation = false`.
+
 
 # fire
-
 This command is used to simulate a specific event on a live unit. It works by building up an environment from scratch and tricking the charm to think a specific event is running by using `juju exec`. You can use it to simulate `update-status`, and other 'simple' events that have no special requirements in terms of envvars being set, but also more complex events are supported (relation events, workload events).
 
 Examples:
