@@ -62,9 +62,6 @@ def model_loglevel():
     return "WARNING"  # the default
 
 
-MODEL_LOGLEVEL = model_loglevel()
-
-
 @dataclass
 class Target:
     app: str
@@ -268,9 +265,12 @@ class LogLineParser:
         event_replayed_jhack: ("jhack", "replay"),
     }
 
+    def __init__(self):
+        self._loglevel = model_loglevel()
+
     @property
     def uniter_events_only(self) -> bool:
-        return MODEL_LOGLEVEL not in BEST_LOGLEVELS
+        return self._loglevel not in BEST_LOGLEVELS
 
     @staticmethod
     def _uniform_event(event: str):

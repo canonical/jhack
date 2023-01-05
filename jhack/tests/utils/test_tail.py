@@ -40,10 +40,10 @@ def _mock_emit(
 
 def mock_uniter_events_only(value: bool = True):
     if value:
-        jhack.utils.tail_charms.MODEL_LOGLEVEL = "WARNING"
+        jhack.utils.tail_charms.model_loglevel = lambda: "WARNING"
         # this will make the parser only try to match "unit.myapp/0.juju-log Emitting Juju event..".
     else:
-        jhack.utils.tail_charms.MODEL_LOGLEVEL = "TRACE"
+        jhack.utils.tail_charms.model_loglevel = lambda: "TRACE"
 
 
 MOCK_JDL = {
@@ -172,6 +172,7 @@ def test_with_cropped_trfk_log(deferrals, length):
 
 
 def test_tracking():
+    mock_uniter_events_only(False)
     p = Processor([Target("myapp", 0)], show_defer=True)
     l1, l2, l3, l4 = [
         line.decode("utf-8").strip() for line in MOCK_JDL[1].split(b"\n")[:-1]
