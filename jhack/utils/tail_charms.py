@@ -42,6 +42,13 @@ _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no
 def model_loglevel():
     try:
         lc = JPopen("juju model-config logging-config".split())
+        lc.wait()
+        if lc.returncode != 0:
+            logger.info(
+                "no model config: maybe there is no current model? defaulting to WARNING"
+            )
+            return "WARNING"  # the default
+
         logging_config = lc.stdout.read().decode("utf-8")
         for key, val in (cfg.split("=") for cfg in logging_config.split(";")):
             if key == "unit":
@@ -55,6 +62,7 @@ def model_loglevel():
                         f"`juju model-config logging-config=<root>=WARNING;unit=TRACE`"
                     )
                 return val
+
     except Exception as e:
         logger.error(
             f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."

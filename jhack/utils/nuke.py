@@ -1,12 +1,11 @@
 import re
+import signal
+from contextlib import contextmanager
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 from subprocess import PIPE
 from time import sleep
 from typing import Callable, List, Literal, Optional
-
-import signal
-from contextlib import contextmanager
 
 import typer
 from rich.align import Align
@@ -14,13 +13,14 @@ from rich.console import Console
 from rich.style import Style
 from rich.text import Text
 
+from jhack.conf.conf import CONFIG
 from jhack.helpers import JPopen, current_model, juju_models, juju_status, list_models
 from jhack.logger import logger
 
 logger = logger.getChild("nuke")
 
+ASK_FOR_CONFIRMATION = CONFIG["nuke"]["ask_for_confirmation"]
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
-
 ATOM = "⚛"
 ICBM = f"~]=={ATOM}❯"
 COLOR_MAP = {
@@ -52,6 +52,7 @@ class TimeoutException(Exception):
 def timeout(seconds, raise_=False):
     def signal_handler(signum, frame):
         raise TimeoutException("Timed out!")
+
     signal.signal(signal.SIGALRM, signal_handler)
     signal.alarm(seconds)
     try:
@@ -326,6 +327,24 @@ def _nuke(
             print(f"would {ATOM} {nukeable} with {nuke}")
         return
 
+    if ASK_FOR_CONFIRMATION:
+        print("Are you sure you want to nuke:")
+        for nukeable, nuke in zip(nukeables, nukes):
+            print(f"\t{ATOM} {nukeable}")
+
+        try:
+            if (
+                input(
+                    "\nPress ENTER to confirm, anything else (and then ENTER) to abort."
+                )
+                != ""
+            ):
+                print("Aborted.")
+                return
+        except KeyboardInterrupt:
+            print("Aborted.")
+            return
+
     if color == "no":
         color = None
 
@@ -371,19 +390,19 @@ def _nuke(
     for nukeable, nuke in zip(nukeables, nukes):
         logger.debug(f"firing {nuke} {ICBM} {nukeable}")
         res = tp.apply_async(fire, (nukeable, nuke))
-        results.append(res)
+        results.append((res, nukeable, nuke))
 
     with timeout(1):
         tp.close()
         tp.join()
 
-    for res in results:
+    for res, nkbl, nk in results:
         if not res.ready():
-            print_centered(f"{ICBM} {nukeable} still in flight")
+            print_centered(f"{ICBM} {nkbl} still in flight")
         else:
             if not res.successful():
                 print_centered(
-                    f"nuke {nuke!r} {ICBM} {nukeable!r} failed; someone doesn't want to die"
+                    f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die"
                 )
 
     if not dry_run:
