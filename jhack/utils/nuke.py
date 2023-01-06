@@ -333,9 +333,7 @@ def _nuke(
             print(f"\t{ATOM} {nukeable}")
 
         try:
-            if typer.prompt("Please confirm", default="y",
-                            show_default=True,
-                            show_choices=True) not in ["y", ""]:  # ENTER or "y"
+            if not typer.confirm("Please confirm", default=True):
                 print("Aborted.")
                 return
         except typer.Abort:
