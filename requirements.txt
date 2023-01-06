@@ -3,5 +3,6 @@ ops==1.5.3
 rich==12.0.1
 parse==1.19.0
 juju==2.9.7
+toml
 asttokens
 astunparse
