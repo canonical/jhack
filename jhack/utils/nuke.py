@@ -333,16 +333,13 @@ def _nuke(
             print(f"\t{ATOM} {nukeable}")
 
         try:
-            if (
-                input(
-                    "\nPress ENTER to confirm, anything else (and then ENTER) to abort."
-                )
-                != ""
-            ):
+            if typer.prompt("Please confirm", default="y",
+                            show_default=True,
+                            show_choices=True) not in ["y", ""]:  # ENTER or "y"
                 print("Aborted.")
                 return
-        except KeyboardInterrupt:
-            print("Aborted.")
+        except typer.Abort:
+            print("\nAborted.")
             return
 
     if color == "no":
