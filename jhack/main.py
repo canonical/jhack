@@ -113,7 +113,7 @@ def main():
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
-    app.command(name="jhack", hidden=True)(vanity)
+    app.command(name="unleash", hidden=True)(vanity)
 
     conf = typer.Typer(
         name="conf",
