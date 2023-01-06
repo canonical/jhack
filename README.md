@@ -6,6 +6,9 @@
 This is a homegrown collection of opinionated scripts and utilities to make the
 charm dev's life somewhat easier.
 
+This README is meant as overview of what's there, and high-level documentation of the commands.
+More extensive documentation is provided in the cli itself. All commands can be called with `--help` and will provide more information than what is included here.
+
 #### Installation:
 ##### from sources (dev setup):
 Clone the repo; alias '/path/to/jhack/main.py' as 'jhack', or something.
@@ -39,8 +42,9 @@ Happy hacking!
 
 `jhack utils sync ./src application-name/0`
 
-Will watch the ./src folder for changes and push any to application-name/0
-under /charm/src/.
+Will watch the `./src` and `./lib` folders (recursively, by default) for changes and push any to the `application-name/0` unit.
+
+Pro tip: `jhack utils sync ./src application-name` will sync to all units of `application-name`!
 
 ## unbork-juju
 
@@ -391,9 +395,11 @@ By using this tool you acknowledge the possibility of it bricking your model or 
 
   So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.
 
+### YOLO mode
+- use `jhack conf` to create your very own `~/.jhack_config.toml` and set `nuke.ask_for_confirmation = false`.
+
 
 # fire
-
 This command is used to simulate a specific event on a live unit. It works by building up an environment from scratch and tricking the charm to think a specific event is running by using `juju exec`. You can use it to simulate `update-status`, and other 'simple' events that have no special requirements in terms of envvars being set, but also more complex events are supported (relation events, workload events).
 
 Examples:

@@ -23,6 +23,7 @@ from jhack.charm.repack import refresh
 from jhack.charm.sync import sync as sync_packed_charm
 from jhack.charm.update import update
 from jhack.charm.vinfo import vinfo
+from jhack.conf.conf import print_current_config, print_defaults
 from jhack.jinx.cleanup import cleanup as jinx_cleanup
 from jhack.jinx.init import init_jinx as jinx_init
 from jhack.jinx.install import install as jinx_install
@@ -114,6 +115,17 @@ def main():
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     app.command(name="jhack", hidden=True)(vanity)
 
+    conf = typer.Typer(
+        name="conf",
+        help="""Jhack configuration. You can use the output of the `default`
+        subcommand as a template to write your own config file:
+        `jhack conf default |> ~/.jhack_config.toml`""",
+        no_args_is_help=True,
+    )
+    conf.command(name="default")(print_defaults)
+    conf.command(name="current")(print_current_config)
+
+    app.add_typer(conf, no_args_is_help=True)
     app.add_typer(model, no_args_is_help=True)
     app.add_typer(jinx, no_args_is_help=True)
     app.add_typer(charm, no_args_is_help=True)
