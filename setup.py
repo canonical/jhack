@@ -33,7 +33,5 @@ setup(
         "License :: OSI Approved :: Apache Software License",
     ],
     entry_points={"console_scripts": ["jhack = jhack.main:main"]},
-    package_data={
-        '': ['unbork_juju']
-    }
+    package_data={"": ["unbork_juju"]},
 )

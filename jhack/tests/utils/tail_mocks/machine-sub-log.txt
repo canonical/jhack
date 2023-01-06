@@ -92,8 +92,8 @@ machine-0: 15:45:58 DEBUG juju.worker.dependency "disk-manager" manifold worker 
 machine-0: 15:45:58 DEBUG juju.worker.dependency "agent-config-updater" manifold worker stopped: resource permanently unavailable
 stack trace:
 github.com/juju/worker/v3/dependency.init:129: resource permanently unavailable
-github.com/juju/juju/worker/fortress.Occupy:63: 
-github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93: 
+github.com/juju/juju/worker/fortress.Occupy:63:
+github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93:
 machine-0: 15:45:58 DEBUG juju.worker.hostkeyreporter 4 SSH host keys reported for machine 0
 machine-0: 15:45:58 DEBUG juju.worker.dependency "host-key-reporter" manifold worker stopped: resource permanently unavailable
 stack trace:
@@ -238,8 +238,8 @@ unit-mongodb-0: 13:24:40 INFO juju.worker.apicaller [762a03] "unit-mongodb-0" su
 machine-1: 13:24:40 DEBUG juju.worker.dependency "agent-config-updater" manifold worker stopped: resource permanently unavailable
 stack trace:
 github.com/juju/worker/v3/dependency.init:129: resource permanently unavailable
-github.com/juju/juju/worker/fortress.Occupy:63: 
-github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93: 
+github.com/juju/juju/worker/fortress.Occupy:63:
+github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93:
 machine-1: 13:24:40 DEBUG juju.network no lxc bridge addresses to filter for machine
 machine-1: 13:24:40 DEBUG juju.network cannot get "lxdbr0" addresses: route ip+net: no such network interface (ignoring)
 machine-1: 13:24:40 DEBUG juju.network cannot get "virbr0" addresses: route ip+net: no such network interface (ignoring)
@@ -271,9 +271,9 @@ machine-1: 13:24:40 DEBUG juju.agent.tools target tools path /var/lib/juju/tools
 machine-1: 13:24:40 DEBUG juju.worker.dependency "broker-tracker" manifold worker stopped: no container types determined
 stack trace:
 github.com/juju/juju/worker/containerbroker.NewTracker:110: no container types determined
-github.com/juju/juju/worker/containerbroker.Manifold.func1:80: 
-github.com/juju/juju/worker/fortress.Occupy:63: 
-github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93: 
+github.com/juju/juju/worker/containerbroker.Manifold.func1:80:
+github.com/juju/juju/worker/fortress.Occupy:63:
+github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93:
 machine-1: 13:24:40 INFO juju.downloader downloading from ch:amd64/focal/mongodb-75
 machine-1: 13:24:40 ERROR juju.worker.dependency "broker-tracker" manifold worker returned unexpected error: no container types determined
 machine-1: 13:24:40 DEBUG juju.worker.fanconfigurer Fan not enabled
@@ -311,7 +311,7 @@ unit-mongodb-0: 13:24:41 DEBUG unit.mongodb/0.install Get:1 http://archive.ubunt
 unit-mongodb-0: 13:24:41 DEBUG unit.mongodb/0.install Get:2 http://archive.ubuntu.com/ubuntu focal-updates/main amd64 python3-netaddr all 0.7.19-3ubuntu1 [236 kB]
 unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install Fetched 1825 kB in 1s (1473 kB/s)
 unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install Selecting previously unselected package ieee-data.
-unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install (Reading database ... 
+unit-mongodb-0: 13:24:42 DEBUG unit.mongodb/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -408,8 +408,8 @@ machine-2: 13:24:43 DEBUG juju.worker.dependency "host-key-reporter" manifold wo
 machine-2: 13:24:43 DEBUG juju.worker.dependency "agent-config-updater" manifold worker stopped: resource permanently unavailable
 stack trace:
 github.com/juju/worker/v3/dependency.init:129: resource permanently unavailable
-github.com/juju/juju/worker/fortress.Occupy:63: 
-github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93: 
+github.com/juju/juju/worker/fortress.Occupy:63:
+github.com/juju/juju/cmd/jujud/agent/engine.occupyStart.func1:93:
 machine-2: 13:24:43 INFO juju.worker.deployer creating new agent config for "ceil/0"
 machine-2: 13:24:43 DEBUG juju.agent read agent config, format "2.0"
 machine-2: 13:24:43 INFO juju.worker.deployer starting workers for "ceil/0"
@@ -508,7 +508,7 @@ unit-mongodb-0: 13:24:48 DEBUG unit.mongodb/0.install Get:21 http://archive.ubun
 unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install Fetched 1825 kB in 3s (557 kB/s)
 unit-mongodb-0: 13:24:48 DEBUG unit.mongodb/0.install Get:22 http://archive.ubuntu.com/ubuntu focal-updates/main amd64 libtsan0 amd64 10.3.0-1ubuntu1~20.04 [2009 kB]
 unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install Selecting previously unselected package ieee-data.
-unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install (Reading database ... 
+unit-ceil-0: 13:24:48 DEBUG unit.ceil/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -617,7 +617,7 @@ unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Get:49 http://archive.ubun
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Get:50 http://archive.ubuntu.com/ubuntu focal-updates/universe amd64 python3-pip all 20.0.2-5ubuntu1.6 [231 kB]
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Fetched 52.2 MB in 12s (4528 kB/s)
 unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install Selecting previously unselected package binutils-common:amd64.
-unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install (Reading database ... 
+unit-mongodb-0: 13:24:56 DEBUG unit.mongodb/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -837,7 +837,7 @@ unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install Fetched 52.2 MB in 14s (3854 kB/
 unit-mongodb-0: 13:25:04 DEBUG unit.mongodb/0.install Setting up fakeroot (1.24-1) ...
 unit-mongodb-0: 13:25:04 DEBUG unit.mongodb/0.install update-alternatives: using /usr/bin/fakeroot-sysv to provide /usr/bin/fakeroot (fakeroot) in auto mode
 unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install Selecting previously unselected package binutils-common:amd64.
-unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install (Reading database ... 
+unit-ceil-0: 13:25:04 DEBUG unit.ceil/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -1085,7 +1085,7 @@ unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install Fetched 248 kB in 0s (1508
 unit-ceil-0: 13:25:13 DEBUG unit.ceil/0.install Setting up libalgorithm-diff-perl (1.19.03-2) ...
 unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install Selecting previously unselected package python3-bson.
 unit-ceil-0: 13:25:13 DEBUG unit.ceil/0.install Setting up binutils-common:amd64 (2.34-6ubuntu1.3) ...
-unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install (Reading database ... 
+unit-mongodb-0: 13:25:13 DEBUG unit.mongodb/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -1195,7 +1195,7 @@ unit-mongodb-0: 13:25:15 DEBUG unit.mongodb/0.install Get:1 http://archive.ubunt
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Get:2 http://archive.ubuntu.com/ubuntu focal/main amd64 python3-packaging all 20.3-1 [26.8 kB]
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Fetched 88.1 kB in 1s (169 kB/s)
 unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install Selecting previously unselected package python3-pyparsing.
-unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install (Reading database ... 
+unit-mongodb-0: 13:25:16 DEBUG unit.mongodb/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -1288,7 +1288,7 @@ unit-ceil-0: 13:25:21 DEBUG unit.ceil/0.install After this operation, 901 kB of 
 unit-ceil-0: 13:25:21 DEBUG unit.ceil/0.install Get:1 http://archive.ubuntu.com/ubuntu focal/main amd64 python3-psutil amd64 5.5.1-1ubuntu4 [141 kB]
 unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install Fetched 141 kB in 2s (84.1 kB/s)
 unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install Selecting previously unselected package python3-psutil.
-unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install (Reading database ... 
+unit-ceil-0: 13:25:23 DEBUG unit.ceil/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -1542,7 +1542,7 @@ unit-ceil-0: 13:25:32 DEBUG unit.ceil/0.install Get:45 http://archive.ubuntu.com
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Get:12 http://archive.ubuntu.com/ubuntu focal-updates/universe amd64 mongodb-server all 1:3.6.9+really3.6.8+90~g8e540c0b6d-0ubuntu5.3 [12.5 kB]
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Fetched 56.8 MB in 12s (4688 kB/s)
 unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install Selecting previously unselected package libboost-filesystem1.71.0:amd64.
-unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install (Reading database ... 
+unit-mongodb-0: 13:25:32 DEBUG unit.mongodb/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -1858,7 +1858,7 @@ unit-mongodb-0: 13:25:40 DEBUG unit.mongodb/0.config-changed       Tasks: 1 (lim
 unit-mongodb-0: 13:25:40 DEBUG unit.mongodb/0.config-changed      Memory: 668.0K
 unit-mongodb-0: 13:25:40 DEBUG unit.mongodb/0.config-changed      CGroup: /system.slice/mongodb.service
 unit-mongodb-0: 13:25:40 DEBUG unit.mongodb/0.config-changed              └─26484 /usr/bin/mongod --unixSocketPrefix=/run/mongodb --config /etc/mongodb.conf
-unit-mongodb-0: 13:25:40 DEBUG unit.mongodb/0.config-changed 
+unit-mongodb-0: 13:25:40 DEBUG unit.mongodb/0.config-changed
 unit-mongodb-0: 13:25:40 DEBUG unit.mongodb/0.config-changed Sep 16 11:25:40 juju-c59483-1 systemd[1]: Started An object/document-oriented database.
 unit-mongodb-0: 13:25:40 INFO unit.mongodb/0.juju-log port_check: Unable to connect to 10.1.70.69:27017/TCP.
 unit-mongodb-0: 13:25:40 INFO unit.mongodb/0.juju-log port_check: Exception: [Errno 111] Connection refused
@@ -1871,7 +1871,7 @@ unit-ceil-0: 13:25:41 DEBUG unit.ceil/0.install Get:275 http://archive.ubuntu.co
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Preconfiguring packages ...
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Fetched 65.7 MB in 15s (4455 kB/s)
 unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install Selecting previously unselected package python3-pyparsing.
-unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install (Reading database ... 
+unit-ceil-0: 13:25:43 DEBUG unit.ceil/0.install (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -1922,7 +1922,7 @@ unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed       Tasks: 26 (li
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed      Memory: 144.4M
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed      CGroup: /system.slice/mongodb.service
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed              └─26484 /usr/bin/mongod --unixSocketPrefix=/run/mongodb --config /etc/mongodb.conf
-unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed 
+unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed Sep 16 11:25:40 juju-c59483-1 systemd[1]: Started An object/document-oriented database.
 unit-mongodb-0: 13:25:43 INFO unit.mongodb/0.juju-log port_check: 10.1.70.69:27017/TCP is open
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed ● mongodb.service - An object/document-oriented database
@@ -1934,7 +1934,7 @@ unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed       Tasks: 26 (li
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed      Memory: 144.4M
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed      CGroup: /system.slice/mongodb.service
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed              └─26484 /usr/bin/mongod --unixSocketPrefix=/run/mongodb --config /etc/mongodb.conf
-unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed 
+unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed
 unit-mongodb-0: 13:25:43 DEBUG unit.mongodb/0.config-changed Sep 16 11:25:40 juju-c59483-1 systemd[1]: Started An object/document-oriented database.
 unit-mongodb-0: 13:25:43 INFO unit.mongodb/0.juju-log port_check: 10.1.70.69:27017/TCP is open
 unit-mongodb-0: 13:25:43 INFO unit.mongodb/0.juju-log update_service_ports
@@ -2000,7 +2000,7 @@ unit-mongodb-0: 13:25:45 DEBUG unit.mongodb/0.start       Tasks: 1 (limit: 38068
 unit-mongodb-0: 13:25:45 DEBUG unit.mongodb/0.start      Memory: 668.0K
 unit-mongodb-0: 13:25:45 DEBUG unit.mongodb/0.start      CGroup: /system.slice/mongodb.service
 unit-mongodb-0: 13:25:45 DEBUG unit.mongodb/0.start              └─26688 /usr/bin/mongod --unixSocketPrefix=/run/mongodb --config /etc/mongodb.conf
-unit-mongodb-0: 13:25:45 DEBUG unit.mongodb/0.start 
+unit-mongodb-0: 13:25:45 DEBUG unit.mongodb/0.start
 unit-mongodb-0: 13:25:45 DEBUG unit.mongodb/0.start Sep 16 11:25:45 juju-c59483-1 systemd[1]: Started An object/document-oriented database.
 unit-ceil-0: 13:25:45 DEBUG unit.ceil/0.install Preparing to unpack .../019-libxcb-render0_1.14-2_amd64.deb ...
 unit-mongodb-0: 13:25:45 INFO unit.mongodb/0.juju-log port_check: Unable to connect to 10.1.70.69:27017/TCP.
@@ -2080,7 +2080,7 @@ unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start       Tasks: 26 (limit: 3806
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start      Memory: 143.8M
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start      CGroup: /system.slice/mongodb.service
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start              └─26688 /usr/bin/mongod --unixSocketPrefix=/run/mongodb --config /etc/mongodb.conf
-unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start 
+unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start Sep 16 11:25:45 juju-c59483-1 systemd[1]: Started An object/document-oriented database.
 unit-mongodb-0: 13:25:48 INFO unit.mongodb/0.juju-log port_check: 10.1.70.69:27017/TCP is open
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start ● mongodb.service - An object/document-oriented database
@@ -2092,7 +2092,7 @@ unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start       Tasks: 26 (limit: 3806
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start      Memory: 143.9M
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start      CGroup: /system.slice/mongodb.service
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start              └─26688 /usr/bin/mongod --unixSocketPrefix=/run/mongodb --config /etc/mongodb.conf
-unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start 
+unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start
 unit-mongodb-0: 13:25:48 DEBUG unit.mongodb/0.start Sep 16 11:25:45 juju-c59483-1 systemd[1]: Started An object/document-oriented database.
 unit-mongodb-0: 13:25:48 INFO unit.mongodb/0.juju-log port_check: 10.1.70.69:27017/TCP is open
 unit-mongodb-0: 13:25:48 INFO unit.mongodb/0.juju-log start_hook returns: True
@@ -2806,7 +2806,7 @@ unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install Setting up libpixman-1-0:amd64 (
 unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install Setting up libcdparanoia0:amd64 (3.10.2+debian-13) ...
 unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install Setting up libwayland-server0:amd64 (1.18.0-1ubuntu0.1) ...
 unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install Setting up libpaper1:amd64 (1.1.28) ...
-unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install 
+unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install
 unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install Creating config file /etc/papersize with new version
 unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install Setting up python3-pymemcache (2.2.2-2) ...
 unit-ceil-0: 13:26:09 DEBUG unit.ceil/0.install Setting up libpciaccess0:amd64 (0.16-0ubuntu1) ...
@@ -3130,9 +3130,9 @@ unit-ceil-0: 13:26:42 DEBUG unit.ceil/0.install Processing triggers for libc-bin
 unit-ceil-0: 13:26:42 DEBUG unit.ceil/0.install Processing triggers for systemd (245.4-4ubuntu3.17) ...
 unit-ceil-0: 13:26:43 INFO unit.ceil/0.juju-log Making dir /etc/systemd/system/ceilometer-api.service.d root:root 555
 unit-ceil-0: 13:26:43 WARNING unit.ceil/0.juju-log Package openstack-release has no installation candidate.
-unit-ceil-0: 13:26:44 WARNING unit.ceil/0.juju-log database relation is missing and must be related for functionality. 
-unit-ceil-0: 13:26:44 WARNING unit.ceil/0.juju-log messaging relation is missing and must be related for functionality. 
-unit-ceil-0: 13:26:44 WARNING unit.ceil/0.juju-log identity relation is missing and must be related for functionality. 
+unit-ceil-0: 13:26:44 WARNING unit.ceil/0.juju-log database relation is missing and must be related for functionality.
+unit-ceil-0: 13:26:44 WARNING unit.ceil/0.juju-log messaging relation is missing and must be related for functionality.
+unit-ceil-0: 13:26:44 WARNING unit.ceil/0.juju-log identity relation is missing and must be related for functionality.
 unit-prometheus-node-exporter-0: 13:26:45 INFO juju Starting unit workers for "prometheus-node-exporter/0"
 unit-prometheus-node-exporter-0: 13:26:45 INFO juju.worker.apicaller [762a03] "unit-prometheus-node-exporter-0" successfully connected to "10.1.70.175:17070"
 unit-prometheus-node-exporter-0: 13:26:45 INFO juju.worker.apicaller [762a03] password changed for "unit-prometheus-node-exporter-0"
@@ -3183,7 +3183,7 @@ unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Get:8 http://archive.ubun
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Get:9 http://archive.ubuntu.com/ubuntu focal/universe amd64 python-gi amd64 3.36.0-1 [212 kB]
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Fetched 4118 kB in 2s (2536 kB/s)
 unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed Selecting previously unselected package libpython2.7-minimal:amd64.
-unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed (Reading database ... 
+unit-ceil-0: 13:26:49 DEBUG unit.ceil/0.config-changed (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -3226,7 +3226,7 @@ unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Setting up libpython2.7-m
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Setting up python2.7-minimal (2.7.18-1~20.04.3) ...
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Setting up python2-minimal (2.7.17-2ubuntu4) ...
 unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed Selecting previously unselected package python2.
-unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed (Reading database ... 
+unit-ceil-0: 13:26:50 DEBUG unit.ceil/0.config-changed (Reading database ...
 (Reading database ... 5%
 (Reading database ... 10%
 (Reading database ... 15%
@@ -3283,9 +3283,9 @@ unit-ceil-0: 13:26:53 DEBUG unit.ceil/0.juju-log Generating template context for
 unit-ceil-0: 13:26:53 INFO unit.ceil/0.juju-log Inspecting identity-service relations for CA SSL certificate.
 unit-ceil-0: 13:26:54 DEBUG unit.ceil/0.juju-log Generating template context for identity-credentials
 unit-ceil-0: 13:26:54 DEBUG unit.ceil/0.juju-log Generating template context for amqp
-unit-ceil-0: 13:26:54 WARNING unit.ceil/0.juju-log database relation is missing and must be related for functionality. 
-unit-ceil-0: 13:26:54 WARNING unit.ceil/0.juju-log messaging relation is missing and must be related for functionality. 
-unit-ceil-0: 13:26:54 WARNING unit.ceil/0.juju-log identity relation is missing and must be related for functionality. 
+unit-ceil-0: 13:26:54 WARNING unit.ceil/0.juju-log database relation is missing and must be related for functionality.
+unit-ceil-0: 13:26:54 WARNING unit.ceil/0.juju-log messaging relation is missing and must be related for functionality.
+unit-ceil-0: 13:26:54 WARNING unit.ceil/0.juju-log identity relation is missing and must be related for functionality.
 unit-prometheus-node-exporter-0: 13:26:54 DEBUG unit.prometheus-node-exporter/0.juju-log Operator Framework 1.3.0 up and running.
 unit-prometheus-node-exporter-0: 13:26:54 INFO unit.prometheus-node-exporter/0.juju-log Running legacy hooks/install.
 unit-prometheus-node-exporter-0: 13:26:55 DEBUG unit.prometheus-node-exporter/0.juju-log Operator Framework 1.3.0 up and running.
@@ -3313,9 +3313,9 @@ unit-ceil-0: 13:26:59 WARNING unit.ceil/0.juju-log Package openstack-release has
 unit-ceil-0: 13:27:00 DEBUG unit.ceil/0.juju-log Generating template context for identity-credentials
 unit-ceil-0: 13:27:00 DEBUG unit.ceil/0.juju-log Generating template context for amqp
 unit-ceil-0: 13:27:00 WARNING unit.ceil/0.juju-log Package openstack-release has no installation candidate.
-unit-ceil-0: 13:27:01 WARNING unit.ceil/0.juju-log database relation is missing and must be related for functionality. 
-unit-ceil-0: 13:27:01 WARNING unit.ceil/0.juju-log messaging relation is missing and must be related for functionality. 
-unit-ceil-0: 13:27:01 WARNING unit.ceil/0.juju-log identity relation is missing and must be related for functionality. 
+unit-ceil-0: 13:27:01 WARNING unit.ceil/0.juju-log database relation is missing and must be related for functionality.
+unit-ceil-0: 13:27:01 WARNING unit.ceil/0.juju-log messaging relation is missing and must be related for functionality.
+unit-ceil-0: 13:27:01 WARNING unit.ceil/0.juju-log identity relation is missing and must be related for functionality.
 unit-prometheus-node-exporter-0: 13:27:01 DEBUG unit.prometheus-node-exporter/0.juju-log juju-info:3: Operator Framework 1.3.0 up and running.
 unit-prometheus-node-exporter-0: 13:27:01 DEBUG unit.prometheus-node-exporter/0.juju-log juju-info:3: Legacy hooks/juju-info-relation-created does not exist.
 unit-prometheus-node-exporter-0: 13:27:01 DEBUG unit.prometheus-node-exporter/0.juju-log juju-info:3: yaml does not have libyaml extensions, using slower pure Python yaml loader
@@ -3328,9 +3328,9 @@ unit-ceil-0: 13:27:03 INFO unit.ceil/0.juju-log shared-db:2: Registered config f
 unit-ceil-0: 13:27:03 WARNING unit.ceil/0.juju-log shared-db:2: Package openstack-release has no installation candidate.
 unit-ceil-0: 13:27:04 DEBUG unit.ceil/0.juju-log shared-db:2: Generating template context for identity-credentials
 unit-ceil-0: 13:27:04 DEBUG unit.ceil/0.juju-log shared-db:2: Generating template context for amqp
-unit-ceil-0: 13:27:04 WARNING unit.ceil/0.juju-log shared-db:2: database relation is missing and must be related for functionality. 
-unit-ceil-0: 13:27:04 WARNING unit.ceil/0.juju-log shared-db:2: messaging relation is missing and must be related for functionality. 
-unit-ceil-0: 13:27:04 WARNING unit.ceil/0.juju-log shared-db:2: identity relation is missing and must be related for functionality. 
+unit-ceil-0: 13:27:04 WARNING unit.ceil/0.juju-log shared-db:2: database relation is missing and must be related for functionality.
+unit-ceil-0: 13:27:04 WARNING unit.ceil/0.juju-log shared-db:2: messaging relation is missing and must be related for functionality.
+unit-ceil-0: 13:27:04 WARNING unit.ceil/0.juju-log shared-db:2: identity relation is missing and must be related for functionality.
 unit-prometheus-node-exporter-0: 13:27:05 DEBUG unit.prometheus-node-exporter/0.juju-log Operator Framework 1.3.0 up and running.
 unit-prometheus-node-exporter-0: 13:27:05 DEBUG unit.prometheus-node-exporter/0.juju-log Legacy hooks/leader-elected does not exist.
 unit-prometheus-node-exporter-0: 13:27:05 DEBUG unit.prometheus-node-exporter/0.juju-log yaml does not have libyaml extensions, using slower pure Python yaml loader
@@ -3356,9 +3356,9 @@ unit-ceil-0: 13:27:07 INFO unit.ceil/0.juju-log shared-db:2: Wrote template /etc
 unit-ceil-0: 13:27:07 INFO unit.ceil/0.juju-log shared-db:2: Inspecting identity-service relations for CA SSL certificate.
 unit-ceil-0: 13:27:08 DEBUG unit.ceil/0.juju-log shared-db:2: Generating template context for identity-credentials
 unit-ceil-0: 13:27:08 DEBUG unit.ceil/0.juju-log shared-db:2: Generating template context for amqp
-unit-ceil-0: 13:27:08 WARNING unit.ceil/0.juju-log shared-db:2: database relation is missing and must be related for functionality. 
-unit-ceil-0: 13:27:08 WARNING unit.ceil/0.juju-log shared-db:2: messaging relation is missing and must be related for functionality. 
-unit-ceil-0: 13:27:08 WARNING unit.ceil/0.juju-log shared-db:2: identity relation is missing and must be related for functionality. 
+unit-ceil-0: 13:27:08 WARNING unit.ceil/0.juju-log shared-db:2: database relation is missing and must be related for functionality.
+unit-ceil-0: 13:27:08 WARNING unit.ceil/0.juju-log shared-db:2: messaging relation is missing and must be related for functionality.
+unit-ceil-0: 13:27:08 WARNING unit.ceil/0.juju-log shared-db:2: identity relation is missing and must be related for functionality.
 unit-prometheus-node-exporter-0: 13:27:09 DEBUG unit.prometheus-node-exporter/0.juju-log Operator Framework 1.3.0 up and running.
 unit-prometheus-node-exporter-0: 13:27:09 DEBUG unit.prometheus-node-exporter/0.juju-log Legacy hooks/config-changed does not exist.
 unit-prometheus-node-exporter-0: 13:27:09 DEBUG unit.prometheus-node-exporter/0.juju-log yaml does not have libyaml extensions, using slower pure Python yaml loader

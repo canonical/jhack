@@ -60,10 +60,10 @@ Fast-forwards the firing of `update-status` hooks, and restores it to a 'slow' f
 
 Self-explanation:
 ```bash
-jhack utils ffwd 
+jhack utils ffwd
   --timeout 10 # exits after 10 seconds
   --fast-interval 5 # update-status fires each 5 seconds
-  --slow-interval 50m # when done, set update-status firing rate to 50 minutes. 
+  --slow-interval 50m # when done, set update-status firing rate to 50 minutes.
   ```
 
 
@@ -115,14 +115,14 @@ You might see then something like:
 │ 13:56:47                 │ ingress_per_unit_relation_changed     │
 │ 13:56:46                 │ ingress_per_unit_relation_joined      │
 │ 13:56:46                 │ event_3                           ❮─┐ │
-│ 13:56:46                 │ ingress_per_unit_relation_created   │ │  
+│ 13:56:46                 │ ingress_per_unit_relation_created   │ │
 │ 13:46:30                 │ event_3                            ⭘┤ │
 │ 13:41:51                 │ event_3                           ❯─┘ │
 │ 13:41:51                 │ event_2                           ❮─┐ │
 │ 13:36:50                 │ event_2                           ❯─┘ │
 │ 13:36:50                 │ event_1                           ❮─┐ │
 │ 13:31:29                 │ event_1                           ❯─┘ │
-                            
+
                             [...]
 ```
 
@@ -131,26 +131,26 @@ The little circle is `event-3` getting re-emitted and immediately re-deferred!
 The graph can get nice and messy if multiple events get deferred in an interleaved fashion, enabling you to *see* what's going on. Which is nice.
 
 ```text
-update_status ❮──────┐ 
-update_status   .....│ 
-update_status  ⭘─────┤ 
-update_status   .....│ 
-update_status  ⭘─────┤ 
-update_status ❮─────┐│ 
-update_status ❯─────┼┘ 
-update_status  ⭘────┤  
-update_status ❮────┐│  
-update_status ❯────┼┘  
-update_status ❮────┼┐  
-update_status  ⭘───┤│  
-update_status ❯────┼┘  
-update_status  ⭘───┤   
-update_status ❮───┐│   
-update_status ❮──┐││   
-update_status ❯──┼┼┘   
-update_status  ⭘─┼┤    
-update_status  ⭘─┤│    
-update_status ❯──┼┘    
+update_status ❮──────┐
+update_status   .....│
+update_status  ⭘─────┤
+update_status   .....│
+update_status  ⭘─────┤
+update_status ❮─────┐│
+update_status ❯─────┼┘
+update_status  ⭘────┤
+update_status ❮────┐│
+update_status ❯────┼┘
+update_status ❮────┼┐
+update_status  ⭘───┤│
+update_status ❯────┼┘
+update_status  ⭘───┤
+update_status ❮───┐│
+update_status ❮──┐││
+update_status ❯──┼┼┘
+update_status  ⭘─┼┤
+update_status  ⭘─┤│
+update_status ❯──┼┘
 ```
 
 And did I mention that there's **colors**?
@@ -211,7 +211,7 @@ Examples:
 
 Example output:
 ```bash
-                                                      relation data v0.2                                                       
+                                                      relation data v0.2
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ category         ┃ traefik-k8s                                         ┃ ipu                                                ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -269,7 +269,7 @@ Suppose you have a prometheus-k8s charm deployed as `prom` (and related to traef
 Type: `jhack show-stored prom/0` and you'd get:
 
 ```commandline
-                                                      stored data v0.1                                                       
+                                                      stored data v0.1
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -329,7 +329,7 @@ adapters = {
 And then by running jhack show-stored -a /path/to/that/file, you’d magically get:
 
 ```commandline
-                                                      stored data v0.1                                                       
+                                                      stored data v0.1
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ PrometheusCharm.GrafanaDashboardProvider._stored            ┃ PrometheusCharm.ingress._stored                            ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -416,7 +416,7 @@ However, if all of your event handlers truly are idempotent (hem hem) you should
 
 # replay
 This command offers facilities to capture runtime event contexts and use them to 're-fire' "the same event" later on.
-Unlike `jhack utils fire`, which uses a synthetic (i.e. built from scratch, minimal) environment, this command family gets a hold of a 'real' environment, serializes it, and reuses it as needed. So the env is more complete, and the simulation, more realistic. 
+Unlike `jhack utils fire`, which uses a synthetic (i.e. built from scratch, minimal) environment, this command family gets a hold of a 'real' environment, serializes it, and reuses it as needed. So the env is more complete, and the simulation, more realistic.
 The flow consists of two main steps:
 - inject code that captures any event, serializes it and dumps it to a db on the unit.
 - whenever you like, trigger a charm execution reusing a recorded context.
@@ -441,19 +441,19 @@ Example:
 
 its output could be something like:
 
-    Listing recorded events:                                                     
-        (0) 2022-09-12 11:54:02.279174 :: start                              
-        (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created  
-        (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined   
-        (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed  
-        (4) 2022-09-12 11:54:04.369351 :: ingress-per-unit-relation-joined   
-        (5) 2022-09-12 11:54:04.924288 :: ingress-per-unit-relation-changed  
+    Listing recorded events:
+        (0) 2022-09-12 11:54:02.279174 :: start
+        (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created
+        (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined
+        (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed
+        (4) 2022-09-12 11:54:04.369351 :: ingress-per-unit-relation-joined
+        (5) 2022-09-12 11:54:04.924288 :: ingress-per-unit-relation-changed
         (6) 2022-09-12 11:54:10.371510 :: traefik-pebble-ready
 
 or if no events have been fired yet:
 
     Listing recorded events:
-        <no events>                                                          
+        <no events>
 
 
 Tip: to quickly get some events in, you could `jhack fire trfr/0 update-status`.
@@ -471,10 +471,10 @@ Example run:
     $ jhack replay install trfk/0
     $ jhack replay list trfk/0
     Listing recorded events:
-        (0) 2022-09-12 11:54:02.279174 :: start                             
-        (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created 
-        (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined  
-        (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed 
+        (0) 2022-09-12 11:54:02.279174 :: start
+        (1) 2022-09-12 11:54:02.768836 :: ingress-per-unit-relation-created
+        (2) 2022-09-12 11:54:03.293178 :: ingress-per-unit-relation-joined
+        (3) 2022-09-12 11:54:03.810452 :: ingress-per-unit-relation-changed
     $ jhack replay emit trfk/0 2
     Replaying event (3): ingress-per-unit-relation-joined as originally emitted at 2022-09-12 11:54:03.293178.
 
@@ -491,22 +491,22 @@ In `jhack.utils.event_recorder.runtime` you can find a Runtime class. That objec
 At some point it will be moved to a charm lib.
 
 The main use cases for Runtime are:
-- regression testing: 
-  - install replay on some unit, 
+- regression testing:
+  - install replay on some unit,
   - wait for some event to bork your charm
-  - grab the event db and put it in some /tests/replay_data folder 
-  - use Runtime to mock a charm execution using that backing database so that the charm will 
+  - grab the event db and put it in some /tests/replay_data folder
+  - use Runtime to mock a charm execution using that backing database so that the charm will
     run again "exactly as it did back then"
   - Assert that the charm does not bork exactly as it did back then
 - local debugging:
-  - use your favourite ide debugger tool to step through charm code without having to do 
+  - use your favourite ide debugger tool to step through charm code without having to do
     any mocking **at all**: all juju-facing calls will return 'as they did in real life'.
 
 Future work:
-- make it easier to manually edit the contents of the event database, to turn Runtime into a 
+- make it easier to manually edit the contents of the event database, to turn Runtime into a
   Scenario mocking lib. What if instead of returning True, leader-get returned False at that point?
-- Reuse the @memo injection facilities to reroute locally originating juju/pebble client calls 
-  to a specific remote controller and pebble server. Goal: be able to run a charm ANYWHERE but 
+- Reuse the @memo injection facilities to reroute locally originating juju/pebble client calls
+  to a specific remote controller and pebble server. Goal: be able to run a charm ANYWHERE but
   have it talk to a real backend living somewhere else.
 
 
@@ -557,7 +557,7 @@ Well, no more!
 
 The idea is: you create your unit provisioning script in `~/.cprov/default`, keeping in mind that no user input can be expected (i.e. put `-y` flags everywhere).
 
-Running 
+Running
 > jhack charm provision traefik-k8s/1;prometheus-k8s
 
 will run that script on all prometheus units, and traefik's unit `1`.
@@ -580,13 +580,13 @@ application name to target with the refresh.
 `jhack charm repack --root /where/my/charm/root/is --name juju-app-name`
 
 ## vinfo
-`vinfo` is a command to show in tabular format the full version fingerprint of a charmed unit 
-or application. 
+`vinfo` is a command to show in tabular format the full version fingerprint of a charmed unit
+or application.
 
 `jhack vinfo my-app` will show (for example):
 
 ```commandline
-                               vinfo v0.1                               
+                               vinfo v0.1
 ┌─────────────────────────────────────────────┬────────────────────────┐
 │ app name                                    │ my-app/0               │
 │ charm                                       │ my-app: v33 - stable   │
@@ -626,24 +626,24 @@ To also check the charm lib versions against the latest available upstream:
 
 # pull-cmr
 
-Ever went to the trouble of `juju offer`, then `juju consume`, `juju relate`? Done it once, and 
+Ever went to the trouble of `juju offer`, then `juju consume`, `juju relate`? Done it once, and
 never ever want to do it again because you keep forgetting the commands, the arguments, the syntax?
 Well, search no more. `jhack pull-cmr some-model`. You'll see something like:
 
 ```commandline
- ~                                                                                                           
-❯ ljhack pull-cmr cos                                                                                         
-(0.0) :=         prom <-[grafana_datasource]-> grafana                                                        
-(0.1) :=         prom <-[grafana_dashboard]-> grafana                                                         
-(1.0) :=         prom <-[prometheus_scrape]-> prometheus                                                      
-(2.0) :=         trfk <-[ingress]-> alertmanager                                                              
-(3.0) :=         trfk <-[ingress]-> catalogue                                                                 
-(4.0) :=         trfk <-[traefik_route]-> grafana                                                             
-(5.0) :=         trfk <-[ingress_per_unit]-> loki                                                             
-(6.0) :=         trfk <-[ingress_per_unit]-> prometheus                                                       
-(6.1) :=         trfk <-[prometheus_scrape]-> prometheus                                                      
-Pick a CMR [0.0/0.1/1.0/2.0/3.0/4.0/5.0/6.0/6.1] (0.0): 1.0                                                   
-relating <this model>.prom:self-metrics-endpoint <-[prometheus_scrape]-> cos.prometheus:metrics-endpoint      
+ ~
+❯ ljhack pull-cmr cos
+(0.0) :=         prom <-[grafana_datasource]-> grafana
+(0.1) :=         prom <-[grafana_dashboard]-> grafana
+(1.0) :=         prom <-[prometheus_scrape]-> prometheus
+(2.0) :=         trfk <-[ingress]-> alertmanager
+(3.0) :=         trfk <-[ingress]-> catalogue
+(4.0) :=         trfk <-[traefik_route]-> grafana
+(5.0) :=         trfk <-[ingress_per_unit]-> loki
+(6.0) :=         trfk <-[ingress_per_unit]-> prometheus
+(6.1) :=         trfk <-[prometheus_scrape]-> prometheus
+Pick a CMR [0.0/0.1/1.0/2.0/3.0/4.0/5.0/6.0/6.1] (0.0): 1.0
+relating <this model>.prom:self-metrics-endpoint <-[prometheus_scrape]-> cos.prometheus:metrics-endpoint
 ```
 
 ![img.png](jhack/resources/img.png)
@@ -666,10 +666,10 @@ Basically `jinxcraft init`.
 
 # imatrix
 
-This subcommand is used to view and manage the Integration Matrix of a model, that is, for each 
-application pair, the _possible_ (not just the _currently active_) relations. 
-Whether a relation is possible or not is determined based on whether the interface name matches, 
-same as juju does. 
+This subcommand is used to view and manage the Integration Matrix of a model, that is, for each
+application pair, the _possible_ (not just the _currently active_) relations.
+Whether a relation is possible or not is determined based on whether the interface name matches,
+same as juju does.
 
 Todo: extend this model to CMRs.
 
@@ -678,23 +678,23 @@ Todo: extend this model to CMRs.
 `jhack imatrix view` will pretty-print the Integration Matrix itself:
 
 ```txt
-                            integration  v0.1                              
-┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓ 
-┃ providers\requirers ┃ prom                    ┃ trfk                   ┃ 
-┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩ 
-│ prom                │ -n/a-                   │ ┌────────────────────┐ │ 
-│                     │                         │ │ - no interfaces -  │ │ 
-│                     │                         │ └────────────────────┘ │ 
-│ trfk                │ ┌─────────────────────┐ │ -n/a-                  │ 
-│                     │ │ ingress_per_unit N  │ │                        │ 
-│                     │ │ prometheus_scrape Y │ │                        │ 
-│                     │ └─────────────────────┘ │                        │ 
-└─────────────────────┴─────────────────────────┴────────────────────────┘ 
+                            integration  v0.1
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ providers\requirers ┃ prom                    ┃ trfk                   ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ prom                │ -n/a-                   │ ┌────────────────────┐ │
+│                     │                         │ │ - no interfaces -  │ │
+│                     │                         │ └────────────────────┘ │
+│ trfk                │ ┌─────────────────────┐ │ -n/a-                  │
+│                     │ │ ingress_per_unit N  │ │                        │
+│                     │ │ prometheus_scrape Y │ │                        │
+│                     │ └─────────────────────┘ │                        │
+└─────────────────────┴─────────────────────────┴────────────────────────┘
 ```
 
 This representation should tell you:
 - there are two applications in this model: `trfk` and `prom`
-- `trfk` exposes two relation endpoints (as a provider) that have a potential of interfacing 
+- `trfk` exposes two relation endpoints (as a provider) that have a potential of interfacing
   with `prom` (who is a requirer): `ingress_per_unit` and `prometheus_scrape`
 - of these two endpoints, only `prometheus_scrape` is presently active, i.e. `trfk` is related to
   `prom` via that endpoint.

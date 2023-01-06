@@ -1,12 +1,11 @@
 import re
+import signal
+from contextlib import contextmanager
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 from subprocess import PIPE
 from time import sleep
 from typing import Callable, List, Literal, Optional
-
-import signal
-from contextlib import contextmanager
 
 import typer
 from rich.align import Align
@@ -52,6 +51,7 @@ class TimeoutException(Exception):
 def timeout(seconds, raise_=False):
     def signal_handler(signum, frame):
         raise TimeoutException("Timed out!")
+
     signal.signal(signal.SIGALRM, signal_handler)
     signal.alarm(seconds)
     try:

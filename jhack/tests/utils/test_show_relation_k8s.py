@@ -95,19 +95,19 @@ def test_intf_re(
         """
     Model   Controller  Cloud/Region        Version  SLA          Timestamp
     kratos  micro       microk8s/localhost  2.9.34   unsupported  14:43:53-04:00
-    
-    
+
+
     App             Version  Status  Scale  Charm           Channel  Rev  Address         Exposed  Message
-    kratos                   active      1  kratos                     2  10.152.183.124  no       
+    kratos                   active      1  kratos                     2  10.152.183.124  no
     postgresql-k8s           active      1  postgresql-k8s  edge      25  10.152.183.219  no       Primary
-    
+
     Unit               Workload  Agent  Address     Ports              Message
-    kratos/0*          active    idle   10.1.64.94  4434/TCP,4433/TCP  
+    kratos/0*          active    idle   10.1.64.94  4434/TCP,4433/TCP
     postgresql-k8s/0*  active    idle   10.1.64.89                     Primary
-    
+
     Relation provider              Requirer                       Interface          Type     Message
-    postgresql-k8s:database        kratos:pg-database             postgresql_client  regular  
-    postgresql-k8s:database-peers  postgresql-k8s:database-peers  postgresql_peers   peer     
+    postgresql-k8s:database        kratos:pg-database             postgresql_client  regular
+    postgresql-k8s:database-peers  postgresql-k8s:database-peers  postgresql_peers   peer
     postgresql-k8s:restart         postgresql-k8s:restart         rolling_op         peer
     """
     )

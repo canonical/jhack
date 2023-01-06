@@ -2,11 +2,10 @@ Model  Controller  Cloud/Region        Version  SLA          Timestamp
 bar    mk8scloud   microk8s/localhost  2.9.32   unsupported  10:06:41+02:00
 
 App             Version  Status  Scale  Charm           Channel  Rev  Address         Exposed  Message
-prometheus-k8s           active      2  prometheus-k8s             0  10.152.183.202  no       
-traefik-k8s              active      1  traefik-k8s                0  10.152.183.253  no       
+prometheus-k8s           active      2  prometheus-k8s             0  10.152.183.202  no
+traefik-k8s              active      1  traefik-k8s                0  10.152.183.253  no
 
 Unit               Workload  Agent  Address       Ports  Message
-prometheus-k8s/0*  active    idle   10.1.232.172         
-prometheus-k8s/1   active    idle   10.1.232.184         
-traefik-k8s/0*     active    idle   10.1.232.144         
-
+prometheus-k8s/0*  active    idle   10.1.232.172
+prometheus-k8s/1   active    idle   10.1.232.184
+traefik-k8s/0*     active    idle   10.1.232.144

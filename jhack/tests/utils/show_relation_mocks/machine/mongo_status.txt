@@ -13,4 +13,3 @@ Machine  State    DNS          Inst id        Series  AZ  Message
 Relation provider  Requirer              Interface            Type     Message
 mongodb:database     ceilometer:shared-db  mongodb              regular
 mongodb:replica-set  mongodb:replica-set     mongodb-replica-set  peer
-
