@@ -9,14 +9,14 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.3.4'
+version: '0.3.5'
 summary: Cli tool packed with juju hacks.
 
 description: |
-  An opinionated collection of scripts and utilities to make 
-  charming charming again. Many of the scripts in jhack interact with the juju snap and 
-  communicate with its client by issuing `juju` cli calls. 
-  This snap requires write access to ~/.local/share/juju via an interface named 
+  An opinionated collection of scripts and utilities to make
+  charming charming again. Many of the scripts in jhack interact with the juju snap and
+  communicate with its client by issuing `juju` cli calls.
+  This snap requires write access to ~/.local/share/juju via an interface named
   dot-local-share-juju, so that the juju client configuration can be used to talk to the
   user's clouds, controllers and models.
 

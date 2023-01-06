@@ -272,6 +272,7 @@ def provision(
     ),
     dry_run: bool = False,
 ):
+    """Execute a provisioning script on one or multiple units."""
     return _provision(
         target=target,
         script=script,

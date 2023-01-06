@@ -11,6 +11,5 @@ Machine  State    DNS          Inst id        Series  AZ  Message
 0        started  10.1.70.125  juju-dae2cd-0  focal       Running
 
 Relation provider   Requirer              Interface      Type     Message
-ceilometer:cluster  ceilometer:cluster    ceilometer-ha  peer     
+ceilometer:cluster  ceilometer:cluster    ceilometer-ha  peer
 mongodb:database      ceilometer:shared-db  mongodb        regular
-

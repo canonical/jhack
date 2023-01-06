@@ -2,11 +2,10 @@ Model  Controller  Cloud/Region        Version  SLA          Timestamp
 bar    mk8scloud   microk8s/localhost  2.9.31   unsupported  16:27:38+02:00
 
 App          Version  Status  Scale  Charm        Channel  Rev  Address        Exposed  Message
-traefik-k8s           active      1  traefik-k8s  beta      22  10.152.183.44  no       
+traefik-k8s           active      1  traefik-k8s  beta      22  10.152.183.44  no
 
 Unit            Workload  Agent  Address       Ports  Message
-traefik-k8s/0*  active    idle   10.1.232.158         
+traefik-k8s/0*  active    idle   10.1.232.158
 
 Relation provider             Requirer                Interface         Type     Message
-traefik-k8s:ingress-per-unit  prometheus-k8s:ingress  ingress_per_unit  regular  
-
+traefik-k8s:ingress-per-unit  prometheus-k8s:ingress  ingress_per_unit  regular

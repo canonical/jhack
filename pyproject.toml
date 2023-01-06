@@ -1,0 +1,5 @@
+[tool.black]
+include = 'jhack'
+
+[tool.isort]
+profile = "black"

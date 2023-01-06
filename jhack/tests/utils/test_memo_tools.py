@@ -41,7 +41,7 @@ class _ModelBackend:
         return str(random.random())
     def action_get(self, *args, **kwargs):
         return str(random.random())
-        
+
 
 class Foo:
     def bar(self, *args, **kwargs):

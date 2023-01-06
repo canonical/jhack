@@ -48,7 +48,7 @@ def _add_app_info(table: Table, target: str, model: str):
     appinfo = status["applications"][app_name]
     table.add_row(
         "charm",
-        f"{appinfo['charm-name']}: v{appinfo['charm-rev']} - {appinfo['charm-channel']}",
+        f"{appinfo['charm-name']}: v{appinfo['charm-rev']} - {appinfo.get('charm-channel', '<local charm>')}",
     )
     table.add_row("model", model or status["model"]["name"])
     table.add_row(

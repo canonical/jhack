@@ -44,8 +44,8 @@ class DecorateSpec:
 
         raw = dedent(
             f"""@memo(
-            name={name}, 
-            namespace='{self.namespace or default_namespace}', 
+            name={name},
+            namespace='{self.namespace or default_namespace}',
             caching_policy='{self.caching_policy}',
             serializer={serializer},
             )\ndef foo():..."""

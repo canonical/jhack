@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name="jhack",
-    version="0.3.4",
+    version="0.3.5",
     author="Pietro Pasotti",
     author_email="pietro.pasotti@canonical.com",
     description="Chock-full of Juju hackery.",
@@ -33,7 +33,5 @@ setup(
         "License :: OSI Approved :: Apache Software License",
     ],
     entry_points={"console_scripts": ["jhack = jhack.main:main"]},
-    package_data={
-        '': ['unbork_juju']
-    }
+    package_data={"": ["unbork_juju"]},
 )
