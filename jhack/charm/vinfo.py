@@ -148,6 +148,7 @@ def _add_charm_lib_info(
             description += _check_version(
                 owner, lib_name, (int(version), int(revision))
             )
+            # TODO: for each outdated lib, print copy-pastable command you'd need to run to update
 
         table.add_row(
             (

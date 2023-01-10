@@ -25,6 +25,7 @@ setup(
         "parse(==1.19.0)",
         "juju(==2.9.7)",
         "asttokens",
+        "toml",
         "astunparse",
     ],
     classifiers=[

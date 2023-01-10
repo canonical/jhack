@@ -222,8 +222,12 @@ def get_content(
     peer: bool = False,
 ) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
-    url, endpoint = obj.split(":")
-    other_url, other_endpoint = other_obj.split(":")
+    try:
+        url, endpoint = obj.split(":")
+        other_url, other_endpoint = other_obj.split(":")
+    except ValueError:
+        raise ValueError("Relation endpoints need to be formatted as 'app_name:endpoint_name', "
+                         f"e.g. 'traefik:ingress'. Not: {obj!r}, {other_obj!r}")
 
     other_app_name, _ = other_url.split("/") if "/" in other_url else (other_url, None)
 

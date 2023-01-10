@@ -35,6 +35,7 @@ parts:
       - parse==1.19.0
       - juju==2.9.7
       - asttokens
+      - toml
       - astunparse
     stage-snaps:
       - juju/3.0/beta
