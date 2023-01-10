@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.3.5'
+version: '0.3.6'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -35,8 +35,8 @@ parts:
       - parse==1.19.0
       - juju==2.9.7
       - asttokens
-      - toml
       - astunparse
+      - toml
     stage-snaps:
       - juju/3.0/beta
 
@@ -47,6 +47,7 @@ apps:
       - network
       - network-bind
       - dot-local-share-juju
+      - dot-jhack-config
 
 
 plugs:
@@ -55,6 +56,12 @@ plugs:
     interface: personal-files
     write:
       - $HOME/.local/share/juju
+
+  # read access to jhack configuration file
+  dot-jhack-config:
+    interface: personal-files
+    read:
+      - $HOME/.jhack
 
   # required to use multiprocessing semaphores
   shared-memory:

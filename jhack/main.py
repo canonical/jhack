@@ -119,7 +119,7 @@ def main():
         name="conf",
         help="""Jhack configuration. You can use the output of the `default`
         subcommand as a template to write your own config file:
-        `jhack conf default |> ~/.jhack_config.toml`""",
+        `jhack conf default |> ~/.jhack/config.toml`""",
         no_args_is_help=True,
     )
     conf.command(name="default")(print_defaults)

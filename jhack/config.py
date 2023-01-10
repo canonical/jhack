@@ -8,7 +8,7 @@ IS_SNAPPED = False
 
 
 HOME_DIR = Path("/home") / os.environ["USER"]
-JHACK_CONFIG_PATH = HOME_DIR / ".jhack_config.toml"
+JHACK_CONFIG_PATH = HOME_DIR / ".jhack/config.toml"
 
 
 def configure():

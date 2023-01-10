@@ -40,7 +40,8 @@ def print_defaults():
 def print_current_config():
     """Show the current config.
 
-    Unless you have a `~/.jhack_config.toml` file, this will be the default config."""
+    Unless you have a `~/.jhack/config.toml` file, this will be the default config.
+    """
     Config().pprint()
 
 
