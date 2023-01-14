@@ -217,6 +217,19 @@ def purge_db(
     _check_installed(unit)
     return _purge_db(unit, idx, db_path)
 
+def _ensure_recorder_dir(unit: str):
+    unit_sanitized = unit.replace("/", "-")
+    cmd = (
+        f"juju ssh {unit} sudo mkdir -p /var/lib/juju/agents/unit-{unit_sanitized}/charm/src"
+    )
+    check_call(cmd.split())
+
+def _ensure_recorder_dir_permissions(unit: str):
+    unit_sanitized = unit.replace("/", "-")
+    cmd = (
+        f"juju ssh {unit} sudo chmod -R o+w /var/lib/juju/agents/unit-{unit_sanitized}/charm/src"
+    )
+    check_call(cmd.split())
 
 def _copy_recorder_script(unit: str):
     unit_sanitized = unit.replace("/", "-")
