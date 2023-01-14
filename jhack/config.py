@@ -1,4 +1,5 @@
 import os
+import pwd
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 
@@ -6,8 +7,15 @@ from jhack.logger import logger
 
 IS_SNAPPED = False
 
+USR = pwd.getpwuid(os.getuid())[0]
 
-HOME_DIR = Path("/home") / os.environ["USER"]
+
+if USR == "root":
+   HOME_DIR = "/root"
+else: 
+    HOME_DIR = Path("/home") / os.environ["USER"]
+
+
 JHACK_CONFIG_PATH = HOME_DIR / ".jhack/config.toml"
 
 
