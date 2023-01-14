@@ -26,7 +26,7 @@ confinement: strict
 parts:
   jhack:
     plugin: python
-    source: https://github.com/PietroPasotti/jhack.git
+    source: https://github.com/hypeitnow/jhack.git
     source-branch: master
     python-packages:
       - typer==0.4.1
@@ -69,5 +69,6 @@ plugs:
 
   # read access to $HOME. Required for sync and other commands that manipulate
   #  your local code projects.
-  home-read:
+  home:
+    allow-other-read: true
     interface: home
