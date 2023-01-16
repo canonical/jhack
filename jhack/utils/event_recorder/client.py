@@ -335,6 +335,8 @@ def _install(unit: str):
         print("Alright.")
 
     print("Shelling over recorder script...")
+    _ensure_recorder_dir(unit)
+    _ensure_recorder_dir_permissions(unit)
     _copy_recorder_script(unit)
 
     if recorder_only:

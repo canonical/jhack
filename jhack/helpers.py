@@ -221,7 +221,7 @@ def fetch_file(
 ) -> Optional[str]:
     unit_sanitized = unit.replace("/", "-")
     model_arg = f" -m {model}" if model else ""
-    cmd = f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+    cmd = f"juju ssh{model_arg} {unit} sudo cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
     try:
         raw = check_output(cmd.split())
     except CalledProcessError as e:
