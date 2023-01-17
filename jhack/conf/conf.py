@@ -45,4 +45,4 @@ def print_current_config():
     Config().pprint()
 
 
-CONFIG = Config()
+CONFIG = Config() if JHACK_CONFIG_PATH.exists() else Config.default()
