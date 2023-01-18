@@ -58,10 +58,10 @@ plugs:
       - $HOME/.local/share/juju
 
   # read access to jhack configuration file
-  dot-jhack-config:
+  dot-config-jhack:
     interface: personal-files
     read:
-      - $HOME/.jhack
+      - $HOME/.config/jhack
 
   # required to use multiprocessing semaphores
   shared-memory:

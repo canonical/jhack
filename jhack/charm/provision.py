@@ -6,12 +6,13 @@ from typing import Iterable, Optional, Union
 
 import typer
 
+from jhack.config import JHACK_DATA_PATH
 from jhack.helpers import JPopen, is_k8s_model, juju_status
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("provision")
 
-PROV_SCRIPT_ROOT = Path("~/.cprov/").expanduser().absolute()
+PROV_SCRIPT_ROOT = JHACK_DATA_PATH / "cprov"
 # we need the script to live in a location juju can access (juju 3.0 is strictly
 # confined, so this is the only safe location for now...)
 PROVISION_SCRIPT_TEMPFILE_PATH = Path(
