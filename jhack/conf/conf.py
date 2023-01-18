@@ -30,7 +30,7 @@ class Config:
         try:
             print(self._path.read_text())
         except FileNotFoundError:
-            sys.exit(f'No config file found at {self._path}.')
+            sys.exit(f"No config file found at {self._path}.")
 
     def __getitem__(self, item):
         return self.data[item]

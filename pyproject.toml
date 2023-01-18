@@ -35,7 +35,7 @@ jhack = "jhack.main:main"
 jhack = "jhack"
 
 [tool.black]
-include = 'jhack'
+include = '\.pyi?$'
 
 [tool.isort]
 profile = "black"
