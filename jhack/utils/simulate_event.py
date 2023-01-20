@@ -6,7 +6,7 @@ from jhack.helpers import JPopen, current_model, juju_agent_version, juju_log, s
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
-_J_EXEC_CMD = "juju-exec" if juju_agent_version() >= (3, 0) else "juju-run"
+_J_EXEC_CMD = "juju exec" if juju_agent_version() >= (3, 0) else "juju run"
 _RELATION_EVENT_SUFFIXES = {
     "-relation-changed",
     "-relation-created",
@@ -126,8 +126,8 @@ def _simulate_event(
         override=env_override,
         operator_dispatch=operator_dispatch,
     )
-    # todo: insert `sudo` if this is a machine unit!
-    cmd = f"juju ssh {unit} sudo {env} /usr/bin/{_J_EXEC_CMD} -u {unit} ./dispatch"
+    # todo: insert `sudo` if this is a machine unit! - this is now done automatically 
+    cmd = f"{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
     logger.info(cmd)
     proc = JPopen(cmd.split())
     proc.wait()
