@@ -3,15 +3,14 @@ import os
 import re
 import time
 import typing
-from itertools import chain, product
+from itertools import product
 from pathlib import Path
-from subprocess import PIPE
 from typing import List
 
 import typer
 from juju import jasyncio
 
-from jhack.helpers import JPopen, juju_status
+from jhack.helpers import JPopen, get_substrate, juju_status
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -37,7 +36,7 @@ def watch(
     watch_list = []
     for path in resolved:
         if not path.is_dir():
-            logger.error(f"not a directory: cannot watch {path}.")
+            logger.warning(f"not a directory: cannot watch {path}. Skipping...")
             continue
         watch_list += walk(path, recursive, check_file)
 
@@ -100,7 +99,6 @@ def _sync(
     source_dirs: str = "./src;./lib",
     remote_root: str = None,
     container_name: str = "charm",
-    machine_charm: bool = False,
     refresh_rate: float = 1,
     recursive: bool = True,
     dry_run: bool = False,
@@ -132,7 +130,6 @@ def _sync(
                         app,
                         unit,
                         container_name,
-                        machine_charm,
                         dry_run=dry_run,
                     )
                     for unit, changed in product(units, changed_files)
@@ -177,14 +174,6 @@ def sync(
     container_name: str = typer.Option(
         "charm", "--container", "-c", help="Container to scp to."
     ),
-    machine_charm: bool = typer.Option(
-        False,
-        "--machine",
-        "-m",
-        is_flag=True,
-        help="Is this a machine charm? Jhack cannot determine it on its own, "
-        "and things behave slightly differently.",
-    ),
     refresh_rate: float = typer.Option(
         1, "--refresh-rate", help="Rate at which we will check for changes, in seconds."
     ),
@@ -228,7 +217,6 @@ def sync(
         source_dirs=source_dirs,
         remote_root=remote_root,
         container_name=container_name,
-        machine_charm=machine_charm,
         refresh_rate=refresh_rate,
         recursive=recursive,
         dry_run=dry_run,
@@ -242,12 +230,12 @@ async def push_to_remote_juju_unit(
     app,
     unit: str,
     container_name,
-    machine_charm: bool,
     dry_run: bool = False,
 ):
     remote_file_path = (remote_root + str(file)[len(os.getcwd()) + 1 :]).format(
         unit=unit, app=app
     )
+    machine_charm = get_substrate() == "machine"
 
     if not machine_charm:
         if dry_run:
@@ -278,4 +266,4 @@ async def push_to_remote_juju_unit(
 
 
 if __name__ == "__main__":
-    _sync(unit="traefik/0", dry_run=True)
+    _sync(target="traefik/0", dry_run=True)

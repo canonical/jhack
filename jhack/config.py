@@ -7,7 +7,11 @@ from jhack.logger import logger
 IS_SNAPPED = False
 
 
-HOME_DIR = Path("/home") / os.environ["USER"]
+if os.environ.get('USER'):
+    HOME_DIR = Path("/home") / os.environ["USER"]
+else:
+    HOME_DIR = Path('~').expanduser().absolute()
+
 JHACK_DATA_PATH = HOME_DIR / ".config" / "jhack"
 JHACK_CONFIG_PATH = JHACK_DATA_PATH / "config.toml"
 

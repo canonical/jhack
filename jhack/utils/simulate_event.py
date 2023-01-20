@@ -2,7 +2,7 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, current_model, juju_agent_version, juju_log, show_unit
+from jhack.helpers import JPopen, current_model, juju_agent_version, juju_log, show_unit, get_substrate
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
@@ -126,16 +126,17 @@ def _simulate_event(
         override=env_override,
         operator_dispatch=operator_dispatch,
     )
-    # todo: insert `sudo` if this is a machine unit!
     cmd = f"juju ssh {unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
+
+    if get_substrate() == 'machine':
+        logger.info('machine model detected!')
+        cmd = 'sudo ' + cmd
+
     logger.info(cmd)
     proc = JPopen(cmd.split())
     proc.wait()
     if proc.returncode != 0:
         logger.error(f"cmd {cmd} terminated with {proc.returncode}")
-        # todo consider
-        #  ❯ j exec -u trfk/0 -- juju-log --log-level DEBUG Charm called itself via hooks/<event>
-        #    so that tail will display something has been replayed.
         logger.error(f"stdout={proc.stdout.read()}")
         logger.error(f"stderr={proc.stderr.read()}")
     else:

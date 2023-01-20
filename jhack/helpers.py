@@ -62,6 +62,25 @@ async def get_current_model() -> Model:
             await model.disconnect()
 
 
+def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
+    """Attempts to guess whether we're talking k8s or machine."""
+    cmd = f'juju show-model{" " + model if model else ""} --format=json'
+    proc = JPopen(cmd.split())
+    raw = proc.stdout.read().decode("utf-8")
+    model_info = jsn.loads(raw)
+
+    if not model:
+        model = list(model_info)[0]
+
+    model_type = model_info[model]["model-type"]
+    if model_type == "caas":
+        return "machine"
+    elif model_type == "iaas":
+        return "k8s"
+    else:
+        raise ValueError(f"unrecognized model type: {model_type}")
+
+
 def get_local_charm() -> Path:
     cwd = Path(os.getcwd())
     try:
@@ -233,3 +252,7 @@ def fetch_file(
         return raw.decode("utf-8")
 
     local_path.write_bytes(raw)
+
+
+if __name__ == "__main__":
+    get_substrate()
