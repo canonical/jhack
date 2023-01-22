@@ -1,5 +1,41 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jhack"
+version = "0.3.6"
+authors = [
+    { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" }
+]
+description = "Chock-full of Juju hackery."
+license.text = "Apache 2.0"
+keywords = ["juju", "hacks", "cli", "charm", "charming"]
+urls.Source = "https://github.com/PietroPasotti/jhack"
+dependencies = [
+    "typer(==0.4.1)",
+    "ops(==1.5.3)",
+    "rich(==12.0.1)",
+    "parse(==1.19.0)",
+    "juju(==2.9.7)",
+    "asttokens",
+    "toml",
+    "astunparse",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: Apache Software License",
+]
+
+[project.scripts]
+jhack = "jhack.main:main"
+
+[tool.setuptools.package-dir]
+jhack = "jhack"
+
 [tool.black]
-include = 'jhack'
+include = '\.pyi?$'
 
 [tool.isort]
 profile = "black"

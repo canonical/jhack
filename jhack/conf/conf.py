@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import toml
@@ -26,7 +27,10 @@ class Config:
         return self._data
 
     def pprint(self):
-        print(self._path.read_text())
+        try:
+            print(self._path.read_text())
+        except FileNotFoundError:
+            sys.exit(f"No config file found at {self._path}.")
 
     def __getitem__(self, item):
         return self.data[item]
@@ -40,9 +44,9 @@ def print_defaults():
 def print_current_config():
     """Show the current config.
 
-    Unless you have a `~/.jhack/config.toml` file, this will be the default config.
+    Unless you have a `~/.config/jhack/config.toml` file, this will be the default config.
     """
     Config().pprint()
 
 
-CONFIG = Config()
+CONFIG = Config() if JHACK_CONFIG_PATH.exists() else Config.default()

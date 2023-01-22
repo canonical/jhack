@@ -11,15 +11,14 @@ More extensive documentation is provided in the cli itself. All commands can be 
 
 #### Installation:
 ##### from sources (dev setup):
-Clone the repo; alias '/path/to/jhack/main.py' as 'jhack', or something.
-Ensure the requirements are installed:
+Clone the repo
 
     $ pip install -r requirements.txt
+    $ pip install -e .
 
-##### as package:
+##### as package (requires setuptools 61 or later):
 
-    $ python setup.py bdist_wheel
-    $ pip install ./dist/jhack-v...whl
+    $ pip install git+https://github.com/PietroPasotti/jhack
 
 ##### as snap:
 
