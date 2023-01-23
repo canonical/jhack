@@ -15,8 +15,8 @@ if USR == "root":
 else:
     HOME_DIR = Path("/home") / os.environ["USER"]
 
-
-JHACK_CONFIG_PATH = HOME_DIR / ".jhack/config.toml"
+JHACK_DATA_PATH = HOME_DIR / ".config" / "jhack"
+JHACK_CONFIG_PATH = JHACK_DATA_PATH / "config.toml"
 
 
 def configure():
