@@ -15,7 +15,7 @@ setup(
     description="Chock-full of Juju hackery.",
     license="Apache 2.0",
     keywords="juju hacks cli charm charming",
-    url="https://github.com/hypeitnow/jhack",
+    url="https://github.com/PietroPasotti/jhack",
     packages=find_packages(),
     long_description=read("README.md"),
     requires=[
