@@ -60,7 +60,7 @@ plugs:
   # read access to jhack configuration file
   dot-config-jhack:
     interface: personal-files
-    read:
+    write:
       - $HOME/.config/jhack
 
   # required to use multiprocessing semaphores
