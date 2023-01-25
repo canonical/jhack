@@ -70,5 +70,4 @@ plugs:
   # read access to $HOME. Required for sync and other commands that manipulate
   #  your local code projects.
   home-read:
-    allow-other-read: true
     interface: home
