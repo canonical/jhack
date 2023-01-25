@@ -127,7 +127,7 @@ def _simulate_event(
         operator_dispatch=operator_dispatch,
     )
     # todo: insert `sudo` if this is a machine unit! - this is now done automatically 
-    cmd = f"{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
+    cmd = f"juju ssh {unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
     logger.info(cmd)
     proc = JPopen(cmd.split())
     proc.wait()
