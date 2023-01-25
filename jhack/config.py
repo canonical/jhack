@@ -55,23 +55,6 @@ def configure():
         os.environ["JUJU_DATA"] = str(jdata)
         logger.info(f"Set JUJU_DATA to {jdata}.")
 
-    try:
-        test_file = JHACK_DATA_PATH / ".__test_rw_jhack__.hacky"
-        test_file.write_text("kuckadoodle-foo")
-        test_file.unlink()
-    except PermissionError:
-        logger.warning(
-            f"It seems like the snap doesn't have access to {JHACK_DATA_PATH};"
-            f"to grant it, run 'sudo snap connect jhack:dot-config-jhack snapd'."
-            f"We'll use the default config until then."
-        )
-        return
-    except FileNotFoundError:
-        logger.warning(
-            f"No jhack config directory found. touch ~/.config/jhack/config.toml."
-        )
-        return
-
     # check if the user has provided a jhack config file
     has_config = JHACK_CONFIG_PATH.exists()
     logger.info(
