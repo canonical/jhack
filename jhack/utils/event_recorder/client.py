@@ -104,26 +104,19 @@ def _emit(
         return
 
     # fixme: remove this filter when the simulate_event issue is fixed
-    event_env = ((a, b) for a, b in event.env.items() if a not in BROKEN_ENV_KEYS)
-    env = " ".join(
-        [f"{k}='{v}'" for k, v in event_env]
-        + [
-            # this envvar tells the @memo decorators to start replaying
-            # instead of making real backend calls.
-            "MEMO_MODE=replay",
-            # this envvar tells @memo which scene to look at for
-            # the return value emulation
-            f"MEMO_REPLAY_IDX={idx}",
-        ]
-    )
+    env = dict(event.env)
+    env['MEMO_MODE'] = 'replay'
+    env['MEMO_REPLAY_IDX'] = str(idx)
 
     if operator_dispatch:
-        env += " OPERATOR_DISPATCH=1"
+        env["OPERATOR_DISPATCH"] = "1"
+
+    env_override = [f"{k}={v}" for k, v in env.items()]
 
     _simulate_event(
         unit,
         event.name,
-        env_override=env,
+        env_override=env_override,
         print_captured_stderr=True,
         print_captured_stdout=True,
         emit_juju_log=False,  # we emit our own
