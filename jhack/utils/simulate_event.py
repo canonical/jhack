@@ -126,7 +126,7 @@ def _simulate_event(
         override=env_override,
         operator_dispatch=operator_dispatch,
     )
-    # todo: insert `sudo` if this is a machine unit! - this is now done automatically 
+    # todo: insert `sudo` if this is a machine unit! - this is now done automatically when using juju exec from client and targeting a unit
     cmd = f"juju ssh {unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
     logger.info(cmd)
     proc = JPopen(cmd.split())
