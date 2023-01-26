@@ -112,11 +112,11 @@ def _get_models(filter_):
 
 
 def _get_apps_and_relations(
-        model: Optional[str],
-        borked: bool,
-        filter_: Callable[[str], bool],
-        include_apps: bool = True,
-        include_relations: bool = True,
+    model: Optional[str],
+    borked: bool,
+    filter_: Callable[[str], bool],
+    include_apps: bool = True,
+    include_relations: bool = True,
 ) -> List[Nukeable]:
     logger.info("gathering apps and relations")
 
@@ -174,9 +174,11 @@ def _get_apps_and_relations(
 
 
 def _gather_nukeables(
-        obj: Optional[str], model: Optional[str],
-        borked: bool, selectors: str = "",
-        cur_model: Optional[str] = None,
+    obj: Optional[str],
+    model: Optional[str],
+    borked: bool,
+    selectors: str = "",
+    cur_model: Optional[str] = None,
 ):
     logger.debug(f"Gathering nukeables for {obj!r} with _selectors = {selectors!r}")
 
@@ -231,13 +233,13 @@ def _gather_nukeables(
 
 
 def _nuke(
-        obj: Optional[str],
-        model: Optional[str] = None,
-        borked: bool = False,
-        selectors: Optional[str] = None,
-        n: int = None,
-        dry_run: bool = False,
-        color: _Color = "auto",
+    obj: Optional[str],
+    model: Optional[str] = None,
+    borked: bool = False,
+    selectors: Optional[str] = None,
+    n: int = None,
+    dry_run: bool = False,
+    color: _Color = "auto",
 ):
     cur_model = current_model(default=None)
 
@@ -269,9 +271,11 @@ def _nuke(
                     _selectors.remove(char)
 
         nukeables = _gather_nukeables(
-            obj, model, borked=borked,
+            obj,
+            model,
+            borked=borked,
             selectors="".join(_selectors),
-            cur_model=cur_model
+            cur_model=cur_model,
         )
         logger.debug(f"Gathered: {nukeables}")
 
@@ -306,8 +310,8 @@ def _nuke(
             provider = nukeable.endpoints.provider
             requirer = nukeable.endpoints.requirer
             if (
-                    provider.split(":")[0] in nuked_apps
-                    or requirer.split(":")[0] in nuked_apps
+                provider.split(":")[0] in nuked_apps
+                or requirer.split(":")[0] in nuked_apps
             ):
                 nukeables.remove(nukeable)
                 continue
@@ -331,8 +335,10 @@ def _nuke(
     if not nukeables:
         print(f"Nothing to {ATOM}.")
         if not cur_model:
-            print(f"No model currently selected. You'll have to "
-                  f"manually specify what you want to {ATOM}.")
+            print(
+                f"No model currently selected. You'll have to "
+                f"manually specify what you want to {ATOM}."
+            )
         return
 
     if dry_run:
@@ -418,45 +424,45 @@ def _nuke(
 
 
 def nuke(
-        what: List[str] = typer.Argument(None, help=f"What to {ATOM}."),
-        selectors: str = typer.Option(
-            None,
-            "-s",
-            "--select",
-            help=f"Selector specifiers to choose what to {ATOM}."
-                 f"A lower-case letter indicates `include`, "
-                 f"an upper-case one indicates `exclude`. \n\n"
-                 f"m := models; a := apps; r := relations\n\n"
-                 f"Examples:"
-                 f"`ma` = only include models and apps in the target selection (equivalent to `R`).\n"
-                 f"`AR` = exclude models and relations (equivalent to `m`)",
-        ),
-        model: Optional[str] = typer.Option(
-            None, "-m", "--model", help="The model. Defaults to current model."
-        ),
-        n: Optional[int] = typer.Option(
-            None,
-            "-n",
-            "--number",
-            help="Exact number of things you're expectig to get nuked." "Safety first.",
-        ),
-        borked: bool = typer.Option(
-            None,
-            "-b",
-            "--borked",
-            help="Nukes all borked applications in current or target model.",
-        ),
-        dry_run: bool = typer.Option(
-            None, "--dry-run", help="Do nothing, print out what would have happened."
-        ),
-        color: Optional[str] = typer.Option(
-            "auto",
-            "-c",
-            "--color",
-            help="Color scheme to adopt. Supported options: "
-                 "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
-                 "no: disable colors entirely.",
-        ),
+    what: List[str] = typer.Argument(None, help=f"What to {ATOM}."),
+    selectors: str = typer.Option(
+        None,
+        "-s",
+        "--select",
+        help=f"Selector specifiers to choose what to {ATOM}."
+        f"A lower-case letter indicates `include`, "
+        f"an upper-case one indicates `exclude`. \n\n"
+        f"m := models; a := apps; r := relations\n\n"
+        f"Examples:"
+        f"`ma` = only include models and apps in the target selection (equivalent to `R`).\n"
+        f"`AR` = exclude models and relations (equivalent to `m`)",
+    ),
+    model: Optional[str] = typer.Option(
+        None, "-m", "--model", help="The model. Defaults to current model."
+    ),
+    n: Optional[int] = typer.Option(
+        None,
+        "-n",
+        "--number",
+        help="Exact number of things you're expectig to get nuked." "Safety first.",
+    ),
+    borked: bool = typer.Option(
+        None,
+        "-b",
+        "--borked",
+        help="Nukes all borked applications in current or target model.",
+    ),
+    dry_run: bool = typer.Option(
+        None, "--dry-run", help="Do nothing, print out what would have happened."
+    ),
+    color: Optional[str] = typer.Option(
+        "auto",
+        "-c",
+        "--color",
+        help="Color scheme to adopt. Supported options: "
+        "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
+        "no: disable colors entirely.",
+    ),
 ):
     """Surgical carpet bombing tool.
 

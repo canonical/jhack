@@ -105,8 +105,8 @@ def _emit(
 
     # fixme: remove this filter when the simulate_event issue is fixed
     env = dict(event.env)
-    env['MEMO_MODE'] = 'replay'
-    env['MEMO_REPLAY_IDX'] = str(idx)
+    env["MEMO_MODE"] = "replay"
+    env["MEMO_REPLAY_IDX"] = str(idx)
 
     if operator_dispatch:
         env["OPERATOR_DISPATCH"] = "1"

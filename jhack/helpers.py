@@ -7,7 +7,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_output
-from typing import List, Literal, Optional, Tuple, Union, Any, Iterable
+from typing import Any, Iterable, List, Literal, Optional, Tuple, Union
 
 import typer
 from juju.model import Model
@@ -192,7 +192,7 @@ def current_model(default=_NotGiven) -> Union[str, Any]:
     except StopIteration:
         if default is not _NotGiven:
             return default
-        raise RuntimeError('no model is current')
+        raise RuntimeError("no model is current")
 
 
 @contextlib.contextmanager
