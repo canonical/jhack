@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 from functools import lru_cache
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError, check_output
+from subprocess import PIPE, CalledProcessError, check_output, check_call
 from typing import Any, Iterable, List, Literal, Optional, Tuple, Union
 
 import typer
@@ -28,14 +28,6 @@ ColorOption = typer.Option(
 )
 
 
-def get_models():
-    cmd = f"juju models --format json"
-    proc = JPopen(cmd.split())
-    proc.wait()
-    data = json.loads(proc.stdout.read().decode("utf-8"))
-    return data
-
-
 def check_command_available(cmd: str):
     try:
         proc = JPopen(f"which {cmd}".split())
@@ -46,20 +38,6 @@ def check_command_available(cmd: str):
     if err := proc.stderr.read():
         logger.error(err.decode("utf-8"))
     return proc.returncode == 0
-
-
-@contextlib.asynccontextmanager
-async def get_current_model() -> Model:
-    model = Model()
-    try:
-        # connect to the current model with the current user, per the Juju CLI
-        await model.connect()
-        yield model
-
-    finally:
-        if model.is_connected():
-            print("Disconnecting from model")
-            await model.disconnect()
 
 
 def get_local_charm() -> Path:
@@ -155,9 +133,14 @@ def juju_agent_version() -> Tuple[int, ...]:
     return tuple(map(int, version.split(".")))
 
 
-def juju_models() -> str:
-    proc = JPopen(f"juju models".split())
-    return proc.stdout.read().decode("utf-8")
+def get_models(include_controller=False):
+    cmd = f"juju models --format json"
+    proc = JPopen(cmd.split())
+    proc.wait()
+    data = json.loads(proc.stdout.read().decode("utf-8"))
+    if include_controller:
+        return [model['short-name'] for model in data['models']]
+    return [model['short-name'] for model in data['models'] if not model['is-controller']]
 
 
 def show_unit(unit: str):
@@ -181,18 +164,12 @@ def list_models(strip_star=False) -> Iterable[str]:
     return models
 
 
-_NotGiven = object()
-
-
-def current_model(default=_NotGiven) -> Union[str, Any]:
-    all_models = list_models()
-    key = lambda name: name.endswith("*")
-    try:
-        return next(filter(key, all_models)).strip("*")
-    except StopIteration:
-        if default is not _NotGiven:
-            return default
-        raise RuntimeError("no model is current")
+def get_current_model() -> Optional[str]:
+    cmd = f"juju models --format json"
+    proc = JPopen(cmd.split())
+    proc.wait()
+    data = json.loads(proc.stdout.read().decode("utf-8"))
+    return data.get('current-model', None)
 
 
 @contextlib.contextmanager
@@ -208,7 +185,7 @@ def modify_remote_file(unit: str, path: str):
             "cat",
             path,
         ]
-        buf = subprocess.check_output(cmd)
+        buf = check_output(cmd)
         f = Path(tf.name)
         f.write_bytes(buf)
 
@@ -221,7 +198,7 @@ def modify_remote_file(unit: str, path: str):
             tf.name,
             f"{unit}:{path}",
         ]
-        subprocess.check_call(cmd)
+        check_call(cmd)
 
 
 def fetch_file(

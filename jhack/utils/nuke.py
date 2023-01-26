@@ -14,7 +14,7 @@ from rich.style import Style
 from rich.text import Text
 
 from jhack.conf.conf import CONFIG
-from jhack.helpers import JPopen, current_model, juju_models, juju_status, list_models
+from jhack.helpers import JPopen, get_current_model, juju_status, get_models
 from jhack.logger import logger
 
 logger = logger.getChild("nuke")
@@ -89,26 +89,6 @@ class Nukeable:
             return f"app {self.name!r} ({self.model})"
         else:  # relation
             return f"relation {self.endpoints.provider!r} --> {self.endpoints.requirer}"
-
-
-def _get_models(filter_):
-    """List of existing models."""
-    models = juju_models()
-    found = 0
-    _models = []
-    for line in models.split("\n"):
-        if line.startswith("Model "):
-            found = 1
-            continue
-        if found and not line:
-            break  # end of section
-        if found:
-            model_name = line.split()[0]
-            if filter_(model_name):
-                _models.append(model_name)
-    if "controller" in _models:
-        _models.remove("controller")  # shouldn't try to nuke that one!
-    return tuple(Nukeable(m, "model") for m in _models)
 
 
 def _get_apps_and_relations(
@@ -222,9 +202,7 @@ def _gather_nukeables(
     # otherwise, we may be interested in nuking the models themselves.
     if not model and "m" in selectors:
         logger.info("gathering models")
-        for model_ in list_models(strip_star=True):
-            if model_ == "controller":
-                continue
+        for model_ in get_models():
             if globber(model_):
                 logger.info(f"collected {model_} for nukage")
                 nukeables.append(Nukeable(model_, "model"))
@@ -241,7 +219,7 @@ def _nuke(
     dry_run: bool = False,
     color: _Color = "auto",
 ):
-    cur_model = current_model(default=None)
+    cur_model = get_current_model()
 
     if not cur_model:
         nukeables = []

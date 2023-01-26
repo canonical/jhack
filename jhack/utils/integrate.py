@@ -41,11 +41,11 @@ def _gather_endpoints(model=None, apps=()) -> Dict[AppName, _AppEndpoints]:
             return []
         return app["relations"].get(endpoint, [])
 
-    apps = status.get("applications")
-    if not apps:
+    all_apps = status.get("applications")
+    if not all_apps:
         sys.exit(f"No applications found in model {model}; does the model exist?")
 
-    for app_name, app in apps.items():
+    for app_name, app in all_apps.items():
         if apps and app_name not in apps:
             continue
 
@@ -148,7 +148,11 @@ class IntegrationMatrix:
                     sym = "N"
                     color = "red"
 
-                fmt_obj = obj + " " + sym
+                requires = self._endpoints[remote]["requires"]
+                n_interfaces = len([a[0] for a in requires.values() if a[0] == obj])
+                card = f"({n_interfaces}x) " if n_interfaces else ""
+
+                fmt_obj = f"{obj} {card}{sym}"
                 t.add_row(Text(fmt_obj, style=color))
             out.append(t)
 
@@ -455,5 +459,4 @@ if __name__ == "__main__":
     mtrx = IntegrationMatrix()
     # mtrx.watch()
     # mtrx.pprint()
-    mtrx.connect(dry_run=True, include="prom")
-    mtrx.disconnect(dry_run=True)
+    mtrx.pprint()

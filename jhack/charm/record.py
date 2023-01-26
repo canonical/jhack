@@ -33,6 +33,11 @@ class Recorder:
         self._unit = unit
         self._app = unit.split("/")[0]
         self._model = model or current_model()
+
+        if not self._model:
+            raise TypeError('Switch to a juju model, '
+                            'or provide one to Recorder.')
+
         self._state_history: List[State] = []
         self._ignored_events = {"update_status"}
         self._output = output

@@ -2,7 +2,7 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, current_model, juju_agent_version, juju_log, show_unit
+from jhack.helpers import JPopen, juju_agent_version, juju_log, show_unit, get_current_model
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
@@ -47,9 +47,10 @@ def _get_env(
     override: List[str] = None,
     operator_dispatch: bool = False,
 ):
+    current_model = get_current_model()
     env = {
         "JUJU_DISPATCH_PATH": f"hooks/{event}",
-        "JUJU_MODEL_NAME": current_model(),
+        "JUJU_MODEL_NAME": current_model,
         "JUJU_UNIT_NAME": unit,
     }
 
