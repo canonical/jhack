@@ -7,7 +7,7 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_output
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, Union, Any, Iterable
 
 import typer
 from juju.model import Model
@@ -172,7 +172,7 @@ def show_application(application: str):
     return raw[application]
 
 
-def list_models(strip_star=False) -> List[str]:
+def list_models(strip_star=False) -> Iterable[str]:
     raw = juju_models()
     lines = raw.split("\n")[3:]
     models = filter(None, (line.split(" ")[0] for line in lines))
@@ -181,10 +181,18 @@ def list_models(strip_star=False) -> List[str]:
     return models
 
 
-def current_model() -> str:
+_NotGiven = object()
+
+
+def current_model(default=_NotGiven) -> Union[str, Any]:
     all_models = list_models()
     key = lambda name: name.endswith("*")
-    return next(filter(key, all_models)).strip("*")
+    try:
+        return next(filter(key, all_models)).strip("*")
+    except StopIteration:
+        if default is not _NotGiven:
+            return default
+        raise RuntimeError('no model is current')
 
 
 @contextlib.contextmanager
