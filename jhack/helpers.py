@@ -6,11 +6,10 @@ import subprocess
 import tempfile
 from functools import lru_cache
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError, check_output, check_call
-from typing import Any, Iterable, List, Literal, Optional, Tuple, Union
+from subprocess import PIPE, CalledProcessError, check_call, check_output
+from typing import Iterable, List, Literal, Optional, Tuple
 
 import typer
-from juju.model import Model
 
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
@@ -139,8 +138,10 @@ def get_models(include_controller=False):
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
     if include_controller:
-        return [model['short-name'] for model in data['models']]
-    return [model['short-name'] for model in data['models'] if not model['is-controller']]
+        return [model["short-name"] for model in data["models"]]
+    return [
+        model["short-name"] for model in data["models"] if not model["is-controller"]
+    ]
 
 
 def show_unit(unit: str):
@@ -155,21 +156,12 @@ def show_application(application: str):
     return raw[application]
 
 
-def list_models(strip_star=False) -> Iterable[str]:
-    raw = juju_models()
-    lines = raw.split("\n")[3:]
-    models = filter(None, (line.split(" ")[0] for line in lines))
-    if strip_star:
-        return [name.strip("*") for name in models]
-    return models
-
-
 def get_current_model() -> Optional[str]:
     cmd = f"juju models --format json"
     proc = JPopen(cmd.split())
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
-    return data.get('current-model', None)
+    return data.get("current-model", None)
 
 
 @contextlib.contextmanager

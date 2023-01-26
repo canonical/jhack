@@ -3,7 +3,6 @@ import signal
 from contextlib import contextmanager
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
-from subprocess import PIPE
 from time import sleep
 from typing import Callable, List, Literal, Optional
 
@@ -14,12 +13,16 @@ from rich.style import Style
 from rich.text import Text
 
 from jhack.conf.conf import CONFIG
-from jhack.helpers import JPopen, get_current_model, juju_status, get_models
+from jhack.helpers import JPopen, get_current_model, get_models, juju_status
 from jhack.logger import logger
 
 logger = logger.getChild("nuke")
 
-ASK_FOR_CONFIRMATION = CONFIG["nuke"]["ask_for_confirmation"]
+try:
+    ASK_FOR_CONFIRMATION = CONFIG["nuke"]["ask_for_confirmation"]
+except KeyError:
+    ASK_FOR_CONFIRMATION = True
+
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 ATOM = "⚛"
 ICBM = f"~]=={ATOM}❯"
