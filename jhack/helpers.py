@@ -22,8 +22,8 @@ ColorOption = typer.Option(
     "-c",
     "--color",
     help="Color scheme to adopt. Supported options: "
-         "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
-         "no: disable colors entirely.",
+    "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
+    "no: disable colors entirely.",
 )
 
 
@@ -215,7 +215,7 @@ def modify_remote_file(unit: str, path: str):
 
 
 def fetch_file(
-        unit: str, remote_path: str, local_path: Path = None, model: str = None
+    unit: str, remote_path: str, local_path: Path = None, model: str = None
 ) -> Optional[str]:
     unit_sanitized = unit.replace("/", "-")
     model_arg = f" -m {model}" if model else ""

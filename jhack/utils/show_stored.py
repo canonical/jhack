@@ -306,11 +306,11 @@ class StorageView:
             self.live.stop()
 
 
-def get_local_storage(unit_name: str, model:str=None):
+def get_local_storage(unit_name: str, model: str = None):
     unit_name_sane = unit_name.replace("/", "-")
 
     _model = f"-m {model} " if model else ""
-    container = "--container charm " if get_substrate() == 'k8s' else ""
+    container = "--container charm " if get_substrate() == "k8s" else ""
     base_cmd = (
         f"juju scp {_model}{container}{unit_name}:"
         f"/var/lib/juju/agents/unit-{unit_name_sane}/charm/"
@@ -335,7 +335,7 @@ def get_local_storage(unit_name: str, model:str=None):
             yield tf.name
 
 
-def get_controller_storage(unit_name: str, model:str=None):
+def get_controller_storage(unit_name: str, model: str = None):
     _model = f"-m {model} " if model else ""
     cmd = f"juju exec {_model}--unit {unit_name} -- state-get".split()
 
@@ -371,7 +371,7 @@ def _show_stored(
     watch: bool = False,
     include_of_storage: bool = False,
     refresh_rate=0.5,
-    model:str = None,
+    model: str = None,
 ):
     """Execute the _show_stored script inside the juju unit."""
     is_file = _is_file(target)
@@ -488,7 +488,7 @@ def show_stored(
         watch=watch,
         include_of_storage=include_of_storage,
         refresh_rate=refresh_rate,
-        model=model
+        model=model,
     )
 
 

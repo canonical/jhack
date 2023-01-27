@@ -13,10 +13,10 @@ USR = pwd.getpwuid(os.getuid())[0]
 if USR == "root":
     HOME_DIR = "/root"
 else:
-    if os.environ.get('USER'):
+    if os.environ.get("USER"):
         HOME_DIR = Path("/home") / os.environ["USER"]
     else:
-        HOME_DIR = Path('~').expanduser().absolute()
+        HOME_DIR = Path("~").expanduser().absolute()
 
 JHACK_DATA_PATH = HOME_DIR / ".config" / "jhack"
 JHACK_CONFIG_PATH = JHACK_DATA_PATH / "config.toml"

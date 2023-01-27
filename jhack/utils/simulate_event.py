@@ -2,7 +2,14 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, juju_log, show_unit, get_current_model, juju_agent_version, get_substrate
+from jhack.helpers import (
+    JPopen,
+    get_current_model,
+    get_substrate,
+    juju_agent_version,
+    juju_log,
+    show_unit,
+)
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
