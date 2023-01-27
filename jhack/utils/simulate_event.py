@@ -32,7 +32,14 @@ def _get_relation_id(
     unit: str, endpoint: str, relation_remote_app: str = None, model: str = None
 ):
     unit = show_unit(unit, model=model)
-    for binding in unit["relation-info"]:
+    relation_info = unit.get("relation-info")
+    if not relation_info:
+        raise RuntimeError(
+            f"No relation-info found in show-unit {unit} output. "
+            f"Does this unit have any relation?"
+        )
+
+    for binding in relation_info:
         if binding["endpoint"] == endpoint:
             remote_app = next(iter(binding["related-units"])).split("/")[0]
             if relation_remote_app and remote_app != relation_remote_app:
