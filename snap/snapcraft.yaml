@@ -27,7 +27,7 @@ parts:
   jhack:
     plugin: python
     source: https://github.com/PietroPasotti/jhack.git
-    source-branch: machine-autodetect
+    source-branch: master
     python-packages:
       - typer==0.4.1
       - ops==1.5.3
