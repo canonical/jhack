@@ -222,7 +222,7 @@ def _nuke(
     dry_run: bool = False,
     color: _Color = "auto",
 ):
-    cur_model = get_current_model()
+    cur_model = model or get_current_model()
 
     if not cur_model:
         nukeables = []
