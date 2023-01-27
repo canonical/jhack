@@ -18,7 +18,7 @@ from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import JPopen
+from jhack.helpers import JPopen, get_substrate
 from jhack.logger import logger
 
 Adapter = Callable[[Any], RenderableType]
@@ -306,18 +306,18 @@ class StorageView:
             self.live.stop()
 
 
-def get_local_storage(unit_name: str, machine: bool = False):
+def get_local_storage(unit_name: str, model:str=None):
     unit_name_sane = unit_name.replace("/", "-")
-    container = " --container charm" if not machine else ""
 
+    _model = f"-m {model} " if model else ""
+    container = "--container charm " if get_substrate() == 'k8s' else ""
     base_cmd = (
-        f"juju scp{container} {unit_name}:"
+        f"juju scp {_model}{container}{unit_name}:"
         f"/var/lib/juju/agents/unit-{unit_name_sane}/charm/"
         f".unit-state.db ".split()
     )
 
     while True:
-        # todo: does this work in a snap?
         with tempfile.NamedTemporaryFile(
             suffix=".db", prefix="unit-state-", dir=expanduser("~")
         ) as tf:
@@ -335,8 +335,9 @@ def get_local_storage(unit_name: str, machine: bool = False):
             yield tf.name
 
 
-def get_controller_storage(unit_name: str):
-    cmd = f"juju exec --unit {unit_name} -- state-get".split()
+def get_controller_storage(unit_name: str, model:str=None):
+    _model = f"-m {model} " if model else ""
+    cmd = f"juju exec {_model}--unit {unit_name} -- state-get".split()
 
     while True:
         # todo: does this work in a snap?
@@ -368,9 +369,9 @@ def _show_stored(
     use_controller_storage: bool = False,
     color: _Color = "auto",
     watch: bool = False,
-    machine: bool = False,
     include_of_storage: bool = False,
     refresh_rate=0.5,
+    model:str = None,
 ):
     """Execute the _show_stored script inside the juju unit."""
     is_file = _is_file(target)
@@ -393,10 +394,10 @@ def _show_stored(
 
     if is_unit:
         if use_controller_storage:
-            get_db = partial(get_controller_storage, unit_name=target)
+            get_db = get_controller_storage
 
         else:
-            get_db = partial(get_local_storage, unit_name=target, machine=machine)
+            get_db = get_local_storage
 
     else:  # file
 
@@ -412,7 +413,7 @@ def _show_stored(
         include_of_storage=include_of_storage,
     )
     try:
-        for db in get_db():
+        for db in get_db(unit_name=target, model=model):
             viewer.render(db)
 
             if watch:
@@ -461,14 +462,6 @@ def show_stored(
     watch: bool = typer.Option(
         False, "-w", "--watch", help="Keep watching for changes.", is_flag=True
     ),
-    machine: bool = typer.Option(
-        False,
-        "-m",
-        "--machine",
-        help="Is this a machine charm? "
-        "Only relevant if the charm is using local storage.",
-        is_flag=True,
-    ),
     include_of_storage: bool = typer.Option(
         False,
         "-o",
@@ -482,6 +475,9 @@ def show_stored(
         "--refresh-rate",
         help="How often the stored state view should be updated.",
     ),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
 ):
     return _show_stored(
         target=target,
@@ -489,10 +485,10 @@ def show_stored(
         adapters=adapters,
         use_controller_storage=use_controller_storage,
         color=color,
-        machine=machine,
         watch=watch,
         include_of_storage=include_of_storage,
         refresh_rate=refresh_rate,
+        model=model
     )
 
 

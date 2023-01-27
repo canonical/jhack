@@ -248,10 +248,10 @@ async def push_to_remote_juju_unit(
 
     else:
         if dry_run:
-            print(f"would scp: {file} --> {app}/{unit}:{remote_file_path}")
+            print(f"would cat: {file} --> juju ssh {app}/{unit} sudo -i 'sudo tee {remote_file_path}'")
             return
 
-        cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee -a {remote_file_path}'"
+        cmd = f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee {remote_file_path}'"
         proc = JPopen([cmd], shell=True)
 
     retcode = proc.returncode

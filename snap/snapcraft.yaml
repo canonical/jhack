@@ -48,7 +48,7 @@ apps:
       - network-bind
       - dot-local-share-juju
       - dot-config-jhack
-
+      - ssh-read
 
 plugs:
   # read-write access to .local/share/juju (JUJU_DATA)
@@ -71,3 +71,9 @@ plugs:
   #  your local code projects.
   home-read:
     interface: home
+
+  # read access to ssh keys; required to use Jhack with LXC-powered controllers
+  ssh-read:
+    interface: personal-files
+    read:
+      - $HOME/.ssh
