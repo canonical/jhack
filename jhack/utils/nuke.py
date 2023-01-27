@@ -174,7 +174,11 @@ def _get_apps_and_relations(
 
 
 def _gather_nukeables(
-    obj: Optional[str], model: Optional[str], borked: bool, selectors: str = ""
+    obj: Optional[str],
+    model: Optional[str],
+    borked: bool,
+    selectors: str = "",
+    cur_model: Optional[str] = None,
 ):
     logger.debug(f"Gathering nukeables for {obj!r} with _selectors = {selectors!r}")
 
@@ -206,7 +210,7 @@ def _gather_nukeables(
         logger.info(f"gathering apps and relations ({selectors})")
         nukeables.extend(
             _get_apps_and_relations(
-                model or current_model(),
+                model or cur_model,
                 borked=borked,
                 filter_=globber,
                 include_apps="a" in selectors,
@@ -237,9 +241,15 @@ def _nuke(
     dry_run: bool = False,
     color: _Color = "auto",
 ):
-    if obj is None and not borked and not selectors:
+    cur_model = current_model(default=None)
+
+    if not cur_model:
+        nukeables = []
+
+    elif obj is None and not borked and not selectors:
         logger.info("No object | selectors provided, we'll nuke the current model.")
-        nukeables = [Nukeable(current_model(), "model")]
+        nukeables = [Nukeable(cur_model, "model")]
+
     else:
         if obj is None:
             # means we passed selectors:
@@ -261,7 +271,11 @@ def _nuke(
                     _selectors.remove(char)
 
         nukeables = _gather_nukeables(
-            obj, model, borked=borked, selectors="".join(_selectors)
+            obj,
+            model,
+            borked=borked,
+            selectors="".join(_selectors),
+            cur_model=cur_model,
         )
         logger.debug(f"Gathered: {nukeables}")
 
@@ -320,6 +334,11 @@ def _nuke(
 
     if not nukeables:
         print(f"Nothing to {ATOM}.")
+        if not cur_model:
+            print(
+                f"No model currently selected. You'll have to "
+                f"manually specify what you want to {ATOM}."
+            )
         return
 
     if dry_run:
@@ -489,4 +508,4 @@ def nuke(
 
 
 if __name__ == "__main__":
-    _nuke("ceilo", dry_run=True)
+    _nuke(None)

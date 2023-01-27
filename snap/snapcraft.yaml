@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.3.6'
+version: '0.3.7'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -47,7 +47,7 @@ apps:
       - network
       - network-bind
       - dot-local-share-juju
-      - dot-jhack-config
+      - dot-config-jhack
 
 
 plugs:

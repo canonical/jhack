@@ -72,7 +72,7 @@ def _get_env(
 
     if override:
         for opt in override:
-            if not "=" in opt:
+            if "=" not in opt:
                 logger.error(
                     f"env option {opt!r} invalid: expected "
                     f'"<key>=<value>"; skipping...'
