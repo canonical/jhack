@@ -5,6 +5,7 @@ import typer
 from jhack.helpers import (
     JPopen,
     get_current_model,
+    get_substrate,
     juju_agent_version,
     juju_log,
     show_unit,
@@ -31,7 +32,14 @@ def _get_relation_id(
     unit: str, endpoint: str, relation_remote_app: str = None, model: str = None
 ):
     unit = show_unit(unit, model=model)
-    for binding in unit["relation-info"]:
+    relation_info = unit.get("relation-info")
+    if not relation_info:
+        raise RuntimeError(
+            f"No relation-info found in show-unit {unit} output. "
+            f"Does this unit have any relation?"
+        )
+
+    for binding in relation_info:
         if binding["endpoint"] == endpoint:
             remote_app = next(iter(binding["related-units"])).split("/")[0]
             if relation_remote_app and remote_app != relation_remote_app:
@@ -137,9 +145,10 @@ def _simulate_event(
         override=env_override,
         operator_dispatch=operator_dispatch,
     )
-    # todo: insert `sudo` if this is a machine unit!
+
     _model = f"-m {model} " if model else ""
     cmd = f"juju ssh {_model}{unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
+
     logger.info(cmd)
     proc = JPopen(cmd.split())
     proc.wait()

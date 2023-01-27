@@ -12,8 +12,11 @@ USR = pwd.getpwuid(os.getuid())[0]
 
 if USR == "root":
     HOME_DIR = "/root"
-else: 
-    HOME_DIR = Path("/home") / os.environ["USER"]
+else:
+    if os.environ.get("USER"):
+        HOME_DIR = Path("/home") / os.environ["USER"]
+    else:
+        HOME_DIR = Path("~").expanduser().absolute()
 
 JHACK_DATA_PATH = HOME_DIR / ".config" / "jhack"
 JHACK_CONFIG_PATH = JHACK_DATA_PATH / "config.toml"
@@ -28,7 +31,7 @@ def configure():
             "Skipping .local/share/juju configuration."
         )
     else:
-        logger.info("jhack running in snapped mode. Configuring...")
+        logger.info("jhack running in snapped mode. Checking configuration...")
         # check `juju` command.
         try:
             juju_command = check_output(["which", "juju"])
@@ -41,6 +44,7 @@ def configure():
                 "connect jhack to some required plugs."
             )
 
+        # check JUJU_DATA is writeable
         jdata = HOME_DIR / ".local/share/juju"
 
         try:
@@ -62,6 +66,7 @@ def configure():
         os.environ["JUJU_DATA"] = str(jdata)
         logger.info(f"Set JUJU_DATA to {jdata}.")
 
+    # check jhack config.
     # check if the user has provided a jhack config file
     has_config = JHACK_CONFIG_PATH.exists()
     logger.info(
@@ -69,7 +74,11 @@ def configure():
     )
     if not has_config:
         logger.debug(f"no jhack config file found. All will be defaulted.")
-
-
-if __name__ == "__main__":
-    configure()
+    else:
+        # check config file is readable
+        try:
+            JHACK_CONFIG_PATH.read_text()
+        except PermissionError:
+            logger.error(f'Detected a config file at {JHACK_CONFIG_PATH}; however '
+                         f'jhack does not have read permissions. '
+                         f'Try `sudo snap connect jhack:dot-config-jhack snapd`.')

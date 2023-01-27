@@ -9,7 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.3.7'
+version: '0.3.8'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -46,8 +46,12 @@ apps:
     plugs:
       - network
       - network-bind
+
+      # do we need to add the custom plugs here as well?
       - dot-local-share-juju
       - dot-config-jhack
+      - shared-memory
+      - home-read
       - ssh-read
 
 plugs:
@@ -72,8 +76,6 @@ plugs:
   home-read:
     interface: home
 
-  # read access to ssh keys; required to use Jhack with LXC-powered controllers
+  # access ssh keys to make them available to the embedded juju snap
   ssh-read:
-    interface: personal-files
-    read:
-      - $HOME/.ssh
+    interface: ssh-keys

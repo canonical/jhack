@@ -1,54 +1,57 @@
 #!/bin/python3
 import logging
-import os.path
+import os
 import sys
 from pathlib import Path
 
-import typer
-
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
-
 sys.path.append(str(Path(os.path.realpath(__file__)).parent.parent))
 try:
     import jhack
 except ModuleNotFoundError:
     raise RuntimeError(f"cannot find jhack modules; " f"check your PATH={sys.path}.")
 
-from jhack.charm import functional
-from jhack.charm.init import init
-from jhack.charm.provision import provision
-from jhack.charm.record import record
-from jhack.charm.repack import refresh
-from jhack.charm.sync import sync as sync_packed_charm
-from jhack.charm.update import update
-from jhack.charm.vinfo import vinfo
-from jhack.conf.conf import print_current_config, print_defaults
-from jhack.jinx.cleanup import cleanup as jinx_cleanup
-from jhack.jinx.init import init_jinx as jinx_init
-from jhack.jinx.install import install as jinx_install
-from jhack.jinx.pack import pack as jinx_pack
-from jhack.logger import LOGLEVEL, logger
-from jhack.utils import integrate
-from jhack.utils.event_recorder.client import (
-    dump_db,
-    emit,
-    install,
-    list_events,
-    purge_db,
-)
-from jhack.utils.ffwd import fast_forward
-from jhack.utils.nuke import nuke
-from jhack.utils.show_relation import sync_show_relation
-from jhack.utils.show_stored import show_stored
-from jhack.utils.simulate_event import simulate_event
-from jhack.utils.sync import sync as sync_deployed_charm
-from jhack.utils.tail_charms import tail_events
-from jhack.utils.unbork_juju import unbork_juju
-from jhack.utils.unleash import vanity
+import typer
 
 
 def main():
+    from jhack.config import configure
+
+    configure()
+
+    from jhack.charm import functional
+    from jhack.charm.init import init
+    from jhack.charm.provision import provision
+    from jhack.charm.record import record
+    from jhack.charm.repack import refresh
+    from jhack.charm.sync import sync as sync_packed_charm
+    from jhack.charm.update import update
+    from jhack.charm.vinfo import vinfo
+    from jhack.conf.conf import print_current_config, print_defaults
+    from jhack.jinx.cleanup import cleanup as jinx_cleanup
+    from jhack.jinx.init import init_jinx as jinx_init
+    from jhack.jinx.install import install as jinx_install
+    from jhack.jinx.pack import pack as jinx_pack
+    from jhack.logger import LOGLEVEL, logger
+    from jhack.utils import integrate
+    from jhack.utils.event_recorder.client import (
+        dump_db,
+        emit,
+        install,
+        list_events,
+        purge_db,
+    )
+    from jhack.utils.ffwd import fast_forward
+    from jhack.utils.nuke import nuke
+    from jhack.utils.show_relation import sync_show_relation
+    from jhack.utils.show_stored import show_stored
+    from jhack.utils.simulate_event import simulate_event
+    from jhack.utils.sync import sync as sync_deployed_charm
+    from jhack.utils.tail_charms import tail_events
+    from jhack.utils.unbork_juju import unbork_juju
+    from jhack.utils.unleash import vanity
+
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
     utils.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
@@ -139,9 +142,6 @@ def main():
     if LOGLEVEL != "WARNING":
         typer.echo(f"::= Verbose mode ({LOGLEVEL}). =::")
 
-    from jhack.config import configure
-
-    configure()
     app()
 
 
