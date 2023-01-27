@@ -39,9 +39,10 @@ BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
 
-def model_loglevel():
+def model_loglevel(model: str = None):
+    _model = f"-m {model} " if model else ""
     try:
-        lc = JPopen("juju model-config logging-config".split())
+        lc = JPopen(f"juju model-config {_model}logging-config".split())
         lc.wait()
         if lc.returncode != 0:
             logger.info(
@@ -96,8 +97,8 @@ class Target:
         return hash((self.app, self.unit, self.leader))
 
 
-def get_all_units() -> Sequence[Target]:
-    status = juju_status(json=True)
+def get_all_units(model: str = None) -> Sequence[Target]:
+    status = juju_status(json=True, model=model)
     # sub charms don't have units
     units = list(
         chain(*(app.get("units", ()) for app in status["applications"].values()))
@@ -105,9 +106,9 @@ def get_all_units() -> Sequence[Target]:
     return tuple(map(Target.from_name, units))
 
 
-def parse_targets(targets: str = None) -> Sequence[Target]:
+def parse_targets(targets: str = None, model: str = None) -> Sequence[Target]:
     if not targets:
-        return get_all_units()
+        return get_all_units(model=model)
 
     all_units = None  # cache of all units according to juju status
 
@@ -118,7 +119,7 @@ def parse_targets(targets: str = None) -> Sequence[Target]:
             out.add(Target.from_name(target))
         else:
             if not all_units:
-                all_units = get_all_units()
+                all_units = get_all_units(model=model)
             # target is an app name: we need to gather all units of that app
             out.update((u for u in all_units if u.app == target))
     return tuple(out)
@@ -273,8 +274,8 @@ class LogLineParser:
         event_replayed_jhack: ("jhack", "replay"),
     }
 
-    def __init__(self):
-        self._loglevel = model_loglevel()
+    def __init__(self, model: str = None):
+        self._loglevel = model_loglevel(model=model)
 
     @property
     def uniter_events_only(self) -> bool:
@@ -348,6 +349,7 @@ class Processor:
         color: _Color = "auto",
         show_defer: bool = False,
         event_filter_re: re.Pattern = None,
+        model: str = None,
     ):
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
@@ -381,7 +383,7 @@ class Processor:
 
         self._warned_about_orphans = False
 
-        self.parser = LogLineParser()
+        self.parser = LogLineParser(model=model)
         self._rendered = False
 
     def _warn_about_orphaned_event(self, evt):
@@ -919,6 +921,9 @@ def tail_events(
         "  -f '(?!update)' --> all events except those starting with 'update'."
         "  -f 'ingress' --> all events starting with 'ingress'.",
     ),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
 ):
     """Pretty-print a table with the events that are fired on juju units
     in the current model.
@@ -938,6 +943,7 @@ def tail_events(
         color=color,
         files=file,
         event_filter=filter_events,
+        model=model,
     )
 
 
@@ -962,6 +968,7 @@ def _tail_events(
     event_filter: str = None,
     # for script use only
     _on_event: Callable[[EventLogMsg], None] = None,
+    model: str = None,
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -979,7 +986,7 @@ def _tail_events(
         add_new_targets = False
 
     # if we pass files, we don't grab targets from the env, we simply read them from the file
-    targets = parse_targets(targets) if not files else (targets or [])
+    targets = parse_targets(targets, model=model) if not files else (targets or [])
     if not targets and not add_new_targets:
         logger.warning(
             "no targets passed and `add_new_targets`=False: you will not see much."
@@ -997,6 +1004,7 @@ def _tail_events(
     logger.debug("starting to read logs")
     cmd = (
         ["juju", "debug-log"]
+        + (["-m", model] if model else [])
         + (["--tail"] if watch else [])
         + (["--replay"] if replay else [])
         + ["--level", level.value]
@@ -1016,6 +1024,7 @@ def _tail_events(
         color=color,
         show_defer=show_defer,
         event_filter_re=event_filter_pattern,
+        model=model,
     )
 
     try:

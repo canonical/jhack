@@ -144,13 +144,15 @@ def get_models(include_controller=False):
     ]
 
 
-def show_unit(unit: str):
-    proc = JPopen(f"juju show-unit {unit} --format json".split())
+def show_unit(unit: str, model: str = None):
+    _model = f"-m {model} " if model else ""
+    proc = JPopen(f"juju show-unit {_model}{unit} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[unit]
 
 
-def show_application(application: str):
+def show_application(application: str, model: str = None):
+    _model = f"-m {model} " if model else ""
     proc = JPopen(f"juju show-application {application} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[application]
