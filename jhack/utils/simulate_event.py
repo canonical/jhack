@@ -2,7 +2,13 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, current_model, juju_agent_version, juju_log, show_unit
+from jhack.helpers import (
+    JPopen,
+    get_current_model,
+    juju_agent_version,
+    juju_log,
+    show_unit,
+)
 from jhack.logger import logger as jhack_logger
 
 # note juju-exec is juju-run in juju<3.0
@@ -21,8 +27,10 @@ juju_context_id = "JUJU_CONTEXT_ID"
 logger = jhack_logger.getChild("simulate_event")
 
 
-def _get_relation_id(unit: str, endpoint: str, relation_remote_app: str = None):
-    unit = show_unit(unit)
+def _get_relation_id(
+    unit: str, endpoint: str, relation_remote_app: str = None, model: str = None
+):
+    unit = show_unit(unit, model=model)
     for binding in unit["relation-info"]:
         if binding["endpoint"] == endpoint:
             remote_app = next(iter(binding["related-units"])).split("/")[0]
@@ -46,10 +54,12 @@ def _get_env(
     relation_remote: str = None,
     override: List[str] = None,
     operator_dispatch: bool = False,
+    model: str = None,
 ):
+    current_model = get_current_model()
     env = {
         "JUJU_DISPATCH_PATH": f"hooks/{event}",
-        "JUJU_MODEL_NAME": current_model(),
+        "JUJU_MODEL_NAME": current_model,
         "JUJU_UNIT_NAME": unit,
     }
 
@@ -60,7 +70,7 @@ def _get_env(
             env["JUJU_REMOTE_APP"] = relation_remote_app
             env["JUJU_REMOTE_UNIT"] = relation_remote
 
-        relation_id = _get_relation_id(unit, endpoint, relation_remote_app)
+        relation_id = _get_relation_id(unit, endpoint, relation_remote_app, model=model)
         env["JUJU_RELATION"] = endpoint
         env["JUJU_RELATION_ID"] = str(relation_id)
 
@@ -118,6 +128,7 @@ def _simulate_event(
     print_captured_stdout: bool = False,
     print_captured_stderr: bool = False,
     emit_juju_log: bool = True,
+    model: str = None,
 ):
     env = _get_env(
         unit,
@@ -127,15 +138,13 @@ def _simulate_event(
         operator_dispatch=operator_dispatch,
     )
     # todo: insert `sudo` if this is a machine unit!
-    cmd = f"juju ssh {unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
+    _model = f"-m {model} " if model else ""
+    cmd = f"juju ssh {_model}{unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
     logger.info(cmd)
     proc = JPopen(cmd.split())
     proc.wait()
     if proc.returncode != 0:
         logger.error(f"cmd {cmd} terminated with {proc.returncode}")
-        # todo consider
-        #  ❯ j exec -u trfk/0 -- juju-log --log-level DEBUG Charm called itself via hooks/<event>
-        #    so that tail will display something has been replayed.
         logger.error(f"stdout={proc.stdout.read()}")
         logger.error(f"stderr={proc.stderr.read()}")
     else:
@@ -144,10 +153,11 @@ def _simulate_event(
         if print_captured_stderr and (stderr := proc.stderr.read()):
             print(f"[captured stderr: ]\n{stderr.decode('utf-8')}")
 
-    print(f"Fired {event} on {unit}.")
+    in_model = f" in model {model}" if model else ""
+    print(f"Fired {event} on {unit}{in_model}.")
 
     if emit_juju_log:
-        juju_log(unit, f"The previous {event} was fired by jhack.")
+        juju_log(unit, f"The previous {event} was fired by jhack.", model=model)
 
 
 def simulate_event(
@@ -185,6 +195,9 @@ def simulate_event(
         "E.g."
         " - fire foo-pebble-ready --env JUJU_DEPARTING_UNIT_NAME=remote/0 --env FOO=bar",
     ),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
 ):
     """Simulates an event on a unit.
 
@@ -197,6 +210,7 @@ def simulate_event(
         env_override=env_override,
         print_captured_stdout=show_output,
         print_captured_stderr=show_output,
+        model=model,
     )
 
 

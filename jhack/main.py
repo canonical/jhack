@@ -29,8 +29,6 @@ from jhack.jinx.init import init_jinx as jinx_init
 from jhack.jinx.install import install as jinx_install
 from jhack.jinx.pack import pack as jinx_pack
 from jhack.logger import LOGLEVEL, logger
-from jhack.model.clear import sync_clear_model
-from jhack.model.remove import rmodel
 from jhack.utils import integrate
 from jhack.utils.event_recorder.client import (
     dump_db,
@@ -51,10 +49,6 @@ from jhack.utils.unleash import vanity
 
 
 def main():
-    model = typer.Typer(name="model", help="Juju model utilities.")
-    model.command(name="clear")(sync_clear_model)
-    model.command(name="rm")(rmodel)
-
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
     utils.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
@@ -126,7 +120,6 @@ def main():
     conf.command(name="current")(print_current_config)
 
     app.add_typer(conf, no_args_is_help=True)
-    app.add_typer(model, no_args_is_help=True)
     app.add_typer(jinx, no_args_is_help=True)
     app.add_typer(charm, no_args_is_help=True)
     app.add_typer(utils, no_args_is_help=True)
