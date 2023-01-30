@@ -50,9 +50,9 @@ def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
         model = list(model_info)[0]
 
     model_type = model_info[model]["model-type"]
-    if model_type == "caas":
+    if model_type == "iaas":
         return "machine"
-    elif model_type == "iaas":
+    elif model_type == "caas":
         return "k8s"
     else:
         raise ValueError(f"unrecognized model type: {model_type}")
