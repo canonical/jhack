@@ -13,3 +13,7 @@ To publish a new snap version and release on edge:
 Jhack snap has a bunch of plugs. This should suffice:
 
     sudo snap connect jhack:dot-local-share-juju snapd
+
+If you use lxd/machine models, you will need ssh key access for jhack to be able to run `juju ssh` on your behalf. Grant that access by:
+
+    sudo snap connect jhack:ssh-read snapd

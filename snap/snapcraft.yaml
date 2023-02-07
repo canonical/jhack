@@ -18,7 +18,8 @@ description: |
   communicate with its client by issuing `juju` cli calls.
   This snap requires write access to ~/.local/share/juju via an interface named
   dot-local-share-juju, so that the juju client configuration can be used to talk to the
-  user's clouds, controllers and models.
+  user's clouds, controllers and models. Also, on machine models, you will need to connect the 
+  `ssh-keys` plug so that jhack can run `juju ssh` on your behalf. 
 
 grade: stable
 confinement: strict
