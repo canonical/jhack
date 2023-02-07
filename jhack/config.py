@@ -79,6 +79,8 @@ def configure():
         try:
             JHACK_CONFIG_PATH.read_text()
         except PermissionError:
-            logger.error(f'Detected a config file at {JHACK_CONFIG_PATH}; however '
-                         f'jhack does not have read permissions. '
-                         f'Try `sudo snap connect jhack:dot-config-jhack snapd`.')
+            logger.error(
+                f"Detected a config file at {JHACK_CONFIG_PATH}; however "
+                f"jhack does not have read permissions. "
+                f"Try `sudo snap connect jhack:dot-config-jhack snapd`."
+            )

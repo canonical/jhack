@@ -1,10 +1,10 @@
 import sys
 from pathlib import Path
-from jhack.logger import logger as jhacklogger
 
 import toml
 
 from jhack.config import JHACK_CONFIG_PATH
+from jhack.logger import logger as jhacklogger
 
 logger = jhacklogger.getChild(__file__)
 
@@ -24,8 +24,10 @@ class Config:
         try:
             self._data = toml.load(self._path.open())
         except PermissionError as e:
-            logger.error(f'Unable to open config file at {self._path}.'
-                         f'Try `sudo snap connect jhack:dot-config-jhack snapd`.')
+            logger.error(
+                f"Unable to open config file at {self._path}."
+                f"Try `sudo snap connect jhack:dot-config-jhack snapd`."
+            )
             raise e
 
     @property

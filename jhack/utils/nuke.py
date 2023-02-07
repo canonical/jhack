@@ -445,24 +445,23 @@ def nuke(
         "no: disable colors entirely.",
     ),
 ):
-    """Surgical carpet bombing tool.
+    """
+    *Surgical carpet bombing tool.*
 
     Attempts to guess what you want to burn, and rains holy vengeance upon it.
 
     Examples:
-        $ jhack nuke
-        will vanquish the current model
-        $ jhack nuke test-foo-*
-        will bomb all nukeables starting with `test-foo-` , including:
-         - models
-         - applications
-         - relations
-        $ jhack nuke --model foo bar-*
-        will bomb all nukeables starting with `bar-` in model foo. As above.
-        $ jhack nuke -n=2 *foo*
-        will blow up the two things it can find that contain the substring "foo"
 
-    Nuke ascii art by Bill March from https://www.asciiart.eu/weapons/explosives
+    - *nuke*: will vanquish the current model and everything in it.
+
+    - *nuke "test-foo-&ast;"*: will bomb all nukeables starting with "test-foo-"; all models, applications and relations.
+
+    - *nuke "--model foo bar-&ast;"*: will blast all nukeables starting with "bar-" in model "foo". As above.
+
+    - *nuke -n=2 &ast;foo&ast;*: will blow up the two things it can find that contain the substring "foo"
+
+    \n\n
+    Nuke ascii art by [Bill March](https://www.asciiart.eu/weapons/explosives).
     """
     logger.info("starting jhack nuke")
 

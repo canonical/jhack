@@ -100,6 +100,7 @@ def main():
         name="jhack",
         help="Hacky, wacky, but ultimately charming.",
         no_args_is_help=True,
+        rich_markup_mode="markdown",
     )
     app.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
     app.command(name="show-relation", no_args_is_help=True)(sync_show_relation)

@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import List
 
 import typer
-from juju import jasyncio
 
 from jhack.helpers import JPopen, get_substrate, juju_status
 from jhack.logger import logger
@@ -122,7 +121,7 @@ def _sync(
             return
         loop = asyncio.events.get_event_loop()
         loop.run_until_complete(
-            jasyncio.gather(
+            asyncio.gather(
                 *(
                     push_to_remote_juju_unit(
                         changed,
