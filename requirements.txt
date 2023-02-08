@@ -1,7 +1,0 @@
-typer==0.7.0
-ops==1.5.3
-rich==13.3.0
-parse==1.19.0
-toml
-asttokens
-astunparse

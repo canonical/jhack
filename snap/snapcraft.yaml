@@ -30,6 +30,7 @@ parts:
     source: https://github.com/PietroPasotti/jhack.git
     source-branch: master
     python-packages:
+      # TODO: keep pyproject in sync with these!
       - typer==0.7.0
       - ops==1.5.3
       - rich==13.3.0
