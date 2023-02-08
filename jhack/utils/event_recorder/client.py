@@ -1,3 +1,4 @@
+import datetime
 import json
 import sys
 import tempfile
@@ -6,7 +7,6 @@ from subprocess import PIPE, CalledProcessError, check_call
 from typing import Optional, Union
 
 import typer
-from dateutil.utils import today
 
 from jhack.helpers import fetch_file, juju_log, modify_remote_file
 from jhack.logger import logger
@@ -242,7 +242,7 @@ def _inject_record_current_event_call(file):
 
     recorder_call = (
         f"    import recorder; recorder.setup()  # record current event call, "
-        f"injected by jhack.utils.replay @ {today().isoformat()}"
+        f"injected by jhack.utils.replay @ {datetime.datetime.now().isoformat()}"
     )
 
     if recorder_call in charm_py:
@@ -338,7 +338,6 @@ def install(unit: str):
 if __name__ == "__main__":
     # _copy_recorder_script("trfk/0")
     # _emit("trfk/0", 4)
-    import datetime
 
     ts = datetime.datetime(hour=14, minute=53, second=3, day=10, month=10, year=2022)
     isotime = ts.isoformat()

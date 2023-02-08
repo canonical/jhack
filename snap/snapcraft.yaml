@@ -9,7 +9,8 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-version: '0.3.9'
+# TODO: keep pyproject in sync with version!
+version: '0.3.10'
 summary: Cli tool packed with juju hacks.
 
 description: |
