@@ -11,7 +11,7 @@ USR = pwd.getpwuid(os.getuid())[0]
 
 
 if USR == "root":
-    HOME_DIR = "/root"
+    HOME_DIR = Path("/root")
 else:
     if os.environ.get("USER"):
         HOME_DIR = Path("/home") / os.environ["USER"]
