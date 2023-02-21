@@ -2,15 +2,18 @@ import itertools
 import re
 import sys
 import time
+from collections import defaultdict
 from functools import partial
-from typing import Dict, List, Optional, Sequence, Set, Tuple, TypedDict
+from typing import Dict, List, Optional, TypedDict, NamedTuple, Union, Tuple
 
 import typer
 import yaml
 from rich.align import Align
+from rich.color import Color
 from rich.console import Console
 from rich.live import Live
 from rich.prompt import Prompt
+from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
@@ -24,15 +27,29 @@ from jhack.helpers import (
 from jhack.logger import logger as jhack_logger
 
 AppName = Endpoint = Interface = RemoteAppName = str
+RelationID = int
 logger = jhack_logger.getChild("integrate")
 
 
 class _AppEndpoints(TypedDict):
-    requires: Dict[Endpoint, Tuple[Interface, List[RemoteAppName]]]
-    provides: Dict[Endpoint, Tuple[Interface, List[RemoteAppName]]]
+    requires: Dict[Endpoint, Dict[Interface, Dict[RelationID, RemoteAppName]]]
+    provides: Dict[Endpoint, Dict[Interface, Dict[RelationID, RemoteAppName]]]
+    peers: Dict[Endpoint, Dict[Interface, List[RelationID]]]
 
 
-def _gather_endpoints(model=None, apps=()) -> Dict[AppName, _AppEndpoints]:
+class PeerBinding(NamedTuple):
+    endpoint: str
+    interface: str
+
+
+class RelationBinding(NamedTuple):
+    provider_endpoint: str
+    interface: str
+    requirer_endpoint: str
+    active: bool
+
+
+def _gather_endpoints(model=None, apps=(), include_peers: bool = False) -> Dict[AppName, _AppEndpoints]:
     status = juju_status(model=model, json=True)
     eps = {}
 
@@ -54,12 +71,15 @@ def _gather_endpoints(model=None, apps=()) -> Dict[AppName, _AppEndpoints]:
         metadata = fetch_file(unit, "metadata.yaml", model=model)
         meta = yaml.safe_load(metadata)
 
-        for role in ("requires", "provides", "peers"):
+        for role in ("requires", "provides"):
             role_eps = {
                 ep: (spec["interface"], remotes(app, ep))
                 for ep, spec in meta.get(role, {}).items()
             }
             app_eps[role] = role_eps
+
+        if include_peers:
+            app_eps["peers"] = [PeerBinding(ep, spec["interface"]) for ep, spec in meta.get("peers", {}).items()]
 
         eps[app_name] = app_eps
 
@@ -67,6 +87,16 @@ def _gather_endpoints(model=None, apps=()) -> Dict[AppName, _AppEndpoints]:
 
 
 class IntegrationMatrix:
+    cell_border_style = Style()
+    peer_cell_border_style = Style(color=Color.from_rgb(150, 30, 30))
+    no_interfaces_text_style = Style(color=Color.from_rgb(180, 150, 30))
+
+    na_text_style = Style(color=Color.from_rgb(180, 100, 170))
+
+    peer_cell_text_style = Style(color=Color.from_rgb(180, 200, 100))
+    active_cell_text_style = Style(color=Color.from_rgb(10, 250, 80))
+    inactive_cell_text_style = Style(color=Color.from_rgb(250, 0, 0))
+
     def __init__(
             self,
             apps: str = None,
@@ -76,7 +106,7 @@ class IntegrationMatrix:
     ):
         self._model = model
         self._color = color
-        self._endpoints = _gather_endpoints(model, apps)
+        self._endpoints = _gather_endpoints(model, apps, include_peers=include_peers)
         self._apps = tuple(sorted(self._endpoints))
         self._include_peers = include_peers
 
@@ -86,83 +116,106 @@ class IntegrationMatrix:
 
         # X axis: requires
         # Y axis: provides
-        self.matrix = self._build_matrix()
+        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = self._build_matrix()
 
     def refresh(self):
         self._endpoints = _gather_endpoints(model=self._model, apps=self._apps)
 
     def _pairs(self):
         # returns provider, requirer pairs.
-        return itertools.permutations(self._apps, 2)
+        return itertools.product(self._apps, repeat=2)
 
-    def _cells(self, skip_diagonal=True):
+    def _cells(self, skip_diagonal=True, yield_indices=False):
         for i, row in enumerate(self.matrix):
-            for j, column in enumerate(row):
+            for j, cell in enumerate(row):
                 if skip_diagonal and i == j:
                     continue
-                yield column
+                if yield_indices:
+                    yield (i, j), cell
+                else:
+                    yield cell
 
-    def _build_matrix(self):
+    def _build_matrix(self) -> List[List[Union[List[PeerBinding], List[RelationBinding]]]]:
         apps = self._apps
         mtrx = [[[] for _ in range(len(apps))] for _ in range(len(apps))]
+
         for provider, requirer in self._pairs():
             prov_idx = apps.index(provider)
             req_idx = apps.index(requirer)
 
+            if provider == requirer:
+                if self._include_peers:
+                    mtrx[prov_idx][req_idx] = self._endpoints[provider].get("peers")  # PeerBinding
+                continue
+
             provides = self._endpoints[provider]["provides"]
             requires = self._endpoints[requirer]["requires"]
-            shared = sorted(
-                set(intf[0] for intf in provides.values()).intersection(
-                    set(intf[0] for intf in requires.values())
-                ),
-                # sort by endpoint name
-                key=lambda o: o[0],
-            )
+
+            # mapping from each supported interface to the endpoints using that interface, for the requirer.
+            requirer_interfaces_to_endpoints = defaultdict(list)
+            for endpoint, (interface, connected_providers) in requires.items():
+                requirer_interfaces_to_endpoints[interface].append((endpoint, connected_providers))
+
+            shared: List[RelationBinding] = []
+
+            for provider_endpoint, (interface, connected_requirers) in provides.items():
+                requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[interface]
+                for requirer_endpoint, connected_providers in requirer_endpoints_for_interface:
+                    active = ((requirer in connected_requirers) and
+                              (provider in connected_providers))
+                    shared.append(
+                        RelationBinding(provider_endpoint, interface, requirer_endpoint, active)
+                    )
+
+            # sort by interface name first, provider endpoint, requirer endpoint, status then.
+            shared = sorted(shared, key=lambda foo: (foo[1], foo[0], foo[2], foo[3]))
 
             mtrx[prov_idx][req_idx].extend(shared)
         return mtrx
 
-    def _is_active(self, interface: str, provider: str, requirer: str):
-        ep_to_apps = dict(self._endpoints[provider]["provides"].values())
-        return requirer in ep_to_apps[interface]
+    def _render_cell(self, provider_idx: int, requirer_idx: int):
+        # this is our cell
+        bindings: Union[List[PeerBinding], List[RelationBinding]] = self.matrix[provider_idx][requirer_idx]
+        peer = provider_idx == requirer_idx
 
-    def _render_shared(self, app: str, shared: List[List[str]]):
-        out = []
-        for remote, lst in zip(self._apps, shared):
-            t = Table(show_header=False, expand=True)
-            t.add_column("")
+        t = Table(show_header=False, expand=True,
+                  border_style=self.peer_cell_border_style if peer else self.cell_border_style)
+        t.add_column("")
 
-            if not lst and remote != app:
-                out.append(t)
-                t.add_row(Text("- no interfaces - ", style="orange"))
-                continue
+        if peer:
+            bindings: List[PeerBinding]
 
-            if remote == app and not self._include_peers:
-                out.append(Text("-n/a-", style="orange"))
-                continue
-            elif self._include_peers and not lst:
-                out.append(t)
-                t.add_row(Text("- no interfaces - ", style="orange"))
-                continue
+            if not self._include_peers:
+                return Text("-n/a-", style=self.na_text_style)
 
-            for obj in lst:
-                is_active = self._is_active(obj, app, remote)
-                if is_active:
-                    sym = "Y"
-                    color = "green"
+            if not bindings:
+                t.add_row(Text("- no interfaces - ", style=self.no_interfaces_text_style))
+                return t
+
+            for endpoint, interface in bindings:
+                sym = "↻"
+                fmt_obj = f"{endpoint} [{interface}] {sym}"
+                t.add_row(Text(fmt_obj, style=self.peer_cell_text_style))
+            return t
+
+        else:
+            bindings: List[RelationBinding]
+
+            if not bindings:
+                t.add_row(Text("- no interfaces - ", style=self.no_interfaces_text_style))
+                return t
+
+            for provider_endpoint, interface, requirer_endpoint, active in bindings:
+                if active:
+                    symtail, symhead = ">-", "->"
+                    color = self.active_cell_text_style
                 else:
-                    sym = "N"
-                    color = "red"
+                    symtail, symhead = "X-", "-X"
+                    color = self.inactive_cell_text_style
 
-                requires = self._endpoints[remote]["requires"]
-                n_interfaces = len([a[0] for a in requires.values() if a[0] == obj])
-                card = f"({n_interfaces}x) " if n_interfaces else ""
-
-                fmt_obj = f"{obj} {card}{sym}"
+                fmt_obj = f"{provider_endpoint} {symtail}[{interface}]{symhead} {requirer_endpoint}"
                 t.add_row(Text(fmt_obj, style=color))
-            out.append(t)
-
-        return out
+            return t
 
     def render(self, refresh: bool = False):
         if refresh:
@@ -173,8 +226,18 @@ class IntegrationMatrix:
         for app in self._apps:
             table.add_column(app)
 
-        for app, shared in zip(self._apps, self.matrix):
-            table.add_row(app, *self._render_shared(app, shared))
+        apps = self._apps
+
+        rendered_matrix = [
+            [
+                self._render_cell(provider_idx=prov_idx, requirer_idx=req_idx)
+                for prov_idx in range(len(apps))
+            ]
+            for req_idx in range(len(apps))
+        ]
+
+        for app, row in zip(apps, rendered_matrix):
+            table.add_row(app, *row)
         return Align.center(table)
 
     def pprint(self):
@@ -239,16 +302,19 @@ class IntegrationMatrix:
         target_apps = set(targets)
         logger.debug(f"target applications: {target_apps}")
 
-        target_interfaces = []
-        for interfaces, (prov, req) in zip(self._cells(), self._pairs()):
+        target_bindings = []
 
-            for interface in interfaces:
+        for (prov_idx, req_idx), bindings in self._cells(skip_diagonal=True, yield_indices=True):
+            for (provider_endpoint, interface, requirer_endpoint, is_active) in bindings:
+                prov = self._apps[prov_idx]
+                req = self._apps[req_idx]
+
                 if active in {True, False}:
-                    # only include if the interface is currently (in)active
-                    if self._is_active(interface, prov, req) is not active:
+                    # only include if the interface is currently not at the desired state
+                    if is_active is not active:
                         logger.debug(
-                            f"skipping {prov}:({interface}) <--> {req}: "
-                            f'interface is {"in" if active else ""}active'
+                            f"skipping {prov}:{provider_endpoint} --> [{interface}] --> {req}:{requirer_endpoint} "
+                            f'interface is already {"in" if active else ""}active'
                         )
                         continue
 
@@ -256,12 +322,13 @@ class IntegrationMatrix:
                     logger.debug(f"skipping {prov}: not a target")
                     continue
 
-                endpoint = self._get_endpoint(prov, "provides", interface)
-                target_interfaces.append((f"{prov}:{endpoint}", req))
+                target_bindings.append((f"{prov}:{provider_endpoint}",
+                                        interface,
+                                        f"{req}:{requirer_endpoint}"))
 
-        logger.debug(f"target interfaces: {target_interfaces}")
+        logger.debug(f"target interfaces: {target_bindings}")
 
-        if not target_interfaces:
+        if not target_bindings:
             print(f"Nothing to {verb}.")
             return
 
@@ -269,17 +336,18 @@ class IntegrationMatrix:
             print(f"would {verb}: {target_apps}")
 
         cmd_list: List[str] = []
-        for ep1, ep2 in target_interfaces:
-            cmd = f"juju {juju_cmd} {ep1} {ep2}"
+        for ep1, interface, ep2 in target_bindings:
+            sym = "X" if verb == 'disconnect' else '-->'
+            cmd = f"{juju_cmd} {ep1} {sym} [{interface}] {sym}  {ep2}"
             cmd_list.append(cmd)
             if dry_run:
-                print(cmd)
+                print(cmd.replace(juju_cmd, verb))
 
         if dry_run:
             return
 
         print(f"{verb.title()}ing relations...")
-        for cmd, (ep1, ep2) in zip(cmd_list, target_interfaces):
+        for cmd, (ep1, _, ep2) in zip(cmd_list, target_bindings):
             print(f"\t{ep1} <--> {ep2}")
             JPopen(cmd.split(), wait=True)
 
@@ -370,10 +438,13 @@ def show(
         model: str = typer.Option(
             None, "--model", "-m", help="Model in which to apply this command."
         ),
+        show_peers: bool = typer.Option(
+            None, "--show-peers", "-p", help="Include peer relations in the matrix.", is_flag=True
+        ),
         color: Optional[str] = ColorOption,
 ):
     """Display the avaiable integrations between any number of juju applications in a nice matrix."""
-    mtrx = IntegrationMatrix(apps=apps, model=model, color=color)
+    mtrx = IntegrationMatrix(apps=apps, model=model, color=color, include_peers=show_peers)
     if watch:
         mtrx.watch(refresh_rate=refresh_rate)
     else:
@@ -397,33 +468,42 @@ def _cmr(remote, local=None, dry_run: bool = False):
     apps1 = mtrx1._apps
     apps2 = mtrx2._apps
 
-    cmrs = {}
+    cmrs: Dict[Tuple[AppName, AppName], List[RelationBinding]] = {}
 
     for provider, requirer in itertools.product(apps1, apps2):
         provides = mtrx1._endpoints[provider]["provides"]
         requires = mtrx2._endpoints[requirer]["requires"]
-        shared = sorted(
-            set(intf[0] for intf in provides.values()).intersection(
-                set(intf[0] for intf in requires.values())
-            ),
-            # sort by endpoint name
-            key=lambda o: o[0],
-        )
+
+        # mapping from each supported interface to the endpoints using that interface, for the requirer.
+        requirer_interfaces_to_endpoints = defaultdict(list)
+        for endpoint, (interface, connected_providers) in requires.items():
+            requirer_interfaces_to_endpoints[interface].append((endpoint, connected_providers))
+
+        shared: List[RelationBinding] = []
+
+        for provider_endpoint, (interface, connected_requirers) in provides.items():
+            requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[interface]
+            for requirer_endpoint, connected_providers in requirer_endpoints_for_interface:
+                active = ((requirer in connected_requirers) and
+                          (provider in connected_providers))
+                shared.append(
+                    RelationBinding(provider_endpoint, interface, requirer_endpoint, active)
+                )
 
         if shared:
             cmrs[(provider, requirer)] = shared
 
     opts = {}
-    for i, ((prov, req), interfaces) in enumerate(cmrs.items()):
-        for j, interface in enumerate(interfaces):
-            print(f"({i}.{j}) := \t {prov} <-[{interface}]-> {req} ")
-            opts[f"{i}.{j}"] = (prov, interface, req)
+    for i, ((prov, req), bindings) in enumerate(cmrs.items()):
+        binding: RelationBinding
+        for j, binding in enumerate(bindings):
+            print(
+                f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> {req}:{binding.requirer_endpoint} ")
+            opts[f"{i}.{j}"] = (prov, binding, req)
 
     cmr = Prompt.ask("Pick a CMR", choices=list(opts), default=list(opts)[0])
 
-    prov, interface, req = opts[cmr]
-    prov_endpoint = mtrx1._get_endpoint(prov, "provides", interface)
-    req_endpoint = mtrx2._get_endpoint(req, "requires", interface)
+    prov, binding, req = opts[cmr]
 
     def fmt_endpoint(model, app, endpoint):
         return (
@@ -436,19 +516,19 @@ def _cmr(remote, local=None, dry_run: bool = False):
 
     c = Console()
     txt = (
-            Text("relating ")
-            + fmt_endpoint(local, prov, prov_endpoint)
-            + " <-["
-            + Text(interface, style="green")
-            + "]-> "
-            + fmt_endpoint(remote, req, req_endpoint)
+            Text("Pulling ")
+            + fmt_endpoint(remote, req, binding.requirer_endpoint)
+            + " --> ["
+            + Text(binding.interface, style="green")
+            + "] --> "
+            + fmt_endpoint(local, prov, binding.provider_endpoint)
     )
     c.print(txt)
 
     script = [
-        f"juju offer {remote}.{req}:{req_endpoint}",
+        f"juju offer {remote}.{req}:{binding.requirer_endpoint}",
         f"juju consume admin/{remote}.{req}",
-        f"juju relate {req}:{req_endpoint} {prov}:{prov_endpoint}",
+        f"juju relate {req}:{binding.requirer_endpoint} {prov}:{binding.provider_endpoint}",
     ]
 
     if dry_run:
@@ -463,6 +543,7 @@ def _cmr(remote, local=None, dry_run: bool = False):
 
 if __name__ == "__main__":
     mtrx = IntegrationMatrix(include_peers=True)
+    mtrx.disconnect()
     # mtrx.watch()
     # mtrx.pprint()
     mtrx.pprint()
