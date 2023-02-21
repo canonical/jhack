@@ -4,7 +4,7 @@ import sys
 import time
 from collections import defaultdict
 from functools import partial
-from typing import Dict, List, Optional, TypedDict, NamedTuple, Union, Tuple
+from typing import Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
 
 import typer
 import yaml
@@ -49,7 +49,9 @@ class RelationBinding(NamedTuple):
     active: bool
 
 
-def _gather_endpoints(model=None, apps=(), include_peers: bool = False) -> Dict[AppName, _AppEndpoints]:
+def _gather_endpoints(
+    model=None, apps=(), include_peers: bool = False
+) -> Dict[AppName, _AppEndpoints]:
     status = juju_status(model=model, json=True)
     eps = {}
 
@@ -79,7 +81,10 @@ def _gather_endpoints(model=None, apps=(), include_peers: bool = False) -> Dict[
             app_eps[role] = role_eps
 
         if include_peers:
-            app_eps["peers"] = [PeerBinding(ep, spec["interface"]) for ep, spec in meta.get("peers", {}).items()]
+            app_eps["peers"] = [
+                PeerBinding(ep, spec["interface"])
+                for ep, spec in meta.get("peers", {}).items()
+            ]
 
         eps[app_name] = app_eps
 
@@ -98,11 +103,11 @@ class IntegrationMatrix:
     inactive_cell_text_style = Style(color=Color.from_rgb(250, 0, 0))
 
     def __init__(
-            self,
-            apps: str = None,
-            model: str = None,
-            include_peers: bool = False,
-            color: RichSupportedColorOptions = "auto",
+        self,
+        apps: str = None,
+        model: str = None,
+        include_peers: bool = False,
+        color: RichSupportedColorOptions = "auto",
     ):
         self._model = model
         self._color = color
@@ -116,7 +121,9 @@ class IntegrationMatrix:
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = self._build_matrix()
+        self.matrix: List[
+            List[Union[List[PeerBinding], List[RelationBinding]]]
+        ] = self._build_matrix()
 
     def refresh(self):
         self._endpoints = _gather_endpoints(model=self._model, apps=self._apps)
@@ -135,7 +142,9 @@ class IntegrationMatrix:
                 else:
                     yield cell
 
-    def _build_matrix(self) -> List[List[Union[List[PeerBinding], List[RelationBinding]]]]:
+    def _build_matrix(
+        self,
+    ) -> List[List[Union[List[PeerBinding], List[RelationBinding]]]]:
         apps = self._apps
         mtrx = [[[] for _ in range(len(apps))] for _ in range(len(apps))]
 
@@ -145,7 +154,9 @@ class IntegrationMatrix:
 
             if provider == requirer:
                 if self._include_peers:
-                    mtrx[prov_idx][req_idx] = self._endpoints[provider].get("peers")  # PeerBinding
+                    mtrx[prov_idx][req_idx] = self._endpoints[provider].get(
+                        "peers"
+                    )  # PeerBinding
                 continue
 
             provides = self._endpoints[provider]["provides"]
@@ -154,17 +165,27 @@ class IntegrationMatrix:
             # mapping from each supported interface to the endpoints using that interface, for the requirer.
             requirer_interfaces_to_endpoints = defaultdict(list)
             for endpoint, (interface, connected_providers) in requires.items():
-                requirer_interfaces_to_endpoints[interface].append((endpoint, connected_providers))
+                requirer_interfaces_to_endpoints[interface].append(
+                    (endpoint, connected_providers)
+                )
 
             shared: List[RelationBinding] = []
 
             for provider_endpoint, (interface, connected_requirers) in provides.items():
-                requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[interface]
-                for requirer_endpoint, connected_providers in requirer_endpoints_for_interface:
-                    active = ((requirer in connected_requirers) and
-                              (provider in connected_providers))
+                requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[
+                    interface
+                ]
+                for (
+                    requirer_endpoint,
+                    connected_providers,
+                ) in requirer_endpoints_for_interface:
+                    active = (requirer in connected_requirers) and (
+                        provider in connected_providers
+                    )
                     shared.append(
-                        RelationBinding(provider_endpoint, interface, requirer_endpoint, active)
+                        RelationBinding(
+                            provider_endpoint, interface, requirer_endpoint, active
+                        )
                     )
 
             # sort by interface name first, provider endpoint, requirer endpoint, status then.
@@ -175,11 +196,18 @@ class IntegrationMatrix:
 
     def _render_cell(self, provider_idx: int, requirer_idx: int):
         # this is our cell
-        bindings: Union[List[PeerBinding], List[RelationBinding]] = self.matrix[provider_idx][requirer_idx]
+        bindings: Union[List[PeerBinding], List[RelationBinding]] = self.matrix[
+            provider_idx
+        ][requirer_idx]
         peer = provider_idx == requirer_idx
 
-        t = Table(show_header=False, expand=True,
-                  border_style=self.peer_cell_border_style if peer else self.cell_border_style)
+        t = Table(
+            show_header=False,
+            expand=True,
+            border_style=self.peer_cell_border_style
+            if peer
+            else self.cell_border_style,
+        )
         t.add_column("")
 
         if peer:
@@ -189,7 +217,9 @@ class IntegrationMatrix:
                 return Text("-n/a-", style=self.na_text_style)
 
             if not bindings:
-                t.add_row(Text("- no interfaces - ", style=self.no_interfaces_text_style))
+                t.add_row(
+                    Text("- no interfaces - ", style=self.no_interfaces_text_style)
+                )
                 return t
 
             for endpoint, interface in bindings:
@@ -202,7 +232,9 @@ class IntegrationMatrix:
             bindings: List[RelationBinding]
 
             if not bindings:
-                t.add_row(Text("- no interfaces - ", style=self.no_interfaces_text_style))
+                t.add_row(
+                    Text("- no interfaces - ", style=self.no_interfaces_text_style)
+                )
                 return t
 
             for provider_endpoint, interface, requirer_endpoint, active in bindings:
@@ -281,13 +313,13 @@ class IntegrationMatrix:
             ) from e
 
     def _apply_to_all(
-            self,
-            include: str,
-            exclude: str,
-            verb: str,
-            juju_cmd: str,
-            dry_run: bool = False,
-            active: bool = None,
+        self,
+        include: str,
+        exclude: str,
+        verb: str,
+        juju_cmd: str,
+        dry_run: bool = False,
+        active: bool = None,
     ):
         targets = self._apps
 
@@ -304,8 +336,15 @@ class IntegrationMatrix:
 
         target_bindings = []
 
-        for (prov_idx, req_idx), bindings in self._cells(skip_diagonal=True, yield_indices=True):
-            for (provider_endpoint, interface, requirer_endpoint, is_active) in bindings:
+        for (prov_idx, req_idx), bindings in self._cells(
+            skip_diagonal=True, yield_indices=True
+        ):
+            for (
+                provider_endpoint,
+                interface,
+                requirer_endpoint,
+                is_active,
+            ) in bindings:
                 prov = self._apps[prov_idx]
                 req = self._apps[req_idx]
 
@@ -322,9 +361,13 @@ class IntegrationMatrix:
                     logger.debug(f"skipping {prov}: not a target")
                     continue
 
-                target_bindings.append((f"{prov}:{provider_endpoint}",
-                                        interface,
-                                        f"{req}:{requirer_endpoint}"))
+                target_bindings.append(
+                    (
+                        f"{prov}:{provider_endpoint}",
+                        interface,
+                        f"{req}:{requirer_endpoint}",
+                    )
+                )
 
         logger.debug(f"target interfaces: {target_bindings}")
 
@@ -337,7 +380,7 @@ class IntegrationMatrix:
 
         cmd_list: List[str] = []
         for ep1, interface, ep2 in target_bindings:
-            sym = "X" if verb == 'disconnect' else '-->'
+            sym = "X" if verb == "disconnect" else "-->"
             cmd = f"{juju_cmd} {ep1} {sym} [{interface}] {sym}  {ep2}"
             cmd_list.append(cmd)
             if dry_run:
@@ -364,7 +407,7 @@ class IntegrationMatrix:
         )
 
     def disconnect(
-            self, include: str = None, exclude: str = None, dry_run: bool = False
+        self, include: str = None, exclude: str = None, dry_run: bool = False
     ):
         self._apply_to_all(
             include,
@@ -378,22 +421,22 @@ class IntegrationMatrix:
 
 # API
 def link(
-        include: str = typer.Option(
-            None,
-            "--include",
-            "-i",
-            help="Regex a provider will have to match to be included in the target pool",
-        ),
-        exclude: str = typer.Option(
-            None,
-            "--exclude",
-            "-e",
-            help="Regex a provider will have to NOT match to be included in the target pool",
-        ),
-        dry_run: bool = False,
-        model: str = typer.Option(
-            None, "--model", "-m", help="Model in which to apply this command."
-        ),
+    include: str = typer.Option(
+        None,
+        "--include",
+        "-i",
+        help="Regex a provider will have to match to be included in the target pool",
+    ),
+    exclude: str = typer.Option(
+        None,
+        "--exclude",
+        "-e",
+        help="Regex a provider will have to NOT match to be included in the target pool",
+    ),
+    dry_run: bool = False,
+    model: str = typer.Option(
+        None, "--model", "-m", help="Model in which to apply this command."
+    ),
 ):
     """Cross-relate applications in all possible ways."""
     IntegrationMatrix(model=model).connect(
@@ -402,22 +445,22 @@ def link(
 
 
 def clear(
-        include: str = typer.Option(
-            None,
-            "--include",
-            "-i",
-            help="Regex an application will have to match to be included in the target pool",
-        ),
-        exclude: str = typer.Option(
-            None,
-            "--exclude",
-            "-e",
-            help="Regex an application will have to NOT match to be included in the target pool",
-        ),
-        dry_run: bool = False,
-        model: str = typer.Option(
-            None, "--model", "-m", help="Model in which to apply this command."
-        ),
+    include: str = typer.Option(
+        None,
+        "--include",
+        "-i",
+        help="Regex an application will have to match to be included in the target pool",
+    ),
+    exclude: str = typer.Option(
+        None,
+        "--exclude",
+        "-e",
+        help="Regex an application will have to NOT match to be included in the target pool",
+    ),
+    dry_run: bool = False,
+    model: str = typer.Option(
+        None, "--model", "-m", help="Model in which to apply this command."
+    ),
 ):
     """Blanket-nuke relations between applications."""
     IntegrationMatrix(model=model).disconnect(
@@ -426,25 +469,31 @@ def clear(
 
 
 def show(
-        apps: str = typer.Argument(
-            None, help="Regex to filter the applications to include in the listing."
-        ),
-        watch: bool = typer.Option(
-            None, "--watch", "-w", help="Keep this alive and refresh"
-        ),
-        refresh_rate: float = typer.Option(
-            None, "--refresh-rate", "-r", help="Refresh rate for watch."
-        ),
-        model: str = typer.Option(
-            None, "--model", "-m", help="Model in which to apply this command."
-        ),
-        show_peers: bool = typer.Option(
-            None, "--show-peers", "-p", help="Include peer relations in the matrix.", is_flag=True
-        ),
-        color: Optional[str] = ColorOption,
+    apps: str = typer.Argument(
+        None, help="Regex to filter the applications to include in the listing."
+    ),
+    watch: bool = typer.Option(
+        None, "--watch", "-w", help="Keep this alive and refresh"
+    ),
+    refresh_rate: float = typer.Option(
+        None, "--refresh-rate", "-r", help="Refresh rate for watch."
+    ),
+    model: str = typer.Option(
+        None, "--model", "-m", help="Model in which to apply this command."
+    ),
+    show_peers: bool = typer.Option(
+        None,
+        "--show-peers",
+        "-p",
+        help="Include peer relations in the matrix.",
+        is_flag=True,
+    ),
+    color: Optional[str] = ColorOption,
 ):
     """Display the avaiable integrations between any number of juju applications in a nice matrix."""
-    mtrx = IntegrationMatrix(apps=apps, model=model, color=color, include_peers=show_peers)
+    mtrx = IntegrationMatrix(
+        apps=apps, model=model, color=color, include_peers=show_peers
+    )
     if watch:
         mtrx.watch(refresh_rate=refresh_rate)
     else:
@@ -477,17 +526,27 @@ def _cmr(remote, local=None, dry_run: bool = False):
         # mapping from each supported interface to the endpoints using that interface, for the requirer.
         requirer_interfaces_to_endpoints = defaultdict(list)
         for endpoint, (interface, connected_providers) in requires.items():
-            requirer_interfaces_to_endpoints[interface].append((endpoint, connected_providers))
+            requirer_interfaces_to_endpoints[interface].append(
+                (endpoint, connected_providers)
+            )
 
         shared: List[RelationBinding] = []
 
         for provider_endpoint, (interface, connected_requirers) in provides.items():
-            requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[interface]
-            for requirer_endpoint, connected_providers in requirer_endpoints_for_interface:
-                active = ((requirer in connected_requirers) and
-                          (provider in connected_providers))
+            requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[
+                interface
+            ]
+            for (
+                requirer_endpoint,
+                connected_providers,
+            ) in requirer_endpoints_for_interface:
+                active = (requirer in connected_requirers) and (
+                    provider in connected_providers
+                )
                 shared.append(
-                    RelationBinding(provider_endpoint, interface, requirer_endpoint, active)
+                    RelationBinding(
+                        provider_endpoint, interface, requirer_endpoint, active
+                    )
                 )
 
         if shared:
@@ -498,7 +557,8 @@ def _cmr(remote, local=None, dry_run: bool = False):
         binding: RelationBinding
         for j, binding in enumerate(bindings):
             print(
-                f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> {req}:{binding.requirer_endpoint} ")
+                f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> {req}:{binding.requirer_endpoint} "
+            )
             opts[f"{i}.{j}"] = (prov, binding, req)
 
     cmr = Prompt.ask("Pick a CMR", choices=list(opts), default=list(opts)[0])
@@ -507,21 +567,21 @@ def _cmr(remote, local=None, dry_run: bool = False):
 
     def fmt_endpoint(model, app, endpoint):
         return (
-                Text(model or "<this model>", style="red")
-                + "."
-                + Text(app, style="purple")
-                + ":"
-                + Text(endpoint, style="cyan")
+            Text(model or "<this model>", style="red")
+            + "."
+            + Text(app, style="purple")
+            + ":"
+            + Text(endpoint, style="cyan")
         )
 
     c = Console()
     txt = (
-            Text("Pulling ")
-            + fmt_endpoint(remote, req, binding.requirer_endpoint)
-            + " --> ["
-            + Text(binding.interface, style="green")
-            + "] --> "
-            + fmt_endpoint(local, prov, binding.provider_endpoint)
+        Text("Pulling ")
+        + fmt_endpoint(remote, req, binding.requirer_endpoint)
+        + " --> ["
+        + Text(binding.interface, style="green")
+        + "] --> "
+        + fmt_endpoint(local, prov, binding.provider_endpoint)
     )
     c.print(txt)
 
