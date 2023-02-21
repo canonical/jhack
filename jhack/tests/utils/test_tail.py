@@ -39,11 +39,11 @@ def _mock_emit(
 
 
 def mock_uniter_events_only(value: bool = True):
-    if value:
-        jhack.utils.tail_charms.model_loglevel = lambda: "WARNING"
-        # this will make the parser only try to match "unit.myapp/0.juju-log Emitting Juju event..".
-    else:
-        jhack.utils.tail_charms.model_loglevel = lambda: "TRACE"
+    def _mock_loglevel(model=None):
+        return "WARNING" if value else "TRACE"
+
+    jhack.utils.tail_charms.model_loglevel = _mock_loglevel
+    # this will make the parser only try to match "unit.myapp/0.juju-log Emitting Juju event..".
 
 
 MOCK_JDL = {
