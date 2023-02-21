@@ -231,9 +231,9 @@ class IntegrationMatrix:
         rendered_matrix = [
             [
                 self._render_cell(provider_idx=prov_idx, requirer_idx=req_idx)
-                for prov_idx in range(len(apps))
+                for req_idx in range(len(apps))
             ]
-            for req_idx in range(len(apps))
+            for prov_idx in range(len(apps))
         ]
 
         for app, row in zip(apps, rendered_matrix):
