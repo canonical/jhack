@@ -252,7 +252,7 @@ class IntegrationMatrix:
     def render(self, refresh: bool = False):
         if refresh:
             self.refresh()
-        table = Table(title="integration  v0.1", expand=True)
+        table = Table(title="integration  v0.2", expand=True)
         table.add_column(r"providers\requirers")
 
         for app in self._apps:
