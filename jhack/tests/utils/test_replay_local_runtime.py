@@ -20,6 +20,8 @@ except ModuleNotFoundError:
 from ops.charm import CharmBase, CharmEvents
 from runtime import Runtime
 
+Runtime.install()
+
 MEMO_TOOLS_RESOURCES_FOLDER = Path(__file__).parent / "memo_tools_test_files"
 
 
