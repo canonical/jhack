@@ -5,15 +5,12 @@ import typer
 from jhack.helpers import (
     JPopen,
     get_current_model,
-    get_substrate,
     juju_agent_version,
     juju_log,
     show_unit,
 )
 from jhack.logger import logger as jhack_logger
 
-# note juju-exec is juju-run in juju<3.0
-_J_EXEC_CMD = "juju-exec" if juju_agent_version() >= (3, 0) else "juju-run"
 _RELATION_EVENT_SUFFIXES = {
     "-relation-changed",
     "-relation-created",
@@ -147,7 +144,14 @@ def _simulate_event(
     )
 
     _model = f"-m {model} " if model else ""
-    cmd = f"juju ssh {_model}{unit} /usr/bin/{_J_EXEC_CMD} -u {unit} {env} ./dispatch"
+
+    # note juju-exec is juju-run in juju<3.0
+    version = juju_agent_version()
+    if version is None:
+        raise RuntimeError("is juju installed?")
+
+    juju_exec_cmd = "juju-exec" if version >= (3, 0) else "juju-run"
+    cmd = f"juju ssh {_model}{unit} /usr/bin/{juju_exec_cmd} -u {unit} {env} ./dispatch"
 
     logger.info(cmd)
     proc = JPopen(cmd.split())

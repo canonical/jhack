@@ -142,9 +142,13 @@ def juju_client_version() -> Tuple[int, ...]:
 
 
 @lru_cache
-def juju_agent_version() -> Tuple[int, ...]:
-    proc = JPopen(f"juju controllers --format json".split())
-    raw = json.loads(proc.stdout.read().decode("utf-8"))
+def juju_agent_version() -> Optional[Tuple[int, ...]]:
+    try:
+        proc = JPopen(f"juju controllers --format json".split())
+        raw = json.loads(proc.stdout.read().decode("utf-8"))
+    except FileNotFoundError:
+        logger.error("juju not found")
+        return None
     current_ctrl = raw["current-controller"]
     agent_version = raw["controllers"][current_ctrl]["agent-version"]
     version = agent_version.split("-")[0]
