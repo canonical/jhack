@@ -161,7 +161,6 @@ def memo(
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-
             _MEMO_MODE: MemoModes = _load_memo_mode()
             input_serializer, output_serializer = _check_serializer(serializer)
 

@@ -101,7 +101,9 @@ def get_all_units(model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
     units = list(
-        chain(*(app.get("units", ()) for app in status.get("applications", {}).values()))
+        chain(
+            *(app.get("units", ()) for app in status.get("applications", {}).values())
+        )
     )
     return tuple(map(Target.from_name, units))
 

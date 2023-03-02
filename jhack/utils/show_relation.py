@@ -1,8 +1,9 @@
 import asyncio
 import re
+import sys
 import time
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import typer
 import yaml
@@ -123,7 +124,7 @@ def get_relation_by_endpoint(
         )
     ]
     if not peer:
-        matches = [r for r in matches if remote_obj in r["related-units"]]
+        matches = [r for r in matches if remote_obj in r.get("related-units", set())]
 
     if not matches:
         raise ValueError(
@@ -207,7 +208,7 @@ def get_app_name_and_units(
     meta = get_metadata_from_status(
         app_name, relation_name, other_app_name, other_relation_name, model=model
     )
-    if unit_id:
+    if unit_id is not None:
         units = (int(unit_id),)
     else:
         units = meta.units
@@ -253,6 +254,9 @@ def get_content(
         units_data, app_data, r_id = get_databags(
             unit_name, other_unit_name, endpoint, other_endpoint, model=model, peer=True
         )
+        if not include_default_juju_keys:
+            for unit_data in units_data.values():
+                purge(unit_data)
     else:
         units_data = {}
         r_id = None
@@ -292,11 +296,10 @@ def get_databags(
 
     Given a remote unit and the remote endpoint name.
     """
-    local_data = get_unit_info(local_unit, model=model)
     data = get_unit_info(remote_unit, model=model)
     relation_info = data.get("relation-info")
     if not relation_info:
-        raise RuntimeError(f"{remote_unit} has no relations")
+        sys.exit(f"{remote_unit} has no relations, or the unit is still allocating.")
 
     raw_data = get_relation_by_endpoint(
         relation_info, local_endpoint, remote_endpoint, local_unit, peer=peer
@@ -307,12 +310,12 @@ def get_databags(
             local_unit: raw_data["local-unit"]["data"],
             **{
                 u: raw_data["related-units"][u]["data"]
-                for u in raw_data["related-units"]
+                for u in raw_data.get("related-units", set())
             },
         }
     else:
         unit_data = raw_data["related-units"][local_unit]["data"]
-    app_data = raw_data["application-data"]
+    app_data = raw_data.get("application-data", {})
     return unit_data, app_data, raw_data["relation-id"]
 
 

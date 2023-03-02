@@ -62,7 +62,9 @@ def _gather_endpoints(
 
     all_apps = status.get("applications")
     if not all_apps:
-        sys.exit(f"No applications found in model {model or '<current model>'}; does the model exist?")
+        sys.exit(
+            f"No applications found in model {model or '<current model>'}; does the model exist?"
+        )
 
     for app_name, app in all_apps.items():
         if apps and app_name not in apps:

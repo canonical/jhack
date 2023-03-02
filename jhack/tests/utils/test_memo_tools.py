@@ -386,7 +386,6 @@ def test_memo_pebble_push():
                 group_id=42,
                 group=42,
             ):
-
                 nonlocal stored
                 stored = source.read()
                 return stored

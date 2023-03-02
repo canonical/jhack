@@ -53,7 +53,6 @@ def update(
 
         # remove src and lib
         for source, destination in zip(src, dst):
-
             build_dst = build_dir / destination
             # ensure the destination is **gone**
             if dry_run:

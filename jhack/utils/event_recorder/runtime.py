@@ -58,7 +58,6 @@ class Runtime:
         actions: Optional[Dict[str, Any]] = None,
         install: bool = False,
     ):
-
         self._charm_type = charm_type
         local_db_path = local_db_path or Path(
             tempfile.NamedTemporaryFile(delete=False).name
@@ -272,7 +271,6 @@ def live_unit_runtime(
     charm_cls_name: str,
     patch: Callable[["CharmType"], "CharmType"] = lambda x: x,
 ) -> ContextManager[Runtime]:
-
     sys.path.extend((str(local_charm_src / "src"), str(local_charm_src / "lib")))
 
     ldict = {}

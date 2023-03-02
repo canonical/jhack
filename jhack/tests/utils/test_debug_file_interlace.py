@@ -28,7 +28,6 @@ mocks_dir = Path(__file__).parent / "tail_mocks"
     ),
 )
 def test_debug_file_interlace_read(input_files, expected_output_file):
-
     dli = DebugLogInterlacer(input_files)
 
     lines = []
