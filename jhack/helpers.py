@@ -4,10 +4,12 @@ import json as jsn
 import os
 import subprocess
 import tempfile
+from dataclasses import dataclass
 from functools import lru_cache
+from itertools import chain
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
-from typing import Iterable, List, Literal, Optional, Tuple
+from typing import Iterable, List, Literal, Optional, Sequence, Tuple
 
 import typer
 
@@ -74,9 +76,9 @@ def _JPopen(args: Tuple[str], wait: bool, **kwargs):  # noqa
     # Env-passing-down Popen
     proc = subprocess.Popen(
         args,
-        env=kwargs.pop("env", os.environ),
-        stderr=kwargs.pop("stderr", PIPE),
-        stdout=kwargs.pop("stdout", PIPE),
+        env=kwargs.get("env", os.environ),
+        stderr=kwargs.get("stderr", PIPE),
+        stdout=kwargs.get("stdout", PIPE),
         **kwargs,
     )
     if wait:
@@ -84,7 +86,7 @@ def _JPopen(args: Tuple[str], wait: bool, **kwargs):  # noqa
 
     # this will presumably only ever branch if wait==True
     if proc.returncode not in {0, None}:
-        msg = f"failed to invoke juju command ({args}, {kwargs})"
+        msg = f"failed to invoke juju command ({' '.join(args)!r}, {kwargs}); exited with {proc.returncode}"
         if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
             msg += (
                 " If you see an ERROR above saying something like "
@@ -237,5 +239,49 @@ def fetch_file(
     local_path.write_bytes(raw)
 
 
-if __name__ == "__main__":
-    get_substrate()
+@dataclass
+class Target:
+    app: str
+    unit: int
+    leader: bool = False
+
+    @staticmethod
+    def from_name(name: str):
+        if "/" not in name:
+            logger.warning(
+                "invalid target name: expected `<app_name>/<unit_id>`; "
+                f"got {name!r}."
+            )
+        app, unit_ = name.split("/")
+        leader = unit_.endswith("*")
+        unit = unit_.strip("*")
+        return Target(app, unit, leader=leader)
+
+    @property
+    def unit_name(self):
+        return f"{self.app}/{self.unit}"
+
+    def __hash__(self):
+        return hash((self.app, self.unit, self.leader))
+
+
+def get_all_units(
+    model: str = None, filter_apps: Iterable[str] = None
+) -> Sequence[Target]:
+    def _filter(app):
+        if filter_apps:
+            return app in filter_apps
+        return True
+
+    status = juju_status(json=True, model=model)
+    # sub charms don't have units or applications
+    units = list(
+        chain(
+            *(
+                app.get("units", ())
+                for app_name, app in status.get("applications", {}).items()
+                if _filter(app_name)
+            )
+        )
+    )
+    return tuple(map(Target.from_name, units))

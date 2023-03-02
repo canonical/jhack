@@ -7,7 +7,8 @@ import pytest
 import jhack.utils.tail_charms
 
 jhack.utils.tail_charms.MODEL_LOGLEVEL = "DEBUG"
-from jhack.utils.tail_charms import Processor, Target, _tail_events
+from jhack.helpers import Target
+from jhack.utils.tail_charms import Processor, _tail_events
 
 
 def _mock_emit(
