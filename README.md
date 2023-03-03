@@ -24,6 +24,9 @@ Clone the repo
 
     $ sudo snap install --edge jhack
     $ sudo snap connect jhack:dot-local-share-juju snapd
+    $ sudo snap connect jhack:ssh-read snapd
+
+The last binding is only necessary if you work on LXD models and use commands that rely on `juju ssh/juju scp`.
 
 #### Usage:
 
