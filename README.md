@@ -712,3 +712,12 @@ have the same role (since juju will allow relating over those... won't it?)
 ## clear
 
 `jhack imatrix clear` is the opposite of fill: it will attempt to remove all relations in the matrix.
+
+
+# Development
+
+How to build:
+
+`pip install build`
+
+`python -m build`
