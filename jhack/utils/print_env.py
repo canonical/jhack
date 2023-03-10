@@ -1,33 +1,27 @@
+import csv
 import subprocess
 import textwrap
 
 NO_VERSION = "Not Installed."
 
 
-def exists(command: str):
-    p = subprocess.run(["which", command], capture_output=True)
-    return True if p.returncode == 0 else False
-
-
 def get_output(command: str):
     p = subprocess.run(command.split(), capture_output=True, text=True)
-    return p.stdout.strip()
+    return p.stdout.strip() if p.returncode != 127 else None
+
+
+def get_os_release():
+    with open("/etc/os-release") as f:
+        return dict(csv.reader(f, delimiter="="))
 
 
 def print_env():
     """Print the details of the juju environment for use in bug reports."""
-    if exists("juju"):
-        juju_version = get_output("juju --version")
-    else:
-        juju_version = NO_VERSION
-    if exists("microk8s"):
-        mk8s_version = get_output("microk8s version")
-    else:
-        mk8s_version = NO_VERSION
-    if exists("lxd"):
-        lxd_version = get_output("lxd --version")
-    else:
-        lxd_version = NO_VERSION
+    juju_version = get_output("juju --version") or NO_VERSION
+    mk8s_version = get_output("microk8s version") or NO_VERSION
+    lxd_version = get_output("lxd --version") or NO_VERSION
+    os_version = get_os_release()["PRETTY_NAME"]
+    kernel_info = get_output("uname -srp")
 
     print(
         textwrap.dedent(
@@ -37,6 +31,9 @@ def print_env():
             microk8s:
                 {mk8s_version}
             lxd:
-                {lxd_version}"""
+                {lxd_version}
+            os-info:
+                {os_version}
+                {kernel_info}"""
         )
     )
