@@ -24,6 +24,7 @@ Clone the repo
 
     $ sudo snap install --edge jhack
     $ sudo snap connect jhack:dot-local-share-juju snapd
+    $ sudo snap connect jhack:ssh-read snapd  # if you need ssh on lxd
 
 #### Usage:
 
@@ -33,6 +34,13 @@ for example:
 
     $ jhack utils tail
     $ jhack model rm
+
+
+#### Building:
+
+`pip install build`
+
+`python -m build`
 
 Happy hacking!
 
@@ -712,12 +720,3 @@ have the same role (since juju will allow relating over those... won't it?)
 ## clear
 
 `jhack imatrix clear` is the opposite of fill: it will attempt to remove all relations in the matrix.
-
-
-# Development
-
-How to build:
-
-`pip install build`
-
-`python -m build`
