@@ -44,6 +44,7 @@ def main():
     )
     from jhack.utils.ffwd import fast_forward
     from jhack.utils.nuke import nuke
+    from jhack.utils.print_env import print_env
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event
@@ -63,6 +64,7 @@ def main():
     utils.command(name="unbork-juju")(unbork_juju)
     utils.command(name="fire", no_args_is_help=True)(simulate_event)
     utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
+    utils.command(name="print-env")(print_env)
 
     jinx = typer.Typer(
         name="jinx",
@@ -112,6 +114,7 @@ def main():
     app.command(name="unbork-juju")(unbork_juju)
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     app.command(name="unleash", hidden=True)(vanity)
+    app.command(name="print-env")(print_env)
 
     conf = typer.Typer(
         name="conf",
