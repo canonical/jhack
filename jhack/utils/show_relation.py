@@ -20,7 +20,7 @@ _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 
 
 class RelationType(str, Enum):
-    normal = 'normal'
+    regular = 'regular'
     subordinate = 'subordinate'
     peer = 'peer'
 
@@ -241,7 +241,7 @@ def get_content(
     other_obj,
     include_default_juju_keys: bool = False,
     model: str = None,
-    relation_type: RelationType = RelationType.normal,
+    relation_type: RelationType = RelationType.regular,
 ) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     try:
@@ -306,7 +306,7 @@ def get_content(
                 purge(unit_data)
     elif relation_type is RelationType.subordinate:
         raise NotImplementedError()
-    elif relation_type is RelationType.normal:
+    elif relation_type is RelationType.regular:
         units_data = {}
         r_id = None
         for unit_id in units:
@@ -547,7 +547,7 @@ async def render_relation(
     from rich.table import Table  # noqa
     from rich.text import Text  # noqa
 
-    table = Table(title="relation data v0.3")
+    table = Table(title="relation data v0.4")
 
     table.add_column(
         justify="left",
@@ -569,7 +569,7 @@ async def render_relation(
         *(Text(str(entity.meta.leader_id), style="red") for entity in entities),
     )
 
-    # add annotation for non-normal relation types
+    # add annotation for non-regular relation types
     if relation_type is RelationType.peer:
         table.add_row(Text("type", style="pink"), Text("peer", style="bold cyan"))
     elif relation_type is RelationType.subordinate:
