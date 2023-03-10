@@ -3,6 +3,8 @@ import re
 import sys
 import time
 from dataclasses import dataclass
+from enum import Enum
+from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
 
 import typer
@@ -15,6 +17,12 @@ logger = logger.getChild(__file__)
 
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
+
+
+class RelationType(str, Enum):
+    normal = 'normal'
+    subordinate = 'subordinate'
+    peer = 'peer'
 
 
 def get_interface(
@@ -50,6 +58,7 @@ def purge(data: dict):
             del data[key]
 
 
+@lru_cache
 def _juju_status(*args, **kwargs):
     # to facilitate mocking in utests
     return juju_status(*args, **kwargs)
@@ -163,14 +172,26 @@ def get_metadata_from_status(
     app_name, relation_name, other_app_name, other_relation_name, model: str = None
 ):
     # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status = _juju_status(app_name, model=model, json=True)
+    status = _juju_status(model=model, json=True)
     # machine status json output apparently has no 'scale'... -_-
-    scale = len(status["applications"][app_name]["units"])
+    app_status = status["applications"][app_name]
+    if app_status.get('subordinate-to'):
+        units = {}
+        for other_unit in status["applications"][other_app_name]['units'].values():
+            subs = other_unit.get('subordinates')
+            for subn, subv in subs.items():
+                if subn.startswith(app_name):
+                    units[subn] = subv
+
+    else:
+        units = app_status["units"]
+
+    scale = len(units)
 
     leader_id: int = None
     unit_ids: List[int] = []
 
-    for u, v in status["applications"][app_name]["units"].items():
+    for u, v in units.items():
         unit_id = int(u.split("/")[1])
         if v.get("leader", False):
             leader_id = unit_id
@@ -220,11 +241,11 @@ def get_content(
     other_obj,
     include_default_juju_keys: bool = False,
     model: str = None,
-    peer: bool = False,
+    relation_type: RelationType = RelationType.normal,
 ) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     try:
-        url, endpoint = obj.split(":")
+        this_url, this_endpoint = obj.split(":")
         other_url, other_endpoint = other_obj.split(":")
     except ValueError:
         raise ValueError(
@@ -233,37 +254,65 @@ def get_content(
         )
 
     other_app_name, _ = other_url.split("/") if "/" in other_url else (other_url, None)
+    this_app_name, _ = this_url.split("/") if "/" in this_url else (this_url, None)
 
     app_name, units, meta = get_app_name_and_units(
-        url, endpoint, other_app_name, other_endpoint, model
+        this_url, this_endpoint, other_app_name, other_endpoint, model
     )
 
     # in k8s there's always a 0 unit, in machine that's not the case.
     # so even though we need 'any' remote unit name, we still need to query the status
     # to find out what units there are.
     status = _juju_status(other_app_name, model=model, json=True)
-    other_unit_name = next(iter(status["applications"][other_app_name]["units"]))
-    # we might have a different number of units and other units, and it doesn't
-    # matter which 'other' we pass to get the databags for 'this one'.
+
+    other_app_status = status["applications"][other_app_name]
+    if primaries := other_app_status.get('subordinate-to'):
+        # the remote end is a subordinate!
+        # primary is our this_url.
+        if this_app_name in primaries:
+            # this app is primary, other is subordinate
+            sub_unit_found = False
+            for unit in status['applications'][this_url]['units'].values():
+                subs = unit['subordinates']
+                for sub in subs:
+                    if sub.startswith(other_app_name + '/'):
+                        sub_unit_found = sub
+                        break
+                if sub_unit_found:
+                    break
+
+            if not sub_unit_found:
+                raise RuntimeError(f"unable to find primary with a subordinate unit of {other_app_name}")
+
+        else:
+            raise NotImplementedError('relations between subordinates? Is that even a thing?')
+
+        other_unit_name = sub_unit_found
+    else:
+        other_unit_name = next(iter(other_app_status["units"]))
+        # we might have a different number of units and other units, and it doesn't
+        # matter which 'other' we pass to get the databags for 'this one'.
 
     app_data = None
 
-    if peer:
+    if relation_type is RelationType.peer:
         # in peer relations, show-unit luckily reports 'local-unit', so we're good.
         unit_name = f"{app_name}/{units[0]}"  # any unit will do
         units_data, app_data, r_id = get_databags(
-            unit_name, other_unit_name, endpoint, other_endpoint, model=model, peer=True
+            unit_name, other_unit_name, this_endpoint, other_endpoint, model=model, peer=True
         )
         if not include_default_juju_keys:
             for unit_data in units_data.values():
                 purge(unit_data)
-    else:
+    elif relation_type is RelationType.subordinate:
+        raise NotImplementedError()
+    elif relation_type is RelationType.normal:
         units_data = {}
         r_id = None
         for unit_id in units:
             unit_name = f"{app_name}/{unit_id}"
             unit_data, app_data, r_id_ = get_databags(
-                unit_name, other_unit_name, endpoint, other_endpoint, model=model
+                unit_name, other_unit_name, this_endpoint, other_endpoint, model=model
             )
 
             if r_id is not None:
@@ -273,11 +322,13 @@ def get_content(
             if not include_default_juju_keys:
                 purge(unit_data)
             units_data[unit_id] = unit_data
+    else:
+        raise TypeError(relation_type)
 
     return AppRelationData(
         app_name=app_name,
         meta=meta,
-        endpoint=endpoint,
+        endpoint=this_endpoint,
         application_data=app_data,
         units_data=units_data,
         relation_id=r_id,
@@ -329,8 +380,9 @@ def get_peer_relation_data(
     *, endpoint: str, include_default_juju_keys: bool = False, model: str = None
 ):
     return get_content(
-        endpoint, endpoint, include_default_juju_keys, model=model, peer=True
+        endpoint, endpoint, include_default_juju_keys, model=model, relation_type=RelationType.peer
     )
+
 
 
 def get_relation_data(
@@ -436,7 +488,7 @@ async def render_relation(
             "Invalid usage: provide `n` or " "(`endpoint1` + `endpoint2`)."
         )
 
-    is_peer = False
+    relation_type = None  # unknown
 
     if n is not None:
         relations = get_relations(model)
@@ -462,9 +514,10 @@ async def render_relation(
 
         if relation.type != "peer":
             endpoint2 = relation.requirer
+            relation_type = RelationType(relation.type)
 
     if endpoint1 and endpoint2 is None:
-        is_peer = True
+        relation_type = RelationType.peer
 
         data = get_peer_relation_data(
             endpoint=endpoint1,
@@ -482,7 +535,7 @@ async def render_relation(
             provider_endpoint=endpoint1,
             requirer_endpoint=endpoint2,
             include_default_juju_keys=include_default_juju_keys,
-            model=model,
+            model=model
         )
 
         # same as provider's
@@ -515,8 +568,13 @@ async def render_relation(
         "leader unit",
         *(Text(str(entity.meta.leader_id), style="red") for entity in entities),
     )
-    if is_peer:
+
+    # add annotation for non-normal relation types
+    if relation_type is RelationType.peer:
         table.add_row(Text("type", style="pink"), Text("peer", style="bold cyan"))
+    elif relation_type is RelationType.subordinate:
+        table.add_row(Text("type", style="pink"), Text("subordinate", style="bold orange"))
+
     table.rows[-1].end_section = True
 
     table.add_row(
@@ -656,4 +714,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(endpoint1="tester/0:replicas", watch=True)
+    _sync_show_relation(n=1)
