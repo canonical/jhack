@@ -547,7 +547,9 @@ class Processor:
             try:
                 idx = raw_table.events.index(msg.event)
             except ValueError:
-                logger.error(f'{msg.event} not found in raw_table. Ignoring tags {msg.tags}...')
+                logger.error(
+                    f"{msg.event} not found in raw_table. Ignoring tags {msg.tags}..."
+                )
                 return
             # copy over the tags
             raw_table.msgs[idx].tags = msg.tags
