@@ -37,6 +37,13 @@ for example:
     $ jhack utils tail
     $ jhack model rm
 
+
+#### Building:
+
+`pip install build`
+
+`python -m build`
+
 Happy hacking!
 
 # utils
