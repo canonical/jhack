@@ -544,7 +544,11 @@ class Processor:
         if "fire" in msg.tags:
             # the previous event of this type was fired by jhack.
             raw_table = self._raw_tables[msg.unit]
-            idx = raw_table.events.index(msg.event)
+            try:
+                idx = raw_table.events.index(msg.event)
+            except ValueError:
+                logger.error(f'{msg.event} not found in raw_table. Ignoring tags {msg.tags}...')
+                return
             # copy over the tags
             raw_table.msgs[idx].tags = msg.tags
 
