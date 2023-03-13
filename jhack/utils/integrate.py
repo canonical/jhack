@@ -599,9 +599,18 @@ def _cmr(remote, local=None, dry_run: bool = False):
     )
     c.print(txt)
 
+    controller_prefix = ""
+    controller = ""
+    if ':' in remote:
+        controller_name, model = remote.split(':')
+        controller_prefix = f"{controller_name}:"
+        controller = f" -c {controller_name}"
+    else:
+        model = remote
+
     script = [
-        f"juju offer {remote}.{req}:{binding.requirer_endpoint}",
-        f"juju consume admin/{remote}.{req}",
+        f"juju offer{controller} {model}.{req}:{binding.requirer_endpoint}",
+        f"juju consume {controller_prefix}admin/{model}.{req}",
         f"juju relate {req}:{binding.requirer_endpoint} {prov}:{binding.provider_endpoint}",
     ]
 
