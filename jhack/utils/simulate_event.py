@@ -5,6 +5,7 @@ import typer
 from jhack.helpers import (
     JPopen,
     get_current_model,
+    get_substrate,
     juju_agent_version,
     juju_log,
     show_unit,
@@ -150,8 +151,11 @@ def _simulate_event(
     if version is None:
         raise RuntimeError("is juju installed?")
 
-    juju_exec_cmd = "juju-exec" if version >= (3, 0) else "juju-run"
-    cmd = f"juju ssh {_model}{unit} /usr/bin/{juju_exec_cmd} -u {unit} {env} ./dispatch"
+    juju_exec_cmd = "/usr/bin/" + ("juju-exec" if version >= (3, 0) else "juju-run")
+    if get_substrate(_model) != "k8s":
+        juju_exec_cmd = "sudo " + juju_exec_cmd
+
+    cmd = f"juju ssh {_model}{unit} {juju_exec_cmd} -u {unit} {env} ./dispatch"
 
     logger.info(cmd)
     proc = JPopen(cmd.split())
