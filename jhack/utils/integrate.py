@@ -70,9 +70,21 @@ def _gather_endpoints(
         if apps and app_name not in apps:
             continue
 
+        if app['application-status']['current'] == 'terminated':
+            # https://bugs.launchpad.net/juju/+bug/1977582 app killed by juju/pebble, juju app in terminated status.
+            logger.warning(f'Skipping endpoint collection from application {app_name} as it is in `terminated` state.')
+            continue
+
         app_eps = {}
         unit = next(iter(app["units"]))
-        metadata = fetch_file(unit, "metadata.yaml", model=model)
+        try:
+            metadata = fetch_file(unit, "metadata.yaml", model=model)
+        except RuntimeError as e:
+            logger.error(f'Failed to fetch metadata.yaml from {unit} in model={model or "<current model>"}\n\n'
+                         f'{e}\n\n'
+                         f'APP ={app}')
+            continue
+
         meta = yaml.safe_load(metadata)
 
         for role in ("requires", "provides"):
@@ -605,7 +617,7 @@ def _cmr(remote, local=None, dry_run: bool = False):
 
 if __name__ == "__main__":
     mtrx = IntegrationMatrix(include_peers=True)
-    mtrx.disconnect()
+    # mtrx.disconnect()
     # mtrx.watch()
     # mtrx.pprint()
     mtrx.pprint()
