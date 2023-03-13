@@ -114,7 +114,7 @@ def main():
     app.command(name="unbork-juju")(unbork_juju)
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     app.command(name="unleash", hidden=True)(vanity)
-    app.command(name="print-env")(print_env)
+    app.command(name="jenv")(print_env)
 
     conf = typer.Typer(
         name="conf",
