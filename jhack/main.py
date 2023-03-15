@@ -34,6 +34,7 @@ def main():
     from jhack.jinx.install import install as jinx_install
     from jhack.jinx.pack import pack as jinx_pack
     from jhack.logger import LOGLEVEL, logger
+    from jhack.snap.push_snap import push_snap
     from jhack.utils import integrate
     from jhack.utils.event_recorder.client import (
         dump_db,
@@ -123,12 +124,20 @@ def main():
     conf.command(name="default")(print_defaults)
     conf.command(name="current")(print_current_config)
 
+    snap = typer.Typer(
+        name="snap",
+        help="""Snap utilities.""",
+        no_args_is_help=True,
+    )
+    snap.command(name="push")(push_snap)
+
     app.add_typer(conf, no_args_is_help=True)
     app.add_typer(jinx, no_args_is_help=True)
     app.add_typer(charm, no_args_is_help=True)
     app.add_typer(utils, no_args_is_help=True)
     app.add_typer(replay, no_args_is_help=True)
     app.add_typer(integration_matrix, no_args_is_help=True)
+    app.add_typer(snap, no_args_is_help=True)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):

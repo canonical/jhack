@@ -5,7 +5,6 @@ import sys
 import time
 from collections import Counter
 from dataclasses import dataclass, field
-from itertools import chain
 from pathlib import Path
 from typing import (
     Callable,
@@ -29,7 +28,7 @@ from rich.style import Style
 from rich.table import Column, Table
 from rich.text import Text
 
-from jhack.helpers import JPopen, juju_status
+from jhack.helpers import JPopen, Target, get_all_units
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
@@ -69,43 +68,6 @@ def model_loglevel(model: str = None):
             f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
         )
     return "WARNING"  # the default
-
-
-@dataclass
-class Target:
-    app: str
-    unit: int
-    leader: bool = False
-
-    @staticmethod
-    def from_name(name: str):
-        if "/" not in name:
-            logger.warning(
-                "invalid target name: expected `<app_name>/<unit_id>`; "
-                f"got {name!r}."
-            )
-        app, unit_ = name.split("/")
-        leader = unit_.endswith("*")
-        unit = unit_.strip("*")
-        return Target(app, unit, leader=leader)
-
-    @property
-    def unit_name(self):
-        return f"{self.app}/{self.unit}"
-
-    def __hash__(self):
-        return hash((self.app, self.unit, self.leader))
-
-
-def get_all_units(model: str = None) -> Sequence[Target]:
-    status = juju_status(json=True, model=model)
-    # sub charms don't have units or applications
-    units = list(
-        chain(
-            *(app.get("units", ()) for app in status.get("applications", {}).values())
-        )
-    )
-    return tuple(map(Target.from_name, units))
 
 
 def parse_targets(targets: str = None, model: str = None) -> Sequence[Target]:
