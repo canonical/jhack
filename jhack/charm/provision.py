@@ -6,13 +6,12 @@ from typing import Iterable, Optional, Union
 
 import typer
 
-from jhack.config import JHACK_DATA_PATH
+from jhack.config import get_jhack_data_path
 from jhack.helpers import JPopen, is_k8s_model, juju_status
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("provision")
 
-PROV_SCRIPT_ROOT = JHACK_DATA_PATH / "cprov"
 # we need the script to live in a location juju can access (juju 3.0 is strictly
 # confined, so this is the only safe location for now...)
 PROVISION_SCRIPT_TEMPFILE_PATH = Path(
@@ -30,7 +29,8 @@ def _get_script_temporary_file(script: Union[str, Path]) -> Path:
         logger.debug(f"loaded script file {script}")
         tf_path.write_text(pth.read_text())
     else:
-        script_from_root = PROV_SCRIPT_ROOT / script
+        prov_root = get_jhack_data_path() / "cprov"
+        script_from_root = prov_root / script
         if script_from_root.exists() and script_from_root.is_file():
             logger.debug(f"found {script} in `~/.cprov/`")
             tf_path.write_text(script_from_root.read_text())
