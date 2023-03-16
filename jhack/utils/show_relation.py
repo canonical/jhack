@@ -171,8 +171,7 @@ class AppRelationData:
 def get_metadata_from_status(
     app_name, relation_name, other_app_name, other_relation_name, model: str = None
 ):
-    # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status = _juju_status(model=model, json=True)
+    status = _juju_status(app_name, model=model, json=True)
     # machine status json output apparently has no 'scale'... -_-
     app_status = status["applications"][app_name]
     if app_status.get('subordinate-to'):
