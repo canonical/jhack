@@ -145,6 +145,10 @@ class EventLogMsg:
     event: str
     mocked: bool
 
+    event_cls: str = None
+    charm_name: str = None
+    n: int = None
+
     tags: Tuple[str] = ()
 
     # we don't have any use for these, and they're only present if this event
@@ -221,6 +225,7 @@ _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
 _operator_event_color = Color.from_rgb(252, 115, 3)
+_custom_event_color = Color.from_rgb(20, 50, 240)
 _jhack_event_color = Color.from_rgb(200, 200, 50)
 _jhack_fire_event_color = Color.from_rgb(250, 200, 50)
 _jhack_replay_event_color = Color.from_rgb(100, 100, 150)
@@ -262,9 +267,16 @@ class LogLineParser:
     event_deferred = re.compile(base_pattern + defer_suffix)
     event_deferred_from_relation = re.compile(base_relation_pattern + defer_suffix)
 
-    reemitted_suffix = "Re-emitting " + event_repr
-    event_reemitted = re.compile(base_pattern + reemitted_suffix)
-    event_reemitted_from_relation = re.compile(base_relation_pattern + reemitted_suffix)
+    custom_event_suffix = f"Emitting custom event " + event_repr
+    custom_event = re.compile(base_pattern + custom_event_suffix)  # ops >= 2.1
+
+    reemitted_suffix_old = "Re-emitting " + event_repr  # ops < 2.1
+    event_reemitted_old = re.compile(base_pattern + reemitted_suffix_old)
+    event_reemitted_from_relation_old = re.compile(base_relation_pattern + reemitted_suffix_old)
+
+    reemitted_suffix_new = "Re-emitting deferred event " + event_repr  # ops >= 2.1
+    event_reemitted_new = re.compile(base_pattern + reemitted_suffix_new)
+    event_reemitted_from_relation_new = re.compile(base_relation_pattern + reemitted_suffix_new)
 
     uniter_event = re.compile(
         '^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook \(via hook dispatching script: dispatch\)'
@@ -274,6 +286,7 @@ class LogLineParser:
         operator_event: ("operator",),
         event_fired_jhack: ("jhack", "fire"),
         event_replayed_jhack: ("jhack", "replay"),
+        custom_event: ("custom",)
     }
 
     def __init__(self, model: str = None):
@@ -320,6 +333,7 @@ class LogLineParser:
             self.event_emitted,
             self.event_emitted_from_relation,
             self.operator_event,
+            self.custom_event
         )
 
     def match_jhack_modifiers(self, msg):
@@ -334,7 +348,8 @@ class LogLineParser:
         if self.uniter_events_only:
             return None
         return self._match(
-            msg, self.event_reemitted, self.event_reemitted_from_relation
+            msg, self.event_reemitted_old, self.event_reemitted_from_relation_old,
+            self.event_reemitted_new, self.event_reemitted_from_relation_new
         )
 
 
@@ -343,15 +358,15 @@ class Processor:
     #  uniter_event does? OF Version?
 
     def __init__(
-        self,
-        targets: Iterable[Target],
-        add_new_targets: bool = True,
-        history_length: int = 10,
-        show_ns: bool = True,
-        color: _Color = "auto",
-        show_defer: bool = False,
-        event_filter_re: re.Pattern = None,
-        model: str = None,
+            self,
+            targets: Iterable[Target],
+            add_new_targets: bool = True,
+            history_length: int = 10,
+            show_ns: bool = True,
+            color: _Color = "auto",
+            show_defer: bool = False,
+            event_filter_re: re.Pattern = None,
+            model: str = None,
     ):
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
@@ -640,6 +655,8 @@ class Processor:
 
     def _get_event_color(self, msg: EventLogMsg) -> Color:
         event = msg.event
+        if "custom" in msg.tags:
+            return _custom_event_color
         if "operator" in msg.tags:
             return _operator_event_color
         if "jhack" in msg.tags:
@@ -702,7 +719,7 @@ class Processor:
             )
             raw_table = raw_tables[target.unit_name]
             for i, (msg, event, n) in enumerate(
-                zip(raw_table.msgs, raw_table.events, raw_table.ns)
+                    zip(raw_table.msgs, raw_table.events, raw_table.ns)
             ):
                 rndr = (
                     Text(
@@ -784,9 +801,9 @@ class Processor:
                 # are we deferring the last event?
                 previous_msg = raw_table.msgs[0]
                 if (
-                    previous_msg
-                    and previous_msg.event == msg.event
-                    and previous_msg.unit == msg.unit
+                        previous_msg
+                        and previous_msg.event == msg.event
+                        and previous_msg.unit == msg.unit
                 ):
                     previous_msg_idx = 0
                 else:
@@ -823,10 +840,10 @@ class Processor:
         logger.info("cropping table")
         lst: List
         for lst in (
-            self._timestamps,
-            *(raw.deferrals for raw in self._raw_tables.values()),
-            *(raw.events for raw in self._raw_tables.values()),
-            *(raw.ns for raw in self._raw_tables.values()),
+                self._timestamps,
+                *(raw.deferrals for raw in self._raw_tables.values()),
+                *(raw.events for raw in self._raw_tables.values()),
+                *(raw.ns for raw in self._raw_tables.values()),
         ):
             while len(lst) > self.history_length:
                 lst.pop()  # pop first
@@ -870,68 +887,68 @@ class Processor:
 
 
 def tail_events(
-    targets: str = typer.Argument(
-        None,
-        help="Semicolon-separated list of targets to follow. "
-        "Example: 'foo/0;foo/1;bar/2'. By default, it will follow all "
-        "available targets.",
-    ),
-    add_new_targets: bool = typer.Option(
-        True,
-        "--add",
-        "-a",
-        help="Keep adding new units as they appear. Can't be used "
-        "in combination with nonempty targets arg. ",
-    ),
-    level: LEVELS = "DEBUG",
-    replay: bool = typer.Option(
-        False, "--replay", "-r", help="Keep listening from beginning of time."
-    ),
-    dry_run: bool = typer.Option(
-        False, help="Only print what you would have done, exit."
-    ),
-    framerate: float = typer.Option(0.5, help="Framerate cap."),
-    length: int = typer.Option(
-        10, "-l", "--length", help="Maximum history length to show."
-    ),
-    show_defer: bool = typer.Option(
-        False, "-d", "--show-defer", help="Visualize the defer graph."
-    ),
-    show_ns: bool = typer.Option(
-        False,
-        "-n",
-        "--show-defer-id",
-        help="Prefix deferred events with their deferral ID. "
-        "Only applicable if show_defer=True.",
-    ),
-    watch: bool = typer.Option(True, "--watch", help="Keep listening."),
-    color: str = typer.Option(
-        "auto",
-        "-c",
-        "--color",
-        help="Color scheme to adopt. Supported options: "
-        "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
-        "no: disable colors entirely.",
-    ),
-    file: Optional[List[str]] = typer.Option(
-        [],
-        help="Text file with logs from `juju debug-log`.  Can be used in place of streaming "
-        "logs directly from juju, and can be set multiple times to read from multiple "
-        "files.  File must be exported from juju using `juju debug-log --date` to allow"
-        " for proper sorting",
-    ),
-    filter_events: Optional[str] = typer.Option(
-        None,
-        "-f",
-        "--filter",
-        help="Python-style regex pattern to filter events by name with."
-        "Examples: "
-        "  -f '(?!update)' --> all events except those starting with 'update'."
-        "  -f 'ingress' --> all events starting with 'ingress'.",
-    ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
+        targets: str = typer.Argument(
+            None,
+            help="Semicolon-separated list of targets to follow. "
+                 "Example: 'foo/0;foo/1;bar/2'. By default, it will follow all "
+                 "available targets.",
+        ),
+        add_new_targets: bool = typer.Option(
+            True,
+            "--add",
+            "-a",
+            help="Keep adding new units as they appear. Can't be used "
+                 "in combination with nonempty targets arg. ",
+        ),
+        level: LEVELS = "DEBUG",
+        replay: bool = typer.Option(
+            False, "--replay", "-r", help="Start from the beginning of time."
+        ),
+        dry_run: bool = typer.Option(
+            False, help="Only print what you would have done, exit."
+        ),
+        framerate: float = typer.Option(0.5, help="Framerate cap."),
+        length: int = typer.Option(
+            10, "-l", "--length", help="Maximum history length to show."
+        ),
+        show_defer: bool = typer.Option(
+            False, "-d", "--show-defer", help="Visualize the defer graph."
+        ),
+        show_ns: bool = typer.Option(
+            False,
+            "-n",
+            "--show-defer-id",
+            help="Prefix deferred events with their deferral ID. "
+                 "Only applicable if show_defer=True.",
+        ),
+        watch: bool = typer.Option(True, "--watch", help="Keep listening."),
+        color: str = typer.Option(
+            "auto",
+            "-c",
+            "--color",
+            help="Color scheme to adopt. Supported options: "
+                 "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
+                 "no: disable colors entirely.",
+        ),
+        file: Optional[List[str]] = typer.Option(
+            [],
+            help="Text file with logs from `juju debug-log`.  Can be used in place of streaming "
+                 "logs directly from juju, and can be set multiple times to read from multiple "
+                 "files.  File must be exported from juju using `juju debug-log --date` to allow"
+                 " for proper sorting",
+        ),
+        filter_events: Optional[str] = typer.Option(
+            None,
+            "-f",
+            "--filter",
+            help="Python-style regex pattern to filter events by name with."
+                 "Examples: "
+                 "  -f '(?!update)' --> all events except those starting with 'update'."
+                 "  -f 'ingress' --> all events starting with 'ingress'.",
+        ),
+        model: str = typer.Option(
+            None, "-m", "--model", help="Which model to apply the command to."
+        ),
 ):
     """Pretty-print a table with the events that are fired on juju units
     in the current model.
@@ -961,22 +978,22 @@ def _get_debug_log(cmd):
 
 
 def _tail_events(
-    targets: str = None,
-    add_new_targets: bool = True,
-    level: LEVELS = "DEBUG",
-    replay: bool = True,  # listen from beginning of time?
-    dry_run: bool = False,
-    framerate: float = 0.5,
-    length: int = 10,
-    show_defer: bool = False,
-    show_ns: bool = False,
-    watch: bool = True,
-    color: str = "auto",
-    files: List[Union[str, Path]] = None,
-    event_filter: str = None,
-    # for script use only
-    _on_event: Callable[[EventLogMsg], None] = None,
-    model: str = None,
+        targets: str = None,
+        add_new_targets: bool = True,
+        level: LEVELS = "DEBUG",
+        replay: bool = True,  # listen from beginning of time?
+        dry_run: bool = False,
+        framerate: float = 0.5,
+        length: int = 10,
+        show_defer: bool = False,
+        show_ns: bool = False,
+        watch: bool = True,
+        color: str = "auto",
+        files: List[Union[str, Path]] = None,
+        event_filter: str = None,
+        # for script use only
+        _on_event: Callable[[EventLogMsg], None] = None,
+        model: str = None,
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -1011,11 +1028,11 @@ def _tail_events(
 
     logger.debug("starting to read logs")
     cmd = (
-        ["juju", "debug-log"]
-        + (["-m", model] if model else [])
-        + (["--tail"] if watch else [])
-        + (["--replay"] if replay else [])
-        + ["--level", level.value]
+            ["juju", "debug-log"]
+            + (["-m", model] if model else [])
+            + (["--tail"] if watch else [])
+            + (["--replay"] if replay else [])
+            + ["--level", level.value]
     )
 
     if dry_run:
@@ -1121,4 +1138,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, targets="indico/0")
+    _tail_events(length=30, replay=True, targets="prom/0")
