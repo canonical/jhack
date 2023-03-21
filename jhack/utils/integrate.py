@@ -394,11 +394,12 @@ class IntegrationMatrix:
 
         cmd_list: List[str] = []
         for ep1, interface, ep2 in target_bindings:
-            sym = "X" if verb == "disconnect" else "-->"
-            cmd = f"{juju_cmd} {ep1} {sym} [{interface}] {sym}  {ep2}"
+            cmd = f"juju {juju_cmd} {ep1} {ep2}"
             cmd_list.append(cmd)
+
             if dry_run:
-                print(cmd.replace(juju_cmd, verb))
+                sym = "X" if verb == "disconnect" else "-->"
+                print(f"{verb} {ep1} {sym} [{interface}] {sym} {ep2}")
 
         if dry_run:
             return
