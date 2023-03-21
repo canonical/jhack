@@ -99,8 +99,8 @@ def main():
     app = typer.Typer(
         name="jhack",
         help="Hacky, wacky, but ultimately charming."
-             "Home is https://github.com/PietroPasotti/jhack. "
-             "Head there for feature requests, bugs, etc...",
+        "Home is https://github.com/PietroPasotti/jhack. "
+        "Head there for feature requests, bugs, etc...",
         no_args_is_help=True,
         rich_markup_mode="markdown",
     )

@@ -145,6 +145,10 @@ class EventLogMsg:
     event: str
     mocked: bool
 
+    event_cls: str = None
+    charm_name: str = None
+    n: int = None
+
     tags: Tuple[str] = ()
 
     # we don't have any use for these, and they're only present if this event
@@ -221,6 +225,7 @@ _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
 _operator_event_color = Color.from_rgb(252, 115, 3)
+_custom_event_color = Color.from_rgb(120, 150, 240)
 _jhack_event_color = Color.from_rgb(200, 200, 50)
 _jhack_fire_event_color = Color.from_rgb(250, 200, 50)
 _jhack_replay_event_color = Color.from_rgb(100, 100, 150)
@@ -255,16 +260,28 @@ class LogLineParser:
     jhack_replay_evt_suffix = "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
     event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
 
-    event_repr = (
-        "<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
-    )
+    event_repr = r"<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
     defer_suffix = "Deferring " + event_repr
     event_deferred = re.compile(base_pattern + defer_suffix)
     event_deferred_from_relation = re.compile(base_relation_pattern + defer_suffix)
 
-    reemitted_suffix = "Re-emitting " + event_repr
-    event_reemitted = re.compile(base_pattern + reemitted_suffix)
-    event_reemitted_from_relation = re.compile(base_relation_pattern + reemitted_suffix)
+    custom_event_suffix = f"Emitting custom event " + event_repr
+    custom_event = re.compile(base_pattern + custom_event_suffix)  # ops >= 2.1
+    custom_event_from_relation = re.compile(
+        base_relation_pattern + custom_event_suffix
+    )  # ops >= 2.1
+
+    reemitted_suffix_old = "Re-emitting " + event_repr  # ops < 2.1
+    event_reemitted_old = re.compile(base_pattern + reemitted_suffix_old)
+    event_reemitted_from_relation_old = re.compile(
+        base_relation_pattern + reemitted_suffix_old
+    )
+
+    reemitted_suffix_new = "Re-emitting deferred event " + event_repr  # ops >= 2.1
+    event_reemitted_new = re.compile(base_pattern + reemitted_suffix_new)
+    event_reemitted_from_relation_new = re.compile(
+        base_relation_pattern + reemitted_suffix_new
+    )
 
     uniter_event = re.compile(
         '^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook \(via hook dispatching script: dispatch\)'
@@ -274,6 +291,8 @@ class LogLineParser:
         operator_event: ("operator",),
         event_fired_jhack: ("jhack", "fire"),
         event_replayed_jhack: ("jhack", "replay"),
+        custom_event: ("custom",),
+        custom_event_from_relation: ("custom",),
     }
 
     def __init__(self, model: str = None):
@@ -320,6 +339,8 @@ class LogLineParser:
             self.event_emitted,
             self.event_emitted_from_relation,
             self.operator_event,
+            self.custom_event,
+            self.custom_event_from_relation,
         )
 
     def match_jhack_modifiers(self, msg):
@@ -334,7 +355,11 @@ class LogLineParser:
         if self.uniter_events_only:
             return None
         return self._match(
-            msg, self.event_reemitted, self.event_reemitted_from_relation
+            msg,
+            self.event_reemitted_old,
+            self.event_reemitted_from_relation_old,
+            self.event_reemitted_new,
+            self.event_reemitted_from_relation_new,
         )
 
 
@@ -640,6 +665,8 @@ class Processor:
 
     def _get_event_color(self, msg: EventLogMsg) -> Color:
         event = msg.event
+        if "custom" in msg.tags:
+            return _custom_event_color
         if "operator" in msg.tags:
             return _operator_event_color
         if "jhack" in msg.tags:
@@ -885,7 +912,7 @@ def tail_events(
     ),
     level: LEVELS = "DEBUG",
     replay: bool = typer.Option(
-        False, "--replay", "-r", help="Keep listening from beginning of time."
+        False, "--replay", "-r", help="Start from the beginning of time."
     ),
     dry_run: bool = typer.Option(
         False, help="Only print what you would have done, exit."
@@ -1121,4 +1148,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, targets="indico/0")
+    _tail_events(length=30, replay=True, targets="prom/0")

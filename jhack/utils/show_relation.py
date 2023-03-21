@@ -20,9 +20,9 @@ _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 
 
 class RelationType(str, Enum):
-    regular = 'regular'
-    subordinate = 'subordinate'
-    peer = 'peer'
+    regular = "regular"
+    subordinate = "subordinate"
+    peer = "peer"
 
 
 def get_interface(
@@ -174,10 +174,10 @@ def get_metadata_from_status(
     status = _juju_status(app_name, model=model, json=True)
     # machine status json output apparently has no 'scale'... -_-
     app_status = status["applications"][app_name]
-    if app_status.get('subordinate-to'):
+    if app_status.get("subordinate-to"):
         units = {}
-        for other_unit in status["applications"][other_app_name]['units'].values():
-            subs = other_unit.get('subordinates')
+        for other_unit in status["applications"][other_app_name]["units"].values():
+            subs = other_unit.get("subordinates")
             for subn, subv in subs.items():
                 if subn.startswith(app_name):
                     units[subn] = subv
@@ -265,26 +265,30 @@ def get_content(
     status = _juju_status(other_app_name, model=model, json=True)
 
     other_app_status = status["applications"][other_app_name]
-    if primaries := other_app_status.get('subordinate-to'):
+    if primaries := other_app_status.get("subordinate-to"):
         # the remote end is a subordinate!
         # primary is our this_url.
         if this_app_name in primaries:
             # this app is primary, other is subordinate
             sub_unit_found = False
-            for unit in status['applications'][this_url]['units'].values():
-                subs = unit['subordinates']
+            for unit in status["applications"][this_url]["units"].values():
+                subs = unit["subordinates"]
                 for sub in subs:
-                    if sub.startswith(other_app_name + '/'):
+                    if sub.startswith(other_app_name + "/"):
                         sub_unit_found = sub
                         break
                 if sub_unit_found:
                     break
 
             if not sub_unit_found:
-                raise RuntimeError(f"unable to find primary with a subordinate unit of {other_app_name}")
+                raise RuntimeError(
+                    f"unable to find primary with a subordinate unit of {other_app_name}"
+                )
 
         else:
-            raise NotImplementedError('relations between subordinates? Is that even a thing?')
+            raise NotImplementedError(
+                "relations between subordinates? Is that even a thing?"
+            )
 
         other_unit_name = sub_unit_found
     else:
@@ -298,7 +302,12 @@ def get_content(
         # in peer relations, show-unit luckily reports 'local-unit', so we're good.
         unit_name = f"{app_name}/{units[0]}"  # any unit will do
         units_data, app_data, r_id = get_databags(
-            unit_name, other_unit_name, this_endpoint, other_endpoint, model=model, peer=True
+            unit_name,
+            other_unit_name,
+            this_endpoint,
+            other_endpoint,
+            model=model,
+            peer=True,
         )
         if not include_default_juju_keys:
             for unit_data in units_data.values():
@@ -379,9 +388,12 @@ def get_peer_relation_data(
     *, endpoint: str, include_default_juju_keys: bool = False, model: str = None
 ):
     return get_content(
-        endpoint, endpoint, include_default_juju_keys, model=model, relation_type=RelationType.peer
+        endpoint,
+        endpoint,
+        include_default_juju_keys,
+        model=model,
+        relation_type=RelationType.peer,
     )
-
 
 
 def get_relation_data(
@@ -534,7 +546,7 @@ async def render_relation(
             provider_endpoint=endpoint1,
             requirer_endpoint=endpoint2,
             include_default_juju_keys=include_default_juju_keys,
-            model=model
+            model=model,
         )
 
         # same as provider's
@@ -572,7 +584,9 @@ async def render_relation(
     if relation_type is RelationType.peer:
         table.add_row(Text("type", style="pink"), Text("peer", style="bold cyan"))
     elif relation_type is RelationType.subordinate:
-        table.add_row(Text("type", style="pink"), Text("subordinate", style="bold orange"))
+        table.add_row(
+            Text("type", style="pink"), Text("subordinate", style="bold orange")
+        )
 
     table.rows[-1].end_section = True
 
