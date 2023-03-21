@@ -13,10 +13,12 @@ def get_home_dir() -> Path:
     try:
         usr = pwd.getpwuid(os.getuid())[0]
     except KeyError:
-        logger.debug("pwd.getpwuid could not get pwd for your UID. "
-                     "If you think you're root, something must have gone wrong. "
-                     "Set the envvar JHACK_DATA to some snap-writable path where "
-                     "jhack should store its data and config.")
+        logger.debug(
+            "pwd.getpwuid could not get pwd for your UID. "
+            "If you think you're root, something must have gone wrong. "
+            "Set the envvar JHACK_DATA to some snap-writable path where "
+            "jhack should store its data and config."
+        )
         usr = ""
 
     if usr == "root":
@@ -34,7 +36,7 @@ def get_jhack_data_path() -> Path:
 
     That's where we store all jhack config and data.
     """
-    if data := os.getenv('JHACK_DATA'):
+    if data := os.getenv("JHACK_DATA"):
         return Path(data)
 
     return get_home_dir() / ".config" / "jhack"
@@ -45,7 +47,7 @@ def get_jhack_config_path() -> Path:
 
     It needs not exist.
     """
-    return get_jhack_data_path() / 'config.toml'
+    return get_jhack_data_path() / "config.toml"
 
 
 def configure():

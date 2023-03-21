@@ -19,8 +19,10 @@ class Config:
             try:
                 jconf_exists = jconf.exists()
             except PermissionError:
-                logger.warning(f'trying to stat {jconf} gave PermissionError; bad config path. '
-                             f'All will be defaulted.')
+                logger.warning(
+                    f"trying to stat {jconf} gave PermissionError; bad config path. "
+                    f"All will be defaulted."
+                )
                 jconf_exists = False
             path = jconf if jconf_exists else self._DEFAULTS
 
