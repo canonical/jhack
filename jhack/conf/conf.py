@@ -51,8 +51,23 @@ class Config:
         except FileNotFoundError:
             sys.exit(f"No config file found at {self._path}.")
 
-    def __getitem__(self, item):
-        return self.data[item]
+    def get(self, *path: str) -> bool:  # todo: add more toml types?
+        data = self.data
+        for item in path:
+            try:
+                data = data[item]
+            except KeyError:
+                if self._path is self._DEFAULTS:
+                    logger.error(f'{item} not found in default config; invalid path')
+                    raise
+
+                logger.info(f'{item} not found in user-config {self._path}; defaulting...')
+                return self.get_default(*path)
+        return data
+
+    @staticmethod
+    def get_default(*path: str):
+        return Config(Config._DEFAULTS).get(*path)
 
 
 def print_defaults():

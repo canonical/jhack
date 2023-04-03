@@ -18,10 +18,8 @@ from jhack.logger import logger
 
 logger = logger.getChild("nuke")
 
-try:
-    ASK_FOR_CONFIRMATION = CONFIG["nuke"]["ask_for_confirmation"]
-except KeyError:
-    ASK_FOR_CONFIRMATION = True
+ASK_FOR_CONFIRMATION = CONFIG.get("nuke", "ask_for_confirmation")
+BLINK = CONFIG.get("nuke", "blink")
 
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 ATOM = "⚛"
@@ -378,7 +376,7 @@ def _nuke(
         else:
             logger.debug(f"hit and sunk")
 
-    print_centered(Text(NUKE_ASCII_ART, style=Style(dim=True, blink=True, bold=True)))
+    print_centered(Text(NUKE_ASCII_ART, style=Style(dim=True, blink=BLINK, bold=True)))
 
     tp = ThreadPool()
     results = []
