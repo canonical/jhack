@@ -190,6 +190,9 @@ class AppRelationData:
     application_data: dict
     units_data: Dict[int, dict]
 
+    model: str = None
+    other_model: str = None
+
 
 def get_metadata_from_status(
     app_name, relation_name, other_app_name, other_relation_name, model: str = None
@@ -356,8 +359,9 @@ def get_content(
                 other_unit_name,
                 this_endpoint,
                 other_endpoint,
-                model=model,
-                other_model=other_app_model,
+                # in order to get the databags for THIS app,
+                # we need to show-unit --model OTHER_MODEL OTHER_APP!
+                model=other_app_model,
             )
 
             if r_id is not None:
@@ -377,6 +381,8 @@ def get_content(
         application_data=app_data,
         units_data=units_data,
         relation_id=r_id,
+        model=model,
+        other_model=other_app_model,
     )
 
 
@@ -386,14 +392,13 @@ def get_databags(
     local_endpoint,
     remote_endpoint,
     model: str = None,
-    other_model: str = None,
     peer: bool = False,
 ):
     """Gets the databags of local unit and its leadership status.
 
     Given a remote unit and the remote endpoint name.
     """
-    data = get_unit_info(remote_unit, model=other_model)
+    data = get_unit_info(remote_unit, model=model)
     relation_info = data.get("relation-info")
     if not relation_info:
         sys.exit(f"{remote_unit} has no relations, or the unit is still allocating.")
@@ -431,11 +436,12 @@ def get_databags(
 class RelationData:
     provider: AppRelationData
     requirer: AppRelationData
+    is_cmr: bool = False
 
 
 def get_peer_relation_data(
     *, endpoint: str, include_default_juju_keys: bool = False, model: str = None
-):
+) -> AppRelationData:
     return get_content(
         endpoint,
         endpoint,
@@ -451,7 +457,7 @@ def get_relation_data(
     requirer_endpoint: str,
     include_default_juju_keys: bool = False,
     model: str = None,
-):
+) -> RelationData:
     """Get relation databags for a juju relation.
 
     >>> get_relation_data('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
@@ -463,14 +469,15 @@ def get_relation_data(
         requirer_endpoint, provider_endpoint, include_default_juju_keys, model=model
     )
 
-    # sanity check: the two IDs should be identical
-    if not provider_data.relation_id == requirer_data.relation_id:
+    # sanity check: the two IDs should be identical, unless this is a CMR
+    is_cmr = provider_data.model != provider_data.other_model
+    if not provider_data.relation_id == requirer_data.relation_id and not is_cmr:
         logger.warning(
             f"provider relation id {provider_data.relation_id} "
             f"not the same as requirer relation id: {requirer_data.relation_id}"
         )
 
-    return RelationData(provider=provider_data, requirer=requirer_data)
+    return RelationData(provider=provider_data, requirer=requirer_data, is_cmr=is_cmr)
 
 
 @dataclass
@@ -576,6 +583,8 @@ async def render_relation(
             endpoint2 = relation.requirer
             relation_type = RelationType(relation.type)
 
+    is_cmr = False
+    relation_id = None
     if endpoint1 and endpoint2 is None:
         relation_type = RelationType.peer
 
@@ -585,6 +594,7 @@ async def render_relation(
             model=model,
         )
         relation_id = data.relation_id
+        header = f"relation (id: {relation_id})"
         entities = (data,)
 
     else:
@@ -597,9 +607,12 @@ async def render_relation(
             include_default_juju_keys=include_default_juju_keys,
             model=model,
         )
-
-        # same as provider's
-        relation_id = data.requirer.relation_id
+        is_cmr = data.is_cmr
+        if not is_cmr:
+            relation_id = data.requirer.relation_id
+            header = f"relation (id: {relation_id})"
+        else:
+            header = f"cross-model relation"
         entities = (data.requirer, data.provider)
 
     from rich.columns import Columns  # noqa
@@ -607,35 +620,83 @@ async def render_relation(
     from rich.table import Table  # noqa
     from rich.text import Text  # noqa
 
-    table = Table(title="relation data v0.4")
+    table = Table(title="relation data v0.5")
 
     table.add_column(
         justify="left",
-        header=f"relation (id: {relation_id})",
+        header=header,
         style="rgb(54,176,224) bold",
     )
     for entity in entities:
         table.add_column(justify="left", header=entity.app_name)  # meta/app_name
 
+    is_peer = relation_type is RelationType.peer
+    if is_cmr:
+        type_ = "CMR"
+    elif is_peer:
+        type_ = "peer"
+    elif relation_type is RelationType.subordinate:
+        type_ = "subordinate"
+    else:
+        type_ = "regular"
+
+    if is_peer:
+        # omit the "=" in column 2
+        table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"))
+        table.add_row("interface", Text(entities[0].meta.interface, style="blue bold"))
+        table.add_row(
+            "model", Text(entities[0].model or "the current model", style="yellow bold")
+        )
+        table.add_row(
+            "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold")
+        )
+
+    else:
+        table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"), "=")
+        table.add_row(
+            "interface", Text(entities[0].meta.interface, style="blue bold"), "="
+        )
+
+        if not is_cmr:
+            table.add_row(
+                "model",
+                Text(entities[0].model or "the current model", style="yellow bold"),
+                "=",
+            )
+            table.add_row(
+                "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"), "="
+            )
+        else:
+            table.add_row(
+                "model",
+                Text(data.provider.model or "the current model", style="yellow bold"),
+                Text(
+                    data.provider.other_model or "the current model",
+                    style="yellow bold",
+                ),
+            )
+
+            table.add_row(
+                "relation ID",
+                *(
+                    Text(str(entity.relation_id), style="rgb(200,30,140) bold")
+                    for entity in entities
+                ),
+            )
+
+    if not is_peer:
+        table.add_row(
+            "role", *(Text(role, style="white") for role in ["provider", "requirer"])
+        )
+
     table.add_row(
-        "relation name", *(Text(entity.endpoint, style="green") for entity in entities)
-    )
-    table.add_row(
-        "interface",
-        *(Text(entity.meta.interface, style="blue bold") for entity in entities),
+        "endpoint",
+        *(Text(entity.endpoint, style="blue bold") for entity in entities),
     )
     table.add_row(
         "leader unit",
         *(Text(str(entity.meta.leader_id), style="red") for entity in entities),
     )
-
-    # add annotation for non-regular relation types
-    if relation_type is RelationType.peer:
-        table.add_row(Text("type", style="pink"), Text("peer", style="bold cyan"))
-    elif relation_type is RelationType.subordinate:
-        table.add_row(
-            Text("type", style="pink"), Text("subordinate", style="bold orange")
-        )
 
     table.rows[-1].end_section = True
 
@@ -776,4 +837,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=2)
+    _sync_show_relation(n=2, model="tester-12")
