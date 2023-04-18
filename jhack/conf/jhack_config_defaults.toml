@@ -1,2 +1,3 @@
 [nuke]
 ask_for_confirmation = true
+blink = false
