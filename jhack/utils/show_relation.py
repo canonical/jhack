@@ -72,6 +72,21 @@ def _show_unit(unit_name, model: str = None):
     return proc.stdout.read().decode("utf-8").strip()
 
 
+def _find_model_if_CMR(app_name, current_model: str = None):
+    """Find out if app_name is in current_model, if not, return the SAAS-exposed model it is in."""
+    status = _juju_status(app_name, model=current_model, json=True)
+    if app_name not in status["applications"]:
+        logger.info(
+            f"app_name {app_name!r} not found in "
+            f"{current_model or '<current model>'!r}: this must be a CMR"
+        )
+        saas_url = status["application-endpoints"][app_name]["url"]
+        other_app_model = saas_url.split(".")[0]
+        logger.info(f"other app is in model {other_app_model!r}.")
+        return other_app_model
+    return current_model
+
+
 def get_unit_info(unit_name: str, model: str = None) -> dict:
     """Returns unit-info data structure.
 
@@ -99,7 +114,10 @@ def get_unit_info(unit_name: str, model: str = None) -> dict:
     if cached_data := _JUJU_DATA_CACHE.get(unit_name):
         return cached_data
 
-    raw_data = _show_unit(unit_name, model=model)
+    app_name = unit_name.split("/")[0]
+    unit_model = _find_model_if_CMR(app_name, current_model=model)
+
+    raw_data = _show_unit(unit_name, model=unit_model)
     if not raw_data:
         raise ValueError(
             f"no unit info could be grabbed for {unit_name}; "
@@ -133,7 +151,12 @@ def get_relation_by_endpoint(
         )
     ]
     if not peer:
-        matches = [r for r in matches if remote_obj in r.get("related-units", set())]
+        matches = [
+            r
+            for r in matches
+            if remote_obj in r.get("related-units", set())
+            or r.get("cross-model", False)
+        ]
 
     if not matches:
         raise ValueError(
@@ -171,7 +194,8 @@ class AppRelationData:
 def get_metadata_from_status(
     app_name, relation_name, other_app_name, other_relation_name, model: str = None
 ):
-    status = _juju_status(app_name, model=model, json=True)
+    app_model = _find_model_if_CMR(app_name, current_model=model)
+    status = _juju_status(app_name, model=app_model, json=True)
     # machine status json output apparently has no 'scale'... -_-
     app_status = status["applications"][app_name]
     if app_status.get("subordinate-to"):
@@ -263,8 +287,16 @@ def get_content(
     # so even though we need 'any' remote unit name, we still need to query the status
     # to find out what units there are.
     status = _juju_status(other_app_name, model=model, json=True)
+    other_app_model = _find_model_if_CMR(other_app_name, current_model=model)
+    if other_app_model != model:
+        logger.info(f"other app is in model {other_app_model!r}. Pulling status...")
+        other_model_status = _juju_status(
+            other_app_name, model=other_app_model, json=True
+        )
+        other_app_status = other_model_status["applications"][other_app_name]
+    else:
+        other_app_status = status["applications"][other_app_name]
 
-    other_app_status = status["applications"][other_app_name]
     if primaries := other_app_status.get("subordinate-to"):
         # the remote end is a subordinate!
         # primary is our this_url.
@@ -320,7 +352,12 @@ def get_content(
         for unit_id in units:
             unit_name = f"{app_name}/{unit_id}"
             unit_data, app_data, r_id_ = get_databags(
-                unit_name, other_unit_name, this_endpoint, other_endpoint, model=model
+                unit_name,
+                other_unit_name,
+                this_endpoint,
+                other_endpoint,
+                model=model,
+                other_model=other_app_model,
             )
 
             if r_id is not None:
@@ -349,13 +386,14 @@ def get_databags(
     local_endpoint,
     remote_endpoint,
     model: str = None,
+    other_model: str = None,
     peer: bool = False,
 ):
     """Gets the databags of local unit and its leadership status.
 
     Given a remote unit and the remote endpoint name.
     """
-    data = get_unit_info(remote_unit, model=model)
+    data = get_unit_info(remote_unit, model=other_model)
     relation_info = data.get("relation-info")
     if not relation_info:
         sys.exit(f"{remote_unit} has no relations, or the unit is still allocating.")
@@ -373,7 +411,18 @@ def get_databags(
             },
         }
     else:
-        unit_data = raw_data["related-units"][local_unit]["data"]
+        local_unit_name = local_unit
+        if raw_data.get("cross-model", False):
+            # if this is a CMR, the local unit name will appear different: it will be something like
+            # remote-1239028i1403912u4123/0; so we match only using the unit ID.
+            local_unit_name = next(
+                filter(
+                    lambda s: s.endswith(local_unit.split("/")[1]),
+                    raw_data["related-units"].keys(),
+                )
+            )
+        unit_data = raw_data["related-units"][local_unit_name]["data"]
+
     app_data = raw_data.get("application-data", {})
     return unit_data, app_data, raw_data["relation-id"]
 
@@ -727,4 +776,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=1)
+    _sync_show_relation(n=2)
