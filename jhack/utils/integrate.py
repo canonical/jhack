@@ -355,13 +355,13 @@ class IntegrationMatrix:
         target_bindings = []
 
         for (prov_idx, req_idx), bindings in self._cells(
-            skip_diagonal=True, yield_indices=True
+                skip_diagonal=True, yield_indices=True
         ):
             for (
-                provider_endpoint,
-                interface,
-                requirer_endpoint,
-                is_active,
+                    provider_endpoint,
+                    interface,
+                    requirer_endpoint,
+                    is_active,
             ) in bindings:
                 prov = self._apps[prov_idx]
                 req = self._apps[req_idx]
@@ -403,17 +403,21 @@ class IntegrationMatrix:
 
             if dry_run:
                 sym = "X" if verb == "disconnect" else "-->"
-                print(f"{verb} {ep1} {sym} [{interface}] {sym} {ep2}")
+                print(f"{ep1} {sym}-\[{interface}]-{sym} {ep2}")
 
         if dry_run:
             return
 
-        print(f"{verb.title()}ing relations...")
+        console = Console()
+        console.print(f"{verb.title()}ing relations...")
+        sym = "<-X->" if verb == "disconnect" else "<-->"
+        t = Table(show_header=False, show_edge=False, show_lines=False, show_footer=False)
         for cmd, (ep1, _, ep2) in zip(cmd_list, target_bindings):
-            print(f"\t{ep1} <--> {ep2}")
+            t.add_row(Align(Text(ep1), align='right'), Text(sym, style='green bold'), Text(ep2))
             JPopen(cmd.split(), wait=True)
+        console.print(t)
 
-        print("Done.")
+        console.print("Done.")
 
     def connect(self, include: str = None, exclude: str = None, dry_run: bool = False):
         self._apply_to_all(
