@@ -35,6 +35,9 @@ jhack = "jhack.main:main"
 [tool.setuptools.package-dir]
 jhack = "jhack"
 
+[tool.ruff]
+line-length = 99
+
 [tool.black]
 include = '\.pyi?$'
 

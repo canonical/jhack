@@ -71,9 +71,11 @@ def _gather_endpoints(
             continue
 
         if app["application-status"]["current"] == "terminated":
-            # https://bugs.launchpad.net/juju/+bug/1977582 app killed by juju/pebble, juju app in terminated status.
+            # https://bugs.launchpad.net/juju/+bug/1977582 app killed by juju/pebble, juju app
+            # in terminated status.
             logger.warning(
-                f"Skipping endpoint collection from application {app_name} as it is in `terminated` state."
+                f"Skipping endpoint collection from application {app_name} as it is in "
+                f"`terminated` state."
             )
             continue
 
@@ -83,7 +85,8 @@ def _gather_endpoints(
             metadata = fetch_file(unit, "metadata.yaml", model=model)
         except RuntimeError as e:
             logger.error(
-                f'Failed to fetch metadata.yaml from {unit} in model={model or "<current model>"}\n\n'
+                f'Failed to fetch metadata.yaml from {unit} in '
+                f'model={model or "<current model>"}\n\n'
                 f"{e}\n\n"
                 f"APP ={app}"
             )
@@ -180,7 +183,8 @@ class IntegrationMatrix:
             provides = self._endpoints[provider]["provides"]
             requires = self._endpoints[requirer]["requires"]
 
-            # mapping from each supported interface to the endpoints using that interface, for the requirer.
+            # mapping from each supported interface to the endpoints using that interface,
+            # for the requirer.
             requirer_interfaces_to_endpoints = defaultdict(list)
             for endpoint, (interface, connected_providers) in requires.items():
                 requirer_interfaces_to_endpoints[interface].append(
