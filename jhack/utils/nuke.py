@@ -129,7 +129,7 @@ def _get_apps_and_relations(
         if apps and include_apps:
             logger.debug(f"checking {line}")
             if borked and "active" in line:
-                logger.debug(f"skipping non-borked app")
+                logger.debug("skipping non-borked app")
                 continue
             entity_name = line.split()[0].strip("*")
             if "/" in entity_name:
@@ -163,7 +163,8 @@ def _gather_nukeables(
 ):
     logger.debug(f"Gathering nukeables for {obj!r} with _selectors = {selectors!r}")
 
-    globber = lambda s: s.startswith(obj)
+    def globber(s):
+        return s.startswith(obj)
 
     if isinstance(obj, str) and ("*" in obj or "!" in obj):
         logger.info("globbing detected; analyzing pattern")
@@ -172,16 +173,27 @@ def _gather_nukeables(
             raise RuntimeError("combinations of ! and * not supported.")
 
         if obj.startswith("!"):
-            globber = lambda s: obj.strip("!") == s
+
+            def globber(s):  # noqa: F811
+                return obj.strip("!") == s
+
         elif "!" in obj:
             raise RuntimeError("! is only supported at the start of the name.")
 
-        if obj.startswith("*") and obj.endswith("*") and obj != "*":
-            globber = lambda s: obj.strip("*") in s
+        elif obj.startswith("*") and obj.endswith("*") and obj != "*":
+
+            def globber(s):
+                return obj.strip("*") in s
+
         elif obj.startswith("*"):
-            globber = lambda s: s.endswith(obj.strip("*"))
+
+            def globber(s):
+                return s.endswith(obj.strip("*"))
+
         elif obj.endswith("*"):
-            globber = lambda s: s.startswith(obj.strip("*"))
+
+            def globber(s):
+                return s.startswith(obj.strip("*"))
 
         obj = obj.strip("*!")
 
@@ -342,7 +354,9 @@ def _nuke(
         color = None
 
     console = Console(color_system=color)
-    print_centered = lambda s: console.print(Align(s, align="center"))
+
+    def print_centered(s):
+        return console.print(Align(s, align="center"))
 
     def fire(nukeable: Nukeable, nuke: str):
         """defcon 5"""
@@ -374,7 +388,7 @@ def _nuke(
                 f'stderr={proc.stderr.read().decode("utf-8")}'
             )
         else:
-            logger.debug(f"hit and sunk")
+            logger.debug("hit and sunk")
 
     print_centered(Text(NUKE_ASCII_ART, style=Style(dim=True, blink=BLINK, bold=True)))
 
@@ -452,11 +466,14 @@ def nuke(
 
     - *nuke*: will vanquish the current model and everything in it.
 
-    - *nuke "test-foo-&ast;"*: will bomb all nukeables starting with "test-foo-"; all models, applications and relations.
+    - *nuke "test-foo-&ast;"*: will bomb all nukeables starting with "test-foo-"; all models,
+      applications and relations.
 
-    - *nuke "--model foo bar-&ast;"*: will blast all nukeables starting with "bar-" in model "foo". As above.
+    - *nuke "--model foo bar-&ast;"*: will blast all nukeables starting with "bar-" in model "foo".
+      As above.
 
-    - *nuke -n=2 &ast;foo&ast;*: will blow up the two things it can find that contain the substring "foo"
+    - *nuke -n=2 &ast;foo&ast;*: will blow up the two things it can find that contain the
+      substring "foo"
 
     \n\n
     Nuke ascii art by [Bill March](https://www.asciiart.eu/weapons/explosives).

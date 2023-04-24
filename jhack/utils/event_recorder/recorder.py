@@ -13,7 +13,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Literal, Tuple, Union
 
 try:
     from jhack.logger import logger as jhack_logger
@@ -83,7 +83,7 @@ def _load_memo_mode() -> MemoModes:
 def _is_bound_method(fn: Any):
     try:
         return next(iter(inspect.signature(fn).parameters.items()))[0] == "self"
-    except:
+    except:  # noqa: E722
         return False
 
 
@@ -343,9 +343,10 @@ def memo(
                     fn_args_kwargs = _dump((memo_args, kwargs), input_serializer)
 
                     if strict_caching:
-                        # in strict mode, fn might return different results every time it is called --
-                        # regardless of the arguments it is called with. So each memo contains a sequence of values,
-                        # and a cursor to keep track of which one is next in the replay routine.
+                        # in strict mode, fn might return different results every time it is
+                        # called -- regardless of the arguments it is called with.
+                        # So each memo contains a sequence of values, and a cursor to keep track
+                        # of which one is next in the replay routine.
                         try:
                             current_cursor = memo.cursor
                             recording = memo.calls[current_cursor]
@@ -557,4 +558,4 @@ def setup(file=DEFAULT_DB_NAME):
 
     if _MEMO_MODE == "replay":
         _reset_replay_cursors()
-        print(f"Replaying: reset replay cursors.")
+        print("Replaying: reset replay cursors.")

@@ -105,7 +105,8 @@ try:
 except ModuleNotFoundError as e:
     msg = "recorder not installed. " \
           "This can happen if you're playing with Runtime in a local venv. " \
-          "In that case all you have to do is ensure that the PYTHONPATH is patched to include the path to " \
+          "In that case all you have to do is ensure that the PYTHONPATH " \
+          "is patched to include the path to " \
           "recorder.py before loading this module. " \
           "Tread carefully."
     raise RuntimeError(msg) from e

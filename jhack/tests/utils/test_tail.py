@@ -118,7 +118,7 @@ def mock_stdout(request):
     n = request.param
     with patch(
         "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
-    ) as mock_status:
+    ):
         yield
 
 
@@ -150,7 +150,7 @@ def test_tail(deferrals, length, mock_stdout):
 def test_with_real_trfk_log(deferrals, length, show_ns):
     with patch(
         "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
-    ) as mock_status:
+    ):
         _tail_events(
             targets="trfk/0",
             length=length,
@@ -166,7 +166,7 @@ def test_with_cropped_trfk_log(deferrals, length):
     with patch(
         "jhack.utils.tail_charms._get_debug_log",
         wraps=lambda _: _fake_log_proc("cropped"),
-    ) as mock_status:
+    ):
         _tail_events(targets="trfk/0", length=length, show_defer=deferrals, watch=False)
 
 
@@ -350,7 +350,7 @@ def test_custom_event(line, expected_event):
 
 
 def test_borky_trfk_log_defer():
-    proc = _tail_events(
+    _tail_events(
         length=30,
         replay=True,
         files=[str(mocks_dir / "trfk_mock_bork_defer.txt")],

@@ -59,7 +59,7 @@ def pack(
     cmd = JPopen("charmcraft pack".split(), cwd=charm_root)
     cmd.wait()
 
-    while cmd.returncode == None:
+    while cmd.returncode is None:
         sleep(0.1)
 
     if cmd.returncode != 0:

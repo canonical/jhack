@@ -9,7 +9,9 @@ from typing import List
 from jhack.helpers import get_local_charm
 from jhack.logger import logger
 
-chmod_plusx = lambda file: os.chmod(file, os.stat(file).st_mode | stat.S_IEXEC)
+
+def chmod_plusx(file):
+    return os.chmod(file, os.stat(file).st_mode | stat.S_IEXEC)
 
 
 def update(
@@ -43,7 +45,7 @@ def update(
     logger.info(f"updating charm with args:, {charm}, {src, dst}, {dry_run}")
 
     build_dir = Path(tempfile.mkdtemp())
-    prefix_len = len(os.getcwd()) + 1
+    len(os.getcwd()) + 1
 
     try:
         # extract charm to build directory

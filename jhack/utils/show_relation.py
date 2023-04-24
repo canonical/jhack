@@ -418,7 +418,8 @@ def get_databags(
     else:
         local_unit_name = local_unit
         if raw_data.get("cross-model", False):
-            # if this is a CMR, the local unit name will appear different: it will be something like
+            # if this is a CMR, the local unit name will appear different:
+            # it will be something like
             # remote-1239028i1403912u4123/0; so we match only using the unit ID.
             local_unit_name = next(
                 filter(
@@ -612,7 +613,7 @@ async def render_relation(
             relation_id = data.requirer.relation_id
             header = f"relation (id: {relation_id})"
         else:
-            header = f"cross-model relation"
+            header = "cross-model relation"
         entities = (data.requirer, data.provider)
 
     from rich.columns import Columns  # noqa

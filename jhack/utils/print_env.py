@@ -1,13 +1,15 @@
 import csv
 import subprocess
-import toml
-from json import dumps as json_dumps, loads as json_loads
+from json import dumps as json_dumps
+from json import loads as json_loads
 from pathlib import Path
 from typing import Optional
 
+import toml
 import typer
 from rich.console import Console
 from rich.table import Table
+
 from jhack.logger import logger as jhack_logger
 
 NOT_INSTALLED = "Not Installed."
@@ -30,8 +32,10 @@ def get_os_release():
 
 def print_env(json: bool = typer.Option(False, is_flag=True)):
     """Print the details of the juju environment for use in bug reports."""
-    pyproject_toml = Path(__file__).parent.parent.parent.absolute().joinpath('pyproject.toml')
-    jhack_version = toml.loads(pyproject_toml.read_text())['project']['version']
+    pyproject_toml = (
+        Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
+    )
+    jhack_version = toml.loads(pyproject_toml.read_text())["project"]["version"]
 
     juju_version = get_output("juju --version")
     mk8s_version = get_output("microk8s version")
@@ -45,14 +49,14 @@ def print_env(json: bool = typer.Option(False, is_flag=True)):
     kernel_info = get_output("uname -srp")
 
     data = {
-        'jhack': jhack_version,
-        'juju': juju_version,
-        'microk8s': mk8s_version,
-        'lxd': lxd_version,
-        'multipass': multipass_version.get('multipass', None),
-        'multipassd': multipass_version.get('multipassd', None),
-        'os': os_version,
-        'kernel': kernel_info,
+        "jhack": jhack_version,
+        "juju": juju_version,
+        "microk8s": mk8s_version,
+        "lxd": lxd_version,
+        "multipass": multipass_version.get("multipass", None),
+        "multipassd": multipass_version.get("multipassd", None),
+        "os": os_version,
+        "kernel": kernel_info,
     }
 
     if json:
@@ -66,5 +70,5 @@ def print_env(json: bool = typer.Option(False, is_flag=True)):
         Console().print(table)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print_env(False)

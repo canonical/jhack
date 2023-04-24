@@ -244,7 +244,10 @@ def _random_color():
 
 
 class LogLineParser:
-    base_pattern = "^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) unit\.(?P<unit>\S+)\.juju-log "
+    base_pattern = (
+        "^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) "
+        "unit\.(?P<unit>\S+)\.juju-log "
+    )
     base_relation_pattern = base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
 
     operator_event_suffix = "Charm called itself via hooks/(?P<event>\S+)\."
@@ -257,7 +260,10 @@ class LogLineParser:
     # modifiers
     jhack_fire_evt_suffix = "The previous (?P<event>\S+) was fired by jhack\."
     event_fired_jhack = re.compile(base_pattern + jhack_fire_evt_suffix)
-    jhack_replay_evt_suffix = "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
+    jhack_replay_evt_suffix = (
+        "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\)"
+        " was replayed by jhack\."
+    )
     event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
 
     event_repr = r"<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
@@ -265,7 +271,7 @@ class LogLineParser:
     event_deferred = re.compile(base_pattern + defer_suffix)
     event_deferred_from_relation = re.compile(base_relation_pattern + defer_suffix)
 
-    custom_event_suffix = f"Emitting custom event " + event_repr
+    custom_event_suffix = "Emitting custom event " + event_repr
     custom_event = re.compile(base_pattern + custom_event_suffix)  # ops >= 2.1
     custom_event_from_relation = re.compile(
         base_relation_pattern + custom_event_suffix
@@ -284,7 +290,9 @@ class LogLineParser:
     )
 
     uniter_event = re.compile(
-        r'^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) (?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook \(via hook dispatching script: dispatch\)'
+        r"^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) "
+        r'(?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook '
+        r"\(via hook dispatching script: dispatch\)"
     )
 
     tags = {
@@ -492,8 +500,9 @@ class Processor:
                 n=reemitted.n,
                 mocked=True,
             )
-            # this is a reemittal log, so we've _emitted it once, which has stored this n into raw_table.ns.
-            # this will make update_defers believe that we've already deferred this event, which we haven't.
+            # this is a reemittal log, so we've _emitted it once, which has stored this n into
+            # raw_table.ns. this will make update_defers believe that we've already deferred
+            # this event, which we haven't.
             self._timestamps.insert(0, deferred.timestamp + "*")
 
             self._defer(deferred)
@@ -598,7 +607,8 @@ class Processor:
                 ori_event.tags += ("jhack", "replay", "source")
             else:
                 logger.debug(
-                    f"original event out of scope: {original_evt_timestamp} is too far in the past."
+                    f"original event out of scope: {original_evt_timestamp} is "
+                    f"too far in the past."
                 )
 
             newly_emitted_evt = raw_table.msgs[0]
@@ -695,7 +705,7 @@ class Processor:
                 event_text += f" {cls._fire_symbol}"
             if "replay" in msg.tags:
                 if "source" in msg.tags:
-                    event_text += f" (↑)"
+                    event_text += " (↑)"
                 elif "replayed" in msg.tags:
                     event_text += (
                         f" ({cls._replay_symbol}:{msg.jhack_replayed_evt_timestamp} ↓)"
@@ -1011,10 +1021,8 @@ def _tail_events(
     if not isinstance(level, LEVELS):
         raise ValueError(level)
 
-    track_events = True
     if level not in {LEVELS.DEBUG, LEVELS.TRACE}:
         logger.debug(f"we won't be able to track events with level={level}")
-        track_events = False
 
     if targets and add_new_targets:
         logger.debug("targets provided; overruling add_new_targets param.")
@@ -1029,11 +1037,11 @@ def _tail_events(
         sys.exit(1)
 
     if files and replay:
-        logger.debug(f"ignoring `replay` because files were provided")
+        logger.debug("ignoring `replay` because files were provided")
         replay = False
 
     if files and watch:
-        logger.debug(f"ignoring `watch` because files were provided")
+        logger.debug("ignoring `watch` because files were provided")
         watch = False
 
     logger.debug("starting to read logs")
@@ -1142,9 +1150,9 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
         s += placeholder * (index - len(s)) + char[None]
         return s
 
-    l = list(s)
-    l[index] = char.get(l[index], char[None])
-    return "".join(l)
+    charlist = list(s)
+    charlist[index] = char.get(charlist[index], char[None])
+    return "".join(charlist)
 
 
 if __name__ == "__main__":

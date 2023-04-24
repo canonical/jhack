@@ -12,6 +12,7 @@ from ops.model import StatusBase
 from typer import Option
 
 from jhack.charm.update import update
+from jhack.helpers import JPopen
 from jhack.logger import logger
 
 RESOURCE_ROOT = Path(__file__).parent / "resources" / "functional-charm"
@@ -101,7 +102,9 @@ def _load_charm_source():
 
 
 def _inject_fn(charm_source, charm_fn):
-    charm_init = lambda node: getattr(node, "name", None) == "__init__"
+    def charm_init(node):
+        return getattr(node, "name", None) == "__init__"
+
     charm_init = next(filter(charm_init, ast.walk(charm_source)))
     charm_init.body.insert(1, charm_fn)
     return charm_init
@@ -143,8 +146,8 @@ def run(
         import astunparse
     except ModuleNotFoundError:
         print(
-            f"this function requires the `astunparse` module. "
-            f"To solve: `pip install astunparse`"
+            "this function requires the `astunparse` module. "
+            "To solve: `pip install astunparse`"
         )
         return
 
@@ -161,7 +164,7 @@ def run(
         return
 
     charm_source = _load_charm_source()
-    charm_init = _inject_fn(charm_source, charm_fn)
+    _inject_fn(charm_source, charm_fn)
 
     new_source = PREFIX + astunparse.unparse(charm_source)
 
@@ -201,4 +204,9 @@ if __name__ == "__main__":
 
         return ActiveStatus("welcome to functional charms")
 
-    run(__file__, name="foo", deploy="foo")
+    run(
+        __file__,
+        name="foo",
+        deploy="foo",
+        built_charm_template=DEFAULT_PACKED_CHARM_TEMPLATE,
+    )

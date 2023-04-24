@@ -11,14 +11,12 @@ import pytest
 try:
     from runtime import Runtime
 except ModuleNotFoundError:
-    import os
-
     from jhack.utils.event_recorder.runtime import RECORDER_MODULE
 
     sys.path.append(str(RECORDER_MODULE.absolute()))
 
 from ops.charm import CharmBase, CharmEvents
-from runtime import Runtime
+from runtime import Runtime  # noqa: F811
 
 Runtime.install()
 

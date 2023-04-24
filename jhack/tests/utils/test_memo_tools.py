@@ -2,7 +2,6 @@ import json
 import os
 import random
 import tempfile
-from io import BufferedIOBase, StringIO, TextIOWrapper
 from pathlib import Path
 from unittest.mock import patch
 
@@ -402,7 +401,7 @@ def test_memo_pebble_push():
 
         obj = open(tf.name)
         assert Foo().push(42, obj, user="lolz") == "helloworld"
-        assert stored == None
+        assert stored is None
         obj.close()
 
         tf.close()

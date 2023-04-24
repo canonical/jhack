@@ -194,8 +194,10 @@ def simulate_event(
         help="Name of the remote app that a relation event should be interpreted against."
         "Given that a relation can have multiple remote ends, this is used to determine "
         "which remote that is. E.g."
-        " - fire foo-relation-changed --remote bar  # some bar unit touched the 'foo' relation data."
-        " - fire foo-relation-departed --remote bar/0  # the remote bar/0 unit left the 'foo' relation.",
+        " - fire foo-relation-changed --remote bar  # some bar unit touched the 'foo' "
+        "relation data."
+        " - fire foo-relation-departed --remote bar/0  # the remote bar/0 unit left the "
+        "'foo' relation.",
     ),
     show_output: bool = typer.Option(
         True,

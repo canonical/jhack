@@ -87,8 +87,8 @@ def _emit(
     operator_dispatch=False,
 ):
     # we need to fetch the database to know what event we're talking about, since we're using
-    # _simulate_event to fire the event. We could also shortcut this by embedding the 'simulate_event'
-    # logic in the recorder script.
+    # _simulate_event to fire the event. We could also shortcut this by embedding the
+    # 'simulate_event' logic in the recorder script.
     with tempfile.NamedTemporaryFile() as temp_db:
         temp_db = Path(temp_db.name)
         fetch_db(unit, remote_path=db_path, local_path=temp_db)

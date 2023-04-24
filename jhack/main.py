@@ -2,17 +2,19 @@
 import logging
 import os
 import sys
+from importlib.util import find_spec
 from pathlib import Path
+
+import typer
 
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
 sys.path.append(str(Path(os.path.realpath(__file__)).parent.parent))
+
 try:
-    import jhack
+    find_spec("jhack")
 except ModuleNotFoundError:
     raise RuntimeError(f"cannot find jhack modules; " f"check your PATH={sys.path}.")
-
-import typer
 
 
 def main():
