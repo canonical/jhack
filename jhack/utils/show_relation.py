@@ -20,9 +20,9 @@ _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 
 
 class RelationType(str, Enum):
-    regular = 'regular'
-    subordinate = 'subordinate'
-    peer = 'peer'
+    regular = "regular"
+    subordinate = "subordinate"
+    peer = "peer"
 
 
 def get_interface(
@@ -72,6 +72,21 @@ def _show_unit(unit_name, model: str = None):
     return proc.stdout.read().decode("utf-8").strip()
 
 
+def _find_model_if_CMR(app_name, current_model: str = None):
+    """Find out if app_name is in current_model, if not, return the SAAS-exposed model it is in."""
+    status = _juju_status(app_name, model=current_model, json=True)
+    if app_name not in status["applications"]:
+        logger.info(
+            f"app_name {app_name!r} not found in "
+            f"{current_model or '<current model>'!r}: this must be a CMR"
+        )
+        saas_url = status["application-endpoints"][app_name]["url"]
+        other_app_model = saas_url.split(".")[0]
+        logger.info(f"other app is in model {other_app_model!r}.")
+        return other_app_model
+    return current_model
+
+
 def get_unit_info(unit_name: str, model: str = None) -> dict:
     """Returns unit-info data structure.
 
@@ -99,7 +114,10 @@ def get_unit_info(unit_name: str, model: str = None) -> dict:
     if cached_data := _JUJU_DATA_CACHE.get(unit_name):
         return cached_data
 
-    raw_data = _show_unit(unit_name, model=model)
+    app_name = unit_name.split("/")[0]
+    unit_model = _find_model_if_CMR(app_name, current_model=model)
+
+    raw_data = _show_unit(unit_name, model=unit_model)
     if not raw_data:
         raise ValueError(
             f"no unit info could be grabbed for {unit_name}; "
@@ -133,7 +151,12 @@ def get_relation_by_endpoint(
         )
     ]
     if not peer:
-        matches = [r for r in matches if remote_obj in r.get("related-units", set())]
+        matches = [
+            r
+            for r in matches
+            if remote_obj in r.get("related-units", set())
+            or r.get("cross-model", False)
+        ]
 
     if not matches:
         raise ValueError(
@@ -167,18 +190,21 @@ class AppRelationData:
     application_data: dict
     units_data: Dict[int, dict]
 
+    model: str = None
+    other_model: str = None
+
 
 def get_metadata_from_status(
     app_name, relation_name, other_app_name, other_relation_name, model: str = None
 ):
-    # line example: traefik-k8s           active      3  traefik-k8s             0  10.152.183.73  no
-    status = _juju_status(model=model, json=True)
+    app_model = _find_model_if_CMR(app_name, current_model=model)
+    status = _juju_status(app_name, model=app_model, json=True)
     # machine status json output apparently has no 'scale'... -_-
     app_status = status["applications"][app_name]
-    if app_status.get('subordinate-to'):
+    if app_status.get("subordinate-to"):
         units = {}
-        for other_unit in status["applications"][other_app_name]['units'].values():
-            subs = other_unit.get('subordinates')
+        for other_unit in status["applications"][other_app_name]["units"].values():
+            subs = other_unit.get("subordinates")
             for subn, subv in subs.items():
                 if subn.startswith(app_name):
                     units[subn] = subv
@@ -264,28 +290,40 @@ def get_content(
     # so even though we need 'any' remote unit name, we still need to query the status
     # to find out what units there are.
     status = _juju_status(other_app_name, model=model, json=True)
+    other_app_model = _find_model_if_CMR(other_app_name, current_model=model)
+    if other_app_model != model:
+        logger.info(f"other app is in model {other_app_model!r}. Pulling status...")
+        other_model_status = _juju_status(
+            other_app_name, model=other_app_model, json=True
+        )
+        other_app_status = other_model_status["applications"][other_app_name]
+    else:
+        other_app_status = status["applications"][other_app_name]
 
-    other_app_status = status["applications"][other_app_name]
-    if primaries := other_app_status.get('subordinate-to'):
+    if primaries := other_app_status.get("subordinate-to"):
         # the remote end is a subordinate!
         # primary is our this_url.
         if this_app_name in primaries:
             # this app is primary, other is subordinate
             sub_unit_found = False
-            for unit in status['applications'][this_url]['units'].values():
-                subs = unit['subordinates']
+            for unit in status["applications"][this_url]["units"].values():
+                subs = unit["subordinates"]
                 for sub in subs:
-                    if sub.startswith(other_app_name + '/'):
+                    if sub.startswith(other_app_name + "/"):
                         sub_unit_found = sub
                         break
                 if sub_unit_found:
                     break
 
             if not sub_unit_found:
-                raise RuntimeError(f"unable to find primary with a subordinate unit of {other_app_name}")
+                raise RuntimeError(
+                    f"unable to find primary with a subordinate unit of {other_app_name}"
+                )
 
         else:
-            raise NotImplementedError('relations between subordinates? Is that even a thing?')
+            raise NotImplementedError(
+                "relations between subordinates? Is that even a thing?"
+            )
 
         other_unit_name = sub_unit_found
     else:
@@ -299,7 +337,12 @@ def get_content(
         # in peer relations, show-unit luckily reports 'local-unit', so we're good.
         unit_name = f"{app_name}/{units[0]}"  # any unit will do
         units_data, app_data, r_id = get_databags(
-            unit_name, other_unit_name, this_endpoint, other_endpoint, model=model, peer=True
+            unit_name,
+            other_unit_name,
+            this_endpoint,
+            other_endpoint,
+            model=model,
+            peer=True,
         )
         if not include_default_juju_keys:
             for unit_data in units_data.values():
@@ -312,7 +355,13 @@ def get_content(
         for unit_id in units:
             unit_name = f"{app_name}/{unit_id}"
             unit_data, app_data, r_id_ = get_databags(
-                unit_name, other_unit_name, this_endpoint, other_endpoint, model=model
+                unit_name,
+                other_unit_name,
+                this_endpoint,
+                other_endpoint,
+                # in order to get the databags for THIS app,
+                # we need to show-unit --model OTHER_MODEL OTHER_APP!
+                model=other_app_model,
             )
 
             if r_id is not None:
@@ -332,6 +381,8 @@ def get_content(
         application_data=app_data,
         units_data=units_data,
         relation_id=r_id,
+        model=model,
+        other_model=other_app_model,
     )
 
 
@@ -365,7 +416,18 @@ def get_databags(
             },
         }
     else:
-        unit_data = raw_data["related-units"][local_unit]["data"]
+        local_unit_name = local_unit
+        if raw_data.get("cross-model", False):
+            # if this is a CMR, the local unit name will appear different: it will be something like
+            # remote-1239028i1403912u4123/0; so we match only using the unit ID.
+            local_unit_name = next(
+                filter(
+                    lambda s: s.endswith(local_unit.split("/")[1]),
+                    raw_data["related-units"].keys(),
+                )
+            )
+        unit_data = raw_data["related-units"][local_unit_name]["data"]
+
     app_data = raw_data.get("application-data", {})
     return unit_data, app_data, raw_data["relation-id"]
 
@@ -374,15 +436,19 @@ def get_databags(
 class RelationData:
     provider: AppRelationData
     requirer: AppRelationData
+    is_cmr: bool = False
 
 
 def get_peer_relation_data(
     *, endpoint: str, include_default_juju_keys: bool = False, model: str = None
-):
+) -> AppRelationData:
     return get_content(
-        endpoint, endpoint, include_default_juju_keys, model=model, relation_type=RelationType.peer
+        endpoint,
+        endpoint,
+        include_default_juju_keys,
+        model=model,
+        relation_type=RelationType.peer,
     )
-
 
 
 def get_relation_data(
@@ -391,7 +457,7 @@ def get_relation_data(
     requirer_endpoint: str,
     include_default_juju_keys: bool = False,
     model: str = None,
-):
+) -> RelationData:
     """Get relation databags for a juju relation.
 
     >>> get_relation_data('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
@@ -403,14 +469,15 @@ def get_relation_data(
         requirer_endpoint, provider_endpoint, include_default_juju_keys, model=model
     )
 
-    # sanity check: the two IDs should be identical
-    if not provider_data.relation_id == requirer_data.relation_id:
+    # sanity check: the two IDs should be identical, unless this is a CMR
+    is_cmr = provider_data.model != provider_data.other_model
+    if not provider_data.relation_id == requirer_data.relation_id and not is_cmr:
         logger.warning(
             f"provider relation id {provider_data.relation_id} "
             f"not the same as requirer relation id: {requirer_data.relation_id}"
         )
 
-    return RelationData(provider=provider_data, requirer=requirer_data)
+    return RelationData(provider=provider_data, requirer=requirer_data, is_cmr=is_cmr)
 
 
 @dataclass
@@ -516,6 +583,8 @@ async def render_relation(
             endpoint2 = relation.requirer
             relation_type = RelationType(relation.type)
 
+    is_cmr = False
+    relation_id = None
     if endpoint1 and endpoint2 is None:
         relation_type = RelationType.peer
 
@@ -525,6 +594,7 @@ async def render_relation(
             model=model,
         )
         relation_id = data.relation_id
+        header = f"relation (id: {relation_id})"
         entities = (data,)
 
     else:
@@ -535,11 +605,14 @@ async def render_relation(
             provider_endpoint=endpoint1,
             requirer_endpoint=endpoint2,
             include_default_juju_keys=include_default_juju_keys,
-            model=model
+            model=model,
         )
-
-        # same as provider's
-        relation_id = data.requirer.relation_id
+        is_cmr = data.is_cmr
+        if not is_cmr:
+            relation_id = data.requirer.relation_id
+            header = f"relation (id: {relation_id})"
+        else:
+            header = f"cross-model relation"
         entities = (data.requirer, data.provider)
 
     from rich.columns import Columns  # noqa
@@ -547,33 +620,83 @@ async def render_relation(
     from rich.table import Table  # noqa
     from rich.text import Text  # noqa
 
-    table = Table(title="relation data v0.4")
+    table = Table(title="relation data v0.5")
 
     table.add_column(
         justify="left",
-        header=f"relation (id: {relation_id})",
+        header=header,
         style="rgb(54,176,224) bold",
     )
     for entity in entities:
         table.add_column(justify="left", header=entity.app_name)  # meta/app_name
 
+    is_peer = relation_type is RelationType.peer
+    if is_cmr:
+        type_ = "CMR"
+    elif is_peer:
+        type_ = "peer"
+    elif relation_type is RelationType.subordinate:
+        type_ = "subordinate"
+    else:
+        type_ = "regular"
+
+    if is_peer:
+        # omit the "=" in column 2
+        table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"))
+        table.add_row("interface", Text(entities[0].meta.interface, style="blue bold"))
+        table.add_row(
+            "model", Text(entities[0].model or "the current model", style="yellow bold")
+        )
+        table.add_row(
+            "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold")
+        )
+
+    else:
+        table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"), "=")
+        table.add_row(
+            "interface", Text(entities[0].meta.interface, style="blue bold"), "="
+        )
+
+        if not is_cmr:
+            table.add_row(
+                "model",
+                Text(entities[0].model or "the current model", style="yellow bold"),
+                "=",
+            )
+            table.add_row(
+                "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"), "="
+            )
+        else:
+            table.add_row(
+                "model",
+                Text(data.provider.model or "the current model", style="yellow bold"),
+                Text(
+                    data.provider.other_model or "the current model",
+                    style="yellow bold",
+                ),
+            )
+
+            table.add_row(
+                "relation ID",
+                *(
+                    Text(str(entity.relation_id), style="rgb(200,30,140) bold")
+                    for entity in entities
+                ),
+            )
+
+    if not is_peer:
+        table.add_row(
+            "role", *(Text(role, style="white") for role in ["provider", "requirer"])
+        )
+
     table.add_row(
-        "relation name", *(Text(entity.endpoint, style="green") for entity in entities)
-    )
-    table.add_row(
-        "interface",
-        *(Text(entity.meta.interface, style="blue bold") for entity in entities),
+        "endpoint",
+        *(Text(entity.endpoint, style="blue bold") for entity in entities),
     )
     table.add_row(
         "leader unit",
         *(Text(str(entity.meta.leader_id), style="red") for entity in entities),
     )
-
-    # add annotation for non-regular relation types
-    if relation_type is RelationType.peer:
-        table.add_row(Text("type", style="pink"), Text("peer", style="bold cyan"))
-    elif relation_type is RelationType.subordinate:
-        table.add_row(Text("type", style="pink"), Text("subordinate", style="bold orange"))
 
     table.rows[-1].end_section = True
 
@@ -714,4 +837,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=1)
+    _sync_show_relation(n=2, model="tester-12")

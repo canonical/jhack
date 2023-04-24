@@ -7,19 +7,47 @@ from jhack.logger import logger
 
 IS_SNAPPED = False
 
-USR = pwd.getpwuid(os.getuid())[0]
 
+def get_home_dir() -> Path:
+    """Get the path to the home directory for the user."""
+    try:
+        usr = pwd.getpwuid(os.getuid())[0]
+    except KeyError:
+        logger.debug(
+            "pwd.getpwuid could not get pwd for your UID. "
+            "If you think you're root, something must have gone wrong. "
+            "Set the envvar JHACK_DATA to some snap-writable path where "
+            "jhack should store its data and config."
+        )
+        usr = ""
 
-if USR == "root":
-    HOME_DIR = Path("/root")
-else:
-    if os.environ.get("USER"):
-        HOME_DIR = Path("/home") / os.environ["USER"]
+    if usr == "root":
+        home_dir = Path("/root")
     else:
-        HOME_DIR = Path("~").expanduser().absolute()
+        if os.environ.get("USER"):
+            home_dir = Path("/home") / os.environ["USER"]
+        else:
+            home_dir = Path("~").expanduser().absolute()
+    return home_dir
 
-JHACK_DATA_PATH = HOME_DIR / ".config" / "jhack"
-JHACK_CONFIG_PATH = JHACK_DATA_PATH / "config.toml"
+
+def get_jhack_data_path() -> Path:
+    """Get the path to the jhack data root.
+
+    That's where we store all jhack config and data.
+    """
+    if data := os.getenv("JHACK_DATA"):
+        return Path(data)
+
+    return get_home_dir() / ".config" / "jhack"
+
+
+def get_jhack_config_path() -> Path:
+    """Get the path to the jhack config file.
+
+    It needs not exist.
+    """
+    return get_jhack_data_path() / "config.toml"
 
 
 def configure():
@@ -31,6 +59,9 @@ def configure():
             "Skipping .local/share/juju configuration."
         )
     else:
+        global IS_SNAPPED
+        IS_SNAPPED = True
+
         logger.info("jhack running in snapped mode. Checking configuration...")
         # check `juju` command.
         try:
@@ -45,7 +76,7 @@ def configure():
             )
 
         # check JUJU_DATA is writeable
-        jdata = HOME_DIR / ".local/share/juju"
+        jdata = get_home_dir() / ".local/share/juju"
 
         try:
             test_file = jdata / ".__test_rw_jhack__.hacky"
@@ -57,30 +88,4 @@ def configure():
                 f"to grant it, run 'sudo snap connect jhack:dot-local-share-juju snapd'."
                 f"Some Jhack commands will still work, but those that interact "
                 f"with the juju client will not."
-            )
-
-        # if we don't have rw access this will not do anything:
-        # python-libjuju grabs the juju-data location from envvar.
-        # We provide it here to ensure it's what we think it should be.
-        logger.info(f'Previous env JUJU_DATA = {os.environ.get("JUJU_DATA")}.')
-        os.environ["JUJU_DATA"] = str(jdata)
-        logger.info(f"Set JUJU_DATA to {jdata}.")
-
-    # check jhack config.
-    # check if the user has provided a jhack config file
-    has_config = JHACK_CONFIG_PATH.exists()
-    logger.info(
-        f'searching for {JHACK_CONFIG_PATH}!r... {"found" if has_config else "not found"}'
-    )
-    if not has_config:
-        logger.debug(f"no jhack config file found. All will be defaulted.")
-    else:
-        # check config file is readable
-        try:
-            JHACK_CONFIG_PATH.read_text()
-        except PermissionError:
-            logger.error(
-                f"Detected a config file at {JHACK_CONFIG_PATH}; however "
-                f"jhack does not have read permissions. "
-                f"Try `sudo snap connect jhack:dot-config-jhack snapd`."
             )

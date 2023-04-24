@@ -70,9 +70,11 @@ def _gather_endpoints(
         if apps and app_name not in apps:
             continue
 
-        if app['application-status']['current'] == 'terminated':
+        if app["application-status"]["current"] == "terminated":
             # https://bugs.launchpad.net/juju/+bug/1977582 app killed by juju/pebble, juju app in terminated status.
-            logger.warning(f'Skipping endpoint collection from application {app_name} as it is in `terminated` state.')
+            logger.warning(
+                f"Skipping endpoint collection from application {app_name} as it is in `terminated` state."
+            )
             continue
 
         app_eps = {}
@@ -80,9 +82,11 @@ def _gather_endpoints(
         try:
             metadata = fetch_file(unit, "metadata.yaml", model=model)
         except RuntimeError as e:
-            logger.error(f'Failed to fetch metadata.yaml from {unit} in model={model or "<current model>"}\n\n'
-                         f'{e}\n\n'
-                         f'APP ={app}')
+            logger.error(
+                f'Failed to fetch metadata.yaml from {unit} in model={model or "<current model>"}\n\n'
+                f"{e}\n\n"
+                f"APP ={app}"
+            )
             continue
 
         meta = yaml.safe_load(metadata)
@@ -394,11 +398,12 @@ class IntegrationMatrix:
 
         cmd_list: List[str] = []
         for ep1, interface, ep2 in target_bindings:
-            sym = "X" if verb == "disconnect" else "-->"
-            cmd = f"{juju_cmd} {ep1} {sym} [{interface}] {sym}  {ep2}"
+            cmd = f"juju {juju_cmd} {ep1} {ep2}"
             cmd_list.append(cmd)
+
             if dry_run:
-                print(cmd.replace(juju_cmd, verb))
+                sym = "X" if verb == "disconnect" else "-->"
+                print(f"{verb} {ep1} {sym} [{interface}] {sym} {ep2}")
 
         if dry_run:
             return
@@ -534,6 +539,8 @@ def _cmr(remote, local=None, dry_run: bool = False):
     cmrs: Dict[Tuple[AppName, AppName], List[RelationBinding]] = {}
 
     for provider, requirer in itertools.product(apps1, apps2):
+        print(f"checking {provider} <-> {requirer}")
+
         provides = mtrx1._endpoints[provider]["provides"]
         requires = mtrx2._endpoints[requirer]["requires"]
 
@@ -575,10 +582,31 @@ def _cmr(remote, local=None, dry_run: bool = False):
             )
             opts[f"{i}.{j}"] = (prov, binding, req)
 
-    cmr = Prompt.ask("Pick a CMR", choices=list(opts), default=list(opts)[0])
+    if not opts:
+        print(
+            f"No CMR binding can be pulled from model {remote!r} into {local or '<this model>'!r}: "
+            f"no compatible interfaces found."
+        )
+        return
 
-    prov, binding, req = opts[cmr]
+    cmr = Prompt.ask("Pick a CMR", choices=list(opts) + ["ALL"], default=list(opts)[0])
 
+    if cmr == "ALL":
+        for prov, binding, req in opts.values():
+            _pull_cmr(prov, binding, req, remote, local, dry_run)
+    else:
+        prov, binding, req = opts[cmr]
+        _pull_cmr(prov, binding, req, remote, local, dry_run)
+
+
+def _pull_cmr(
+    prov: str,
+    binding: RelationBinding,
+    req: str,
+    remote: str,
+    local: Optional[str],
+    dry_run: bool,
+):
     def fmt_endpoint(model, app, endpoint):
         return (
             Text(model or "<this model>", style="red")
@@ -601,8 +629,8 @@ def _cmr(remote, local=None, dry_run: bool = False):
 
     controller_prefix = ""
     controller = ""
-    if ':' in remote:
-        controller_name, model = remote.split(':')
+    if ":" in remote:
+        controller_name, model = remote.split(":")
         controller_prefix = f"{controller_name}:"
         controller = f" -c {controller_name}"
     else:
