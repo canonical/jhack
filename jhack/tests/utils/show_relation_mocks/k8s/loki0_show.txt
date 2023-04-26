@@ -1,0 +1,74 @@
+loki/0:
+  workload-version: 2.7.4
+  opened-ports: []
+  charm: ch:amd64/focal/loki-k8s-84
+  leader: true
+  life: alive
+  relation-info:
+  - relation-id: 4
+    endpoint: ingress
+    related-endpoint: ingress-per-unit
+    application-data:
+      ingress: |
+        loki/0:
+          url: http://0.64.140.44:80/clite-loki-0
+    related-units:
+      traefik/0:
+        in-scope: true
+        data:
+          egress-subnets: 0.64.140.44/32
+          ingress-address: 0.64.140.44
+          private-address: 0.64.140.44
+  - relation-id: 9
+    endpoint: grafana-source
+    related-endpoint: grafana-source
+    application-data: {}
+    related-units:
+      grafana/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.226/32
+          ingress-address: 10.152.183.226
+          private-address: 10.152.183.226
+  - relation-id: 11
+    endpoint: alertmanager
+    related-endpoint: alerting
+    application-data: {}
+    related-units:
+      alertmanager/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.30/32
+          ingress-address: 10.152.183.30
+          private-address: 10.152.183.30
+          public_address: 0.64.140.44:80/clite-alertmanager
+  - relation-id: 14
+    endpoint: metrics-endpoint
+    related-endpoint: metrics-endpoint
+    application-data: {}
+    related-units:
+      prometheus/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.199/32
+          ingress-address: 10.152.183.199
+          private-address: 10.152.183.199
+      prometheus/1:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.199/32
+          ingress-address: 10.152.183.199
+          private-address: 10.152.183.199
+  - relation-id: 16
+    endpoint: grafana-dashboard
+    related-endpoint: grafana-dashboard
+    application-data: {}
+    related-units:
+      grafana/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.226/32
+          ingress-address: 10.152.183.226
+          private-address: 10.152.183.226
+  provider-id: loki-0
+  address: 10.1.232.180

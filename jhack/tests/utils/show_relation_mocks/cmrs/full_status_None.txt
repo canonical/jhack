@@ -1,0 +1,14 @@
+Model  Controller  Cloud/Region        Version  SLA          Timestamp
+foo    mk8scloud   microk8s/localhost  3.1.2    unsupported  11:37:33+02:00
+
+SAAS          Status  Store      URL
+alertmanager  active  mk8scloud  admin/clite.alertmanager
+
+App   Version  Status  Scale  Charm        Channel  Rev  Address      Exposed  Message
+trfk  2.9.6    active      1  traefik-k8s  edge     125  0.64.140.43  no       
+
+Unit     Workload  Agent  Address       Ports  Message
+trfk/0*  active    idle   10.1.232.174         
+
+Relation provider  Requirer              Interface  Type     Message
+trfk:ingress       alertmanager:ingress  ingress    regular  

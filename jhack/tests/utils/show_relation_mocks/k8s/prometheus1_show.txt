@@ -1,0 +1,241 @@
+prometheus/1:
+  workload-version: 2.42.0
+  opened-ports: []
+  charm: ch:amd64/focal/prometheus-k8s-123
+  leader: false
+  life: alive
+  relation-info:
+  - relation-id: 2
+    endpoint: prometheus-peers
+    related-endpoint: prometheus-peers
+    application-data: {}
+    local-unit:
+      in-scope: true
+      data:
+        egress-subnets: 10.152.183.199/32
+        ingress-address: 10.152.183.199
+        private-address: 10.152.183.199
+    related-units:
+      prometheus/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.199/32
+          ingress-address: 10.152.183.199
+          private-address: 10.152.183.199
+  - relation-id: 3
+    endpoint: ingress
+    related-endpoint: ingress-per-unit
+    application-data:
+      ingress: |
+        prometheus/0:
+          url: http://0.64.140.44:80/clite-prometheus-0
+        prometheus/1:
+          url: http://0.64.140.44:80/clite-prometheus-1
+    related-units:
+      traefik/0:
+        in-scope: true
+        data:
+          egress-subnets: 0.64.140.44/32
+          ingress-address: 0.64.140.44
+          private-address: 0.64.140.44
+  - relation-id: 7
+    endpoint: alertmanager
+    related-endpoint: alerting
+    application-data: {}
+    related-units:
+      alertmanager/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.30/32
+          ingress-address: 10.152.183.30
+          private-address: 10.152.183.30
+          public_address: 0.64.140.44:80/clite-alertmanager
+  - relation-id: 8
+    endpoint: grafana-source
+    related-endpoint: grafana-source
+    application-data: {}
+    related-units:
+      grafana/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.226/32
+          ingress-address: 10.152.183.226
+          private-address: 10.152.183.226
+  - relation-id: 12
+    endpoint: metrics-endpoint
+    related-endpoint: metrics-endpoint
+    application-data:
+      alert_rules: '{"groups": [{"name": "clite_68e5e28f_traefik_reload_failure_alerts",
+        "rules": [{"alert": "TraefikConfigReloadFailure", "expr": "increase(traefik_config_reloads_failure_total[3m])
+        > 0", "for": "1m", "labels": {"severity": "critical", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "traefik", "juju_charm": "traefik-k8s"}, "annotations": {"summary": "Traefik
+        config reload failure (instance {{ $labels.instance }})", "description": "Traefik
+        keeps failing to reload its config file"}}]}, {"name": "clite_68e5e28f_traefik_unit_unavailable_alerts",
+        "rules": [{"alert": "TraefikIngressUnitIsUnavailable", "expr": "up < 1", "for":
+        "0m", "labels": {"severity": "critical", "juju_model": "clite", "juju_model_uuid":
+        "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application": "traefik", "juju_charm":
+        "traefik-k8s"}, "annotations": {"summary": "Traefik ingress unit {{ $labels.juju_model
+        }}/{{ $labels.juju_unit }} unavailable", "description": "The Traefik ingress
+        unit {{ $labels.juju_model }} {{ $labels.juju_unit }} is unavailable LABELS
+        = {{ $labels }}\n"}}]}]}'
+      scrape_jobs: '[{"metrics_path": "/metrics", "static_configs": [{"targets": ["*:8082"]}]}]'
+      scrape_metadata: '{"model": "clite", "model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736",
+        "application": "traefik", "unit": "traefik/0", "charm_name": "traefik-k8s"}'
+    related-units:
+      traefik/0:
+        in-scope: true
+        data:
+          egress-subnets: 0.64.140.44/32
+          ingress-address: 0.64.140.44
+          private-address: 0.64.140.44
+          prometheus_scrape_unit_address: 10.1.232.178
+          prometheus_scrape_unit_name: traefik/0
+  - relation-id: 13
+    endpoint: metrics-endpoint
+    related-endpoint: self-metrics-endpoint
+    application-data:
+      alert_rules: '{"groups": [{"name": "clite_68e5e28f_alertmanager_heartbeat_alerts",
+        "rules": [{"alert": "Watchdog", "expr": "vector(1)", "labels": {"severity":
+        "none", "juju_model": "clite", "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736",
+        "juju_application": "alertmanager", "juju_charm": "alertmanager-k8s"}, "annotations":
+        {"summary": "Continuously firing alert to ensure Alertmanager is working"}}]},
+        {"name": "clite_68e5e28f_alertmanager_alertmanager_notifications_failed_alerts",
+        "rules": [{"alert": "AlertmanagerNotificationsFailed", "expr": "alertmanager_notifications_failed_total{integration=~\".*\"}
+        != 0", "for": "0m", "labels": {"severity": "warning", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "alertmanager", "juju_charm": "alertmanager-k8s"}, "annotations": {"summary":
+        "Alertmanager notifications failure (instance {{ $labels.instance }})", "description":
+        "Alertmanager notifications failure\nVALUE = {{ $value }}\nLABELS = {{ $labels
+        }}\n"}}]}, {"name": "clite_68e5e28f_alertmanager_alertmanager_missing_alerts",
+        "rules": [{"alert": "AlertmanagerJobMissing", "expr": "absent(up{})", "for":
+        "0m", "labels": {"severity": "warning", "juju_model": "clite", "juju_model_uuid":
+        "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application": "alertmanager",
+        "juju_charm": "alertmanager-k8s"}, "annotations": {"summary": "Alertmanager
+        job missing (instance {{ $labels.instance }})", "description": "A Alertmanager
+        job has disappeared\nVALUE = {{ $value }}\nLABELS = {{ $labels }}\n"}}]},
+        {"name": "clite_68e5e28f_alertmanager_alertmanager_configuration_reload_failure_alerts",
+        "rules": [{"alert": "AlertmanagerConfigurationReloadFailure", "expr": "alertmanager_config_last_reload_successful{}
+        != 1", "for": "0m", "labels": {"severity": "warning", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "alertmanager", "juju_charm": "alertmanager-k8s"}, "annotations": {"summary":
+        "Alertmanager configuration reload failure (instance {{ $labels.instance }})",
+        "description": "Alertmanager configuration reload error\nVALUE = {{ $value
+        }}\nLABELS = {{ $labels }}\n"}}]}]}'
+      scrape_jobs: '[{"metrics_path": "/clite-alertmanager/metrics", "static_configs":
+        [{"targets": ["0.64.140.44:80"]}]}]'
+      scrape_metadata: '{"model": "clite", "model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736",
+        "application": "alertmanager", "unit": "alertmanager/0", "charm_name": "alertmanager-k8s"}'
+    related-units:
+      alertmanager/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.30/32
+          ingress-address: 10.152.183.30
+          private-address: 10.152.183.30
+          prometheus_scrape_unit_address: 10.1.232.179
+          prometheus_scrape_unit_name: alertmanager/0
+  - relation-id: 14
+    endpoint: metrics-endpoint
+    related-endpoint: metrics-endpoint
+    application-data:
+      alert_rules: '{"groups": [{"name": "clite_68e5e28f_loki_loki_process_too_many_restarts_alerts",
+        "rules": [{"alert": "LokiProcessTooManyRestarts", "expr": "changes(process_start_time_seconds{juju_application=\"loki\",juju_charm=\"loki-k8s\",juju_model=\"clite\",juju_model_uuid=\"68e5e28f-5a8d-4c50-8c1f-54e2823c0736\"}[15m])
+        > 5", "for": "0m", "labels": {"severity": "warning", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "loki", "juju_charm": "loki-k8s"}, "annotations": {"summary": "Loki process
+        too many restarts (instance {{ $labels.instance }})", "description": "A loki
+        process had too many restarts (target {{ $labels.instance }})\n  VALUE = {{
+        $value }}\n  LABELS = {{ $labels }}"}}]}, {"name": "clite_68e5e28f_loki_loki_request_errors_alerts",
+        "rules": [{"alert": "LokiRequestErrors", "expr": "100 * sum by(namespace,
+        job, route) (rate(loki_request_duration_seconds_count{juju_application=\"loki\",juju_charm=\"loki-k8s\",juju_model=\"clite\",juju_model_uuid=\"68e5e28f-5a8d-4c50-8c1f-54e2823c0736\",status_code=~\"5..\"}[1m]))
+        / sum by(namespace, job, route) (rate(loki_request_duration_seconds_count{juju_application=\"loki\",juju_charm=\"loki-k8s\",juju_model=\"clite\",juju_model_uuid=\"68e5e28f-5a8d-4c50-8c1f-54e2823c0736\"}[1m]))
+        > 10", "for": "15m", "labels": {"severity": "critical", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "loki", "juju_charm": "loki-k8s"}, "annotations": {"summary": "Loki request
+        errors (instance {{ $labels.instance }})", "description": "The {{ $labels.job
+        }} and {{ $labels.route }} are experiencing errors\n  VALUE = {{ $value }}\n  LABELS
+        = {{ $labels }}"}}]}, {"name": "clite_68e5e28f_loki_loki_request_panic_alerts",
+        "rules": [{"alert": "LokiRequestPanic", "expr": "sum by(namespace, job) (increase(loki_panic_total{juju_application=\"loki\",juju_charm=\"loki-k8s\",juju_model=\"clite\",juju_model_uuid=\"68e5e28f-5a8d-4c50-8c1f-54e2823c0736\"}[10m]))
+        > 0", "for": "5m", "labels": {"severity": "critical", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "loki", "juju_charm": "loki-k8s"}, "annotations": {"summary": "Loki request
+        panic (instance {{ $labels.instance }})", "description": "The {{ $labels.job
+        }} is experiencing {{ printf \"%.2f\" $value }}% increase of panics\n  VALUE
+        = {{ $value }}\n  LABELS = {{ $labels }}"}}]}, {"name": "clite_68e5e28f_loki_loki_request_latency_alerts",
+        "rules": [{"alert": "LokiRequestLatency", "expr": "(histogram_quantile(0.99,
+        sum by(le) (rate(loki_request_duration_seconds_bucket{juju_application=\"loki\",juju_charm=\"loki-k8s\",juju_model=\"clite\",juju_model_uuid=\"68e5e28f-5a8d-4c50-8c1f-54e2823c0736\",route!~\"(?i).*tail.*\"}[5m]))))
+        > 1", "for": "5m", "labels": {"severity": "critical", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "loki", "juju_charm": "loki-k8s"}, "annotations": {"summary": "Loki request
+        latency (instance {{ $labels.instance }})", "description": "The {{ $labels.job
+        }} {{ $labels.route }} is experiencing {{ printf \"%.2f\" $value }}s 99th
+        percentile latency\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"}}]}]}'
+      scrape_jobs: '[{"metrics_path": "/clite-loki-0/metrics", "static_configs": [{"targets":
+        ["0.64.140.44:80"]}]}]'
+      scrape_metadata: '{"model": "clite", "model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736",
+        "application": "loki", "unit": "loki/0", "charm_name": "loki-k8s"}'
+    related-units:
+      loki/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.154/32
+          ingress-address: 10.152.183.154
+          private-address: 10.152.183.154
+          prometheus_scrape_unit_address: 10.1.232.180
+          prometheus_scrape_unit_name: loki/0
+  - relation-id: 15
+    endpoint: metrics-endpoint
+    related-endpoint: metrics-endpoint
+    application-data:
+      alert_rules: '{"groups": [{"name": "clite_68e5e28f_grafana_grafana-self-monitoring_alerts",
+        "rules": [{"alert": "GrafanaUnitIsUnavailable", "expr": "up{juju_application=\"grafana\",juju_charm=\"grafana-k8s\",juju_model=\"clite\",juju_model_uuid=\"68e5e28f-5a8d-4c50-8c1f-54e2823c0736\"}
+        < 1", "for": "0m", "labels": {"severity": "critical", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "grafana", "juju_charm": "grafana-k8s"}, "annotations": {"summary": "Grafana
+        unit {{ $labels.juju_model }}/{{ $labels.juju_unit }} unavailable", "description":
+        "The Grafana unit {{ $labels.juju_model }} {{ $labels.juju_unit }} is unavailable
+        LABELS = {{ $labels }}\n"}}, {"alert": "GrafanaUnitIsDown", "expr": "avg_over_time(up{juju_application=\"grafana\",juju_charm=\"grafana-k8s\",juju_model=\"clite\",juju_model_uuid=\"68e5e28f-5a8d-4c50-8c1f-54e2823c0736\"}[1m])
+        < 0.5", "for": "0m", "labels": {"severity": "critical", "juju_model": "clite",
+        "juju_model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736", "juju_application":
+        "grafana", "juju_charm": "grafana-k8s"}, "annotations": {"summary": "Grafana
+        unit {{ $labels.juju_model }}/{{ $labels.juju_unit }} has been unreachable
+        at least 50% of the time over the last minute", "description": "The Grafana
+        unit {{ $labels.juju_model }} {{ $labels.juju_unit }} has been unreachable
+        at least 50% of the time over the last minute LABELS = {{ $labels }}\n"}}]}]}'
+      scrape_jobs: '[{"metrics_path": "/metrics", "static_configs": [{"targets": ["*:3000"]}]}]'
+      scrape_metadata: '{"model": "clite", "model_uuid": "68e5e28f-5a8d-4c50-8c1f-54e2823c0736",
+        "application": "grafana", "unit": "grafana/0", "charm_name": "grafana-k8s"}'
+    related-units:
+      grafana/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.226/32
+          ingress-address: 10.152.183.226
+          private-address: 10.152.183.226
+          prometheus_scrape_unit_address: 10.1.232.182
+          prometheus_scrape_unit_name: grafana/0
+  - relation-id: 17
+    endpoint: grafana-dashboard
+    related-endpoint: grafana-dashboard
+    application-data: {}
+    related-units:
+      grafana/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.226/32
+          ingress-address: 10.152.183.226
+          private-address: 10.152.183.226
+  - relation-id: 21
+    endpoint: catalogue
+    related-endpoint: catalogue
+    application-data: {}
+    related-units:
+      catalogue/0:
+        in-scope: true
+        data:
+          egress-subnets: 10.152.183.113/32
+          ingress-address: 10.152.183.113
+          private-address: 10.152.183.113
+  provider-id: prometheus-1
+  address: 10.1.232.184

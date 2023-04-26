@@ -1,5 +1,5 @@
 Model  Controller  Cloud/Region        Version  SLA          Timestamp
-clite  mk8scloud   microk8s/localhost  3.1.2    unsupported  10:58:55+02:00
+clite  mk8scloud   microk8s/localhost  3.1.2    unsupported  11:37:42+02:00
 
 App           Version  Status  Scale  Charm             Channel  Rev  Address         Exposed  Message
 alertmanager  0.25.0   active      1  alertmanager-k8s  edge      69  10.152.183.30   no       
@@ -17,6 +17,9 @@ loki/0*          active    idle   10.1.232.180
 prometheus/0*    active    idle   10.1.232.181         
 prometheus/1     active    idle   10.1.232.184         
 traefik/0*       active    idle   10.1.232.178         
+
+Offer         Application   Charm             Rev  Connected  Endpoint  Interface  Role
+alertmanager  alertmanager  alertmanager-k8s  69   0/0        ingress   ingress    requirer
 
 Relation provider                   Requirer                     Interface              Type     Message
 alertmanager:alerting               loki:alertmanager            alertmanager_dispatch  regular  

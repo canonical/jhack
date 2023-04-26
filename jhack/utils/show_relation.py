@@ -1,32 +1,37 @@
 import asyncio
+import dataclasses
+import json
 import re
 import sys
 import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import typer
 import yaml
 
-from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions, juju_status
+from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions, juju_status, FormatOption, Format, \
+    FormatUnavailable
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
 
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
+_UNIT_ID_RE = re.compile(r"/\d")
 
 
 class RelationType(str, Enum):
     regular = "regular"
     subordinate = "subordinate"
     peer = "peer"
+    cross_model = "cross_model"
 
 
 def get_interface(
-    raw_status, app_name, relation_name, other_app_name, other_relation_name
+        raw_status, app_name, relation_name, other_app_name, other_relation_name
 ):
     # get the interface name from juju status.
     relations_re = re.compile(
@@ -41,7 +46,7 @@ def get_interface(
         ep1 = app1, rname1
         ep2 = app2, rname2
         if (ep1 == endpoint1 and ep2 == endpoint2) or (
-            ep1 == endpoint2 and ep2 == endpoint1
+                ep1 == endpoint2 and ep2 == endpoint1
         ):
             return interface
 
@@ -74,7 +79,7 @@ def _show_unit(unit_name, model: str = None):
 
 def _find_model_if_CMR(app_name, current_model: str = None):
     """Find out if app_name is in current_model, if not, return the SAAS-exposed model it is in."""
-    status = _juju_status(app_name, model=current_model, json=True)
+    status = _juju_status(model=current_model, json=True)
     if app_name not in status["applications"]:
         logger.info(
             f"app_name {app_name!r} not found in "
@@ -87,7 +92,12 @@ def _find_model_if_CMR(app_name, current_model: str = None):
     return current_model
 
 
-def get_unit_info(unit_name: str, model: str = None) -> dict:
+def get_unit_info(
+        unit_name: str,
+        model: str = None,
+        other_model: str = None,
+        relation_type: RelationType = RelationType.regular
+) -> dict:
     """Returns unit-info data structure.
 
      for example:
@@ -111,11 +121,10 @@ def get_unit_info(unit_name: str, model: str = None) -> dict:
       provider-id: traefik-k8s-0
       address: 10.1.232.144
     """
-    if cached_data := _JUJU_DATA_CACHE.get(unit_name):
-        return cached_data
+    unit_model = other_model if relation_type == RelationType.cross_model else model
 
-    app_name = unit_name.split("/")[0]
-    unit_model = _find_model_if_CMR(app_name, current_model=model)
+    if cached_data := _JUJU_DATA_CACHE.get((unit_name, unit_model)):
+        return cached_data
 
     raw_data = _show_unit(unit_name, model=unit_model)
     if not raw_data:
@@ -129,34 +138,37 @@ def get_unit_info(unit_name: str, model: str = None) -> dict:
         raise KeyError(f"{unit_name} not in {data!r}")
 
     unit_data = data[unit_name]
-    _JUJU_DATA_CACHE[unit_name] = unit_data
+    _JUJU_DATA_CACHE[(unit_name, unit_model)] = unit_data
     return unit_data
 
 
 def get_relation_by_endpoint(
-    relations, local_endpoint, remote_endpoint, remote_obj, peer: bool
+        relations, local_endpoint, remote_endpoint, remote_obj,
+        relation_type: RelationType = RelationType.regular
 ):
     matches = [
         r
         for r in relations
         if (
-            (
-                r["endpoint"] == local_endpoint
-                and r["related-endpoint"] == remote_endpoint
-            )
-            or (
-                r["endpoint"] == remote_endpoint
-                and r["related-endpoint"] == local_endpoint
-            )
+                (
+                        r["endpoint"] == local_endpoint
+                        and r["related-endpoint"] == remote_endpoint
+                )
+                or (
+                        r["endpoint"] == remote_endpoint
+                        and r["related-endpoint"] == local_endpoint
+                )
         )
     ]
-    if not peer:
+    if relation_type == RelationType.regular:
         matches = [
             r
             for r in matches
             if remote_obj in r.get("related-units", set())
-            or r.get("cross-model", False)
+               or r.get("cross-model", False)
         ]
+    elif relation_type == RelationType.cross_model:
+        pass
 
     if not matches:
         raise ValueError(
@@ -195,10 +207,20 @@ class AppRelationData:
 
 
 def get_metadata_from_status(
-    app_name, relation_name, other_app_name, other_relation_name, model: str = None
+        app_name: str, relation_name: str, other_app_name: str,
+        other_relation_name: str, model: str = None,
+        other_model: str = None,
+        relation_type: RelationType = RelationType.regular,
+        assume_local: bool = False
 ):
-    app_model = _find_model_if_CMR(app_name, current_model=model)
-    status = _juju_status(app_name, model=app_model, json=True)
+    if assume_local:
+        app_model = model
+    elif relation_type == RelationType.cross_model:
+        app_model = other_model
+    else:
+        app_model = model
+
+    status = _juju_status(model=app_model, json=True)
     # machine status json output apparently has no 'scale'... -_-
     app_status = status["applications"][app_name]
     if app_status.get("subordinate-to"):
@@ -233,8 +255,8 @@ def get_metadata_from_status(
             f"no leader elected yet, guessing it's the only unit out there: {leader_id}"
         )
 
-    # we gotta do this because json status --format json does not include the interface
-    raw_text_status = _juju_status(app_name, model=model)
+    # we gotta do this because json status --format json does not include the interface -_-
+    raw_text_status = _juju_status(model=model)
 
     interface = get_interface(
         raw_text_status,
@@ -247,13 +269,18 @@ def get_metadata_from_status(
 
 
 def get_app_name_and_units(
-    url, relation_name, other_app_name, other_relation_name, model: str = None
+        url, relation_name, other_app_name, other_relation_name,
+        model: str = None,
+        other_model: str = None,
+        relation_type: RelationType = RelationType.regular,
+        assume_local: bool = False
 ):
     """Get app name and unit count from url; url is either `app_name/0` or `app_name`."""
     app_name, unit_id = url.split("/") if "/" in url else (url, None)
 
     meta = get_metadata_from_status(
-        app_name, relation_name, other_app_name, other_relation_name, model=model
+        app_name, relation_name, other_app_name, other_relation_name,
+        model=model, other_model=other_model, relation_type=relation_type, assume_local=assume_local
     )
     if unit_id is not None:
         units = (int(unit_id),)
@@ -263,11 +290,12 @@ def get_app_name_and_units(
 
 
 def get_content(
-    obj: str,
-    other_obj,
-    include_default_juju_keys: bool = False,
-    model: str = None,
-    relation_type: RelationType = RelationType.regular,
+        obj: str,
+        other_obj,
+        include_default_juju_keys: bool = False,
+        model: str = None,
+        relation_type: RelationType = RelationType.regular,
+        assume_local: bool = False
 ) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     try:
@@ -282,19 +310,24 @@ def get_content(
     other_app_name, _ = other_url.split("/") if "/" in other_url else (other_url, None)
     this_app_name, _ = this_url.split("/") if "/" in this_url else (this_url, None)
 
-    app_name, units, meta = get_app_name_and_units(
-        this_url, this_endpoint, other_app_name, other_endpoint, model
-    )
-
     # in k8s there's always a 0 unit, in machine that's not the case.
     # so even though we need 'any' remote unit name, we still need to query the status
     # to find out what units there are.
-    status = _juju_status(other_app_name, model=model, json=True)
-    other_app_model = _find_model_if_CMR(other_app_name, current_model=model)
+    status = _juju_status(model=model, json=True)
+    if relation_type is RelationType.cross_model:
+        other_app_model = _find_model_if_CMR(other_app_name, current_model=model)
+    else:
+        other_app_model = model
+
+    app_name, units, meta = get_app_name_and_units(
+        this_url, this_endpoint, other_app_name, other_endpoint, model, other_app_model,
+        relation_type=relation_type, assume_local=assume_local
+    )
+
     if other_app_model != model:
         logger.info(f"other app is in model {other_app_model!r}. Pulling status...")
         other_model_status = _juju_status(
-            other_app_name, model=other_app_model, json=True
+            model=other_app_model, json=True
         )
         other_app_status = other_model_status["applications"][other_app_name]
     else:
@@ -342,13 +375,15 @@ def get_content(
             this_endpoint,
             other_endpoint,
             model=model,
-            peer=True,
+            relation_type=relation_type
         )
         if not include_default_juju_keys:
             for unit_data in units_data.values():
                 purge(unit_data)
+
     elif relation_type is RelationType.subordinate:
         raise NotImplementedError()
+
     elif relation_type is RelationType.regular:
         units_data = {}
         r_id = None
@@ -359,9 +394,7 @@ def get_content(
                 other_unit_name,
                 this_endpoint,
                 other_endpoint,
-                # in order to get the databags for THIS app,
-                # we need to show-unit --model OTHER_MODEL OTHER_APP!
-                model=other_app_model,
+                model=model,
             )
 
             if r_id is not None:
@@ -371,6 +404,30 @@ def get_content(
             if not include_default_juju_keys:
                 purge(unit_data)
             units_data[unit_id] = unit_data
+
+    elif relation_type is RelationType.cross_model:
+        units_data = {}
+        r_id = None
+        for unit_id in units:
+            unit_name = f"{app_name}/{unit_id}"
+            unit_data, app_data, r_id_ = get_databags(
+                unit_name,
+                other_unit_name,
+                this_endpoint,
+                other_endpoint,
+                model=model,
+                other_model=other_app_model,
+                relation_type=relation_type
+            )
+
+            if r_id is not None:
+                assert r_id == r_id_, f"mismatching relation IDs: {r_id, r_id_}"
+            r_id = r_id_
+
+            if not include_default_juju_keys:
+                purge(unit_data)
+            units_data[unit_id] = unit_data
+
     else:
         raise TypeError(relation_type)
 
@@ -387,26 +444,27 @@ def get_content(
 
 
 def get_databags(
-    local_unit,
-    remote_unit,
-    local_endpoint,
-    remote_endpoint,
-    model: str = None,
-    peer: bool = False,
+        local_unit,
+        remote_unit,
+        local_endpoint,
+        remote_endpoint,
+        model: str = None,
+        other_model: str = None,
+        relation_type: RelationType = RelationType.regular,
 ):
     """Gets the databags of local unit and its leadership status.
 
     Given a remote unit and the remote endpoint name.
     """
-    data = get_unit_info(remote_unit, model=model)
-    relation_info = data.get("relation-info")
-    if not relation_info:
+    data = get_unit_info(remote_unit, model=model, other_model=other_model, relation_type=relation_type)
+    relations = data.get("relation-info")
+    if not relations:
         sys.exit(f"{remote_unit} has no relations, or the unit is still allocating.")
 
     raw_data = get_relation_by_endpoint(
-        relation_info, local_endpoint, remote_endpoint, local_unit, peer=peer
+        relations, local_endpoint, remote_endpoint, local_unit, relation_type=relation_type
     )
-    if peer:
+    if relation_type == RelationType.peer:
         # we can grab them all in a single call.
         unit_data = {
             local_unit: raw_data["local-unit"]["data"],
@@ -437,11 +495,10 @@ def get_databags(
 class RelationData:
     provider: AppRelationData
     requirer: AppRelationData
-    is_cmr: bool = False
 
 
 def get_peer_relation_data(
-    *, endpoint: str, include_default_juju_keys: bool = False, model: str = None
+        *, endpoint: str, include_default_juju_keys: bool = False, model: str = None
 ) -> AppRelationData:
     return get_content(
         endpoint,
@@ -453,32 +510,26 @@ def get_peer_relation_data(
 
 
 def get_relation_data(
-    *,
-    provider_endpoint: str,
-    requirer_endpoint: str,
-    include_default_juju_keys: bool = False,
-    model: str = None,
+        *,
+        provider_endpoint: str,
+        requirer_endpoint: str,
+        include_default_juju_keys: bool = False,
+        model: str = None,
+        relation_type: RelationType = RelationType.regular,
 ) -> RelationData:
     """Get relation databags for a juju relation.
 
     >>> get_relation_data('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
     provider_data = get_content(
-        provider_endpoint, requirer_endpoint, include_default_juju_keys, model=model
+        provider_endpoint, requirer_endpoint, include_default_juju_keys, model=model,
+        relation_type=relation_type, assume_local=True
     )
     requirer_data = get_content(
-        requirer_endpoint, provider_endpoint, include_default_juju_keys, model=model
+        requirer_endpoint, provider_endpoint, include_default_juju_keys, model=model,
+        relation_type=relation_type
     )
-
-    # sanity check: the two IDs should be identical, unless this is a CMR
-    is_cmr = provider_data.model != provider_data.other_model
-    if not provider_data.relation_id == requirer_data.relation_id and not is_cmr:
-        logger.warning(
-            f"provider relation id {provider_data.relation_id} "
-            f"not the same as requirer relation id: {requirer_data.relation_id}"
-        )
-
-    return RelationData(provider=provider_data, requirer=requirer_data, is_cmr=is_cmr)
+    return RelationData(provider=provider_data, requirer=requirer_data)
 
 
 @dataclass
@@ -491,7 +542,7 @@ class Relation:
 
 
 def get_relations(model: str = None) -> List[Relation]:
-    status = _juju_status("", model=model)
+    status = _juju_status(model=model)
     relations = None
     for line in status.split("\n"):
         if line.startswith("Relation provider"):
@@ -539,30 +590,18 @@ def _render_databag(unit_name, dct, leader=False, hide_empty_databags: bool = Fa
     return p
 
 
-async def render_relation(
-    endpoint1: str = None,
-    endpoint2: str = None,
-    n: int = None,
-    include_default_juju_keys: bool = False,
-    hide_empty_databags: bool = False,
-    model: str = None,
-):
-    """Pprints relation databags for a juju relation
-    >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
-    """
-
+def _coalesce_endpoint_and_n(endpoint1, endpoint2, n, model: Optional[str]):
     if n is not None and (endpoint1 or endpoint2):
         raise RuntimeError(
             "Invalid usage: provide `n` or " "(`endpoint1` + `endpoint2`)."
         )
 
-    relation_type = None  # unknown
+    relations = get_relations(model)
+
+    if not relations:
+        sys.exit(f"No relations found in model {model or '<current model>'!r}.")
 
     if n is not None:
-        relations = get_relations(model)
-        if not relations:
-            print(f"No relations found in model {model!r}.")
-            return
         try:
             relation = relations[n]
         except IndexError:
@@ -576,52 +615,137 @@ async def render_relation(
             raise RuntimeError(
                 f"There {pl(plur_rel, 'are', 'is')} only {n_rel} "
                 f"relation{pl(plur_rel, 's')}. "
-                f"Can't show index={n+1}."
+                f"Can't show index={n + 1}."
             )
         endpoint1 = relation.provider
 
         if relation.type != "peer":
             endpoint2 = relation.requirer
-            relation_type = RelationType(relation.type)
 
-    is_cmr = False
-    relation_id = None
-    if endpoint1 and endpoint2 is None:
-        relation_type = RelationType.peer
+        relation_type = RelationType(relation.type)
 
-        data = get_peer_relation_data(
+    else:
+        def _strip_unit_name(s: Union[str, None]):
+            if not s or '/' not in s:
+                return s
+            return _UNIT_ID_RE.sub('', s)
+
+        ep1_normalized = _strip_unit_name(endpoint1)
+        ep2_normalized = _strip_unit_name(endpoint2)
+
+        found = False
+        for relation in relations:
+            if relation.provider == ep1_normalized and (not ep2_normalized or relation.requirer == ep2_normalized):
+                relation_type = RelationType(relation.type)
+                found = True
+                break
+            elif relation.requirer == ep1_normalized and (not ep2_normalized or relation.provider == ep2_normalized):
+                relation_type = RelationType(relation.type)
+                endpoint1, endpoint2 = endpoint2, endpoint1
+                found = True
+                break
+
+        if not found:
+            raise RuntimeError(f"No relation found with endpoints {endpoint1} -> {endpoint2} "
+                               f"in {relations}.")
+
+    if relation_type is RelationType.regular:
+        # still a chance it's a CMR.
+        app1 = endpoint1.split(':')[0]
+        app2 = endpoint2.split(':')[0]
+        status = _juju_status(model=model, json=True)
+        saas = status.get('application-endpoints', {}).keys()
+
+        if app1 in saas or app2 in saas:
+            relation_type = RelationType.cross_model
+
+    return endpoint1, endpoint2, relation_type
+
+
+def _gather_entities(endpoint1: str, endpoint2: str, relation_type: RelationType, model: Optional[str],
+                     include_default_juju_keys: bool = False) -> Tuple[AppRelationData, ...]:
+    if relation_type == RelationType.peer:
+        return get_peer_relation_data(
             endpoint=endpoint1,
             include_default_juju_keys=include_default_juju_keys,
             model=model,
-        )
-        relation_id = data.relation_id
-        header = f"relation (id: {relation_id})"
-        entities = (data,)
+        ),
+
+    if not (endpoint1 and endpoint2):
+        raise RuntimeError(f"Not a peer relation, but not enough endpoints provided: "
+                           f"{(endpoint1, endpoint2)} (expected 2).")
+
+    data = get_relation_data(
+        provider_endpoint=endpoint1,
+        requirer_endpoint=endpoint2,
+        include_default_juju_keys=include_default_juju_keys,
+        model=model,
+        relation_type=relation_type
+    )
+    return (data.requirer, data.provider)
+
+
+async def render_relation(
+        endpoint1: str = None,
+        endpoint2: str = None,
+        n: int = None,
+        include_default_juju_keys: bool = False,
+        hide_empty_databags: bool = False,
+        model: str = None,
+        format: Format = Format.auto,
+):
+    """Pprints relation databags for a juju relation
+    >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
+    """
+
+    endpoint1, endpoint2, relation_type = _coalesce_endpoint_and_n(endpoint1, endpoint2, n, model)
+    entities = _gather_entities(endpoint1, endpoint2, relation_type, model=model,
+                                include_default_juju_keys=include_default_juju_keys)
+
+    if format == Format.auto:
+        return _rich_format_table(entities, relation_type,
+                                  hide_empty_databags=hide_empty_databags)
+
+    elif format == Format.json:
+        return _format_json(entities, relation_type)
 
     else:
-        if not (endpoint1 and endpoint2):
-            raise RuntimeError("invalid usage: provide two endpoints.")
+        raise FormatUnavailable(format)
 
-        data = get_relation_data(
-            provider_endpoint=endpoint1,
-            requirer_endpoint=endpoint2,
-            include_default_juju_keys=include_default_juju_keys,
-            model=model,
-        )
-        is_cmr = data.is_cmr
-        if not is_cmr:
-            relation_id = data.requirer.relation_id
-            header = f"relation (id: {relation_id})"
-        else:
-            header = "cross-model relation"
-        entities = (data.requirer, data.provider)
 
+def _format_json(entities: Tuple[AppRelationData, ...], relation_type: RelationType):
+    """Format as json"""
+
+    @dataclasses.dataclass
+    class Response:
+        entities: Tuple[AppRelationData]
+        type: RelationType
+
+    resp = Response(entities, relation_type)
+    return json.dumps(dataclasses.asdict(resp), indent=2)
+
+
+def _rich_format_table(entities: Tuple[AppRelationData, ...], relation_type: RelationType,
+                       hide_empty_databags: bool = True):
+    """Format as a rich.table.Table."""
     from rich.columns import Columns  # noqa
     from rich.console import Console  # noqa
     from rich.table import Table  # noqa
     from rich.text import Text  # noqa
 
-    table = Table(title="relation data v0.5")
+    is_cmr = relation_type is RelationType.cross_model
+    if len(entities) == 1:
+        relation_id = entities[0].relation_id
+        header = f"peer relation (id: {relation_id})"
+    else:
+        if is_cmr:
+            header = "cross-model relation"
+            relation_id = None
+        else:
+            relation_id = entities[0].relation_id
+            header = f"relation (id: {relation_id})"
+
+    table = Table(title="relation data v0.6")
 
     table.add_column(
         justify="left",
@@ -670,9 +794,9 @@ async def render_relation(
         else:
             table.add_row(
                 "model",
-                Text(data.provider.model or "the current model", style="yellow bold"),
+                Text(entities[0].model or "the current model", style="yellow bold"),
                 Text(
-                    data.provider.other_model or "the current model",
+                    entities[0].other_model or "the current model",
                     style="yellow bold",
                 ),
             )
@@ -729,39 +853,40 @@ async def render_relation(
 
 
 def sync_show_relation(
-    endpoint1: str = typer.Argument(
-        None,
-        help="First endpoint. It's a string in the format "
-        "<unit_name>:<relation_name>; example: mongodb/1:ingress.",
-    ),
-    endpoint2: str = typer.Argument(
-        None,
-        help="Second endpoint. It's a string in the format "
-        "<unit_name>:<relation_name>; example: traefik/3:ingress."
-        "Can be omitted for peer relations.",
-    ),
-    n: int = typer.Option(
-        None,
-        "-n",
-        help="Relation number. "
-        "An ID corresponding to the row in juj status --relations."
-        "Alternative to passing endpoint1(+endpoint2).",
-    ),
-    show_juju_keys: bool = typer.Option(
-        False,
-        "--show-juju-keys",
-        "-s",
-        help="Show from the unit databags the data provided by juju: "
-        "ingress-address, private-address, egress-subnets.",
-    ),
-    hide_empty_databags: bool = typer.Option(
-        False, "--hide-empty", "-h", help="Do not show empty databags."
-    ),
-    watch: bool = typer.Option(
-        False, "-w", "--watch", help="Keep watching for changes."
-    ),
-    model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
-    color: Optional[str] = ColorOption,
+        endpoint1: str = typer.Argument(
+            None,
+            help="First endpoint. It's a string in the format "
+                 "<unit_name>:<relation_name>; example: mongodb/1:ingress.",
+        ),
+        endpoint2: str = typer.Argument(
+            None,
+            help="Second endpoint. It's a string in the format "
+                 "<unit_name>:<relation_name>; example: traefik/3:ingress."
+                 "Can be omitted for peer relations.",
+        ),
+        n: int = typer.Option(
+            None,
+            "-n",
+            help="Relation number. "
+                 "An ID corresponding to the row in juj status --relations."
+                 "Alternative to passing endpoint1(+endpoint2).",
+        ),
+        show_juju_keys: bool = typer.Option(
+            False,
+            "--show-juju-keys",
+            "-s",
+            help="Show from the unit databags the data provided by juju: "
+                 "ingress-address, private-address, egress-subnets.",
+        ),
+        hide_empty_databags: bool = typer.Option(
+            False, "--hide-empty", "-h", help="Do not show empty databags."
+        ),
+        watch: bool = typer.Option(
+            False, "-w", "--watch", help="Keep watching for changes."
+        ),
+        model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
+        color: Optional[str] = ColorOption,
+        format: Format = FormatOption,
 ):
     """Displays the databags of two applications or units involved in a relation.
 
@@ -782,18 +907,20 @@ def sync_show_relation(
         watch=watch,
         model=model,
         color=color,
+        format=format,
     )
 
 
 def _sync_show_relation(
-    endpoint1: str = None,
-    endpoint2: str = None,
-    n: int = None,
-    show_juju_keys: bool = False,
-    hide_empty_databags: bool = False,
-    model: str = None,
-    watch: bool = False,
-    color: RichSupportedColorOptions = "auto",
+        endpoint1: str = None,
+        endpoint2: str = None,
+        n: int = None,
+        show_juju_keys: bool = False,
+        hide_empty_databags: bool = False,
+        model: str = None,
+        watch: bool = False,
+        color: RichSupportedColorOptions = "auto",
+        format: FormatOption = "auto",
 ):
     try:
         import rich  # noqa
@@ -818,6 +945,7 @@ def _sync_show_relation(
                 include_default_juju_keys=show_juju_keys,
                 hide_empty_databags=hide_empty_databags,
                 model=model,
+                format=format
             )
         )
 
@@ -838,4 +966,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=2, model="tester-12")
+    _sync_show_relation(n=0)

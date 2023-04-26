@@ -1,15 +1,17 @@
 import csv
 import subprocess
+import sys
 from json import dumps as json_dumps
 from json import loads as json_loads
 from pathlib import Path
 from typing import Optional
 
+import requests_unixsocket
 import toml
-import typer
 from rich.console import Console
 from rich.table import Table
 
+from jhack.helpers import Format, FormatOption
 from jhack.logger import logger as jhack_logger
 
 NOT_INSTALLED = "Not Installed."
@@ -30,43 +32,62 @@ def get_os_release():
         return dict(csv.reader(f, delimiter="="))
 
 
-def print_env(json: bool = typer.Option(False, is_flag=True)):
+def _gather_juju_snaps_versions(format: Format = FormatOption):
+    url = "http+unix://%2Frun%2Fsnapd.socket/v2/snaps"
+
+    try:
+        snap_info = requests_unixsocket.get(url)
+        snap_info.raise_for_status()
+        local_snaps = snap_info.json()["result"]
+    except ConnectionError:
+        local_snaps = []
+
+    versions = {snap["name"]: f"{snap['version']} - {snap['revision']} ({snap['channel']})"
+                for snap in local_snaps if snap["name"].startswith('juju')}
+
+    if format == Format.json:
+        return versions
+    table = Table(show_header=False, show_edge=False, show_lines=False, show_footer=False)
+
+    for k, v in versions.items():
+        table.add_row(k, v)
+
+    return table
+
+
+def print_env(format: Format = FormatOption):
     """Print the details of the juju environment for use in bug reports."""
     pyproject_toml = (
         Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
     )
     jhack_version = toml.loads(pyproject_toml.read_text())["project"]["version"]
 
-    juju_version = get_output("juju --version")
-    mk8s_version = get_output("microk8s version")
-    lxd_version = get_output("lxd --version")
+    python_v = sys.version_info
+    python_version = f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
+
     multipass_version = get_output("multipass version --format json")
-    if multipass_version:
-        multipass_version = json_loads(multipass_version)
-    else:
-        multipass_version = {}
-    os_version = get_os_release()["PRETTY_NAME"]
-    kernel_info = get_output("uname -srp")
+    multipass_version = json_loads(multipass_version) if multipass_version else {}
 
     data = {
         "jhack": jhack_version,
-        "juju": juju_version,
-        "microk8s": mk8s_version,
-        "lxd": lxd_version,
-        "multipass": multipass_version.get("multipass", None),
-        "multipassd": multipass_version.get("multipassd", None),
-        "os": os_version,
-        "kernel": kernel_info,
+        "python": python_version,
+        "juju-* snaps": _gather_juju_snaps_versions(format=format),
+        "microk8s": get_output("microk8s version") or NOT_INSTALLED,
+        "lxd": get_output("lxd --version") or NOT_INSTALLED,
+        "multipass": multipass_version.get("multipass", NOT_INSTALLED),
+        "multipassd": multipass_version.get("multipassd", NOT_INSTALLED),
+        "os": get_os_release()["PRETTY_NAME"],
+        "kernel": get_output("uname -srp"),
     }
 
-    if json:
+    if format == Format.json:
         jsn = json_dumps(data, indent=2)
         print(jsn)
 
     else:
         table = Table(title="juju info v0.1", show_header=False)
         for k, v in data.items():
-            table.add_row(k, v or NOT_INSTALLED)
+            table.add_row(k, v)
         Console().print(table)
 
 

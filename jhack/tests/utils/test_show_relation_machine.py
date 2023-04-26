@@ -10,7 +10,7 @@ from jhack.utils.show_relation import _sync_show_relation, get_content
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 
-def fake_juju_status(app_name, model=None, json: bool = False):
+def fake_juju_status(app_name=None, model=None, json: bool = False):
     ext = ".jsn" if json else ".txt"
     if app_name == "ceilometer":
         source = "ceil_status" + ext

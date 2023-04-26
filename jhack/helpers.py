@@ -14,6 +14,28 @@ import typer
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
 
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+
+
+    class StrEnum(str, Enum):
+        pass
+
+
+class Format(StrEnum):
+    auto = 'auto'
+    json = 'json'
+
+
+FormatOption = typer.Option(Format.auto, '-f', '--format', help="Output format.")
+
+
+class FormatUnavailable(NotImplementedError):
+    """Raised when a command cannot comply with a format parameter."""
+
+
 RichSupportedColorOptions = Optional[
     Literal["auto", "standard", "256", "truecolor", "windows", "no"]
 ]
@@ -22,8 +44,8 @@ ColorOption = typer.Option(
     "-c",
     "--color",
     help="Color scheme to adopt. Supported options: "
-    "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
-    "no: disable colors entirely.",
+         "['auto', 'standard', '256', 'truecolor', 'windows', 'no'] "
+         "no: disable colors entirely.",
 )
 
 
@@ -219,7 +241,7 @@ def modify_remote_file(unit: str, path: str):
 
 
 def fetch_file(
-    unit: str, remote_path: str, local_path: Path = None, model: str = None
+        unit: str, remote_path: str, local_path: Path = None, model: str = None
 ) -> Optional[str]:
     unit_sanitized = unit.replace("/", "-")
     model_arg = f" -m {model}" if model else ""

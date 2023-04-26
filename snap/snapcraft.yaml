@@ -38,6 +38,7 @@ parts:
       - parse==1.19.0
       - asttokens
       - astunparse
+      - requests-unixsocket==0.3.0
       - toml
     stage-snaps:
       - juju/3.0/beta

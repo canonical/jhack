@@ -1,0 +1,8 @@
+trfk/0:
+  workload-version: 2.9.6
+  opened-ports: []
+  charm: ch:amd64/focal/traefik-k8s-125
+  leader: true
+  life: alive
+  provider-id: trfk-0
+  address: 10.1.232.174

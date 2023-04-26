@@ -673,8 +673,10 @@ def _pull_cmr(
 
 
 if __name__ == "__main__":
-    mtrx = IntegrationMatrix(include_peers=True)
-    # mtrx.disconnect()
-    # mtrx.watch()
+    # mtrx = IntegrationMatrix(include_peers=True)
+    # # mtrx.disconnect()
+    # # mtrx.watch()
+    # # mtrx.pprint()
     # mtrx.pprint()
-    mtrx.pprint()
+
+    cmr("cos")
