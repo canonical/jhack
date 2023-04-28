@@ -42,12 +42,17 @@ def _gather_juju_snaps_versions(format: Format = FormatOption):
     except ConnectionError:
         local_snaps = []
 
-    versions = {snap["name"]: f"{snap['version']} - {snap['revision']} ({snap['channel']})"
-                for snap in local_snaps if snap["name"].startswith('juju')}
+    versions = {
+        snap["name"]: f"{snap['version']} - {snap['revision']} ({snap['channel']})"
+        for snap in local_snaps
+        if snap["name"].startswith("juju")
+    }
 
     if format == Format.json:
         return versions
-    table = Table(show_header=False, show_edge=False, show_lines=False, show_footer=False)
+    table = Table(
+        show_header=False, show_edge=False, show_lines=False, show_footer=False
+    )
 
     for k, v in versions.items():
         table.add_row(k, v)
@@ -63,7 +68,9 @@ def print_env(format: Format = FormatOption):
     jhack_version = toml.loads(pyproject_toml.read_text())["project"]["version"]
 
     python_v = sys.version_info
-    python_version = f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
+    python_version = (
+        f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
+    )
 
     multipass_version = get_output("multipass version --format json")
     multipass_version = json_loads(multipass_version) if multipass_version else {}

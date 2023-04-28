@@ -8,7 +8,11 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import pytest
 
-from jhack.utils.show_relation import _sync_show_relation, get_interface
+from jhack.utils.show_relation import (
+    RelationEndpointURL,
+    _coalesce_endpoint_and_n,
+    _sync_show_relation,
+)
 
 
 def fake_juju_status(model=None, json: bool = False):
@@ -21,12 +25,14 @@ def fake_juju_status(model=None, json: bool = False):
     return raw
 
 
-def fake_juju_show_unit(app_name, model=None):
-    source = f"{app_name.replace('/','')}_show.txt"
+def fake_juju_show_unit(
+    unit_name, related_to: str = None, endpoint: str = None, model: str = None
+):
+    source = f"{unit_name.replace('/','')}_show.json"
     mock_file = Path(__file__).parent / "show_relation_mocks" / "k8s" / source
     if not mock_file.exists():
-        raise ValueError(app_name)
-    return mock_file.read_text()
+        raise ValueError(unit_name)
+    return json_.loads(mock_file.read_text())
 
 
 @pytest.fixture(autouse=True)
@@ -54,24 +60,20 @@ def test_show_unit_works(ep1, ep2, n):
 
 
 @pytest.mark.parametrize(
-    "app_name, relation_name, other_app_name, other_relation_name, expected_interface_name",
+    "ep1, ep2, expected_interface_name",
     (
-        ("postgresql", "database", "kratos", "pg-database", "postgresql_client"),
+        ("postgresql:database", "kratos:pg-database", "postgresql_client"),
         (
-            "postgresql",
-            "database-peers",
-            "postgresql",
-            "database-peers",
+            "postgresql:database-peers",
+            "postgresql:database-peers",
             "postgresql_peers",
         ),
-        ("postgresql", "restart", "postgresql", "restart", "rolling_op"),
+        ("postgresql:restart", "postgresql:restart", "rolling_op"),
     ),
 )
-def test_intf_re(
-    app_name,
-    relation_name,
-    other_app_name,
-    other_relation_name,
+def test_coalesce(
+    ep1,
+    ep2,
     expected_interface_name,
 ):
     status = dedent(
@@ -94,13 +96,7 @@ def test_intf_re(
     postgresql:restart         postgresql:restart         rolling_op         peer
     """
     )
+    with patch("jhack.utils.show_relation._juju_status", return_value=status):
+        ep1, ep2, relation = _coalesce_endpoint_and_n(ep1, ep2, None, None)
 
-    interface = get_interface(
-        status,
-        app_name=app_name,
-        relation_name=relation_name,
-        other_app_name=other_app_name,
-        other_relation_name=other_relation_name,
-    )
-
-    assert interface == expected_interface_name
+    assert relation.interface == expected_interface_name

@@ -19,6 +19,7 @@ dependencies = [
     "ops(==1.5.3)",
     "rich(==13.3.0)",
     "parse(==1.19.0)",
+    "requests(==2.29.0)",
     "requests-unixsocket(==0.3.0)",
     "asttokens",
     "astunparse",
