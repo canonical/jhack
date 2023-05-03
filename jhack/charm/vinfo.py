@@ -4,7 +4,7 @@ from operator import itemgetter
 from typing import Optional
 
 import typer
-from rich.console import Console, Group
+from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
@@ -48,7 +48,8 @@ def _add_app_info(table: Table, target: str, model: str):
     appinfo = status["applications"][app_name]
     table.add_row(
         "charm",
-        f"{appinfo['charm-name']}: v{appinfo['charm-rev']} - {appinfo.get('charm-channel', '<local charm>')}",
+        f"{appinfo['charm-name']}: v{appinfo['charm-rev']} - "
+        f"{appinfo.get('charm-channel', '<local charm>')}",
     )
     table.add_row("model", model or status["model"]["name"])
     table.add_row(
@@ -89,7 +90,7 @@ def _add_charm_lib_info(
     libs = out.strip().split("\n")
 
     # todo: if machine, adapt pattern
-    # pattern: './agents/unit-zinc-k8s-0/charm/lib/charms/loki_k8s/v0/loki_push_api.py:LIBPATCH = 12'
+    # pattern: './agents/unit-zinc-k8s-0/charm/lib/charms/loki_k8s/v0/loki_push_api.py:LIBPATCH = 12'  # noqa
     libinfo = []
     for lib in libs:
         libinfo.append(

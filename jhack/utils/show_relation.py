@@ -1,4 +1,6 @@
 import asyncio
+import dataclasses
+import json
 import re
 import sys
 import time
@@ -8,48 +10,96 @@ from functools import lru_cache
 from typing import Dict, List, Optional, Tuple
 
 import typer
-import yaml
 
-from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions, juju_status
+from jhack.helpers import (
+    ColorOption,
+    Format,
+    FormatOption,
+    FormatUnavailable,
+    JPopen,
+    RichSupportedColorOptions,
+    juju_status,
+)
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
 
 _JUJU_DATA_CACHE = {}
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
+_UNIT_ID_RE = re.compile(r"/\d")
+_RELATIONS_RE = re.compile(
+    r"([\w\-]+):([\w\-]+)\s+([\w\-]+):([\w\-]+)\s+([\w\-]+)\s+([\w\-]+).*"
+)
 
 
 class RelationType(str, Enum):
     regular = "regular"
     subordinate = "subordinate"
     peer = "peer"
+    cross_model = "cross_model"
 
 
-def get_interface(
-    raw_status, app_name, relation_name, other_app_name, other_relation_name
-):
-    # get the interface name from juju status.
-    relations_re = re.compile(
-        r"([\w\-]+):([\w\-]+)\s+([\w\-]+):([\w\-]+)\s+([\w\-]+)\s+([\w\-]+).*"
-    )
-    relations = relations_re.findall(raw_status)
+@dataclass
+class Relation:
+    provider: str
+    provider_endpoint: str
+    requirer: str
+    requirer_endpoint: str
+    interface: str
+    raw_type: str
 
-    endpoint1 = app_name, relation_name
-    endpoint2 = other_app_name, other_relation_name
+    @property
+    def type(self) -> RelationType:
+        return RelationType(self.raw_type)
 
-    for app1, rname1, app2, rname2, interface, _ in relations:
-        ep1 = app1, rname1
-        ep2 = app2, rname2
-        if (ep1 == endpoint1 and ep2 == endpoint2) or (
-            ep1 == endpoint2 and ep2 == endpoint1
-        ):
-            return interface
 
-    raise RuntimeError(
-        f"unable to find interface for "
-        f"{app_name}:{relation_name} <--> "
-        f"{other_app_name}:{other_relation_name}"
-    )
+class RelationEndpointURL:
+    def __init__(self, s):
+        if ":" in s:
+            u, endpoint = s.split(":")
+        else:
+            u, endpoint = s, None
+
+        if "/" in u:
+            app_name, unit_id = u.split("/")
+        else:
+            app_name, unit_id = u, None
+
+        self.app_name = app_name
+        self.unit_id = unit_id
+        self.endpoint = endpoint
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        s = self.app_name
+        if self.unit_id:
+            s += "/" + self.unit_id
+        if self.endpoint:
+            s += ":" + self.endpoint
+        return s
+
+    @property
+    def unit_name(self):
+        if self.unit_id is None:
+            raise ValueError(f"no unit id set on {self}")
+        return f"{self.app_name}/{self.unit_id}"
+
+    @property
+    def full_endpoint_name(self):
+        if not self.endpoint:
+            raise ValueError(f"no endpoint set on {self}")
+        return f"{self.app_name}:{self.endpoint}"
+
+    def with_unit_id(self, unit_id: int) -> "RelationEndpointURL":
+        ep = RelationEndpointURL(str(self))
+        ep.unit_id = unit_id
+        return ep
+
+
+class InterfaceNotFoundError(RuntimeError):
+    pass
 
 
 def purge(data: dict):
@@ -64,30 +114,43 @@ def _juju_status(*args, **kwargs):
     return juju_status(*args, **kwargs)
 
 
-def _show_unit(unit_name, model: str = None):
+def _show_unit(
+    unit_name, related_to: str = None, endpoint: str = None, model: str = None
+):
+    args = ["juju", "show-unit", "--format", "json"]
     if model:
-        proc = JPopen(f"juju show-unit -m {model} {unit_name}".split())
-    else:
-        proc = JPopen(f"juju show-unit {unit_name}".split())
-    return proc.stdout.read().decode("utf-8").strip()
+        args.extend(["-m", model])
+    if related_to:
+        args.extend(["--related-unit", related_to])
+    if endpoint:
+        args.extend(["--endpoint", endpoint])
+    args.append(unit_name)
+    proc = JPopen(args)
+    raw = proc.stdout.read().decode("utf-8").strip()
+    return json.loads(raw)
 
 
 def _find_model_if_CMR(app_name, current_model: str = None):
     """Find out if app_name is in current_model, if not, return the SAAS-exposed model it is in."""
-    status = _juju_status(app_name, model=current_model, json=True)
+    status = _juju_status(model=current_model, json=True)
     if app_name not in status["applications"]:
         logger.info(
             f"app_name {app_name!r} not found in "
             f"{current_model or '<current model>'!r}: this must be a CMR"
         )
         saas_url = status["application-endpoints"][app_name]["url"]
-        other_app_model = saas_url.split(".")[0]
-        logger.info(f"other app is in model {other_app_model!r}.")
-        return other_app_model
+        other_model = saas_url.split(".")[0]
+        logger.info(f"other app is in model {other_model!r}.")
+        return other_model
     return current_model
 
 
-def get_unit_info(unit_name: str, model: str = None) -> dict:
+def get_unit_info(
+    unit_name: str,
+    related_to: str = None,
+    endpoint: str = None,
+    model: str = None,
+) -> dict:
     """Returns unit-info data structure.
 
      for example:
@@ -111,31 +174,35 @@ def get_unit_info(unit_name: str, model: str = None) -> dict:
       provider-id: traefik-k8s-0
       address: 10.1.232.144
     """
-    if cached_data := _JUJU_DATA_CACHE.get(unit_name):
+    signature = hash((unit_name, related_to, endpoint, model))
+    if cached_data := _JUJU_DATA_CACHE.get(signature):
         return cached_data
 
-    app_name = unit_name.split("/")[0]
-    unit_model = _find_model_if_CMR(app_name, current_model=model)
-
-    raw_data = _show_unit(unit_name, model=unit_model)
-    if not raw_data:
+    data = _show_unit(unit_name, related_to=related_to, endpoint=endpoint, model=model)
+    if not data:
         raise ValueError(
             f"no unit info could be grabbed for {unit_name}; "
             f"are you sure it's a valid unit name?"
         )
-
-    data = yaml.safe_load(raw_data)
     if unit_name not in data:
-        raise KeyError(f"{unit_name} not in {data!r}")
+        raise KeyError(
+            f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}"
+        )
 
     unit_data = data[unit_name]
-    _JUJU_DATA_CACHE[unit_name] = unit_data
+    _JUJU_DATA_CACHE[signature] = unit_data
     return unit_data
 
 
 def get_relation_by_endpoint(
-    relations, local_endpoint, remote_endpoint, remote_obj, peer: bool
+    relations,
+    obj: RelationEndpointURL,
+    other_obj: RelationEndpointURL,
+    relation: "Relation",
 ):
+    local_endpoint = obj.endpoint
+    remote_endpoint = other_obj.endpoint
+
     matches = [
         r
         for r in relations
@@ -150,11 +217,11 @@ def get_relation_by_endpoint(
             )
         )
     ]
-    if not peer:
+    if relation.type == RelationType.regular:
         matches = [
             r
             for r in matches
-            if remote_obj in r.get("related-units", set())
+            if obj.unit_name in r.get("related-units", set())
             or r.get("cross-model", False)
         ]
 
@@ -162,13 +229,13 @@ def get_relation_by_endpoint(
         raise ValueError(
             f"no relations found with remote endpoint={remote_endpoint!r} "
             f"and local endpoint={local_endpoint!r} "
-            f"in {remote_obj!r}"
+            f"in {other_obj.app_name!r}"
         )
     if len(matches) > 1:
         raise ValueError(
             f"multiple relations found with remote endpoint={remote_endpoint!r} "
             f"and local endpoint={local_endpoint!r} "
-            f"in {remote_obj!r} (relations={matches})"
+            f"in {other_obj.app_name!r} (relations={matches})"
         )
     return matches[0]
 
@@ -178,15 +245,13 @@ class Metadata:
     scale: int
     units: Tuple[int, ...]
     leader_id: int
-    interface: str
 
 
 @dataclass
 class AppRelationData:
-    app_name: str
+    obj: RelationEndpointURL
     relation_id: int
     meta: Metadata
-    endpoint: str
     application_data: dict
     units_data: Dict[int, dict]
 
@@ -195,26 +260,38 @@ class AppRelationData:
 
 
 def get_metadata_from_status(
-    app_name, relation_name, other_app_name, other_relation_name, model: str = None
+    endpoint: RelationEndpointURL,
+    other_endpoint: RelationEndpointURL,
+    model: str = None,
 ):
-    app_model = _find_model_if_CMR(app_name, current_model=model)
-    status = _juju_status(app_name, model=app_model, json=True)
+    status = _juju_status(model=model, json=True)
     # machine status json output apparently has no 'scale'... -_-
-    app_status = status["applications"][app_name]
+    app_status = status["applications"][endpoint.app_name]
     if app_status.get("subordinate-to"):
         units = {}
-        for other_unit in status["applications"][other_app_name]["units"].values():
-            subs = other_unit.get("subordinates")
-            for subn, subv in subs.items():
-                if subn.startswith(app_name):
-                    units[subn] = subv
+        other_app_meta = status["applications"][other_endpoint.app_name]
+        other_app_units = other_app_meta.get("units")
+
+        # todo: need to scavenge unit names from OTHER units' .subordinates field
+        for app in status["applications"].values():
+            for unit in app.get("units", {}).values():
+                if subs := unit.get("subordinates"):
+                    for subn, subv in subs.items():
+                        if subn.startswith(endpoint.app_name):
+                            units[subn] = subv
+
+    elif app_status.get("units"):
+        units = app_status["units"]
 
     else:
-        units = app_status["units"]
+        raise ValueError(
+            f"App {endpoint.app_name} has no units; is this a disintegrated "
+            f"subordinate or an app that is not done deploying yet?"
+        )
 
     scale = len(units)
 
-    leader_id: int = None
+    leader_id: int = -1
     unit_ids: List[int] = []
 
     for u, v in units.items():
@@ -222,7 +299,8 @@ def get_metadata_from_status(
         if v.get("leader", False):
             leader_id = unit_id
         unit_ids.append(unit_id)
-    if leader_id is None:
+
+    if leader_id == -1:
         if len(unit_ids) > 1:
             raise RuntimeError(
                 f"could not identify leader among units {unit_ids}. "
@@ -232,84 +310,67 @@ def get_metadata_from_status(
         logger.debug(
             f"no leader elected yet, guessing it's the only unit out there: {leader_id}"
         )
-
-    # we gotta do this because json status --format json does not include the interface
-    raw_text_status = _juju_status(app_name, model=model)
-
-    interface = get_interface(
-        raw_text_status,
-        app_name=app_name,
-        relation_name=relation_name,
-        other_app_name=other_app_name,
-        other_relation_name=other_relation_name,
-    )
-    return Metadata(scale, tuple(unit_ids), leader_id, interface)
+    return Metadata(scale, tuple(unit_ids), leader_id)
 
 
-def get_app_name_and_units(
-    url, relation_name, other_app_name, other_relation_name, model: str = None
+def get_units_and_meta(
+    endpoint: RelationEndpointURL,
+    other_endpoint: RelationEndpointURL,
+    model: str = None,
 ):
     """Get app name and unit count from url; url is either `app_name/0` or `app_name`."""
-    app_name, unit_id = url.split("/") if "/" in url else (url, None)
-
-    meta = get_metadata_from_status(
-        app_name, relation_name, other_app_name, other_relation_name, model=model
-    )
-    if unit_id is not None:
-        units = (int(unit_id),)
+    meta = get_metadata_from_status(endpoint, other_endpoint, model=model)
+    if endpoint.unit_id is not None:
+        units = (int(endpoint.unit_id),)
     else:
         units = meta.units
-    return app_name, units, meta
+    return units, meta
 
 
 def get_content(
-    obj: str,
-    other_obj,
+    obj: RelationEndpointURL,
+    other_obj: RelationEndpointURL,
+    relation: "Relation",
     include_default_juju_keys: bool = False,
     model: str = None,
-    relation_type: RelationType = RelationType.regular,
+    other_model: str = None,
+    assume_local: bool = False,
 ) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
-    try:
-        this_url, this_endpoint = obj.split(":")
-        other_url, other_endpoint = other_obj.split(":")
-    except ValueError:
-        raise ValueError(
-            "Relation endpoints need to be formatted as 'app_name:endpoint_name', "
-            f"e.g. 'traefik:ingress'. Not: {obj!r}, {other_obj!r}"
-        )
-
-    other_app_name, _ = other_url.split("/") if "/" in other_url else (other_url, None)
-    this_app_name, _ = this_url.split("/") if "/" in this_url else (this_url, None)
-
-    app_name, units, meta = get_app_name_and_units(
-        this_url, this_endpoint, other_app_name, other_endpoint, model
-    )
-
     # in k8s there's always a 0 unit, in machine that's not the case.
     # so even though we need 'any' remote unit name, we still need to query the status
     # to find out what units there are.
-    status = _juju_status(other_app_name, model=model, json=True)
-    other_app_model = _find_model_if_CMR(other_app_name, current_model=model)
-    if other_app_model != model:
-        logger.info(f"other app is in model {other_app_model!r}. Pulling status...")
-        other_model_status = _juju_status(
-            other_app_name, model=other_app_model, json=True
-        )
-        other_app_status = other_model_status["applications"][other_app_name]
-    else:
-        other_app_status = status["applications"][other_app_name]
+    status = _juju_status(model=model, json=True)
+    if not other_model:
+        if relation.type is RelationType.cross_model and assume_local:
+            other_model = _find_model_if_CMR(other_obj.app_name, current_model=model)
+        elif relation.type is RelationType.cross_model:
+            other_model = None  # current model.
+        else:
+            other_model = model
 
-    if primaries := other_app_status.get("subordinate-to"):
+    units, meta = get_units_and_meta(obj, other_obj, model)
+
+    if other_model != model:
+        logger.info(f"other app is in model {other_model!r}. Pulling status...")
+        other_model_status = _juju_status(model=other_model, json=True)
+        other_app_status = other_model_status["applications"][other_obj.app_name]
+    else:
+        other_app_status = status["applications"][other_obj.app_name]
+
+    if relation.type == RelationType.peer:
+        other_unit_id = units[0]
+
+    elif primaries := other_app_status.get("subordinate-to"):
         # the remote end is a subordinate!
         # primary is our this_url.
-        if this_app_name in primaries:
+        if obj.app_name in primaries:
             # this app is primary, other is subordinate
-            sub_unit_found = False
-            for unit in status["applications"][this_url]["units"].values():
+            sub_unit_found = ""
+            for unit in status["applications"][obj.app_name]["units"].values():
                 subs = unit["subordinates"]
                 for sub in subs:
-                    if sub.startswith(other_app_name + "/"):
+                    if sub.startswith(other_obj.app_name + "/"):
                         sub_unit_found = sub
                         break
                 if sub_unit_found:
@@ -317,7 +378,7 @@ def get_content(
 
             if not sub_unit_found:
                 raise RuntimeError(
-                    f"unable to find primary with a subordinate unit of {other_app_name}"
+                    f"unable to find primary with a subordinate unit of {other_obj.app_name}"
                 )
 
         else:
@@ -325,108 +386,104 @@ def get_content(
                 "relations between subordinates? Is that even a thing?"
             )
 
-        other_unit_name = sub_unit_found
+        other_unit_id = RelationEndpointURL(sub_unit_found).unit_id
     else:
-        other_unit_name = next(iter(other_app_status["units"]))
+        other_unit_id = RelationEndpointURL(
+            next(iter(other_app_status["units"]))
+        ).unit_id
         # we might have a different number of units and other units, and it doesn't
         # matter which 'other' we pass to get the databags for 'this one'.
 
     app_data = None
 
-    if relation_type is RelationType.peer:
+    if relation.type is RelationType.peer:
         # in peer relations, show-unit luckily reports 'local-unit', so we're good.
-        unit_name = f"{app_name}/{units[0]}"  # any unit will do
+        obj.unit_id = units[0]
         units_data, app_data, r_id = get_databags(
-            unit_name,
-            other_unit_name,
-            this_endpoint,
-            other_endpoint,
-            model=model,
-            peer=True,
+            obj.with_unit_id(units[0]),  # any unit will do
+            other_obj.with_unit_id(other_unit_id),  # any unit will do
+            relation,
         )
         if not include_default_juju_keys:
             for unit_data in units_data.values():
                 purge(unit_data)
-    elif relation_type is RelationType.subordinate:
-        raise NotImplementedError()
-    elif relation_type is RelationType.regular:
+
+    elif relation.type in [
+        RelationType.regular,
+        RelationType.subordinate,
+        RelationType.cross_model,
+    ]:
         units_data = {}
         r_id = None
         for unit_id in units:
-            unit_name = f"{app_name}/{unit_id}"
             unit_data, app_data, r_id_ = get_databags(
-                unit_name,
-                other_unit_name,
-                this_endpoint,
-                other_endpoint,
-                # in order to get the databags for THIS app,
-                # we need to show-unit --model OTHER_MODEL OTHER_APP!
-                model=other_app_model,
+                obj.with_unit_id(unit_id),
+                other_obj.with_unit_id(other_unit_id),  # any unit will do
+                other_model=other_model,
+                relation=relation,
             )
 
             if r_id is not None:
                 assert r_id == r_id_, f"mismatching relation IDs: {r_id, r_id_}"
             r_id = r_id_
-
             if not include_default_juju_keys:
                 purge(unit_data)
             units_data[unit_id] = unit_data
+
     else:
-        raise TypeError(relation_type)
+        raise TypeError(relation.type)
 
     return AppRelationData(
-        app_name=app_name,
+        obj=obj,
         meta=meta,
-        endpoint=this_endpoint,
         application_data=app_data,
         units_data=units_data,
         relation_id=r_id,
         model=model,
-        other_model=other_app_model,
+        other_model=other_model,
     )
 
 
 def get_databags(
-    local_unit,
-    remote_unit,
-    local_endpoint,
-    remote_endpoint,
-    model: str = None,
-    peer: bool = False,
+    obj: RelationEndpointURL,
+    other_obj: RelationEndpointURL,
+    relation: "Relation",
+    other_model: str = None,
 ):
     """Gets the databags of local unit and its leadership status.
 
     Given a remote unit and the remote endpoint name.
     """
-    data = get_unit_info(remote_unit, model=model)
-    relation_info = data.get("relation-info")
-    if not relation_info:
-        sys.exit(f"{remote_unit} has no relations, or the unit is still allocating.")
+    data = get_unit_info(
+        other_obj.unit_name,
+        obj.unit_name,
+        endpoint=other_obj.endpoint,
+        model=other_model,
+    )
+    relations = data.get("relation-info")
+    if not relations:
+        sys.exit(f"{other_obj} has no relations, or the unit is still allocating.")
 
     raw_data = get_relation_by_endpoint(
-        relation_info, local_endpoint, remote_endpoint, local_unit, peer=peer
+        relations,
+        obj,
+        other_obj,
+        relation,
     )
-    if peer:
+    if relation.type == RelationType.peer:
         # we can grab them all in a single call.
         unit_data = {
-            local_unit: raw_data["local-unit"]["data"],
+            obj.unit_name: raw_data["local-unit"]["data"],
             **{
                 u: raw_data["related-units"][u]["data"]
                 for u in raw_data.get("related-units", set())
             },
         }
+    elif relation.type == RelationType.cross_model:
+        assert raw_data.get("cross-model", False)
+        unit_data = raw_data["local-unit"]["data"] or {}
     else:
-        local_unit_name = local_unit
-        if raw_data.get("cross-model", False):
-            # if this is a CMR, the local unit name will appear different: it will be something like
-            # remote-1239028i1403912u4123/0; so we match only using the unit ID.
-            local_unit_name = next(
-                filter(
-                    lambda s: s.endswith(local_unit.split("/")[1]),
-                    raw_data["related-units"].keys(),
-                )
-            )
-        unit_data = raw_data["related-units"][local_unit_name]["data"]
+        unit_data = raw_data["related-units"][obj.unit_name]["data"]
 
     app_data = raw_data.get("application-data", {})
     return unit_data, app_data, raw_data["relation-id"]
@@ -436,76 +493,73 @@ def get_databags(
 class RelationData:
     provider: AppRelationData
     requirer: AppRelationData
-    is_cmr: bool = False
 
 
 def get_peer_relation_data(
-    *, endpoint: str, include_default_juju_keys: bool = False, model: str = None
+    *,
+    endpoint: RelationEndpointURL,
+    relation: Relation,
+    include_default_juju_keys: bool = False,
+    model: str = None,
 ) -> AppRelationData:
     return get_content(
         endpoint,
         endpoint,
-        include_default_juju_keys,
+        relation,
+        include_default_juju_keys=include_default_juju_keys,
         model=model,
-        relation_type=RelationType.peer,
     )
 
 
 def get_relation_data(
     *,
-    provider_endpoint: str,
-    requirer_endpoint: str,
+    provider_endpoint: RelationEndpointURL,
+    requirer_endpoint: RelationEndpointURL,
+    relation: "Relation",
     include_default_juju_keys: bool = False,
     model: str = None,
 ) -> RelationData:
     """Get relation databags for a juju relation.
 
     >>> get_relation_data('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
+    >>> get_relation_data('prometheus:ingress', 'traefik/1:ingress-per-unit')
+    >>> get_relation_data('prometheus:ingress', 'traefik')
+    >>> get_relation_data('prometheus', 'traefik')
     """
     provider_data = get_content(
-        provider_endpoint, requirer_endpoint, include_default_juju_keys, model=model
+        provider_endpoint,
+        requirer_endpoint,
+        relation,
+        include_default_juju_keys,
+        model=model,
+        assume_local=True,
     )
     requirer_data = get_content(
-        requirer_endpoint, provider_endpoint, include_default_juju_keys, model=model
+        requirer_endpoint,
+        provider_endpoint,
+        relation,
+        include_default_juju_keys,
+        model=provider_data.other_model,
+        other_model=model,
     )
-
-    # sanity check: the two IDs should be identical, unless this is a CMR
-    is_cmr = provider_data.model != provider_data.other_model
-    if not provider_data.relation_id == requirer_data.relation_id and not is_cmr:
-        logger.warning(
-            f"provider relation id {provider_data.relation_id} "
-            f"not the same as requirer relation id: {requirer_data.relation_id}"
-        )
-
-    return RelationData(provider=provider_data, requirer=requirer_data, is_cmr=is_cmr)
-
-
-@dataclass
-class Relation:
-    provider: str
-    requirer: str
-    interface: str
-    type: str
-    message: str = None
+    return RelationData(provider=provider_data, requirer=requirer_data)
 
 
 def get_relations(model: str = None) -> List[Relation]:
-    status = _juju_status("", model=model)
-    relations = None
-    for line in status.split("\n"):
-        if line.startswith("Relation provider"):
-            relations = []
-            continue
-        if relations is not None:
-            if not line.strip():
-                break  # end of list
-            relations.append(Relation(*(x.strip() for x in line.split(" ") if x)))
+    status = _juju_status(model=model)
+    # get the interface name from juju status.
+    raw_relations = _RELATIONS_RE.findall(status)
+
+    relations = []
+    for groups in raw_relations:
+        relations.append(Relation(*groups))
+
     return relations
 
 
 def _render_unit(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
     unit_id, unit_data = obj
-    unit_name = f"{source.app_name}/{unit_id}"
+    unit_name = f"{source.obj.app_name}/{unit_id}"
     return _render_databag(
         unit_name, unit_data, leader=(unit_id == source.meta.leader_id)
     )
@@ -538,30 +592,51 @@ def _render_databag(unit_name, dct, leader=False, hide_empty_databags: bool = Fa
     return p
 
 
-async def render_relation(
-    endpoint1: str = None,
-    endpoint2: str = None,
-    n: int = None,
-    include_default_juju_keys: bool = False,
-    hide_empty_databags: bool = False,
-    model: str = None,
-):
-    """Pprints relation databags for a juju relation
-    >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
-    """
+def _match_provider(rel: Relation, ep: Optional[RelationEndpointURL]):
+    if not ep:
+        return True
+    return rel.provider == ep.app_name and (
+        (not ep.endpoint) or rel.provider_endpoint == ep.endpoint
+    )
 
+
+def _match_requirer(rel: Relation, ep: Optional[RelationEndpointURL]):
+    if not ep:
+        return True
+    return rel.requirer == ep.app_name and (
+        (not ep.endpoint) or rel.requirer_endpoint == ep.endpoint
+    )
+
+
+def _match_endpoint(
+    rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]
+):
+    if not ep2 or rel.type == RelationType.peer:
+        # we could use _match_provider as well, they should be equivalent so long as the peer relation is consistent
+        match_peer = _match_requirer(rel, ep1) and _match_requirer(rel, ep2)
+        return match_peer, False
+
+    if _match_provider(rel, ep1) and _match_requirer(rel, ep2):
+        return True, False
+    elif _match_provider(rel, ep2) and _match_requirer(rel, ep1):
+        return True, True
+    return False, False
+
+
+def _coalesce_endpoint_and_n(
+    endpoint1, endpoint2, n, model: Optional[str]
+) -> Tuple[RelationEndpointURL, Optional[RelationEndpointURL], Relation]:
     if n is not None and (endpoint1 or endpoint2):
         raise RuntimeError(
             "Invalid usage: provide `n` or " "(`endpoint1` + `endpoint2`)."
         )
 
-    relation_type = None  # unknown
+    relations = get_relations(model)
+
+    if not relations:
+        sys.exit(f"No relations found in model {model or '<current model>'!r}.")
 
     if n is not None:
-        relations = get_relations(model)
-        if not relations:
-            print(f"No relations found in model {model!r}.")
-            return
         try:
             relation = relations[n]
         except IndexError:
@@ -575,52 +650,185 @@ async def render_relation(
             raise RuntimeError(
                 f"There {pl(plur_rel, 'are', 'is')} only {n_rel} "
                 f"relation{pl(plur_rel, 's')}. "
-                f"Can't show index={n+1}."
+                f"Can't show index={n + 1}."
             )
-        endpoint1 = relation.provider
-
-        if relation.type != "peer":
-            endpoint2 = relation.requirer
-            relation_type = RelationType(relation.type)
-
-    is_cmr = False
-    relation_id = None
-    if endpoint1 and endpoint2 is None:
-        relation_type = RelationType.peer
-
-        data = get_peer_relation_data(
-            endpoint=endpoint1,
-            include_default_juju_keys=include_default_juju_keys,
-            model=model,
+        endpoint1 = RelationEndpointURL(
+            f"{relation.provider}:{relation.provider_endpoint}"
         )
-        relation_id = data.relation_id
-        header = f"relation (id: {relation_id})"
-        entities = (data,)
+        endpoint2 = RelationEndpointURL(
+            f"{relation.requirer}:{relation.requirer_endpoint}"
+        )
+        return endpoint1, endpoint2, relation
+
+    ep_url_1 = RelationEndpointURL(endpoint1)
+    ep_url_2 = RelationEndpointURL(endpoint2) if endpoint2 else None
+
+    found: List[Relation] = []
+
+    for relation in relations:
+        match, flip = _match_endpoint(relation, ep_url_1, ep_url_2)
+        if match:
+            found.append(relation)
+        if flip:
+            ep_url_1, ep_url_2 = ep_url_2, ep_url_1
+
+    if not found:
+        msg = (
+            f"No relation found with endpoints {ep_url_1!r} -> {ep_url_2!r} in "
+            f"model {model or '<the current model>'!r}."
+        )
+        # if either provider or requirer are not apps in this model, OR either one have offers,
+        # suspect a malformed CMR request
+        status = _juju_status(model=model, json=True)
+        apps = status["applications"]
+        app1 = apps.get(ep_url_1.app_name)
+        app2 = apps.get(ep_url_2.app_name)
+        app_not_found = (
+            ep_url_1.app_name if not app1 else ep_url_2.app_name if not app2 else None
+        )
+        if app_not_found:
+            msg += (
+                f" {app_not_found!r} not found in model {model or '<the current model>'!r}; \n"
+                f"are you trying to show a CMR? If so, you need to \n"
+                f"pass `-m <the model where {app_not_found!r} lives>`"
+            )
+            raise RuntimeError(msg)
+        raise RuntimeError(msg)
+
+    if len(found) > 1:
+        found_str = "\n\t".join(
+            (
+                f"{r.provider}:{r.provider_endpoint}-->["
+                f"{r.interface}]-->{r.requirer}:{r.requirer_endpoint}"
+                for r in found
+            )
+        )
+        raise RuntimeError(
+            f"Multiple relations found matching specification {endpoint1!r} --> {endpoint2!r}; "
+            f"please specify further. Found: \n\t{found_str}"
+        )
+
+    relation = found[0]
+    ep_url_1.endpoint = relation.provider_endpoint
+    if ep_url_2:
+        ep_url_2.endpoint = relation.requirer_endpoint
+    return ep_url_1, ep_url_2, relation
+
+
+def _gather_entities(
+    endpoint1: RelationEndpointURL,
+    endpoint2: Optional[RelationEndpointURL],
+    relation: Relation,
+    model: Optional[str],
+    include_default_juju_keys: bool = False,
+) -> Tuple[AppRelationData, ...]:
+    if relation.type == RelationType.peer:
+        return (
+            get_peer_relation_data(
+                endpoint=endpoint1,
+                include_default_juju_keys=include_default_juju_keys,
+                model=model,
+                relation=relation,
+            ),
+        )
+
+    if not (endpoint1 and endpoint2):
+        raise RuntimeError(
+            f"Not a peer relation, but not enough endpoints provided: "
+            f"{(endpoint1, endpoint2)} (expected 2)."
+        )
+
+    data = get_relation_data(
+        provider_endpoint=endpoint1,
+        requirer_endpoint=endpoint2,
+        include_default_juju_keys=include_default_juju_keys,
+        model=model,
+        relation=relation,
+    )
+    return (data.provider, data.requirer)
+
+
+async def render_relation(
+    endpoint1: str = None,
+    endpoint2: str = None,
+    n: int = None,
+    include_default_juju_keys: bool = False,
+    hide_empty_databags: bool = False,
+    model: str = None,
+    format: Format = Format.auto,
+):
+    """Pprints relation databags for a juju relation
+    >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
+    """
+
+    endpoint1, endpoint2, relation = _coalesce_endpoint_and_n(
+        endpoint1, endpoint2, n, model
+    )
+
+    if relation.type is RelationType.regular:
+        # still a chance it's a CMR.
+        status = _juju_status(model=model, json=True)
+        saas = status.get("application-endpoints", {}).keys()
+
+        if endpoint1.app_name in saas or (endpoint2 and endpoint2.app_name in saas):
+            relation.raw_type = "cross_model"
+
+    entities = _gather_entities(
+        endpoint1,
+        endpoint2,
+        relation,
+        model=model,
+        include_default_juju_keys=include_default_juju_keys,
+    )
+
+    if format == Format.auto:
+        return _rich_format_table(
+            entities, relation, hide_empty_databags=hide_empty_databags
+        )
+
+    elif format == Format.json:
+        return _format_json(entities, relation.type)
 
     else:
-        if not (endpoint1 and endpoint2):
-            raise RuntimeError("invalid usage: provide two endpoints.")
+        raise FormatUnavailable(format)
 
-        data = get_relation_data(
-            provider_endpoint=endpoint1,
-            requirer_endpoint=endpoint2,
-            include_default_juju_keys=include_default_juju_keys,
-            model=model,
-        )
-        is_cmr = data.is_cmr
-        if not is_cmr:
-            relation_id = data.requirer.relation_id
-            header = f"relation (id: {relation_id})"
-        else:
-            header = f"cross-model relation"
-        entities = (data.requirer, data.provider)
 
+def _format_json(entities: Tuple[AppRelationData, ...], relation_type: RelationType):
+    """Format as json"""
+
+    @dataclasses.dataclass
+    class Response:
+        entities: Tuple[AppRelationData]
+        type: RelationType
+
+    resp = Response(entities, relation_type)
+    return json.dumps(dataclasses.asdict(resp), indent=2)
+
+
+def _rich_format_table(
+    entities: Tuple[AppRelationData, ...],
+    relation: Relation,
+    hide_empty_databags: bool = True,
+):
+    """Format as a rich.table.Table."""
     from rich.columns import Columns  # noqa
     from rich.console import Console  # noqa
     from rich.table import Table  # noqa
     from rich.text import Text  # noqa
 
-    table = Table(title="relation data v0.5")
+    is_cmr = relation.type is RelationType.cross_model
+    if len(entities) == 1:
+        relation_id = entities[0].relation_id
+        header = f"peer relation (id: {relation_id})"
+    else:
+        if is_cmr:
+            header = "cross-model relation"
+            relation_id = None
+        else:
+            relation_id = entities[0].relation_id
+            header = f"relation (id: {relation_id})"
+
+    table = Table(title="relation data v0.6")
 
     table.add_column(
         justify="left",
@@ -628,14 +836,14 @@ async def render_relation(
         style="rgb(54,176,224) bold",
     )
     for entity in entities:
-        table.add_column(justify="left", header=entity.app_name)  # meta/app_name
+        table.add_column(justify="left", header=entity.obj.app_name)  # meta/app_name
 
-    is_peer = relation_type is RelationType.peer
+    is_peer = relation.type is RelationType.peer
     if is_cmr:
         type_ = "CMR"
     elif is_peer:
         type_ = "peer"
-    elif relation_type is RelationType.subordinate:
+    elif relation.type is RelationType.subordinate:
         type_ = "subordinate"
     else:
         type_ = "regular"
@@ -643,7 +851,7 @@ async def render_relation(
     if is_peer:
         # omit the "=" in column 2
         table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"))
-        table.add_row("interface", Text(entities[0].meta.interface, style="blue bold"))
+        table.add_row("interface", Text(relation.interface, style="blue bold"))
         table.add_row(
             "model", Text(entities[0].model or "the current model", style="yellow bold")
         )
@@ -653,9 +861,7 @@ async def render_relation(
 
     else:
         table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"), "=")
-        table.add_row(
-            "interface", Text(entities[0].meta.interface, style="blue bold"), "="
-        )
+        table.add_row("interface", Text(relation.interface, style="blue bold"), "=")
 
         if not is_cmr:
             table.add_row(
@@ -669,9 +875,9 @@ async def render_relation(
         else:
             table.add_row(
                 "model",
-                Text(data.provider.model or "the current model", style="yellow bold"),
+                Text(entities[0].model or "the current model", style="yellow bold"),
                 Text(
-                    data.provider.other_model or "the current model",
+                    entities[0].other_model or "the current model",
                     style="yellow bold",
                 ),
             )
@@ -691,7 +897,7 @@ async def render_relation(
 
     table.add_row(
         "endpoint",
-        *(Text(entity.endpoint, style="blue bold") for entity in entities),
+        *(Text(entity.obj.endpoint, style="blue bold") for entity in entities),
     )
     table.add_row(
         "leader unit",
@@ -761,6 +967,7 @@ def sync_show_relation(
     ),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
     color: Optional[str] = ColorOption,
+    format: Format = FormatOption,
 ):
     """Displays the databags of two applications or units involved in a relation.
 
@@ -781,6 +988,7 @@ def sync_show_relation(
         watch=watch,
         model=model,
         color=color,
+        format=format,
     )
 
 
@@ -793,6 +1001,7 @@ def _sync_show_relation(
     model: str = None,
     watch: bool = False,
     color: RichSupportedColorOptions = "auto",
+    format: FormatOption = "auto",
 ):
     try:
         import rich  # noqa
@@ -817,6 +1026,7 @@ def _sync_show_relation(
                 include_default_juju_keys=show_juju_keys,
                 hide_empty_databags=hide_empty_databags,
                 model=model,
+                format=format,
             )
         )
 
@@ -837,4 +1047,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=2, model="tester-12")
+    _sync_show_relation(n=0)

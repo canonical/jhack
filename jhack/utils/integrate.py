@@ -71,9 +71,11 @@ def _gather_endpoints(
             continue
 
         if app["application-status"]["current"] == "terminated":
-            # https://bugs.launchpad.net/juju/+bug/1977582 app killed by juju/pebble, juju app in terminated status.
+            # https://bugs.launchpad.net/juju/+bug/1977582 app killed by juju/pebble, juju app
+            # in terminated status.
             logger.warning(
-                f"Skipping endpoint collection from application {app_name} as it is in `terminated` state."
+                f"Skipping endpoint collection from application {app_name} as it is in "
+                f"`terminated` state."
             )
             continue
 
@@ -83,7 +85,8 @@ def _gather_endpoints(
             metadata = fetch_file(unit, "metadata.yaml", model=model)
         except RuntimeError as e:
             logger.error(
-                f'Failed to fetch metadata.yaml from {unit} in model={model or "<current model>"}\n\n'
+                f"Failed to fetch metadata.yaml from {unit} in "
+                f'model={model or "<current model>"}\n\n'
                 f"{e}\n\n"
                 f"APP ={app}"
             )
@@ -180,7 +183,8 @@ class IntegrationMatrix:
             provides = self._endpoints[provider]["provides"]
             requires = self._endpoints[requirer]["requires"]
 
-            # mapping from each supported interface to the endpoints using that interface, for the requirer.
+            # mapping from each supported interface to the endpoints using that interface,
+            # for the requirer.
             requirer_interfaces_to_endpoints = defaultdict(list)
             for endpoint, (interface, connected_providers) in requires.items():
                 requirer_interfaces_to_endpoints[interface].append(
@@ -263,7 +267,10 @@ class IntegrationMatrix:
                     symtail, symhead = "X-", "-X"
                     color = self.inactive_cell_text_style
 
-                fmt_obj = f"{provider_endpoint} {symtail}[{interface}]{symhead} {requirer_endpoint}"
+                fmt_obj = (
+                    f"{provider_endpoint} {symtail}[{interface}]{symhead} "
+                    f"{requirer_endpoint}"
+                )
                 t.add_row(Text(fmt_obj, style=color))
             return t
 
@@ -370,7 +377,8 @@ class IntegrationMatrix:
                     # only include if the interface is currently not at the desired state
                     if is_active is not active:
                         logger.debug(
-                            f"skipping {prov}:{provider_endpoint} --> [{interface}] --> {req}:{requirer_endpoint} "
+                            f"skipping {prov}:{provider_endpoint} --> [{interface}] --> "
+                            f"{req}:{requirer_endpoint} "
                             f'interface is already {"in" if active else ""}active'
                         )
                         continue
@@ -403,17 +411,27 @@ class IntegrationMatrix:
 
             if dry_run:
                 sym = "X" if verb == "disconnect" else "-->"
-                print(f"{verb} {ep1} {sym} [{interface}] {sym} {ep2}")
+                print(f"{ep1} {sym}-\[{interface}]-{sym} {ep2}")
 
         if dry_run:
             return
 
-        print(f"{verb.title()}ing relations...")
+        console = Console()
+        console.print(f"{verb.title()}ing relations...")
+        sym = "<-X->" if verb == "disconnect" else "<-->"
+        t = Table(
+            show_header=False, show_edge=False, show_lines=False, show_footer=False
+        )
         for cmd, (ep1, _, ep2) in zip(cmd_list, target_bindings):
-            print(f"\t{ep1} <--> {ep2}")
+            t.add_row(
+                Align(Text(ep1), align="right"),
+                Text(sym, style="green bold"),
+                Text(ep2),
+            )
             JPopen(cmd.split(), wait=True)
+        console.print(t)
 
-        print("Done.")
+        console.print("Done.")
 
     def connect(self, include: str = None, exclude: str = None, dry_run: bool = False):
         self._apply_to_all(
@@ -509,7 +527,7 @@ def show(
     ),
     color: Optional[str] = ColorOption,
 ):
-    """Display the avaiable integrations between any number of juju applications in a nice matrix."""
+    """Display the avaiable integrations between any number of juju applications in a matrix."""
     mtrx = IntegrationMatrix(
         apps=apps, model=model, color=color, include_peers=show_peers
     )
@@ -544,7 +562,8 @@ def _cmr(remote, local=None, dry_run: bool = False):
         provides = mtrx1._endpoints[provider]["provides"]
         requires = mtrx2._endpoints[requirer]["requires"]
 
-        # mapping from each supported interface to the endpoints using that interface, for the requirer.
+        # mapping from each supported interface to the endpoints using that interface,
+        # for the requirer.
         requirer_interfaces_to_endpoints = defaultdict(list)
         for endpoint, (interface, connected_providers) in requires.items():
             requirer_interfaces_to_endpoints[interface].append(
@@ -578,14 +597,15 @@ def _cmr(remote, local=None, dry_run: bool = False):
         binding: RelationBinding
         for j, binding in enumerate(bindings):
             print(
-                f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> {req}:{binding.requirer_endpoint} "
+                f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} --> [{binding.interface}] "
+                f"--> {req}:{binding.requirer_endpoint} "
             )
             opts[f"{i}.{j}"] = (prov, binding, req)
 
     if not opts:
         print(
-            f"No CMR binding can be pulled from model {remote!r} into {local or '<this model>'!r}: "
-            f"no compatible interfaces found."
+            f"No CMR binding can be pulled from model {remote!r} into {local or '<this model>'!r}:"
+            f" no compatible interfaces found."
         )
         return
 
@@ -653,8 +673,10 @@ def _pull_cmr(
 
 
 if __name__ == "__main__":
-    mtrx = IntegrationMatrix(include_peers=True)
-    # mtrx.disconnect()
-    # mtrx.watch()
+    # mtrx = IntegrationMatrix(include_peers=True)
+    # # mtrx.disconnect()
+    # # mtrx.watch()
+    # # mtrx.pprint()
     # mtrx.pprint()
-    mtrx.pprint()
+
+    cmr("cos")

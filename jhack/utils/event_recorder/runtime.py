@@ -162,7 +162,7 @@ class Runtime:
             return False
 
         try:
-            import recorder
+            import recorder  # noqa: F401
         except ModuleNotFoundError:
             logger.error("Could not `import recorder`.")
             return False
@@ -229,11 +229,13 @@ class Runtime:
             except IndexError:
                 sys.exit(
                     f"Scene ID {scene_idx} not found in the local db ({self._local_db_path}).\n"
-                    f"If you are replaying from a remote unit, you should call `Runtime.load(<unit-name>)`"
+                    f"If you are replaying from a remote unit, you should call "
+                    f"`Runtime.load(<unit-name>)`"
                 )
 
         logger.info(
-            f"Preparing to run {self._charm_type.__name__} like it did back in {scene.event.datetime.isoformat()}"
+            f"Preparing to run {self._charm_type.__name__} like it did back in "
+            f"{scene.event.datetime.isoformat()}"
         )
 
         logger.info(" - clearing env")

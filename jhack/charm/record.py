@@ -42,7 +42,7 @@ class Recorder:
         self._output = output
 
     def record(self):
-        tail = _tail_events(
+        _tail_events(
             self._unit, replay=False, add_new_targets=False, _on_event=self._on_event
         )
         self._dump_json()

@@ -1,3 +1,5 @@
+"""Jhack logging module."""
+
 import logging
 import os
 

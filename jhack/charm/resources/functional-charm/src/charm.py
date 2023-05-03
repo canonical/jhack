@@ -27,7 +27,7 @@ class FunctionalCharm(CharmBase):
     def __init__(self, *args):
         super().__init__(*args)
 
-        out = charm(self, logger)
+        out = charm(self, logger)  # noqa: F821  # dynamically replaced by AST
         if isinstance(out, StatusBase):
             self.unit.status = out
 

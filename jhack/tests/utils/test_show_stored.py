@@ -20,6 +20,6 @@ def test_state_view_db_file(mock_db_path):
         ("foo/bar/qux[baz]", "foo.bar.baz"),
     ),
 )
-def test_state_view_db_file(snapshot, expected):
+def test_state_view_db_file_other(snapshot, expected):
     state_view = StorageView(live=False)
     assert state_view._get_name(snapshot) == expected

@@ -10,7 +10,7 @@ architectures:
   - build-on: i386
 
 # TODO: keep pyproject in sync with version!
-version: '0.3.16'
+version: '0.3.17'
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -38,6 +38,8 @@ parts:
       - parse==1.19.0
       - asttokens
       - astunparse
+      - requests==2.29.0
+      - requests-unixsocket==0.3.0
       - toml
     stage-snaps:
       - juju/3.0/beta

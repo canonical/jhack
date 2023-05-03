@@ -7,12 +7,33 @@ import tempfile
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
-from typing import Iterable, List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 import typer
 
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
+
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+
+    class StrEnum(str, Enum):
+        pass
+
+
+class Format(StrEnum):
+    auto = "auto"
+    json = "json"
+
+
+FormatOption = typer.Option(Format.auto, "-f", "--format", help="Output format.")
+
+
+class FormatUnavailable(NotImplementedError):
+    """Raised when a command cannot comply with a format parameter."""
+
 
 RichSupportedColorOptions = Optional[
     Literal["auto", "standard", "256", "truecolor", "windows", "no"]
@@ -144,7 +165,7 @@ def juju_client_version() -> Tuple[int, ...]:
 @lru_cache
 def juju_agent_version() -> Optional[Tuple[int, ...]]:
     try:
-        proc = JPopen(f"juju controllers --format json".split())
+        proc = JPopen("juju controllers --format json".split())
         raw = json.loads(proc.stdout.read().decode("utf-8"))
     except FileNotFoundError:
         logger.error("juju not found")
@@ -156,7 +177,7 @@ def juju_agent_version() -> Optional[Tuple[int, ...]]:
 
 
 def get_models(include_controller=False):
-    cmd = f"juju models --format json"
+    cmd = "juju models --format json"
     proc = JPopen(cmd.split())
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
@@ -182,7 +203,7 @@ def show_application(application: str, model: str = None):
 
 
 def get_current_model() -> Optional[str]:
-    cmd = f"juju models --format json"
+    cmd = "juju models --format json"
     proc = JPopen(cmd.split())
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
@@ -223,7 +244,10 @@ def fetch_file(
 ) -> Optional[str]:
     unit_sanitized = unit.replace("/", "-")
     model_arg = f" -m {model}" if model else ""
-    cmd = f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+    cmd = (
+        f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}"
+        f"/charm/{remote_path}"
+    )
     try:
         raw = check_output(cmd.split())
     except CalledProcessError as e:

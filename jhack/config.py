@@ -1,3 +1,5 @@
+"""Jhack configuration module."""
+
 import os
 import pwd
 from pathlib import Path
@@ -51,6 +53,7 @@ def get_jhack_config_path() -> Path:
 
 
 def configure():
+    """Configure jhack."""
     snap_data = os.environ.get("SNAP_DATA")
 
     if not snap_data or "jhack" not in snap_data:  # we could be in another snap

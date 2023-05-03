@@ -248,7 +248,8 @@ async def push_to_remote_juju_unit(
     else:
         if dry_run:
             print(
-                f"would cat: {file} --> juju ssh {app}/{unit} sudo -i 'sudo tee {remote_file_path}'"
+                f"would cat: {file} --> juju ssh {app}/{unit} sudo -i "
+                f"'sudo tee {remote_file_path}'"
             )
             return
 
@@ -258,7 +259,7 @@ async def push_to_remote_juju_unit(
         proc = JPopen([cmd], shell=True)
 
     retcode = proc.returncode
-    if retcode != None:
+    if retcode is not None:
         logger.error(
             f"{cmd} errored with code {retcode}: "
             f"\nstdout={proc.stdout.read()}, "

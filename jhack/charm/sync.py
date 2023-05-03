@@ -20,7 +20,7 @@ def sync(
     If `charm` is None, it will scan the CWD for the first `*.charm` file
     and use that.
     """
-    charm_file = charm or get_local_charm()
+    charm or get_local_charm()
 
     def on_change(files):
         update_charm(charm, src, dst, dry_run)

@@ -1,7 +1,6 @@
 import tempfile
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import patch
 
 from jhack.conf.conf import Config
 
@@ -64,4 +63,3 @@ def test_defaults():
         assert cfg.get("test", "bar") == "baz"
 
     Config._DEFAULTS = old_def
-

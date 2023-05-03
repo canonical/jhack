@@ -53,7 +53,7 @@ def _provision_unit(
     status = status or juju_status(json=True)
     try:
         app_name, unit_n_txt = unit.split("/")
-        unit_n = int(unit_n_txt)
+        int(unit_n_txt)
     except (ValueError, TypeError) as e:
         logger.debug(e)
         print(
@@ -106,7 +106,7 @@ def _provision_unit(
                 f'{wl_status.get("message", "")} &'.split()
             )
             proc.wait()
-        except:
+        except:  # noqa: E722
             pass
 
     return success
@@ -170,7 +170,7 @@ def _provision(
         if n_proc and len(targets) > 1:
             logger.debug("running in async mode")
             if dry_run:
-                print(f"would provision in parallel:")
+                print("would provision in parallel:")
                 for tgt in targets:
                     print(f"\t{tgt}")
                 return
@@ -218,7 +218,7 @@ def _provision(
         else:
             logger.debug("running in sync mode")
             if dry_run:
-                print(f"\twould provision sequentially:")
+                print("\twould provision sequentially:")
                 if dry_run:
                     for tgt in targets:
                         print(f"\t{tgt}")

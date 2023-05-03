@@ -58,10 +58,12 @@ class Config:
                 data = data[item]
             except KeyError:
                 if self._path is self._DEFAULTS:
-                    logger.error(f'{item} not found in default config; invalid path')
+                    logger.error(f"{item} not found in default config; invalid path")
                     raise
 
-                logger.info(f'{item} not found in user-config {self._path}; defaulting...')
+                logger.info(
+                    f"{item} not found in user-config {self._path}; defaulting..."
+                )
                 return self.get_default(*path)
         return data
 

@@ -4,7 +4,7 @@ import sys
 import tempfile
 import time
 from abc import ABC, abstractmethod
-from functools import partial, singledispatch
+from functools import singledispatch
 from os.path import expanduser
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Literal, Optional, Union
@@ -276,7 +276,7 @@ class StorageView:
                 logger.debug(f"re-filter: skipped {snapshot}")
                 continue
             if not self._include_of_storage and snapshot == OF_STORAGE_HANDLE_PATH:
-                logger.debug(f"skipped of storage")
+                logger.debug("skipped of storage")
                 continue
 
             name = self._get_name(snapshot)
@@ -449,7 +449,8 @@ def show_stored(
         None,
         "-a",
         "--adapters",
-        help="Path to a python file containing a Dict[str: Adapter] mapping. See docs for more info.",
+        help="Path to a python file containing a Dict[str: Adapter] mapping. "
+        "See docs for more info.",
     ),
     color: Optional[str] = typer.Option(
         "auto",
@@ -493,6 +494,4 @@ def show_stored(
 
 
 if __name__ == "__main__":
-    # _show_stored("prom/0", watch=False, adapters="/home/pietro/.config/JetBrains/PyCharmCE2022.2/scratches/scratch_5.py")
     _show_stored("traefik/0", filter_re=".*StoredStateData.*")
-    # _show_stored('/home/pietro/hacking/jhack/jhack/tests/utils/show_stored_mocks/trfk-0.dbdump')  # noqa
