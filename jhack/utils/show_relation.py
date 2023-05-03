@@ -269,16 +269,25 @@ def get_metadata_from_status(
     app_status = status["applications"][endpoint.app_name]
     if app_status.get("subordinate-to"):
         units = {}
-        for other_unit in status["applications"][other_endpoint.app_name][
-            "units"
-        ].values():
-            subs = other_unit.get("subordinates")
-            for subn, subv in subs.items():
-                if subn.startswith(endpoint.app_name):
-                    units[subn] = subv
+        other_app_meta = status["applications"][other_endpoint.app_name]
+        other_app_units = other_app_meta.get("units")
+
+        # todo: need to scavenge unit names from OTHER units' .subordinates field
+        for app in status["applications"].values():
+            for unit in app.get("units", {}).values():
+                if subs := unit.get("subordinates"):
+                    for subn, subv in subs.items():
+                        if subn.startswith(endpoint.app_name):
+                            units[subn] = subv
+
+    elif app_status.get("units"):
+        units = app_status["units"]
 
     else:
-        units = app_status["units"]
+        raise ValueError(
+            f"App {endpoint.app_name} has no units; is this a disintegrated "
+            f"subordinate or an app that is not done deploying yet?"
+        )
 
     scale = len(units)
 
@@ -349,7 +358,10 @@ def get_content(
     else:
         other_app_status = status["applications"][other_obj.app_name]
 
-    if primaries := other_app_status.get("subordinate-to"):
+    if relation.type == RelationType.peer:
+        other_unit_id = units[0]
+
+    elif primaries := other_app_status.get("subordinate-to"):
         # the remote end is a subordinate!
         # primary is our this_url.
         if obj.app_name in primaries:
@@ -396,10 +408,11 @@ def get_content(
             for unit_data in units_data.values():
                 purge(unit_data)
 
-    elif relation.type is RelationType.subordinate:
-        raise NotImplementedError()
-
-    elif relation.type in [RelationType.regular, RelationType.cross_model]:
+    elif relation.type in [
+        RelationType.regular,
+        RelationType.subordinate,
+        RelationType.cross_model,
+    ]:
         units_data = {}
         r_id = None
         for unit_id in units:
@@ -1034,4 +1047,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation("alertmanager", "trfk")
+    _sync_show_relation(n=0)
