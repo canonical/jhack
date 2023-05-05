@@ -5,7 +5,7 @@ import re
 import shlex
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import Literal, Tuple
+from typing import Literal, Tuple, List
 
 from jhack.helpers import JPopen, get_current_model, get_substrate
 
@@ -26,6 +26,14 @@ def to_json(query_result: str):
     for f in FILTERS:
         jsn_str = f(jsn_str)
     return json.loads(jsn_str)
+
+
+class TooManyResults(RuntimeError):
+    """Raised when a query returns more results than we handle."""
+
+
+class EmptyQueryResult(RuntimeError):
+    """Query returned no results."""
 
 
 class ConnectorBase:
@@ -58,35 +66,48 @@ class ConnectorBase:
         return tuple(out.split())  # noqa
         # return tuple(f"'{x}'" for x in out.split())  # noqa
 
-    def query(self, query: str):
+    def get_one(self, query: str) -> dict:
+        return self.get_many(query, raise_if_too_many=False)[0]
+
+    def get_many(self, query: str, raise_if_too_many=True) -> List[dict]:
         if "pretty()" in query:
             # we need one result per line to be able to deserialize.
             raise ValueError("invalid query: unsupported pretty() statement")
         raw = self._escape_query(query)
-        return self._run_query(raw)
+        return self._run_query(raw, raise_if_too_many=raise_if_too_many)
 
-    def _run_query(self, query: str):
+    def _run_query(self, query: str, raise_if_too_many=True):
         command = ["bash", str(self.query_script.absolute()), *self.args, query]
         proc = Popen(command, stdout=PIPE, stderr=PIPE)
-        out = proc.stdout.read().decode("utf-8")
-        if not out:
+        raw_output = proc.stdout.read().decode("utf-8")
+        if not raw_output:
             err = proc.stderr.read().decode("utf-8")
             print(err)
             raise RuntimeError(f"unexpected result from command {command}; {err!r}")
 
-        txt = out.split("\n")
-        # todo: some queries return a list of documents.
-        result = txt[1]
-
-        try:
-            return to_json(result)
-        except Exception as e:
+        txt = raw_output.split("\n")
+        out = []
+        for value in txt[1:]:
+            if not value:
+                continue
+            if value == 'Type "it" for more':
+                if raise_if_too_many:
+                    raise TooManyResults()
+                continue
+            try:
+                out.append(to_json(value))
+            except Exception as e:
+                err = proc.stderr.read().decode("utf-8")
+                print(err)
+                raise RuntimeError(
+                    f"failed deserializing query result {value} with {type(e)} {err}"
+                ) from e
+        if not out:
             err = proc.stderr.read().decode("utf-8")
             print(err)
-            raise RuntimeError(
-                f"failed deserializing query result {result} with {type(e)} {err}"
-            ) from e
+            raise EmptyQueryResult()
 
+        return out
 
 class K8sConnector(ConnectorBase):
     """Mongo database connector for kubernetes controllers."""
@@ -129,5 +150,5 @@ class Mongo:
         else:
             raise TypeError(substrate)
 
-    def query(self, q: str):
-        return self.connector.query(q)
+    def get_one(self, q: str):
+        return self.connector.get_one(q)
