@@ -1,8 +1,15 @@
 from jhack.mongo.mongo import K8sConnector
 
 
-def test_k8s_connector():
+def test_k8s_connector_base():
     connector = K8sConnector()
-    query = 'db.relations.find({"key": "loki:logging"}).pretty()'
+    query = r"db.relations.find()"
+    val = connector.query(query)
+    assert val
+
+
+def test_k8s_connector_relation():
+    connector = K8sConnector()
+    query = r'db.relations.find({"key": "grafana:catalogue catalogue:catalogue"})'
     val = connector.query(query)
     assert val

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-machine=${1:-0}
-model=${2:-controller}
+machine=${1}
+model=${2}
 
 read -d '' -r cmds <<'EOF'
 conf=/var/lib/juju/agents/machine-*/agent.conf

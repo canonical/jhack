@@ -64,4 +64,3 @@ def test_defaults():
         assert cfg.get("test", "bar") == "baz"
 
     Config._DEFAULTS = old_def
-

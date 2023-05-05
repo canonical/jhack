@@ -40,11 +40,11 @@ def check_command_available(cmd: str):
 
 
 def get_current_controller() -> str:
-    cmd = f'juju whoami --format=json'
+    cmd = f"juju whoami --format=json"
     proc = JPopen(cmd.split())
     raw = proc.stdout.read().decode("utf-8")
     whoami_info = jsn.loads(raw)
-    return whoami_info['controller']
+    return whoami_info["controller"]
 
 
 def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
