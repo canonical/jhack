@@ -39,6 +39,14 @@ def check_command_available(cmd: str):
     return proc.returncode == 0
 
 
+def get_current_controller() -> str:
+    cmd = f'juju whoami --format=json'
+    proc = JPopen(cmd.split())
+    raw = proc.stdout.read().decode("utf-8")
+    whoami_info = jsn.loads(raw)
+    return whoami_info['controller']
+
+
 def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
     """Attempts to guess whether we're talking k8s or machine."""
     cmd = f'juju show-model{f" {model}" if model else ""} --format=json'
