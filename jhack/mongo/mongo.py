@@ -5,7 +5,7 @@ import re
 import shlex
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import Literal, Tuple, List
+from typing import List, Literal, Tuple
 
 from jhack.helpers import JPopen, get_current_model, get_substrate
 
@@ -108,6 +108,7 @@ class ConnectorBase:
             raise EmptyQueryResult()
 
         return out
+
 
 class K8sConnector(ConnectorBase):
     """Mongo database connector for kubernetes controllers."""
