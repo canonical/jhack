@@ -64,12 +64,24 @@ def _gather_juju_snaps_versions(format: Format = FormatOption):
 def get_jhack_version() -> str:
     if IS_SNAPPED:
         from importlib import metadata
-        return metadata.version('jhack')
+
+        return metadata.version("jhack")
     else:
         pyproject_toml = (
             Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
         )
         return toml.loads(pyproject_toml.read_text())["project"]["version"]
+
+
+def get_multipass_version():
+    """Multipass --version."""
+    try:
+        multipass_version = get_output("multipass version --format json")
+    except subprocess.CalledProcessError:
+        logger.info("multipass not found")
+        multipass_version = None
+    multipass_version = json_loads(multipass_version) if multipass_version else {}
+    return multipass_version
 
 
 def print_env(format: Format = FormatOption):
@@ -79,9 +91,7 @@ def print_env(format: Format = FormatOption):
         f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
     )
 
-    multipass_version = get_output("multipass version --format json")
-    multipass_version = json_loads(multipass_version) if multipass_version else {}
-
+    multipass_version = get_multipass_version()
     data = {
         "jhack": get_jhack_version(),
         "python": python_version,
