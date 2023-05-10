@@ -66,17 +66,20 @@ class ConnectorBase:
         return tuple(out.split())  # noqa
         # return tuple(f"'{x}'" for x in out.split())  # noqa
 
-    def get_one(self, query: str) -> dict:
-        return self.get_many(query, raise_if_too_many=False)[0]
+    def get(self, query: str, n: int = None, query_filter: str = None) -> List[dict]:
+        qfilter = query_filter or "{}"
+        if n is None:
+            q = query + fr".find({qfilter}).toArray()"
+        else:
+            q = query + fr".find({qfilter}).limit({n}).toArray()"
+        escaped = self._escape_query(q)
+        out = self._run_query(escaped)
 
-    def get_many(self, query: str, raise_if_too_many=True) -> List[dict]:
-        if "pretty()" in query:
-            # we need one result per line to be able to deserialize.
-            raise ValueError("invalid query: unsupported pretty() statement")
-        raw = self._escape_query(query)
-        return self._run_query(raw, raise_if_too_many=raise_if_too_many)
+        if not out:
+            raise EmptyQueryResult(escaped)
+        return out
 
-    def _run_query(self, query: str, raise_if_too_many=True):
+    def _run_query(self, query: str):
         command = ["bash", str(self.query_script.absolute()), *self.args, query]
         proc = Popen(command, stdout=PIPE, stderr=PIPE)
         raw_output = proc.stdout.read().decode("utf-8")
@@ -85,36 +88,23 @@ class ConnectorBase:
             print(err)
             raise RuntimeError(f"unexpected result from command {command}; {err!r}")
 
-        txt = raw_output.split("\n")
-        out = []
-        for value in txt[1:]:
-            if not value:
-                continue
-            if value == 'Type "it" for more':
-                if raise_if_too_many:
-                    raise TooManyResults()
-                continue
-            try:
-                out.append(to_json(value))
-            except Exception as e:
-                err = proc.stderr.read().decode("utf-8")
-                print(err)
-                raise RuntimeError(
-                    f"failed deserializing query result {value} with {type(e)} {err}"
-                ) from e
-        if not out:
+        # stripped = "[" + "\n".join(filter(None, raw_output.split('\n')[1:])) + "]"
+        stripped = "\n".join(filter(None, raw_output.split('\n')[1:]))
+        try:
+            return to_json(stripped)
+        except Exception as e:
             err = proc.stderr.read().decode("utf-8")
             print(err)
-            raise EmptyQueryResult()
-
-        return out
+            raise RuntimeError(
+                f"failed deserializing query result {stripped} with {type(e)} {err}"
+            ) from e
 
 
 class K8sConnector(ConnectorBase):
     """Mongo database connector for kubernetes controllers."""
 
     args_getter_script = (
-        Path(__file__).parent / "get_credentials_from_k8s_controller.sh"
+            Path(__file__).parent / "get_credentials_from_k8s_controller.sh"
     )
     query_script = Path(__file__).parent / "query_k8s_controller.sh"
 
@@ -123,7 +113,7 @@ class MachineConnector(ConnectorBase):
     """Mongo database connector for kubernetes controllers."""
 
     args_getter_script = (
-        Path(__file__).parent / "get_credentials_from_machine_controller.sh"
+            Path(__file__).parent / "get_credentials_from_machine_controller.sh"
     )
     query_script = Path(__file__).parent / "query_machine_controller.sh"
 
@@ -133,10 +123,10 @@ class MachineConnector(ConnectorBase):
 
 class Mongo:
     def __init__(
-        self,
-        entity_id: int = 0,
-        substrate: Literal["k8s", "machine"] = None,
-        model: str = None,
+            self,
+            entity_id: int = 0,
+            substrate: Literal["k8s", "machine"] = None,
+            model: str = None,
     ):
         self.substrate = substrate or get_substrate()
         self.entity_id = entity_id
@@ -151,5 +141,7 @@ class Mongo:
         else:
             raise TypeError(substrate)
 
-    def get_one(self, q: str):
-        return self.connector.get_one(q)
+    def _get(self, query: str, n: int = None, query_filter: str = None):
+        return self.connector.get(query, n=n, query_filter=query_filter)
+
+
