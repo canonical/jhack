@@ -86,6 +86,12 @@ def get_multipass_version():
 
 def print_env(format: Format = FormatOption):
     """Print the details of the juju environment for use in bug reports."""
+    if IS_SNAPPED:
+        logger.warning(
+            "you are using the snapped version of jhack. "
+            "The version information you see below matches what is available to the snap! "
+            "To see your *local* version information, you'll have to run jhack from sources, like a pro.")
+
     python_v = sys.version_info
     python_version = (
         f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
