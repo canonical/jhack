@@ -29,7 +29,7 @@ parts:
   jhack:
     plugin: python
     source: https://github.com/PietroPasotti/jhack.git
-    source-branch: master
+    source-branch: main
     python-packages:
       # TODO: keep pyproject in sync with these!
       - typer==0.7.0
