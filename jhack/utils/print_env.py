@@ -11,6 +11,7 @@ import toml
 from rich.console import Console
 from rich.table import Table
 
+from jhack.config import IS_SNAPPED
 from jhack.helpers import Format, FormatOption
 from jhack.logger import logger as jhack_logger
 
@@ -60,13 +61,19 @@ def _gather_juju_snaps_versions(format: Format = FormatOption):
     return table
 
 
+def get_jhack_version() -> str:
+    if IS_SNAPPED:
+        from importlib import metadata
+        return metadata.version('jhack')
+    else:
+        pyproject_toml = (
+            Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
+        )
+        return toml.loads(pyproject_toml.read_text())["project"]["version"]
+
+
 def print_env(format: Format = FormatOption):
     """Print the details of the juju environment for use in bug reports."""
-    pyproject_toml = (
-        Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
-    )
-    jhack_version = toml.loads(pyproject_toml.read_text())["project"]["version"]
-
     python_v = sys.version_info
     python_version = (
         f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
@@ -76,7 +83,7 @@ def print_env(format: Format = FormatOption):
     multipass_version = json_loads(multipass_version) if multipass_version else {}
 
     data = {
-        "jhack": jhack_version,
+        "jhack": get_jhack_version(),
         "python": python_version,
         "juju-* snaps": _gather_juju_snaps_versions(format=format),
         "microk8s": get_output("microk8s version") or NOT_INSTALLED,
