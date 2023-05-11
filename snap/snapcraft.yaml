@@ -10,7 +10,7 @@ architectures:
   - build-on: i386
 
 # TODO: keep pyproject in sync with version!
-version: '0.3.18.1'
+version: '0.3.18.2'
 summary: Cli tool packed with juju hacks.
 
 description: |

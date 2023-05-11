@@ -9,7 +9,6 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 import pytest
 
 from jhack.utils.show_relation import (
-    RelationEndpointURL,
     _coalesce_endpoint_and_n,
     _sync_show_relation,
 )

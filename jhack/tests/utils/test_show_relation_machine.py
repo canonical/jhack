@@ -50,8 +50,8 @@ def test_show_unit_works():
 
 def test_databag_shape_ceil():
     content = get_content("ceilometer:shared-db", "mongodb:database", False)
-    assert content.app_name == "ceilometer"
-    assert content.endpoint == "shared-db"
+    assert content.url.app_name == "ceilometer"
+    assert content.url.endpoint == "shared-db"
     assert content.application_data == {}
     assert content.units_data == {0: {"ceilometer_database": "ceilometer"}}
     assert content.meta.leader_id == 0
@@ -59,8 +59,8 @@ def test_databag_shape_ceil():
 
 def test_databag_shape_mongo():
     content = get_content("mongodb:database", "ceilometer:shared-db", False)
-    assert content.app_name == "mongodb"
-    assert content.endpoint == "database"
+    assert content.url.app_name == "mongodb"
+    assert content.url.endpoint == "database"
     assert content.application_data == {}
     assert (
         content.units_data

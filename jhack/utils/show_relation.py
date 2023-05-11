@@ -53,8 +53,9 @@ class Relation:
         return RelationType(self.raw_type)
 
 
-class RelationEndpointURL:
+class RelationEndpointURL(str):
     def __init__(self, s):
+        super().__init__()
         if ":" in s:
             u, endpoint = s.split(":")
         else:
@@ -68,17 +69,6 @@ class RelationEndpointURL:
         self.app_name = app_name
         self.unit_id = unit_id
         self.endpoint = endpoint
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        s = self.app_name
-        if self.unit_id:
-            s += "/" + self.unit_id
-        if self.endpoint:
-            s += ":" + self.endpoint
-        return s
 
     @property
     def unit_name(self):
@@ -249,8 +239,9 @@ class Metadata:
 
 @dataclass
 class AppRelationData:
-    obj: RelationEndpointURL
+    url: RelationEndpointURL
     relation_id: int
+
     meta: Metadata
     application_data: dict
     units_data: Dict[int, dict]
@@ -434,7 +425,7 @@ def get_content(
         raise TypeError(relation.type)
 
     return AppRelationData(
-        obj=obj,
+        url=obj,
         meta=meta,
         application_data=app_data,
         units_data=units_data,
@@ -559,7 +550,7 @@ def get_relations(model: str = None) -> List[Relation]:
 
 def _render_unit(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
     unit_id, unit_data = obj
-    unit_name = f"{source.obj.app_name}/{unit_id}"
+    unit_name = f"{source.url.app_name}/{unit_id}"
     return _render_databag(
         unit_name, unit_data, leader=(unit_id == source.meta.leader_id)
     )
@@ -794,14 +785,14 @@ async def render_relation(
 
 
 def _format_json(entities: Tuple[AppRelationData, ...], relation_type: RelationType):
-    """Format as json"""
+    """Format as json."""
 
     @dataclasses.dataclass
     class Response:
-        entities: Tuple[AppRelationData]
         type: RelationType
+        endpoints: Tuple[AppRelationData]
 
-    resp = Response(entities, relation_type)
+    resp = Response(relation_type, entities)
     return json.dumps(dataclasses.asdict(resp), indent=2)
 
 
@@ -836,7 +827,7 @@ def _rich_format_table(
         style="rgb(54,176,224) bold",
     )
     for entity in entities:
-        table.add_column(justify="left", header=entity.obj.app_name)  # meta/app_name
+        table.add_column(justify="left", header=entity.url.app_name)  # meta/app_name
 
     is_peer = relation.type is RelationType.peer
     if is_cmr:
@@ -897,7 +888,7 @@ def _rich_format_table(
 
     table.add_row(
         "endpoint",
-        *(Text(entity.obj.endpoint, style="blue bold") for entity in entities),
+        *(Text(entity.url.endpoint, style="blue bold") for entity in entities),
     )
     table.add_row(
         "leader unit",
