@@ -9,8 +9,7 @@ architectures:
   - build-on: amd64
   - build-on: i386
 
-# TODO: keep pyproject in sync with version!
-version: '0.3.18.2'
+adopt-info: jhack
 summary: Cli tool packed with juju hacks.
 
 description: |
@@ -28,19 +27,12 @@ confinement: strict
 parts:
   jhack:
     plugin: python
-    source: https://github.com/PietroPasotti/jhack.git
-    source-branch: main
-    python-packages:
-      # TODO: keep pyproject in sync with these!
-      - typer==0.7.0
-      - ops==1.5.3
-      - rich==13.3.0
-      - parse==1.19.0
-      - asttokens
-      - astunparse
-      - requests==2.29.0
-      - requests-unixsocket==0.3.0
-      - toml
+    source: .
+    override-build: |
+      snapcraftctl build
+      snapcraftctl set-version \
+        $(PYTHONPATH=$SNAPCRAFT_PART_INSTALL/lib/python3.8/site-packages/ \
+          python3 -c "import importlib.metadata;print(importlib.metadata.version('jhack'))")
     stage-snaps:
       - juju/3.0/beta
 
