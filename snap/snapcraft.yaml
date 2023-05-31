@@ -30,9 +30,8 @@ parts:
     source: .
     override-build: |
       snapcraftctl build
-      snapcraftctl set-version \
-        $(PYTHONPATH=$SNAPCRAFT_PART_INSTALL/lib/python3.8/site-packages/ \
-          python3 -c "import importlib.metadata;print(importlib.metadata.version('jhack'))")
+      VERSION=$(cat ./pyproject.toml | grep -Po 'version = "\K[^"]*')
+      snapcraftctl set-version $VERSION
     stage-snaps:
       - juju/3.0/beta
 
