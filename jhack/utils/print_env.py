@@ -23,7 +23,7 @@ def get_output(command: str) -> Optional[str]:
     try:
         p = subprocess.run(command.split(), capture_output=True, text=True)
         return p.stdout.strip() if p.returncode == 0 else None
-    except subprocess.CalledProcessError as e:
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
         logger.info(e)
         return None
 
