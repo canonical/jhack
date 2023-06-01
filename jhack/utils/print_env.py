@@ -68,7 +68,7 @@ def get_jhack_version() -> str:
         return metadata.version("jhack")
     else:
         pyproject_toml = (
-            Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
+            Path(__file__).parent.parent.absolute().joinpath("pyproject.toml")
         )
         return toml.loads(pyproject_toml.read_text())["project"]["version"]
 
