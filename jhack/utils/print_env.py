@@ -3,11 +3,10 @@ import subprocess
 import sys
 from json import dumps as json_dumps
 from json import loads as json_loads
-from pathlib import Path
+from importlib import metadata
 from typing import Optional
 
 import requests_unixsocket
-import toml
 from rich.console import Console
 from rich.table import Table
 
@@ -61,18 +60,6 @@ def _gather_juju_snaps_versions(format: Format = FormatOption):
     return table
 
 
-def get_jhack_version() -> str:
-    if IS_SNAPPED:
-        from importlib import metadata
-
-        return metadata.version("jhack")
-    else:
-        pyproject_toml = (
-            Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
-        )
-        return toml.loads(pyproject_toml.read_text())["project"]["version"]
-
-
 def get_multipass_version():
     """Multipass --version."""
     try:
@@ -100,7 +87,7 @@ def print_env(format: Format = FormatOption):
 
     multipass_version = get_multipass_version()
     data = {
-        "jhack": get_jhack_version(),
+        "jhack": metadata.version("jhack"),
         "python": python_version,
         "juju-* snaps": _gather_juju_snaps_versions(format=format),
         "microk8s": get_output("microk8s version") or NOT_INSTALLED,
