@@ -260,9 +260,6 @@ def get_metadata_from_status(
     app_status = status["applications"][endpoint.app_name]
     if app_status.get("subordinate-to"):
         units = {}
-        other_app_meta = status["applications"][other_endpoint.app_name]
-        other_app_units = other_app_meta.get("units")
-
         # todo: need to scavenge unit names from OTHER units' .subordinates field
         for app in status["applications"].values():
             for unit in app.get("units", {}).values():
@@ -603,7 +600,8 @@ def _match_endpoint(
     rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]
 ):
     if not ep2 or rel.type == RelationType.peer:
-        # we could use _match_provider as well, they should be equivalent so long as the peer relation is consistent
+        # we could use _match_provider as well, they should be equivalent so long as
+        # the peer relation is consistent
         match_peer = _match_requirer(rel, ep1) and _match_requirer(rel, ep2)
         return match_peer, False
 

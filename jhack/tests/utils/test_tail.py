@@ -65,16 +65,16 @@ MOCK_JDL = {
     3:
     # scenario 3: defer "the same event" twice, but messily.
     b"""unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event a.
-            unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event b.
-            unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/b[0]>.
-            unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event c.
-            unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/b[0]>.
-            unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/b[0]>.
-            unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/c[1]>.
-            unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event d.
-            unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/b[0]>.
-            unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/c[1]>.
-            """,
+                unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event b.
+                unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/b[0]>.
+                unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event c.
+                unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/b[0]>.
+                unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/b[0]>.
+                unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log Deferring <EVT via Charm/on/c[1]>.
+                unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event d.
+                unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/b[0]>.
+                unit-myapp-0: 12:17:50 DEBUG unit.myapp/0.juju-log Re-emitting <EVT via Charm/on/c[1]>.
+                """,
     # scenario 4: interleaving.
     4: b"""unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.
         unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event install.
@@ -356,3 +356,29 @@ def test_borky_trfk_log_defer():
         files=[str(mocks_dir / "trfk_mock_bork_defer.txt")],
         show_defer=True,
     )
+
+
+def test_trace_ids_relation_evt():
+    p = Processor([Target("prom", 1)], show_trace_ids=True)
+    for line in (
+        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Starting root trace with id=12312321412412312321.",
+        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Emitting custom event "
+        "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
+        "/on/ready_for_unit[14]>.",
+    ):
+        p.process(line)
+    evt = p._raw_tables["prom/1"].msgs[0]
+    assert evt.trace_id == "12312321412412312321"
+
+
+def test_trace_ids_no_relation_evt():
+    p = Processor([Target("prom", 1)], show_trace_ids=True)
+    for line in (
+        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Starting root trace with id=12312321412412312321.",
+        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Emitting custom event "
+        "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
+        "/on/ready_for_unit[14]>.",
+    ):
+        p.process(line)
+    evt = p._raw_tables["prom/1"].msgs[0]
+    assert evt.trace_id == "12312321412412312321"
