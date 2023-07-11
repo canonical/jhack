@@ -278,7 +278,7 @@ class LogLineParser:
     # unit-tempo-0: 12:28:24 DEBUG unit.tempo/0.juju-log Starting root trace with id=XXX.
     # we ignore the relation tag since we don't really care with modifier loglines
     trace_id = re.compile(
-        base_pattern + "(.* )?" + r"Starting root trace with id=(?P<trace_id>\d+)\."
+        base_pattern + "(.* )?" + r"Starting root trace with id='(?P<trace_id>\S+)'\."
     )
 
     custom_event_suffix = "Emitting custom event " + event_repr
