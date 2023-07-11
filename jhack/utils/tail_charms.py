@@ -592,7 +592,7 @@ class Processor:
         self._duplicate_cache.add(hsh)
 
     def _apply_jhack_mod(self, msg: EventLogMsg):
-        def _get_referenced_msg(unit: str):
+        def _get_referenced_msg(unit: str) -> Optional[EventLogMsg]:
             # this is the message we're referring to, the one we're modifying
             raw_table = self._raw_tables[msg.unit]
             if not msg.event:
@@ -613,7 +613,8 @@ class Processor:
             # the previous event of this type was fired by jhack.
             # copy over the tags
             referenced_msg = _get_referenced_msg(msg.unit)
-            referenced_msg.tags = msg.tags
+            if referenced_msg:
+                referenced_msg.tags = msg.tags
 
         elif "trace_id" in msg.tags:
             # the NEXT logged event of this type was traced by Tempo's trace_charm library.

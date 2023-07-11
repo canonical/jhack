@@ -1,7 +1,12 @@
 import json
+import os
 import re
+import sys
+from dataclasses import dataclass
+from enum import Enum
 from operator import itemgetter
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Tuple
 
 import typer
 from rich.console import Console
@@ -65,8 +70,25 @@ _symbol_out_of_sync = ">"
 _symbol_in_sync = "=="
 
 
+class SyncStatus(Enum):
+    outdated = "outdated"
+    up_to_date = "up_to_date"
+    ahead_of_upstream = "ahead_of_upstream"
+    unknown = "unknown"
+
+
+@dataclass
+class OutdatedCheck:
+    outdated: SyncStatus
+    text: Text
+    lib_path: str  # charmcraft library address
+
+
 def _add_charm_lib_info(
-    table: Table, app: str, model: str, check_outdated=True, machine=False
+        table: Table, app: str, model: str,
+        check_outdated=True,
+        update_outdated=False,
+        machine=False
 ):
     if check_outdated and not check_command_available("charmcraft"):
         logger.error(
@@ -74,6 +96,12 @@ def _add_charm_lib_info(
             "command unavailable: `charmcraft`. Is this a snap?"
         )
         check_outdated = False
+
+    if update_outdated:
+        if not check_outdated:
+            sys.exit("cannot use update_outdated without check_outdated")
+        if not (Path(os.getcwd()).resolve() / "charmcraft.yaml").exists():
+            sys.exit("not in a charm repo root: cannot update_outdated")
 
     status = _juju_status(app, model=model)
     unit_name = status["applications"][app.split("/")[0]]["units"].popitem()[0]
@@ -108,71 +136,112 @@ def _add_charm_lib_info(
             lib_info_ch = get_lib_info(owner)
             ch_lib_meta[owner] = {obj["library_name"]: obj for obj in lib_info_ch}
 
-    def _check_version(owner, lib_name, version):
+    def _check_version(owner:str, lib_name:str, version: Tuple[int, int]) -> OutdatedCheck:
+        lib_path = f"charms.{owner}.v{version[0]}.{lib_name}"
         try:
             lib_meta = ch_lib_meta[owner][lib_name]
         except KeyError as e:
             logger.warning(
                 f"Couldn't find {e} in charmcraft lib-info for {owner}.{lib_name}"
             )
-            return Text(_symbol_unknown, style="orange")
+            return OutdatedCheck(
+                SyncStatus.unknown,
+                Text(_symbol_unknown, style="orange"),
+                lib_path
+            )
 
         upstream_v = lib_meta["api"], lib_meta["patch"]
 
         if upstream_v == version:
-            return Text(_symbol_in_sync, style="bold green")
+            return OutdatedCheck(
+                SyncStatus.up_to_date,
+                Text(_symbol_in_sync, style="bold green"),
+                lib_path
+            )
 
         elif upstream_v < version:
             symbol = _symbol_out_of_sync
             color = "orange"
+            status = SyncStatus.ahead_of_upstream
 
         else:
             symbol = _symbol_outdated
             color = "red"
+            status = SyncStatus.outdated
 
-        return (
+        return OutdatedCheck(
+            status,
             Text(symbol, style="bold " + color)
             + Text(" (", style="bold default")
             + Text(str(upstream_v[0]), style=color)
             + "."
             + Text(str(upstream_v[1]), style=color)
-            + Text(")", style="bold default")
+            + Text(")", style="bold default"),
+            lib_path
         )
 
     for owner, version, lib_name, revision in libinfo:
         description = (
-            Text(version, style="bold") + "." + Text(revision, style="default")
+                Text(version, style="bold") + "." + Text(revision, style="default")
         )
+
+        autoupdate_result = None
 
         if check_outdated:
             description += "\t"
-            description += _check_version(
+            check = _check_version(
                 owner, lib_name, (int(version), int(revision))
             )
-            # TODO: for each outdated lib, print copy-pastable command you'd need to run to update
+            description += check.text
 
-        table.add_row(
-            (
+            if update_outdated:
+                if check.outdated is SyncStatus.outdated:
+                    print(f'auto-updating outdated {check.lib_path}')
+
+                    proc = JPopen(
+                        ["charmcraft", "fetch-lib", check.lib_path],
+                        wait=True, silent_fail=True)
+                    if proc.returncode != 0:
+                        autoupdate_result = Text("autoupdate FAILED", style="red bold")
+                    else:
+                        autoupdate_result = Text("autoupdate ↟OK↟", style="green bold")
+                elif check.outdated is SyncStatus.ahead_of_upstream:
+                    autoupdate_result = Text("n/a", style="bold yellow")
+                elif check.outdated is SyncStatus.up_to_date:
+                    autoupdate_result = Text("no updates", style="bold grey")
+                else:
+                    autoupdate_result = Text("n/a", style="bold grey")
+
+            # TODO: for each outdated lib, print copy-pastable command you'd need to run to update
+        row = [(
                 Text(owner, style="purple")
                 + Text(":", style="default")
                 + Text(lib_name, style="bold cyan")
-            ),
+        ),
             description,
-        )
+        ]
+
+        if update_outdated:
+            row.append(autoupdate_result)
+
+        table.add_row(*row)
 
     table.rows[-1].end_section = True
 
 
 def _vinfo(
-    target: str,
-    machine: bool = False,
-    check_outdated: bool = True,
-    color: RichSupportedColorOptions = "auto",
-    model: str = None,
+        target: str,
+        machine: bool = False,
+        check_outdated: bool = True,
+        update_outdated: bool = False,
+        color: RichSupportedColorOptions = "auto",
+        model: str = None,
 ):
-    table = Table(title="vinfo v0.1", show_header=False)
+    table = Table(title="vinfo v0.1", show_header=False, expand=True)
     table.add_column()
     table.add_column()
+    if update_outdated:
+        table.add_column()
 
     # app, _, unit_id = target.rpartition('/')
     # if app:
@@ -182,7 +251,8 @@ def _vinfo(
 
     _add_app_info(table, target, model)
     _add_charm_lib_info(
-        table, target, model, machine=machine, check_outdated=check_outdated
+        table, target, model, machine=machine,
+        check_outdated=check_outdated, update_outdated=update_outdated
     )
 
     if color == "no":
@@ -192,33 +262,37 @@ def _vinfo(
 
 
 def vinfo(
-    target: str = typer.Argument(
-        ..., help="Unit or application name to generate the vinfo of."
-    ),
-    # machine: bool = typer.Option(
-    #     False,
-    #     help="Is this a machine model?",  # todo autodetect
-    #     is_flag=True
-    # ),
-    check_outdated: bool = typer.Option(
-        False,
-        "-o",
-        "--check-outdated",
-        help="Check whether the charm libs used by the charm are up to date."
-        "This requires the 'charmcraft' command to be available. "
-        "False by default as the command will take considerably longer.",
-        is_flag=True,
-    ),
-    color: Optional[str] = ColorOption,
-    model: str = typer.Option(
-        None, "--model", "-m", help="Model in which to apply this command."
-    ),
+        target: str = typer.Argument(
+            ..., help="Unit or application name to generate the vinfo of."
+        ),
+        check_outdated: bool = typer.Option(
+            False,
+            "-o",
+            "--check-outdated",
+            help="Check whether the charm libs used by the charm are up to date."
+                 "This requires the 'charmcraft' command to be available. "
+                 "False by default as the command will take considerably longer.",
+            is_flag=True,
+        ),
+        update_outdated: bool = typer.Option(
+            False,
+            "-U",  # caps because this is quite handsy
+            "--update-outdated",
+            help="For all charm libs that are outdated, run charmcraft fetch-lib."
+                 "Assumes that CWD is the charm root.",
+            is_flag=True,
+        ),
+        color: Optional[str] = ColorOption,
+        model: str = typer.Option(
+            None, "--model", "-m", help="Model in which to apply this command."
+        ),
 ):
     """Show version information of a charm and its charm libs."""
     _vinfo(
         target=target,
         machine=False,  # not implemented; todo implement
         check_outdated=check_outdated,
+        update_outdated=update_outdated,
         color=color,
         model=model,
     )
