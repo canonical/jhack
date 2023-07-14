@@ -35,6 +35,7 @@ from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
+_TAIL_VERSION = "0.3"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
@@ -757,7 +758,8 @@ class Processor:
         # to add new rows to the top and keep old ones, but how do we know if
         # deferral lines have changed?
         self._rendered = True
-        table = Table(show_footer=False, expand=True)
+        table = Table(show_footer=False, expand=True,
+                      title=f"Jhack tail v{_TAIL_VERSION}")
         table.add_column(header="timestamp", style="")
         unit_grids = []
         n_cols = 1
