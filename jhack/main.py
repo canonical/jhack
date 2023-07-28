@@ -45,6 +45,7 @@ def main():
         purge_db,
     )
     from jhack.utils.ffwd import fast_forward
+    from jhack.utils.list_endpoints import list_endpoints
     from jhack.utils.nuke import nuke
     from jhack.utils.print_env import print_env
     from jhack.utils.show_relation import sync_show_relation
@@ -119,6 +120,7 @@ def main():
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     app.command(name="unleash", hidden=True)(vanity)
     app.command(name="jenv")(print_env)
+    app.command(name="list-endpoints")(list_endpoints)
 
     conf = typer.Typer(
         name="conf",

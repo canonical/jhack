@@ -1,9 +1,9 @@
 import csv
 import subprocess
 import sys
+from importlib import metadata
 from json import dumps as json_dumps
 from json import loads as json_loads
-from importlib import metadata
 from typing import Optional
 
 import requests_unixsocket
