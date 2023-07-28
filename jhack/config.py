@@ -8,6 +8,7 @@ from subprocess import CalledProcessError, check_output
 from jhack.logger import logger
 
 IS_SNAPPED = False
+JHACK_PROJECT_ROOT = Path(__file__).parent.parent
 
 
 def get_home_dir() -> Path:
