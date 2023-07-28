@@ -468,7 +468,8 @@ def get_databags(
             },
         }
     elif relation.type == RelationType.cross_model:
-        assert raw_data.get("cross-model", False)
+        # assert raw_data.get("cross-model", False)
+        # has 'cross-model' gone from the data at some point?
         unit_data = raw_data["local-unit"]["data"] or {}
     else:
         unit_data = raw_data["related-units"][obj.unit_name]["data"]
@@ -600,8 +601,8 @@ def _match_endpoint(
     rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]
 ):
     if not ep2 or rel.type == RelationType.peer:
-        # we could use _match_provider as well, they should be equivalent so long as
-        # the peer relation is consistent
+        # we could use _match_provider as well, they should be equivalent
+        # so long as the peer relation is consistent
         match_peer = _match_requirer(rel, ep1) and _match_requirer(rel, ep2)
         return match_peer, False
 

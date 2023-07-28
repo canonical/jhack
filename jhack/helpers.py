@@ -2,8 +2,10 @@ import contextlib
 import json
 import json as jsn
 import os
+import re
 import subprocess
 import tempfile
+from collections import namedtuple
 from functools import lru_cache
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
@@ -91,7 +93,7 @@ def JPopen(args: List[str], wait=False, **kwargs):  # noqa
     return _JPopen(tuple(args), wait, **kwargs)
 
 
-def _JPopen(args: Tuple[str], wait: bool, silent_fail:bool = False, **kwargs):  # noqa
+def _JPopen(args: Tuple[str], wait: bool, silent_fail: bool = False, **kwargs):  # noqa
     # Env-passing-down Popen
     proc = subprocess.Popen(
         args,
@@ -139,8 +141,18 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
     return raw
 
 
-def is_k8s_model(status=None):
-    status = status or juju_status(json=True)
+@lru_cache
+def cached_juju_status(app_name=None, model: str = None, json: bool = False):
+    return juju_status(
+        app_name=app_name,
+        model=model,
+        json=json,
+    )
+
+
+def is_k8s_model(status):
+    """Determine if this is a k8s model from a juju status."""
+
     if status["applications"]:
         # no machines = k8s model
         if not status.get("machines"):
@@ -261,6 +273,58 @@ def fetch_file(
         return raw.decode("utf-8")
 
     local_path.write_bytes(raw)
+
+
+LibInfo = namedtuple("LibInfo", "owner, version, lib_name, revision")
+
+JujuVersion = namedtuple("JujuVersion", ("version", "build"))
+
+
+def juju_version() -> JujuVersion:
+    proc = JPopen("juju version".split())
+    out = proc.stdout.read().decode("utf-8")
+    if "-" in out:
+        v, tag = out.split("-", 1)
+    else:
+        v, tag = out, ""
+    return JujuVersion(tuple(map(int, v.split("."))), tag)
+
+
+def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
+    if machine:
+        raise NotImplementedError("machine libinfo not implemented yet.")
+
+    status = cached_juju_status(app, model=model, json=True)
+    unit_name = status["applications"][app.split("/")[0]]["units"].popitem()[0]
+
+    if get_substrate(model) == "k8s":
+        cwd = "."
+    else:
+        cwd = "/var/lib/juju"
+
+    cmd = (
+        f"juju ssh {unit_name} find {cwd}/agents/unit-{unit_name.replace('/', '-')}/charm/lib "
+        "-type f "
+        '-iname "*.py" '
+        r'-exec grep "LIBPATCH" {} \+'
+    )
+    proc = JPopen(cmd.split())
+    out = proc.stdout.read().decode("utf-8")
+    libs = out.strip().split("\n")
+
+    libinfo = []
+    for lib in libs:
+        # todo: if machine, adapt pattern
+        # pattern: './agents/unit-zinc-k8s-0/charm/lib/charms/loki_k8s/v0/loki_push_api.py:LIBPATCH = 12'  # noqa
+        match = re.search(r".*/charms/(\w+)/v(\d+)/(\w+)\.py\:LIBPATCH\s\=\s(\d+)", lib)
+        if match:
+            grps = match.groups()
+        else:
+            logger.error(f"unable to determine libinfo from lib path {lib}")
+            grps = (None, None, None, None)
+        libinfo.append(LibInfo(*grps))
+
+    return libinfo
 
 
 if __name__ == "__main__":

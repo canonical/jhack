@@ -1,0 +1,2138 @@
+{
+  "applications": {
+    "barbican-mysql-router": {
+      "address": "10.152.183.42",
+      "application-status": {
+        "current": "blocked",
+        "message": "Missing relation: database",
+        "since": "28 Jul 2023 08:51:01Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "3121c2b9-36dc-4dd1-90d7-47a0a1990a96",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "mysql-router-peers": [
+          "barbican-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "barbican-mysql-router/0": {
+          "address": "10.1.77.111",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 08:51:01Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "barbican-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "27 Jul 2023 11:59:10Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "certificate-authority": {
+      "address": "10.152.183.82",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:04:39Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "tls-certificates-operator",
+      "charm-channel": "latest/stable",
+      "charm-name": "tls-certificates-operator",
+      "charm-origin": "charmhub",
+      "charm-rev": 22,
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "replicas": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "d86e4dd5-4fda-4d1a-bd39-b15eb534b0a1",
+      "relations": {
+        "certificates": [
+          "neutron",
+          "ovn-central",
+          "ovn-relay"
+        ],
+        "replicas": [
+          "certificate-authority"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "certificate-authority/0": {
+          "address": "10.1.77.71",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:12:56Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "certificate-authority-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 11:04:39Z"
+          }
+        }
+      }
+    },
+    "cinder": {
+      "address": "10.152.183.243",
+      "application-status": {
+        "current": "active",
+        "since": "27 Jul 2023 07:02:00Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "cinder-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "cinder-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 42,
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "ceph-access": "alpha",
+        "database": "alpha",
+        "identity-service": "alpha",
+        "image-service": "alpha",
+        "ingress-internal": "alpha",
+        "ingress-public": "alpha",
+        "peers": "alpha",
+        "storage-backend": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "f6e5dfb9-5d85-49cd-b8dc-6bc37c641dbc",
+      "relations": {
+        "amqp": [
+          "rabbitmq"
+        ],
+        "database": [
+          "cinder-mysql-router"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "ingress-internal": [
+          "traefik"
+        ],
+        "ingress-public": [
+          "traefik"
+        ],
+        "peers": [
+          "cinder"
+        ],
+        "storage-backend": [
+          "cinder-ceph"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "cinder/0": {
+          "address": "10.1.77.100",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:14Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "cinder-0",
+          "workload-status": {
+            "current": "active",
+            "since": "27 Jul 2023 07:02:00Z"
+          }
+        }
+      }
+    },
+    "cinder-ceph": {
+      "address": "10.152.183.184",
+      "application-status": {
+        "current": "waiting",
+        "message": "installing agent",
+        "since": "28 Jul 2023 07:13:14Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "cinder-ceph-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "cinder-ceph-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 31,
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "ceph": "alpha",
+        "ceph-access": "alpha",
+        "database": "alpha",
+        "peers": "alpha",
+        "storage-backend": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "4537255e-cb2a-4b25-ae20-71d32a225950",
+      "relations": {
+        "amqp": [
+          "rabbitmq"
+        ],
+        "database": [
+          "cinder-ceph-mysql-router"
+        ],
+        "peers": [
+          "cinder-ceph"
+        ],
+        "storage-backend": [
+          "cinder"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "cinder-ceph/0": {
+          "address": "10.1.77.75",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:05Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "cinder-ceph-0",
+          "workload-status": {
+            "current": "blocked",
+            "message": "(ceph) integration missing",
+            "since": "28 Jul 2023 09:12:59Z"
+          }
+        }
+      }
+    },
+    "cinder-ceph-mysql-router": {
+      "address": "10.152.183.229",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:06:49Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "16c32d9b-a571-4d9f-b6f9-02e79363eb36",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "cinder-ceph"
+        ],
+        "mysql-router-peers": [
+          "cinder-ceph-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "cinder-ceph-mysql-router/0": {
+          "address": "10.1.77.74",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:27Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "cinder-ceph-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "27 Jul 2023 07:01:36Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "cinder-mysql-router": {
+      "address": "10.152.183.22",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:07:18Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "a122d744-6e5f-4b57-8500-13e764d2e78b",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "cinder"
+        ],
+        "mysql-router-peers": [
+          "cinder-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "cinder-mysql-router/0": {
+          "address": "10.1.77.90",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:34Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "cinder-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "28 Jul 2023 07:10:51Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "glance": {
+      "address": "10.152.183.191",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:10:48Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "glance-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "glance-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 50,
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "ceph": "alpha",
+        "database": "alpha",
+        "identity-service": "alpha",
+        "image-service": "alpha",
+        "ingress-internal": "alpha",
+        "ingress-public": "alpha",
+        "peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "2d40e3ff-b1c3-403e-af4b-3a1d399eb125",
+      "relations": {
+        "amqp": [
+          "rabbitmq"
+        ],
+        "database": [
+          "glance-mysql-router"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "ingress-internal": [
+          "traefik"
+        ],
+        "ingress-public": [
+          "traefik"
+        ],
+        "peers": [
+          "glance"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "glance/0": {
+          "address": "10.1.77.91",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:51Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "glance-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 11:10:48Z"
+          }
+        }
+      }
+    },
+    "glance-mysql-router": {
+      "address": "10.152.183.65",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:07:53Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "b259020c-7a15-4374-b29b-8d46a41c9645",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "glance"
+        ],
+        "mysql-router-peers": [
+          "glance-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "glance-mysql-router/0": {
+          "address": "10.1.77.73",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:12:18Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "glance-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "27 Jul 2023 07:01:36Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "horizon": {
+      "address": "10.152.183.232",
+      "application-status": {
+        "current": "active",
+        "message": "http://10.206.54.240:80/openstack-horizon",
+        "since": "26 Jul 2023 18:18:56Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "horizon-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "horizon-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 47,
+      "endpoint-bindings": {
+        "": "alpha",
+        "database": "alpha",
+        "horizon": "alpha",
+        "identity-credentials": "alpha",
+        "ingress-internal": "alpha",
+        "ingress-public": "alpha",
+        "peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "0e7d4ee2-2d2e-4411-8d92-508236224a58",
+      "relations": {
+        "database": [
+          "horizon-mysql-router"
+        ],
+        "identity-credentials": [
+          "keystone"
+        ],
+        "ingress-internal": [
+          "traefik"
+        ],
+        "ingress-public": [
+          "traefik"
+        ],
+        "peers": [
+          "horizon"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "horizon/0": {
+          "address": "10.1.77.92",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:24Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "horizon-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 18:18:47Z"
+          }
+        }
+      }
+    },
+    "horizon-mysql-router": {
+      "address": "10.152.183.251",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:06:56Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "ba80dcdf-89ec-4f4a-ac73-8e3ca2ccbfa3",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "horizon"
+        ],
+        "mysql-router-peers": [
+          "horizon-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "horizon-mysql-router/0": {
+          "address": "10.1.77.82",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:43Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "horizon-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "28 Jul 2023 07:10:53Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "keystone": {
+      "address": "10.152.183.226",
+      "application-status": {
+        "current": "active",
+        "since": "28 Jul 2023 09:13:35Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "can-upgrade-to": "ch:amd64/jammy/keystone-k8s-115",
+      "charm": "keystone-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "keystone-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 114,
+      "endpoint-bindings": {
+        "": "alpha",
+        "database": "alpha",
+        "identity-credentials": "alpha",
+        "identity-service": "alpha",
+        "ingress-internal": "alpha",
+        "ingress-public": "alpha",
+        "peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "d4940a05-b653-432c-99a4-a1ac6cd7f9b3",
+      "relations": {
+        "database": [
+          "keystone-mysql-router"
+        ],
+        "identity-credentials": [
+          "horizon"
+        ],
+        "identity-service": [
+          "cinder",
+          "glance",
+          "neutron",
+          "nova",
+          "placement"
+        ],
+        "ingress-internal": [
+          "traefik"
+        ],
+        "ingress-public": [
+          "traefik"
+        ],
+        "peers": [
+          "keystone"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "keystone/0": {
+          "address": "10.1.77.99",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 08:51:02Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "keystone-0",
+          "workload-status": {
+            "current": "active",
+            "since": "28 Jul 2023 09:13:35Z"
+          }
+        }
+      }
+    },
+    "keystone-mysql-router": {
+      "address": "10.152.183.204",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:08:31Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "36a30baa-e604-431e-b6d6-1eaf70cd1e1b",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "keystone"
+        ],
+        "mysql-router-peers": [
+          "keystone-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "keystone-mysql-router/0": {
+          "address": "10.1.77.86",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:20Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "keystone-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "28 Jul 2023 07:10:52Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "mysql": {
+      "address": "10.152.183.253",
+      "application-status": {
+        "current": "active",
+        "message": "Primary",
+        "since": "28 Jul 2023 07:11:59Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 85,
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "database-peers": "alpha",
+        "grafana-dashboard": "alpha",
+        "logging": "alpha",
+        "metrics-endpoint": "alpha",
+        "mysql": "alpha",
+        "mysql-root": "alpha",
+        "s3-parameters": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "219184f7-72c1-4078-b522-daba8e3aa070",
+      "relations": {
+        "database": [
+          "barbican-mysql-router",
+          "cinder-ceph-mysql-router",
+          "cinder-mysql-router",
+          "glance-mysql-router",
+          "horizon-mysql-router",
+          "keystone-mysql-router",
+          "neutron-mysql-router",
+          "nova-api-mysql-router",
+          "nova-cell-mysql-router",
+          "nova-mysql-router",
+          "placement-mysql-router"
+        ],
+        "database-peers": [
+          "mysql"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "mysql/0": {
+          "address": "10.1.77.79",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:59Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "mysql-0",
+          "workload-status": {
+            "current": "active",
+            "message": "Primary",
+            "since": "28 Jul 2023 07:11:59Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "neutron": {
+      "address": "10.152.183.137",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:13:18Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "neutron-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "neutron-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 47,
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "identity-service": "alpha",
+        "ingress-internal": "alpha",
+        "ingress-public": "alpha",
+        "neutron-api": "alpha",
+        "ovsdb-cms": "alpha",
+        "peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "78e070f4-32a0-4a3d-8539-79b4a787fb2f",
+      "relations": {
+        "amqp": [
+          "rabbitmq"
+        ],
+        "certificates": [
+          "certificate-authority"
+        ],
+        "database": [
+          "neutron-mysql-router"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "ingress-internal": [
+          "traefik"
+        ],
+        "ingress-public": [
+          "traefik"
+        ],
+        "ovsdb-cms": [
+          "ovn-central"
+        ],
+        "peers": [
+          "neutron"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "neutron/0": {
+          "address": "10.1.77.97",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:39Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "neutron-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 11:13:18Z"
+          }
+        }
+      }
+    },
+    "neutron-mysql-router": {
+      "address": "10.152.183.41",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:07:41Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "4019a64a-daf6-4d00-86b7-a821efc91cf3",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "neutron"
+        ],
+        "mysql-router-peers": [
+          "neutron-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "neutron-mysql-router/0": {
+          "address": "10.1.77.89",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:54Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "neutron-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "28 Jul 2023 07:10:49Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "nova": {
+      "address": "10.152.183.149",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:12:45Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "nova-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "nova-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "api-database": "alpha",
+        "cell-database": "alpha",
+        "cinder-volume-service": "alpha",
+        "cloud-compute": "alpha",
+        "cloud-controller": "alpha",
+        "database": "alpha",
+        "identity-service": "alpha",
+        "image-service": "alpha",
+        "ingress-internal": "alpha",
+        "ingress-public": "alpha",
+        "neutron-api": "alpha",
+        "neutron-network-service": "alpha",
+        "peers": "alpha",
+        "placement": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "a1be371d-b3ca-4d36-8a37-22b42c4adb4e",
+      "relations": {
+        "amqp": [
+          "rabbitmq"
+        ],
+        "api-database": [
+          "nova-api-mysql-router"
+        ],
+        "cell-database": [
+          "nova-cell-mysql-router"
+        ],
+        "database": [
+          "nova-mysql-router"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "ingress-internal": [
+          "traefik"
+        ],
+        "ingress-public": [
+          "traefik"
+        ],
+        "peers": [
+          "nova"
+        ],
+        "placement": [
+          "placement"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "nova/0": {
+          "address": "10.1.77.101",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:12:58Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "nova-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 11:12:45Z"
+          }
+        }
+      }
+    },
+    "nova-api-mysql-router": {
+      "address": "10.152.183.130",
+      "application-status": {
+        "current": "active",
+        "since": "28 Jul 2023 07:10:23Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "625cd9b3-4d21-4dc1-9a16-49c0fa4cbe6d",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "nova"
+        ],
+        "mysql-router-peers": [
+          "nova-api-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "nova-api-mysql-router/0": {
+          "address": "10.1.77.83",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:12:59Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "nova-api-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "27 Jul 2023 07:01:11Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "nova-cell-mysql-router": {
+      "address": "10.152.183.127",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:08:34Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "040754cb-0ce5-4849-99b4-8e6a39d94f81",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "nova"
+        ],
+        "mysql-router-peers": [
+          "nova-cell-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "nova-cell-mysql-router/0": {
+          "address": "10.1.77.81",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:12:53Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "nova-cell-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "28 Jul 2023 07:10:52Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "nova-mysql-router": {
+      "address": "10.152.183.40",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:07:41Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "4fc09162-e164-40a6-8f1b-6dd5a9a7e33e",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "nova"
+        ],
+        "mysql-router-peers": [
+          "nova-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "nova-mysql-router/0": {
+          "address": "10.1.77.72",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:36Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "nova-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "27 Jul 2023 07:01:35Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "ovn-central": {
+      "address": "10.152.183.48",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:06:27Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "ovn-central-k8s",
+      "charm-channel": "23.03/edge",
+      "charm-name": "ovn-central-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 54,
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "ovsdb": "alpha",
+        "ovsdb-cms": "alpha",
+        "ovsdb-server": "alpha",
+        "peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "4fda823d-5c8a-415e-b345-846038f979c7",
+      "relations": {
+        "certificates": [
+          "certificate-authority"
+        ],
+        "ovsdb-cms": [
+          "neutron",
+          "ovn-relay"
+        ],
+        "peers": [
+          "ovn-central"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "ovn-central/0": {
+          "address": "10.1.77.88",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:53Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "ovn-central-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 11:06:27Z"
+          }
+        }
+      }
+    },
+    "ovn-relay": {
+      "address": "10.206.54.241",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:06:01Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "ovn-relay-k8s",
+      "charm-channel": "23.03/edge",
+      "charm-name": "ovn-relay-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 41,
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "ovsdb-cms": "alpha",
+        "ovsdb-cms-relay": "alpha",
+        "peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "48f1e504-da85-47f5-a1b3-2d37b6a1140b",
+      "relations": {
+        "certificates": [
+          "certificate-authority"
+        ],
+        "ovsdb-cms": [
+          "ovn-central"
+        ],
+        "peers": [
+          "ovn-relay"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "ovn-relay/0": {
+          "address": "10.1.77.84",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:15Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "ovn-relay-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 11:06:01Z"
+          }
+        }
+      }
+    },
+    "placement": {
+      "address": "10.152.183.201",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 18:16:51Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "placement-k8s",
+      "charm-channel": "2023.1/edge",
+      "charm-name": "placement-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 37,
+      "endpoint-bindings": {
+        "": "alpha",
+        "database": "alpha",
+        "identity-service": "alpha",
+        "ingress-internal": "alpha",
+        "ingress-public": "alpha",
+        "peers": "alpha",
+        "placement": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "e6263380-e41c-4a20-bdff-8bdb20d7edc0",
+      "relations": {
+        "database": [
+          "placement-mysql-router"
+        ],
+        "identity-service": [
+          "keystone"
+        ],
+        "ingress-internal": [
+          "traefik"
+        ],
+        "ingress-public": [
+          "traefik"
+        ],
+        "peers": [
+          "placement"
+        ],
+        "placement": [
+          "nova"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "placement/0": {
+          "address": "10.1.77.93",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:38Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "placement-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 18:16:51Z"
+          }
+        }
+      }
+    },
+    "placement-mysql-router": {
+      "address": "10.152.183.247",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:07:31Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "mysql-router-k8s",
+      "charm-channel": "8.0/candidate",
+      "charm-name": "mysql-router-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 46,
+      "endpoint-bindings": {
+        "": "alpha",
+        "backend-database": "alpha",
+        "certificates": "alpha",
+        "database": "alpha",
+        "mysql-router-peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "38001e55-d457-4a87-9eef-c75995401d47",
+      "relations": {
+        "backend-database": [
+          "mysql"
+        ],
+        "database": [
+          "placement"
+        ],
+        "mysql-router-peers": [
+          "placement-mysql-router"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "placement-mysql-router/0": {
+          "address": "10.1.77.78",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 07:13:40Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "placement-mysql-router-0",
+          "workload-status": {
+            "current": "active",
+            "since": "27 Jul 2023 07:01:33Z"
+          }
+        }
+      },
+      "version": "8.0.32-0ubuntu0.22.04.2"
+    },
+    "rabbitmq": {
+      "address": "10.206.54.242",
+      "application-status": {
+        "current": "active",
+        "since": "26 Jul 2023 11:06:33Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "rabbitmq-k8s",
+      "charm-channel": "3.9/stable",
+      "charm-name": "rabbitmq-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 23,
+      "endpoint-bindings": {
+        "": "alpha",
+        "amqp": "alpha",
+        "ingress": "alpha",
+        "peers": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "efa4f5dc-a4ad-4283-a316-78b0d97131cb",
+      "relations": {
+        "amqp": [
+          "cinder",
+          "cinder-ceph",
+          "glance",
+          "neutron",
+          "nova"
+        ],
+        "peers": [
+          "rabbitmq"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "rabbitmq/0": {
+          "address": "10.1.77.98",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 08:51:01Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "rabbitmq-0",
+          "workload-status": {
+            "current": "active",
+            "since": "26 Jul 2023 11:06:33Z"
+          }
+        }
+      },
+      "version": "3.9.13"
+    },
+    "traefik": {
+      "address": "10.206.54.240",
+      "application-status": {
+        "current": "maintenance",
+        "message": "updating ingress configuration for 'ingress:41'",
+        "since": "28 Jul 2023 09:13:35Z"
+      },
+      "base": {
+        "channel": "20.04",
+        "name": "ubuntu"
+      },
+      "charm": "traefik-k8s",
+      "charm-channel": "1.0/candidate",
+      "charm-name": "traefik-k8s",
+      "charm-origin": "charmhub",
+      "charm-rev": 129,
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "grafana-dashboard": "alpha",
+        "ingress": "alpha",
+        "ingress-per-unit": "alpha",
+        "logging": "alpha",
+        "metrics-endpoint": "alpha",
+        "traefik-route": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "5e25aece-974b-4ff1-b8e0-2b6525b95b5a",
+      "relations": {
+        "ingress": [
+          "cinder",
+          "glance",
+          "horizon",
+          "keystone",
+          "neutron",
+          "nova",
+          "placement"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "traefik/0": {
+          "address": "10.1.77.80",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 08:51:08Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "traefik-0",
+          "workload-status": {
+            "current": "maintenance",
+            "message": "updating ingress configuration for 'ingress:41'",
+            "since": "28 Jul 2023 09:13:35Z"
+          }
+        }
+      },
+      "version": "2.9.6"
+    },
+    "vault": {
+      "address": "10.206.54.244",
+      "application-status": {
+        "current": "active",
+        "since": "28 Jul 2023 08:57:37Z"
+      },
+      "base": {
+        "channel": "22.04",
+        "name": "ubuntu"
+      },
+      "charm": "local:jammy/vault-k8s-10",
+      "charm-channel": "latest/edge",
+      "charm-name": "vault-k8s",
+      "charm-origin": "local",
+      "charm-rev": 10,
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "peers": "alpha",
+        "secrets": "alpha"
+      },
+      "exposed": false,
+      "provider-id": "93bfb143-30af-4530-b3b8-fc96664f22d9",
+      "relations": {
+        "peers": [
+          "vault"
+        ]
+      },
+      "scale": 1,
+      "units": {
+        "vault/0": {
+          "address": "10.1.77.95",
+          "juju-status": {
+            "current": "idle",
+            "since": "28 Jul 2023 08:57:37Z",
+            "version": "3.2.0"
+          },
+          "leader": true,
+          "provider-id": "vault-0",
+          "workload-status": {
+            "current": "active",
+            "since": "28 Jul 2023 08:57:37Z"
+          }
+        }
+      }
+    }
+  },
+  "controller": {
+    "timestamp": "09:13:35Z"
+  },
+  "machines": {},
+  "model": {
+    "cloud": "sunbeam-microk8s",
+    "controller": "sunbeam-controller",
+    "model-status": {
+      "current": "available",
+      "since": "26 Jul 2023 11:02:54Z"
+    },
+    "name": "openstack",
+    "region": "localhost",
+    "sla": "unsupported",
+    "type": "caas",
+    "version": "3.2.0"
+  },
+  "offers": {
+    "certificate-authority": {
+      "active-connected-count": 1,
+      "application": "certificate-authority",
+      "charm": "ch:amd64/jammy/tls-certificates-operator-22",
+      "endpoints": {
+        "certificates": {
+          "interface": "tls-certificates",
+          "role": "provider"
+        }
+      },
+      "total-connected-count": 1
+    },
+    "keystone": {
+      "active-connected-count": 1,
+      "application": "keystone",
+      "charm": "ch:amd64/jammy/keystone-k8s-114",
+      "endpoints": {
+        "identity-credentials": {
+          "interface": "keystone-credentials",
+          "role": "provider"
+        }
+      },
+      "total-connected-count": 1
+    },
+    "ovn-relay": {
+      "active-connected-count": 1,
+      "application": "ovn-relay",
+      "charm": "ch:amd64/jammy/ovn-relay-k8s-41",
+      "endpoints": {
+        "ovsdb-cms-relay": {
+          "interface": "ovsdb-cms",
+          "role": "provider"
+        }
+      },
+      "total-connected-count": 1
+    },
+    "rabbitmq": {
+      "active-connected-count": 1,
+      "application": "rabbitmq",
+      "charm": "ch:amd64/jammy/rabbitmq-k8s-23",
+      "endpoints": {
+        "amqp": {
+          "interface": "rabbitmq",
+          "role": "provider"
+        }
+      },
+      "total-connected-count": 1
+    }
+  },
+  "storage": {
+    "filesystems": {
+      "13": {
+        "Attachments": {
+          "containers": {
+            "vault/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/vault-storage/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "vault/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "172b4cef-abbd-47eb-88ac-2b22398a004b",
+        "size": 10240,
+        "status": {
+          "current": "attached",
+          "since": "28 Jul 2023 07:13:28Z"
+        },
+        "storage": "vault-storage/13",
+        "volume": "13"
+      },
+      "2": {
+        "Attachments": {
+          "containers": {
+            "traefik/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/configurations/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "traefik/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "5bf69424-0299-4439-9349-12693f688189",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:13:52Z"
+        },
+        "storage": "configurations/2",
+        "volume": "2"
+      },
+      "3": {
+        "Attachments": {
+          "containers": {
+            "mysql/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/database/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "mysql/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "92a44b71-c7fc-4e16-8d07-89742ecc5ae3",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:42Z"
+        },
+        "storage": "database/3",
+        "volume": "3"
+      },
+      "4": {
+        "Attachments": {
+          "containers": {
+            "ovn-central/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/databases/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "ovn-central/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "00e2a202-7d54-402d-8036-c666a4e7dc1e",
+        "size": 100,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:20Z"
+        },
+        "storage": "databases/4",
+        "volume": "4"
+      },
+      "5": {
+        "Attachments": {
+          "containers": {
+            "glance/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/local-repository/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "glance/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "6e2fccb7-38b4-43c3-b930-e21693a7d36e",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:10:53Z"
+        },
+        "storage": "local-repository/5",
+        "volume": "5"
+      },
+      "6": {
+        "Attachments": {
+          "containers": {
+            "rabbitmq/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/rabbitmq-data/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "rabbitmq/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "cf1fda84-5af4-417d-bdd4-4837f109defd",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:13:55Z"
+        },
+        "storage": "rabbitmq-data/6",
+        "volume": "6"
+      },
+      "7": {
+        "Attachments": {
+          "containers": {
+            "keystone/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/credential-keys/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "keystone/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "9ef93d55-3d3f-4bc2-a8c5-d3f26b947176",
+        "size": 5,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:45Z"
+        },
+        "storage": "credential-keys/7",
+        "volume": "7"
+      },
+      "8": {
+        "Attachments": {
+          "containers": {
+            "keystone/0": {
+              "life": "alive",
+              "mount-point": "/var/lib/juju/storage/fernet-keys/0",
+              "read-only": false
+            }
+          },
+          "units": {
+            "keystone/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "pool": "kubernetes",
+        "provider-id": "9f56ca9a-fb91-4c88-9abb-aa6700ca2708",
+        "size": 5,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:45Z"
+        },
+        "storage": "fernet-keys/8",
+        "volume": "8"
+      }
+    },
+    "storage": {
+      "configurations/2": {
+        "attachments": {
+          "units": {
+            "traefik/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:13:52Z"
+        }
+      },
+      "credential-keys/7": {
+        "attachments": {
+          "units": {
+            "keystone/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:45Z"
+        }
+      },
+      "database/3": {
+        "attachments": {
+          "units": {
+            "mysql/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:42Z"
+        }
+      },
+      "databases/4": {
+        "attachments": {
+          "units": {
+            "ovn-central/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:20Z"
+        }
+      },
+      "fernet-keys/8": {
+        "attachments": {
+          "units": {
+            "keystone/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 18:15:45Z"
+        }
+      },
+      "local-repository/5": {
+        "attachments": {
+          "units": {
+            "glance/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:10:53Z"
+        }
+      },
+      "rabbitmq-data/6": {
+        "attachments": {
+          "units": {
+            "rabbitmq/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:13:55Z"
+        }
+      },
+      "vault-storage/13": {
+        "attachments": {
+          "units": {
+            "vault/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "kind": "filesystem",
+        "life": "alive",
+        "persistent": false,
+        "status": {
+          "current": "attached",
+          "since": "28 Jul 2023 07:13:28Z"
+        }
+      }
+    },
+    "volumes": {
+      "13": {
+        "attachments": {
+          "containers": {
+            "vault/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "vault/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-172b4cef-abbd-47eb-88ac-2b22398a004b",
+        "size": 10240,
+        "status": {
+          "current": "attached",
+          "since": "27 Jul 2023 11:56:01Z"
+        },
+        "storage": "vault-storage/13"
+      },
+      "2": {
+        "attachments": {
+          "containers": {
+            "traefik/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "traefik/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-5bf69424-0299-4439-9349-12693f688189",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:05:44Z"
+        },
+        "storage": "configurations/2"
+      },
+      "3": {
+        "attachments": {
+          "containers": {
+            "mysql/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "mysql/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-92a44b71-c7fc-4e16-8d07-89742ecc5ae3",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:05:08Z"
+        },
+        "storage": "database/3"
+      },
+      "4": {
+        "attachments": {
+          "containers": {
+            "ovn-central/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "ovn-central/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-00e2a202-7d54-402d-8036-c666a4e7dc1e",
+        "size": 100,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:05:41Z"
+        },
+        "storage": "databases/4"
+      },
+      "5": {
+        "attachments": {
+          "containers": {
+            "glance/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "glance/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-6e2fccb7-38b4-43c3-b930-e21693a7d36e",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:05:52Z"
+        },
+        "storage": "local-repository/5"
+      },
+      "6": {
+        "attachments": {
+          "containers": {
+            "rabbitmq/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "rabbitmq/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-cf1fda84-5af4-417d-bdd4-4837f109defd",
+        "size": 1024,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:06:18Z"
+        },
+        "storage": "rabbitmq-data/6"
+      },
+      "7": {
+        "attachments": {
+          "containers": {
+            "keystone/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "keystone/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-9ef93d55-3d3f-4bc2-a8c5-d3f26b947176",
+        "size": 5,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:06:24Z"
+        },
+        "storage": "credential-keys/7"
+      },
+      "8": {
+        "attachments": {
+          "containers": {
+            "keystone/0": {
+              "life": "alive",
+              "read-only": false
+            }
+          },
+          "units": {
+            "keystone/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "life": "alive",
+        "persistent": false,
+        "pool": "kubernetes",
+        "provider-id": "pvc-9f56ca9a-fb91-4c88-9abb-aa6700ca2708",
+        "size": 5,
+        "status": {
+          "current": "attached",
+          "since": "26 Jul 2023 11:06:24Z"
+        },
+        "storage": "fernet-keys/8"
+      }
+    }
+  }
+}

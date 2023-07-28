@@ -1,0 +1,59 @@
+name: keystone
+summary: OpenStack identity service
+maintainer: OpenStack Charmers <openstack-charmers@lists.ubuntu.com>
+description: |
+  Keystone is an OpenStack project that provides Identity, Token, Catalog and
+  Policy services for use specifically by projects in the OpenStack family. It
+  implements OpenStack's Identity API.
+docs: https://discourse.charmhub.io/t/keystone-docs-index/10527
+tags:
+- openstack
+- identity
+- misc
+series:
+- jammy
+- kinetic
+- lunar
+extra-bindings:
+  public:
+  admin:
+  internal:
+provides:
+  nrpe-external-master:
+    interface: nrpe-external-master
+    scope: container
+  identity-service:
+    interface: keystone
+  identity-notifications:
+    interface: keystone-notifications
+  identity-admin:
+    interface: keystone-admin
+  identity-credentials:
+    interface: keystone-credentials
+requires:
+  shared-db:
+    interface: mysql-shared
+  ha:
+    interface: hacluster
+    scope: container
+  domain-backend:
+    interface: keystone-domain-backend
+    scope: container
+  keystone-fid-service-provider:
+    interface: keystone-fid-service-provider
+    scope: container
+  websso-trusted-dashboard:
+    interface: websso-trusted-dashboard
+  certificates:
+    interface: tls-certificates
+  keystone-middleware:
+    interface: keystone-middleware
+    scope: container
+peers:
+  cluster:
+    interface: keystone-ha
+resources:
+  policyd-override:
+    type: file
+    filename: policyd-override.zip
+    description: The policy.d overrides file

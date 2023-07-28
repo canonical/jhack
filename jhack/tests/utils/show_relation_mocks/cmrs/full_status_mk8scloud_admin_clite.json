@@ -1,1 +1,916 @@
-{"model":{"name":"clite","type":"caas","controller":"mk8scloud","cloud":"microk8s","region":"localhost","version":"3.1.2","model-status":{"current":"available","since":"26 Apr 2023 09:54:25+02:00"},"sla":"unsupported"},"machines":{},"applications":{"alertmanager":{"charm":"alertmanager-k8s","base":{"name":"ubuntu","channel":"20.04"},"charm-origin":"charmhub","charm-name":"alertmanager-k8s","charm-rev":69,"charm-channel":"edge","scale":1,"provider-id":"1218230f-9c16-4ff7-b928-1b13a1f36bf3","address":"10.152.183.30","exposed":false,"application-status":{"current":"active","since":"26 Apr 2023 10:00:34+02:00"},"relations":{"alerting":["loki","prometheus"],"catalogue":["catalogue"],"grafana-dashboard":["grafana"],"grafana-source":["grafana"],"ingress":["traefik"],"replicas":["alertmanager"],"self-metrics-endpoint":["prometheus"]},"units":{"alertmanager/0":{"workload-status":{"current":"active","since":"26 Apr 2023 10:00:34+02:00"},"juju-status":{"current":"idle","since":"26 Apr 2023 10:52:23+02:00","version":"3.1.2"},"leader":true,"address":"10.1.232.179","provider-id":"alertmanager-0"}},"version":"0.25.0","endpoint-bindings":{"":"alpha","alerting":"alpha","catalogue":"alpha","grafana-dashboard":"alpha","grafana-source":"alpha","ingress":"alpha","karma-dashboard":"alpha","remote-configuration":"alpha","replicas":"alpha","self-metrics-endpoint":"alpha"}},"catalogue":{"charm":"catalogue-k8s","base":{"name":"ubuntu","channel":"20.04"},"charm-origin":"charmhub","charm-name":"catalogue-k8s","charm-rev":15,"charm-channel":"edge","scale":1,"provider-id":"b8102f63-83c3-457e-a11f-38573d459f01","address":"10.152.183.113","exposed":false,"application-status":{"current":"active","since":"26 Apr 2023 09:59:41+02:00"},"relations":{"catalogue":["alertmanager","grafana","prometheus"],"ingress":["traefik"]},"units":{"catalogue/0":{"workload-status":{"current":"active","since":"26 Apr 2023 09:59:41+02:00"},"juju-status":{"current":"idle","since":"26 Apr 2023 10:52:22+02:00","version":"3.1.2"},"leader":true,"address":"10.1.232.165","provider-id":"catalogue-0"}},"endpoint-bindings":{"":"alpha","catalogue":"alpha","ingress":"alpha"}},"grafana":{"charm":"grafana-k8s","base":{"name":"ubuntu","channel":"20.04"},"charm-origin":"charmhub","charm-name":"grafana-k8s","charm-rev":78,"charm-channel":"edge","scale":1,"provider-id":"561aac56-5f3c-43ee-8813-1da9e37952c9","address":"10.152.183.226","exposed":false,"application-status":{"current":"active","since":"26 Apr 2023 10:08:21+02:00"},"relations":{"catalogue":["catalogue"],"grafana":["grafana"],"grafana-dashboard":["alertmanager","loki","prometheus"],"grafana-source":["alertmanager","loki","prometheus"],"ingress":["traefik"],"metrics-endpoint":["prometheus"]},"units":{"grafana/0":{"workload-status":{"current":"active","since":"26 Apr 2023 10:08:21+02:00"},"juju-status":{"current":"idle","since":"26 Apr 2023 10:52:33+02:00","version":"3.1.2"},"leader":true,"address":"10.1.232.182","provider-id":"grafana-0"}},"version":"9.2.1","endpoint-bindings":{"":"alpha","catalogue":"alpha","database":"alpha","grafana":"alpha","grafana-auth":"alpha","grafana-dashboard":"alpha","grafana-source":"alpha","ingress":"alpha","metrics-endpoint":"alpha"}},"loki":{"charm":"loki-k8s","base":{"name":"ubuntu","channel":"20.04"},"charm-origin":"charmhub","charm-name":"loki-k8s","charm-rev":84,"charm-channel":"edge","scale":1,"provider-id":"bec64340-c360-4921-969d-aceb4ddc7042","address":"10.152.183.154","exposed":false,"application-status":{"current":"active","since":"26 Apr 2023 10:02:58+02:00"},"relations":{"alertmanager":["alertmanager"],"grafana-dashboard":["grafana"],"grafana-source":["grafana"],"ingress":["traefik"],"metrics-endpoint":["prometheus"]},"units":{"loki/0":{"workload-status":{"current":"active","since":"26 Apr 2023 10:02:58+02:00"},"juju-status":{"current":"idle","since":"26 Apr 2023 10:52:22+02:00","version":"3.1.2"},"leader":true,"address":"10.1.232.180","provider-id":"loki-0"}},"version":"2.7.4","endpoint-bindings":{"":"alpha","alertmanager":"alpha","grafana-dashboard":"alpha","grafana-source":"alpha","ingress":"alpha","logging":"alpha","metrics-endpoint":"alpha"}},"prometheus":{"charm":"prometheus-k8s","base":{"name":"ubuntu","channel":"20.04"},"charm-origin":"charmhub","charm-name":"prometheus-k8s","charm-rev":123,"charm-channel":"edge","scale":2,"provider-id":"22fa70c7-11e5-42d4-9110-7d8ec4faab09","address":"10.152.183.199","exposed":false,"application-status":{"current":"active","since":"26 Apr 2023 10:07:34+02:00"},"relations":{"alertmanager":["alertmanager"],"catalogue":["catalogue"],"grafana-dashboard":["grafana"],"grafana-source":["grafana"],"ingress":["traefik"],"metrics-endpoint":["alertmanager","grafana","loki","traefik"],"prometheus-peers":["prometheus"]},"units":{"prometheus/0":{"workload-status":{"current":"active","since":"26 Apr 2023 10:07:34+02:00"},"juju-status":{"current":"idle","since":"26 Apr 2023 10:52:55+02:00","version":"3.1.2"},"leader":true,"address":"10.1.232.181","provider-id":"prometheus-0"},"prometheus/1":{"workload-status":{"current":"active","since":"26 Apr 2023 10:52:29+02:00"},"juju-status":{"current":"idle","since":"26 Apr 2023 10:52:55+02:00","version":"3.1.2"},"address":"10.1.232.184","provider-id":"prometheus-1"}},"version":"2.42.0","endpoint-bindings":{"":"alpha","alertmanager":"alpha","catalogue":"alpha","grafana-dashboard":"alpha","grafana-source":"alpha","ingress":"alpha","metrics-endpoint":"alpha","prometheus-peers":"alpha","receive-remote-write":"alpha","self-metrics-endpoint":"alpha"}},"traefik":{"charm":"traefik-k8s","base":{"name":"ubuntu","channel":"20.04"},"charm-origin":"charmhub","charm-name":"traefik-k8s","charm-rev":125,"charm-channel":"edge","scale":1,"provider-id":"cb746d9c-0433-4558-b6f1-f3e7fdf058a8","address":"0.64.140.44","exposed":false,"application-status":{"current":"active","since":"26 Apr 2023 11:35:48+02:00"},"relations":{"ingress":["alertmanager","catalogue"],"ingress-per-unit":["loki","prometheus"],"metrics-endpoint":["prometheus"],"traefik-route":["grafana"]},"units":{"traefik/0":{"workload-status":{"current":"active","since":"26 Apr 2023 11:35:48+02:00"},"juju-status":{"current":"idle","since":"26 Apr 2023 10:52:25+02:00","version":"3.1.2"},"leader":true,"address":"10.1.232.178","provider-id":"traefik-0"}},"version":"2.9.6","endpoint-bindings":{"":"alpha","certificates":"alpha","grafana-dashboard":"alpha","ingress":"alpha","ingress-per-unit":"alpha","logging":"alpha","metrics-endpoint":"alpha","traefik-route":"alpha"}}},"offers":{"alertmanager":{"application":"alertmanager","charm":"ch:amd64/focal/alertmanager-k8s-69","endpoints":{"ingress":{"interface":"ingress","role":"requirer"}}}},"storage":{"storage":{"active-index-directory/2":{"kind":"filesystem","life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:02:52+02:00"},"persistent":false,"attachments":{"units":{"loki/0":{"life":"alive"}}}},"configurations/5":{"kind":"filesystem","life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:07:28+02:00"},"persistent":false,"attachments":{"units":{"traefik/0":{"life":"alive"}}}},"data/0":{"kind":"filesystem","life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:00:28+02:00"},"persistent":false,"attachments":{"units":{"alertmanager/0":{"life":"alive"}}}},"database/1":{"kind":"filesystem","life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:08:13+02:00"},"persistent":false,"attachments":{"units":{"grafana/0":{"life":"alive"}}}},"database/4":{"kind":"filesystem","life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:07:30+02:00"},"persistent":false,"attachments":{"units":{"prometheus/0":{"life":"alive"}}}},"database/6":{"kind":"filesystem","life":"alive","status":{"current":"attached","message":"Successfully provisioned volume pvc-7b00e644-71ff-479a-b529-33da161bcc2a","since":"26 Apr 2023 10:52:18+02:00"},"persistent":false,"attachments":{"units":{"prometheus/1":{"life":"alive"}}}},"loki-chunks/3":{"kind":"filesystem","life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:02:52+02:00"},"persistent":false,"attachments":{"units":{"loki/0":{"life":"alive"}}}}},"filesystems":{"0":{"provider-id":"a702d435-4f21-4fe2-a75e-7de0691b8b71","volume":"0","storage":"data/0","Attachments":{"containers":{"alertmanager/0":{"mount-point":"/var/lib/juju/storage/data/0","read-only":false,"life":"alive"}},"units":{"alertmanager/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:00:28+02:00"}},"1":{"provider-id":"d30771eb-48e2-4ae7-8dea-23d50648b24e","volume":"1","storage":"database/1","Attachments":{"containers":{"grafana/0":{"mount-point":"/var/lib/juju/storage/database/0","read-only":false,"life":"alive"}},"units":{"grafana/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:08:13+02:00"}},"2":{"provider-id":"56be2637-8ef9-48e0-8f97-7cd7ef060091","volume":"2","storage":"active-index-directory/2","Attachments":{"containers":{"loki/0":{"mount-point":"/var/lib/juju/storage/active-index-directory/0","read-only":false,"life":"alive"}},"units":{"loki/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:02:52+02:00"}},"3":{"provider-id":"4284f38d-cbb0-4b13-a80d-b98a8aca651c","volume":"3","storage":"loki-chunks/3","Attachments":{"containers":{"loki/0":{"mount-point":"/var/lib/juju/storage/loki-chunks/0","read-only":false,"life":"alive"}},"units":{"loki/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:02:52+02:00"}},"4":{"provider-id":"4deeb058-d036-48b8-a65a-9f7d37b59239","volume":"4","storage":"database/4","Attachments":{"containers":{"prometheus/0":{"mount-point":"/var/lib/juju/storage/database/0","read-only":false,"life":"alive"}},"units":{"prometheus/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:07:30+02:00"}},"5":{"provider-id":"e5b2b83d-0d5f-4730-b6da-74f3e8806e12","volume":"5","storage":"configurations/5","Attachments":{"containers":{"traefik/0":{"mount-point":"/var/lib/juju/storage/configurations/0","read-only":false,"life":"alive"}},"units":{"traefik/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:07:28+02:00"}},"6":{"provider-id":"7b00e644-71ff-479a-b529-33da161bcc2a","volume":"6","storage":"database/6","Attachments":{"containers":{"prometheus/1":{"mount-point":"/var/lib/juju/storage/database/0","read-only":false,"life":"alive"}},"units":{"prometheus/1":{"life":"alive"}}},"pool":"kubernetes","size":1024,"life":"alive","status":{"current":"attached","message":"Successfully provisioned volume pvc-7b00e644-71ff-479a-b529-33da161bcc2a","since":"26 Apr 2023 10:52:18+02:00"}}},"volumes":{"0":{"provider-id":"pvc-a702d435-4f21-4fe2-a75e-7de0691b8b71","storage":"data/0","attachments":{"containers":{"alertmanager/0":{"read-only":false,"life":"alive"}},"units":{"alertmanager/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"persistent":false,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 09:55:07+02:00"}},"1":{"provider-id":"pvc-d30771eb-48e2-4ae7-8dea-23d50648b24e","storage":"database/1","attachments":{"containers":{"grafana/0":{"read-only":false,"life":"alive"}},"units":{"grafana/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"persistent":false,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 09:55:21+02:00"}},"2":{"provider-id":"pvc-56be2637-8ef9-48e0-8f97-7cd7ef060091","storage":"active-index-directory/2","attachments":{"containers":{"loki/0":{"read-only":false,"life":"alive"}},"units":{"loki/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"persistent":false,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 09:55:26+02:00"}},"3":{"provider-id":"pvc-4284f38d-cbb0-4b13-a80d-b98a8aca651c","storage":"loki-chunks/3","attachments":{"containers":{"loki/0":{"read-only":false,"life":"alive"}},"units":{"loki/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"persistent":false,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 09:55:26+02:00"}},"4":{"provider-id":"pvc-4deeb058-d036-48b8-a65a-9f7d37b59239","storage":"database/4","attachments":{"containers":{"prometheus/0":{"read-only":false,"life":"alive"}},"units":{"prometheus/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"persistent":false,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 09:55:46+02:00"}},"5":{"provider-id":"pvc-e5b2b83d-0d5f-4730-b6da-74f3e8806e12","storage":"configurations/5","attachments":{"containers":{"traefik/0":{"read-only":false,"life":"alive"}},"units":{"traefik/0":{"life":"alive"}}},"pool":"kubernetes","size":1024,"persistent":false,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 09:55:52+02:00"}},"6":{"provider-id":"pvc-7b00e644-71ff-479a-b529-33da161bcc2a","storage":"database/6","attachments":{"containers":{"prometheus/1":{"read-only":false,"life":"alive"}},"units":{"prometheus/1":{"life":"alive"}}},"pool":"kubernetes","size":1024,"persistent":false,"life":"alive","status":{"current":"attached","since":"26 Apr 2023 10:52:18+02:00"}}}},"controller":{"timestamp":"11:39:50+02:00"}}
+{
+  "model": {
+    "name": "clite",
+    "type": "caas",
+    "controller": "mk8scloud",
+    "cloud": "microk8s",
+    "region": "localhost",
+    "version": "3.1.2",
+    "model-status": {
+      "current": "available",
+      "since": "26 Apr 2023 09:54:25+02:00"
+    },
+    "sla": "unsupported"
+  },
+  "machines": {},
+  "applications": {
+    "alertmanager": {
+      "charm": "alertmanager-k8s",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
+      "charm-origin": "charmhub",
+      "charm-name": "alertmanager-k8s",
+      "charm-rev": 69,
+      "charm-channel": "edge",
+      "scale": 1,
+      "provider-id": "1218230f-9c16-4ff7-b928-1b13a1f36bf3",
+      "address": "10.152.183.30",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "since": "26 Apr 2023 10:00:34+02:00"
+      },
+      "relations": {
+        "alerting": [
+          "loki",
+          "prometheus"
+        ],
+        "catalogue": [
+          "catalogue"
+        ],
+        "grafana-dashboard": [
+          "grafana"
+        ],
+        "grafana-source": [
+          "grafana"
+        ],
+        "ingress": [
+          "traefik"
+        ],
+        "replicas": [
+          "alertmanager"
+        ],
+        "self-metrics-endpoint": [
+          "prometheus"
+        ]
+      },
+      "units": {
+        "alertmanager/0": {
+          "workload-status": {
+            "current": "active",
+            "since": "26 Apr 2023 10:00:34+02:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "26 Apr 2023 10:52:23+02:00",
+            "version": "3.1.2"
+          },
+          "leader": true,
+          "address": "10.1.232.179",
+          "provider-id": "alertmanager-0"
+        }
+      },
+      "version": "0.25.0",
+      "endpoint-bindings": {
+        "": "alpha",
+        "alerting": "alpha",
+        "catalogue": "alpha",
+        "grafana-dashboard": "alpha",
+        "grafana-source": "alpha",
+        "ingress": "alpha",
+        "karma-dashboard": "alpha",
+        "remote-configuration": "alpha",
+        "replicas": "alpha",
+        "self-metrics-endpoint": "alpha"
+      }
+    },
+    "catalogue": {
+      "charm": "catalogue-k8s",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
+      "charm-origin": "charmhub",
+      "charm-name": "catalogue-k8s",
+      "charm-rev": 15,
+      "charm-channel": "edge",
+      "scale": 1,
+      "provider-id": "b8102f63-83c3-457e-a11f-38573d459f01",
+      "address": "10.152.183.113",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "since": "26 Apr 2023 09:59:41+02:00"
+      },
+      "relations": {
+        "catalogue": [
+          "alertmanager",
+          "grafana",
+          "prometheus"
+        ],
+        "ingress": [
+          "traefik"
+        ]
+      },
+      "units": {
+        "catalogue/0": {
+          "workload-status": {
+            "current": "active",
+            "since": "26 Apr 2023 09:59:41+02:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "26 Apr 2023 10:52:22+02:00",
+            "version": "3.1.2"
+          },
+          "leader": true,
+          "address": "10.1.232.165",
+          "provider-id": "catalogue-0"
+        }
+      },
+      "endpoint-bindings": {
+        "": "alpha",
+        "catalogue": "alpha",
+        "ingress": "alpha"
+      }
+    },
+    "grafana": {
+      "charm": "grafana-k8s",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
+      "charm-origin": "charmhub",
+      "charm-name": "grafana-k8s",
+      "charm-rev": 78,
+      "charm-channel": "edge",
+      "scale": 1,
+      "provider-id": "561aac56-5f3c-43ee-8813-1da9e37952c9",
+      "address": "10.152.183.226",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "since": "26 Apr 2023 10:08:21+02:00"
+      },
+      "relations": {
+        "catalogue": [
+          "catalogue"
+        ],
+        "grafana": [
+          "grafana"
+        ],
+        "grafana-dashboard": [
+          "alertmanager",
+          "loki",
+          "prometheus"
+        ],
+        "grafana-source": [
+          "alertmanager",
+          "loki",
+          "prometheus"
+        ],
+        "ingress": [
+          "traefik"
+        ],
+        "metrics-endpoint": [
+          "prometheus"
+        ]
+      },
+      "units": {
+        "grafana/0": {
+          "workload-status": {
+            "current": "active",
+            "since": "26 Apr 2023 10:08:21+02:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "26 Apr 2023 10:52:33+02:00",
+            "version": "3.1.2"
+          },
+          "leader": true,
+          "address": "10.1.232.182",
+          "provider-id": "grafana-0"
+        }
+      },
+      "version": "9.2.1",
+      "endpoint-bindings": {
+        "": "alpha",
+        "catalogue": "alpha",
+        "database": "alpha",
+        "grafana": "alpha",
+        "grafana-auth": "alpha",
+        "grafana-dashboard": "alpha",
+        "grafana-source": "alpha",
+        "ingress": "alpha",
+        "metrics-endpoint": "alpha"
+      }
+    },
+    "loki": {
+      "charm": "loki-k8s",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
+      "charm-origin": "charmhub",
+      "charm-name": "loki-k8s",
+      "charm-rev": 84,
+      "charm-channel": "edge",
+      "scale": 1,
+      "provider-id": "bec64340-c360-4921-969d-aceb4ddc7042",
+      "address": "10.152.183.154",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "since": "26 Apr 2023 10:02:58+02:00"
+      },
+      "relations": {
+        "alertmanager": [
+          "alertmanager"
+        ],
+        "grafana-dashboard": [
+          "grafana"
+        ],
+        "grafana-source": [
+          "grafana"
+        ],
+        "ingress": [
+          "traefik"
+        ],
+        "metrics-endpoint": [
+          "prometheus"
+        ]
+      },
+      "units": {
+        "loki/0": {
+          "workload-status": {
+            "current": "active",
+            "since": "26 Apr 2023 10:02:58+02:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "26 Apr 2023 10:52:22+02:00",
+            "version": "3.1.2"
+          },
+          "leader": true,
+          "address": "10.1.232.180",
+          "provider-id": "loki-0"
+        }
+      },
+      "version": "2.7.4",
+      "endpoint-bindings": {
+        "": "alpha",
+        "alertmanager": "alpha",
+        "grafana-dashboard": "alpha",
+        "grafana-source": "alpha",
+        "ingress": "alpha",
+        "logging": "alpha",
+        "metrics-endpoint": "alpha"
+      }
+    },
+    "prometheus": {
+      "charm": "prometheus-k8s",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
+      "charm-origin": "charmhub",
+      "charm-name": "prometheus-k8s",
+      "charm-rev": 123,
+      "charm-channel": "edge",
+      "scale": 2,
+      "provider-id": "22fa70c7-11e5-42d4-9110-7d8ec4faab09",
+      "address": "10.152.183.199",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "since": "26 Apr 2023 10:07:34+02:00"
+      },
+      "relations": {
+        "alertmanager": [
+          "alertmanager"
+        ],
+        "catalogue": [
+          "catalogue"
+        ],
+        "grafana-dashboard": [
+          "grafana"
+        ],
+        "grafana-source": [
+          "grafana"
+        ],
+        "ingress": [
+          "traefik"
+        ],
+        "metrics-endpoint": [
+          "alertmanager",
+          "grafana",
+          "loki",
+          "traefik"
+        ],
+        "prometheus-peers": [
+          "prometheus"
+        ]
+      },
+      "units": {
+        "prometheus/0": {
+          "workload-status": {
+            "current": "active",
+            "since": "26 Apr 2023 10:07:34+02:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "26 Apr 2023 10:52:55+02:00",
+            "version": "3.1.2"
+          },
+          "leader": true,
+          "address": "10.1.232.181",
+          "provider-id": "prometheus-0"
+        },
+        "prometheus/1": {
+          "workload-status": {
+            "current": "active",
+            "since": "26 Apr 2023 10:52:29+02:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "26 Apr 2023 10:52:55+02:00",
+            "version": "3.1.2"
+          },
+          "address": "10.1.232.184",
+          "provider-id": "prometheus-1"
+        }
+      },
+      "version": "2.42.0",
+      "endpoint-bindings": {
+        "": "alpha",
+        "alertmanager": "alpha",
+        "catalogue": "alpha",
+        "grafana-dashboard": "alpha",
+        "grafana-source": "alpha",
+        "ingress": "alpha",
+        "metrics-endpoint": "alpha",
+        "prometheus-peers": "alpha",
+        "receive-remote-write": "alpha",
+        "self-metrics-endpoint": "alpha"
+      }
+    },
+    "traefik": {
+      "charm": "traefik-k8s",
+      "base": {
+        "name": "ubuntu",
+        "channel": "20.04"
+      },
+      "charm-origin": "charmhub",
+      "charm-name": "traefik-k8s",
+      "charm-rev": 125,
+      "charm-channel": "edge",
+      "scale": 1,
+      "provider-id": "cb746d9c-0433-4558-b6f1-f3e7fdf058a8",
+      "address": "0.64.140.44",
+      "exposed": false,
+      "application-status": {
+        "current": "active",
+        "since": "26 Apr 2023 11:35:48+02:00"
+      },
+      "relations": {
+        "ingress": [
+          "alertmanager",
+          "catalogue"
+        ],
+        "ingress-per-unit": [
+          "loki",
+          "prometheus"
+        ],
+        "metrics-endpoint": [
+          "prometheus"
+        ],
+        "traefik-route": [
+          "grafana"
+        ]
+      },
+      "units": {
+        "traefik/0": {
+          "workload-status": {
+            "current": "active",
+            "since": "26 Apr 2023 11:35:48+02:00"
+          },
+          "juju-status": {
+            "current": "idle",
+            "since": "26 Apr 2023 10:52:25+02:00",
+            "version": "3.1.2"
+          },
+          "leader": true,
+          "address": "10.1.232.178",
+          "provider-id": "traefik-0"
+        }
+      },
+      "version": "2.9.6",
+      "endpoint-bindings": {
+        "": "alpha",
+        "certificates": "alpha",
+        "grafana-dashboard": "alpha",
+        "ingress": "alpha",
+        "ingress-per-unit": "alpha",
+        "logging": "alpha",
+        "metrics-endpoint": "alpha",
+        "traefik-route": "alpha"
+      }
+    }
+  },
+  "offers": {
+    "alertmanager": {
+      "application": "alertmanager",
+      "charm": "ch:amd64/focal/alertmanager-k8s-69",
+      "endpoints": {
+        "ingress": {
+          "interface": "ingress",
+          "role": "requirer"
+        }
+      }
+    }
+  },
+  "storage": {
+    "storage": {
+      "active-index-directory/2": {
+        "kind": "filesystem",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:02:52+02:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "loki/0": {
+              "life": "alive"
+            }
+          }
+        }
+      },
+      "configurations/5": {
+        "kind": "filesystem",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:07:28+02:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "traefik/0": {
+              "life": "alive"
+            }
+          }
+        }
+      },
+      "data/0": {
+        "kind": "filesystem",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:00:28+02:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "alertmanager/0": {
+              "life": "alive"
+            }
+          }
+        }
+      },
+      "database/1": {
+        "kind": "filesystem",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:08:13+02:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "grafana/0": {
+              "life": "alive"
+            }
+          }
+        }
+      },
+      "database/4": {
+        "kind": "filesystem",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:07:30+02:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "prometheus/0": {
+              "life": "alive"
+            }
+          }
+        }
+      },
+      "database/6": {
+        "kind": "filesystem",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "message": "Successfully provisioned volume pvc-7b00e644-71ff-479a-b529-33da161bcc2a",
+          "since": "26 Apr 2023 10:52:18+02:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "prometheus/1": {
+              "life": "alive"
+            }
+          }
+        }
+      },
+      "loki-chunks/3": {
+        "kind": "filesystem",
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:02:52+02:00"
+        },
+        "persistent": false,
+        "attachments": {
+          "units": {
+            "loki/0": {
+              "life": "alive"
+            }
+          }
+        }
+      }
+    },
+    "filesystems": {
+      "0": {
+        "provider-id": "a702d435-4f21-4fe2-a75e-7de0691b8b71",
+        "volume": "0",
+        "storage": "data/0",
+        "Attachments": {
+          "containers": {
+            "alertmanager/0": {
+              "mount-point": "/var/lib/juju/storage/data/0",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "alertmanager/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:00:28+02:00"
+        }
+      },
+      "1": {
+        "provider-id": "d30771eb-48e2-4ae7-8dea-23d50648b24e",
+        "volume": "1",
+        "storage": "database/1",
+        "Attachments": {
+          "containers": {
+            "grafana/0": {
+              "mount-point": "/var/lib/juju/storage/database/0",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "grafana/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:08:13+02:00"
+        }
+      },
+      "2": {
+        "provider-id": "56be2637-8ef9-48e0-8f97-7cd7ef060091",
+        "volume": "2",
+        "storage": "active-index-directory/2",
+        "Attachments": {
+          "containers": {
+            "loki/0": {
+              "mount-point": "/var/lib/juju/storage/active-index-directory/0",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "loki/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:02:52+02:00"
+        }
+      },
+      "3": {
+        "provider-id": "4284f38d-cbb0-4b13-a80d-b98a8aca651c",
+        "volume": "3",
+        "storage": "loki-chunks/3",
+        "Attachments": {
+          "containers": {
+            "loki/0": {
+              "mount-point": "/var/lib/juju/storage/loki-chunks/0",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "loki/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:02:52+02:00"
+        }
+      },
+      "4": {
+        "provider-id": "4deeb058-d036-48b8-a65a-9f7d37b59239",
+        "volume": "4",
+        "storage": "database/4",
+        "Attachments": {
+          "containers": {
+            "prometheus/0": {
+              "mount-point": "/var/lib/juju/storage/database/0",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "prometheus/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:07:30+02:00"
+        }
+      },
+      "5": {
+        "provider-id": "e5b2b83d-0d5f-4730-b6da-74f3e8806e12",
+        "volume": "5",
+        "storage": "configurations/5",
+        "Attachments": {
+          "containers": {
+            "traefik/0": {
+              "mount-point": "/var/lib/juju/storage/configurations/0",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "traefik/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:07:28+02:00"
+        }
+      },
+      "6": {
+        "provider-id": "7b00e644-71ff-479a-b529-33da161bcc2a",
+        "volume": "6",
+        "storage": "database/6",
+        "Attachments": {
+          "containers": {
+            "prometheus/1": {
+              "mount-point": "/var/lib/juju/storage/database/0",
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "prometheus/1": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "message": "Successfully provisioned volume pvc-7b00e644-71ff-479a-b529-33da161bcc2a",
+          "since": "26 Apr 2023 10:52:18+02:00"
+        }
+      }
+    },
+    "volumes": {
+      "0": {
+        "provider-id": "pvc-a702d435-4f21-4fe2-a75e-7de0691b8b71",
+        "storage": "data/0",
+        "attachments": {
+          "containers": {
+            "alertmanager/0": {
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "alertmanager/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 09:55:07+02:00"
+        }
+      },
+      "1": {
+        "provider-id": "pvc-d30771eb-48e2-4ae7-8dea-23d50648b24e",
+        "storage": "database/1",
+        "attachments": {
+          "containers": {
+            "grafana/0": {
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "grafana/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 09:55:21+02:00"
+        }
+      },
+      "2": {
+        "provider-id": "pvc-56be2637-8ef9-48e0-8f97-7cd7ef060091",
+        "storage": "active-index-directory/2",
+        "attachments": {
+          "containers": {
+            "loki/0": {
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "loki/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 09:55:26+02:00"
+        }
+      },
+      "3": {
+        "provider-id": "pvc-4284f38d-cbb0-4b13-a80d-b98a8aca651c",
+        "storage": "loki-chunks/3",
+        "attachments": {
+          "containers": {
+            "loki/0": {
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "loki/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 09:55:26+02:00"
+        }
+      },
+      "4": {
+        "provider-id": "pvc-4deeb058-d036-48b8-a65a-9f7d37b59239",
+        "storage": "database/4",
+        "attachments": {
+          "containers": {
+            "prometheus/0": {
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "prometheus/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 09:55:46+02:00"
+        }
+      },
+      "5": {
+        "provider-id": "pvc-e5b2b83d-0d5f-4730-b6da-74f3e8806e12",
+        "storage": "configurations/5",
+        "attachments": {
+          "containers": {
+            "traefik/0": {
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "traefik/0": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 09:55:52+02:00"
+        }
+      },
+      "6": {
+        "provider-id": "pvc-7b00e644-71ff-479a-b529-33da161bcc2a",
+        "storage": "database/6",
+        "attachments": {
+          "containers": {
+            "prometheus/1": {
+              "read-only": false,
+              "life": "alive"
+            }
+          },
+          "units": {
+            "prometheus/1": {
+              "life": "alive"
+            }
+          }
+        },
+        "pool": "kubernetes",
+        "size": 1024,
+        "persistent": false,
+        "life": "alive",
+        "status": {
+          "current": "attached",
+          "since": "26 Apr 2023 10:52:18+02:00"
+        }
+      }
+    }
+  },
+  "controller": {
+    "timestamp": "11:39:50+02:00"
+  }
+}

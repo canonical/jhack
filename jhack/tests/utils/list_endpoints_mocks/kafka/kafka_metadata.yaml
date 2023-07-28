@@ -1,0 +1,50 @@
+# Copyright 2023 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+description: |
+  Kafka is an event streaming platform. This charm deploys and operates Kafka.
+display-name: Kafka
+issues: https://github.com/canonical/kafka-operator/issues/new
+docs: https://discourse.charmhub.io/t/charmed-kafka-documentation/10288
+maintainers:
+  - Marc Oppenheimer <marc.oppenheimer@canonical.com>
+name: kafka
+series:
+  - jammy
+source: https://github.com/canonical/kafka-operator
+summary: The Charmed Kafka Operator
+
+peers:
+  cluster:
+    interface: cluster
+  restart:
+    interface: rolling_op
+
+requires:
+  zookeeper:
+    interface: zookeeper
+  certificates:
+    interface: tls-certificates
+    limit: 1
+    optional: true
+  trusted-ca:
+    interface: tls-certificates
+    optional: true
+  trusted-certificate:
+    interface: tls-certificates
+    optional: true
+
+provides:
+  kafka-client:
+    interface: kafka_client
+  cos-agent:
+    interface: cos_agent
+
+storage:
+  data:
+    type: filesystem
+    description: Directories where the log data is stored
+    minimum-size: 10G
+    location: /var/snap/charmed-kafka/common/var/lib/kafka
+    multiple:
+      range: 1-

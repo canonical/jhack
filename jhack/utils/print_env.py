@@ -13,7 +13,7 @@ import toml
 from rich.console import Console
 from rich.table import Table
 
-from jhack.config import IS_SNAPPED
+from jhack.config import IS_SNAPPED, JHACK_PROJECT_ROOT
 from jhack.helpers import Format, FormatOption
 from jhack.logger import logger as jhack_logger
 
@@ -88,6 +88,20 @@ def print_env(format: Format = FormatOption):
     python_version = (
         f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
     )
+
+    try:
+        jhack_version = metadata.version("jhack")
+    except PackageNotFoundError:
+        # jhack not installed but being used from sources:
+        pyproject = JHACK_PROJECT_ROOT / "pyproject.toml"
+        if pyproject.exists():
+            jhack_version = (
+                toml.load(pyproject)
+                .get("project", {})
+                .get("version", "<unknown version>")
+            )
+        else:
+            jhack_version = "<unknown version>"
 
     multipass_version = get_multipass_version()
     try:

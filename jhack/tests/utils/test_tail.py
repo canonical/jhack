@@ -5,8 +5,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import jhack.utils.tail_charms
-
-jhack.utils.tail_charms.MODEL_LOGLEVEL = "DEBUG"
 from jhack.utils.tail_charms import Processor, Target, _tail_events
 
 
@@ -359,9 +357,10 @@ def test_borky_trfk_log_defer():
 
 
 def test_trace_ids_relation_evt():
+    mock_uniter_events_only(False)
     p = Processor([Target("prom", 1)], show_trace_ids=True)
     for line in (
-        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Starting root trace with id=12312321412412312321.",
+        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Starting root trace with id='12312321412412312321'.",
         "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Emitting custom event "
         "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
         "/on/ready_for_unit[14]>.",
@@ -372,9 +371,10 @@ def test_trace_ids_relation_evt():
 
 
 def test_trace_ids_no_relation_evt():
+    mock_uniter_events_only(False)
     p = Processor([Target("prom", 1)], show_trace_ids=True)
     for line in (
-        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Starting root trace with id=12312321412412312321.",
+        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Starting root trace with id='12312321412412312321'.",
         "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Emitting custom event "
         "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
         "/on/ready_for_unit[14]>.",

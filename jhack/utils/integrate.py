@@ -1,13 +1,11 @@
 import itertools
 import re
-import sys
 import time
 from collections import defaultdict
 from functools import partial
-from typing import Dict, List, NamedTuple, Optional, Tuple, TypedDict, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import typer
-import yaml
 from rich.align import Align
 from rich.color import Color
 from rich.console import Console
@@ -17,99 +15,16 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import (
-    ColorOption,
-    JPopen,
-    RichSupportedColorOptions,
-    fetch_file,
-    juju_status,
-)
+from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions
 from jhack.logger import logger as jhack_logger
+from jhack.utils.helpers.gather_endpoints import (
+    AppName,
+    PeerBinding,
+    RelationBinding,
+    gather_endpoints,
+)
 
-AppName = Endpoint = Interface = RemoteAppName = str
-RelationID = int
 logger = jhack_logger.getChild("integrate")
-
-
-class _AppEndpoints(TypedDict):
-    requires: Dict[Endpoint, Dict[Interface, Dict[RelationID, RemoteAppName]]]
-    provides: Dict[Endpoint, Dict[Interface, Dict[RelationID, RemoteAppName]]]
-    peers: Dict[Endpoint, Dict[Interface, List[RelationID]]]
-
-
-class PeerBinding(NamedTuple):
-    endpoint: str
-    interface: str
-
-
-class RelationBinding(NamedTuple):
-    provider_endpoint: str
-    interface: str
-    requirer_endpoint: str
-    active: bool
-
-
-def _gather_endpoints(
-    model=None, apps=(), include_peers: bool = False
-) -> Dict[AppName, _AppEndpoints]:
-    status = juju_status(model=model, json=True)
-    eps = {}
-
-    def remotes(app, endpoint):
-        if "relations" not in app:
-            return []
-        return app["relations"].get(endpoint, [])
-
-    all_apps = status.get("applications")
-    if not all_apps:
-        sys.exit(
-            f"No applications found in model {model or '<current model>'}; does the model exist?"
-        )
-
-    for app_name, app in all_apps.items():
-        if apps and app_name not in apps:
-            continue
-
-        if app["application-status"]["current"] == "terminated":
-            # https://bugs.launchpad.net/juju/+bug/1977582 app killed by juju/pebble, juju app
-            # in terminated status.
-            logger.warning(
-                f"Skipping endpoint collection from application {app_name} as it is in "
-                f"`terminated` state."
-            )
-            continue
-
-        app_eps = {}
-        unit = next(iter(app["units"]))
-        try:
-            metadata = fetch_file(unit, "metadata.yaml", model=model)
-        except RuntimeError as e:
-            logger.error(
-                f"Failed to fetch metadata.yaml from {unit} in "
-                f'model={model or "<current model>"}\n\n'
-                f"{e}\n\n"
-                f"APP ={app}"
-            )
-            continue
-
-        meta = yaml.safe_load(metadata)
-
-        for role in ("requires", "provides"):
-            role_eps = {
-                ep: (spec["interface"], remotes(app, ep))
-                for ep, spec in meta.get(role, {}).items()
-            }
-            app_eps[role] = role_eps
-
-        if include_peers:
-            app_eps["peers"] = [
-                PeerBinding(ep, spec["interface"])
-                for ep, spec in meta.get("peers", {}).items()
-            ]
-
-        eps[app_name] = app_eps
-
-    return eps
 
 
 class IntegrationMatrix:
@@ -132,7 +47,7 @@ class IntegrationMatrix:
     ):
         self._model = model
         self._color = color
-        self._endpoints = _gather_endpoints(model, apps, include_peers=include_peers)
+        self._endpoints = gather_endpoints(model, apps, include_peers=include_peers)
         self._apps = tuple(sorted(self._endpoints))
         self._include_peers = include_peers
 
@@ -147,7 +62,7 @@ class IntegrationMatrix:
         ] = self._build_matrix()
 
     def refresh(self):
-        self._endpoints = _gather_endpoints(model=self._model, apps=self._apps)
+        self._endpoints = gather_endpoints(model=self._model, apps=self._apps)
 
     def _pairs(self):
         # returns provider, requirer pairs.
