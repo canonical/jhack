@@ -4,8 +4,9 @@ from typing import List, Optional
 import typer
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
-from jhack.helpers import ColorOption, LibInfo, get_libinfo
+from jhack.helpers import ColorOption, LibInfo, get_libinfo, juju_version
 from jhack.logger import logger as jhack_logger
 from jhack.utils.helpers.gather_endpoints import (
     AppEndpoints,
@@ -40,15 +41,44 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]]) -> Table:
     table.add_column(header="role")
     table.add_column(header="endpoint")
     table.add_column(header="interface")
+
     if libinfo:
         table.add_column(header="version")
-    table.add_column(header="bound to")
 
-    for role in ("requires", "provides"):
+    jujuversion = juju_version()
+    support_bound_to = jujuversion.version[:2] <= (3, 1)
+    if support_bound_to:
+        table.add_column(header="bound to")
+
+    for role, color in zip(("requires", "provides"), ("green", "blue")):
         first = True
         for endpoint_name, (interface_name, remotes) in endpoints[role].items():
+            if support_bound_to:
+                if remotes:
+                    try:
+                        remote_info = [
+                            ", ".join(
+                                remote["related-application"] for remote in remotes
+                            )
+                        ]
+                    except Exception:
+                        logger.error(
+                            f"unable to get related-applications from remotes: {remotes}."
+                            f"This should be possible in juju {jujuversion.version}."
+                        )
+                        remote_info = ["<data unavailable>"]
+
+                else:
+                    remote_info = ["-"]
+
+            else:
+                remote_info = []
+
+            if remotes:
+                logger.info("remotes not supported in this juju version")
+
             table.add_row(
-                role if first else None,
+                Text(role, style="bold " + color) if first else None,
                 *(
                     [interface_name, endpoint_name]
                     + (
@@ -56,7 +86,7 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]]) -> Table:
                         if libinfo
                         else []
                     )
-                    + [", ".join(remote["related-application"] for remote in remotes)]
+                    + remote_info
                 ),
             )
             first = False
@@ -65,13 +95,17 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]]) -> Table:
         binding: PeerBinding
         first = True
         for binding in endpoints["peers"]:
-            table.add_row(
-                "peers" if first else None,
-                binding.interface,
-                binding.endpoint,
-                "n/a",
-                "<itself>",
+            row = (
+                [
+                    Text("peers", style="bold yellow") if first else None,
+                    binding.interface,
+                    binding.endpoint,
+                ]
+                + (["n/a"] if libinfo else [])
+                + (["<itself>"] if support_bound_to else [])
             )
+            table.add_row(*row)
+
             first = False
 
     return table
@@ -83,7 +117,12 @@ def _list_endpoints(
     color: str = "auto",
     show_versions: bool = False,
 ):
-    endpoints = gather_endpoints(model, (app,), include_peers=True)[app]
+    all_endpoints = gather_endpoints(model, (app,), include_peers=True)
+    endpoints = all_endpoints.get(app)
+    if not endpoints:
+        logger.error(f"app {app!r} not found in model {model or '<the current model>'}")
+        exit(1)
+
     libinfo = get_libinfo(app, model) if show_versions else None
 
     c = Console(color_system=color)
@@ -109,4 +148,4 @@ def list_endpoints(
 
 
 if __name__ == "__main__":
-    _list_endpoints("trfk", show_versions=True)
+    _list_endpoints("kafka", show_versions=True)

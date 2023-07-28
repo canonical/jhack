@@ -1,7 +1,6 @@
 import csv
 import subprocess
 import sys
-import toml
 from importlib import metadata
 from importlib.metadata import PackageNotFoundError
 from json import dumps as json_dumps
@@ -9,6 +8,7 @@ from json import loads as json_loads
 from typing import Optional
 
 import requests_unixsocket
+import toml
 from rich.console import Console
 from rich.table import Table
 
@@ -92,9 +92,13 @@ def print_env(format: Format = FormatOption):
         jhack_version = metadata.version("jhack")
     except PackageNotFoundError:
         # jhack not installed but being used from sources:
-        pyproject = JHACK_PROJECT_ROOT / 'pyproject.toml'
+        pyproject = JHACK_PROJECT_ROOT / "pyproject.toml"
         if pyproject.exists():
-            jhack_version = toml.load(pyproject).get("project", {}).get("version", "<unknown version>")
+            jhack_version = (
+                toml.load(pyproject)
+                .get("project", {})
+                .get("version", "<unknown version>")
+            )
         else:
             jhack_version = "<unknown version>"
 
