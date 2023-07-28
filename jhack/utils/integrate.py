@@ -338,12 +338,13 @@ class IntegrationMatrix:
             show_header=False, show_edge=False, show_lines=False, show_footer=False
         )
         for cmd, (ep1, _, ep2) in zip(cmd_list, target_bindings):
+            proc = JPopen(cmd.split(), wait=True, silent_fail=True)
+            color = "red" if proc.returncode == 0 else "green"
             t.add_row(
                 Align(Text(ep1), align="right"),
-                Text(sym, style="green bold"),
+                Text(sym, style=f"{color} bold"),
                 Text(ep2),
             )
-            JPopen(cmd.split(), wait=True)
         console.print(t)
 
         console.print("Done.")

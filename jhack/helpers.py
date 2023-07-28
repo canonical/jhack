@@ -93,7 +93,7 @@ def JPopen(args: List[str], wait=False, **kwargs):  # noqa
     return _JPopen(tuple(args), wait, **kwargs)
 
 
-def _JPopen(args: Tuple[str], wait: bool, **kwargs):  # noqa
+def _JPopen(args: Tuple[str], wait: bool, silent_fail: bool = False, **kwargs):  # noqa
     # Env-passing-down Popen
     proc = subprocess.Popen(
         args,
@@ -115,7 +115,9 @@ def _JPopen(args: Tuple[str], wait: bool, **kwargs):  # noqa
                 "you might have forgotten to "
                 "'sudo snap connect jhack:dot-local-share-juju snapd'"
             )
-        logger.error(msg)
+            logger.error(msg)
+        elif not silent_fail:
+            logger.error(msg)
 
     return proc
 

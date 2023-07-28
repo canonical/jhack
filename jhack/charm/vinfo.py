@@ -1,6 +1,8 @@
 import json
+from dataclasses import dataclass
+from enum import Enum
 from operator import itemgetter
-from typing import Optional
+from typing import Optional, Tuple
 
 import typer
 from rich.console import Console
@@ -56,6 +58,20 @@ _symbol_out_of_sync = ">"
 _symbol_in_sync = "=="
 
 
+class SyncStatus(Enum):
+    outdated = "outdated"
+    up_to_date = "up_to_date"
+    ahead_of_upstream = "ahead_of_upstream"
+    unknown = "unknown"
+
+
+@dataclass
+class OutdatedCheck:
+    outdated: SyncStatus
+    text: Text
+    lib_path: str  # charmcraft library address
+
+
 def _add_charm_lib_info(
     table: Table, app: str, model: str, check_outdated=True, machine=False
 ):
@@ -77,35 +93,48 @@ def _add_charm_lib_info(
             lib_info_ch = _check_outdated(owner)
             ch_lib_meta[owner] = {obj["library_name"]: obj for obj in lib_info_ch}
 
-    def _check_version(owner, lib_name, version):
+    def _check_version(
+        owner: str, lib_name: str, version: Tuple[int, int]
+    ) -> OutdatedCheck:
+        lib_path = f"charms.{owner}.v{version[0]}.{lib_name}"
         try:
             lib_meta = ch_lib_meta[owner][lib_name]
         except KeyError as e:
             logger.warning(
                 f"Couldn't find {e} in charmcraft lib-info for {owner}.{lib_name}"
             )
-            return Text(_symbol_unknown, style="orange")
+            return OutdatedCheck(
+                SyncStatus.unknown, Text(_symbol_unknown, style="orange"), lib_path
+            )
 
         upstream_v = lib_meta["api"], lib_meta["patch"]
 
         if upstream_v == version:
-            return Text(_symbol_in_sync, style="bold green")
+            return OutdatedCheck(
+                SyncStatus.up_to_date,
+                Text(_symbol_in_sync, style="bold green"),
+                lib_path,
+            )
 
         elif upstream_v < version:
             symbol = _symbol_out_of_sync
             color = "orange"
+            status = SyncStatus.ahead_of_upstream
 
         else:
             symbol = _symbol_outdated
             color = "red"
+            status = SyncStatus.outdated
 
-        return (
+        return OutdatedCheck(
+            status,
             Text(symbol, style="bold " + color)
             + Text(" (", style="bold default")
             + Text(str(upstream_v[0]), style=color)
             + "."
             + Text(str(upstream_v[1]), style=color)
-            + Text(")", style="bold default")
+            + Text(")", style="bold default"),
+            lib_path,
         )
 
     for owner, version, lib_name, revision in libinfo:
@@ -115,19 +144,20 @@ def _add_charm_lib_info(
 
         if check_outdated:
             description += "\t"
-            description += _check_version(
-                owner, lib_name, (int(version), int(revision))
-            )
-            # TODO: for each outdated lib, print copy-pastable command you'd need to run to update
+            check = _check_version(owner, lib_name, (int(version), int(revision)))
+            description += check.text
 
-        table.add_row(
+            # TODO: for each outdated lib, print copy-pastable command you'd need to run to update
+        row = [
             (
                 Text(owner, style="purple")
                 + Text(":", style="default")
                 + Text(lib_name, style="bold cyan")
             ),
             description,
-        )
+        ]
+
+        table.add_row(*row)
 
     table.rows[-1].end_section = True
 
@@ -139,13 +169,17 @@ def _vinfo(
     color: RichSupportedColorOptions = "auto",
     model: str = None,
 ):
-    table = Table(title="vinfo v0.1", show_header=False)
+    table = Table(title="vinfo v0.1", show_header=False, expand=True)
     table.add_column()
     table.add_column()
 
     _add_app_info(table, target, model)
     _add_charm_lib_info(
-        table, target, model, machine=machine, check_outdated=check_outdated
+        table,
+        target,
+        model,
+        machine=machine,
+        check_outdated=check_outdated,
     )
 
     if color == "no":
@@ -158,11 +192,6 @@ def vinfo(
     target: str = typer.Argument(
         ..., help="Unit or application name to generate the vinfo of."
     ),
-    # machine: bool = typer.Option(
-    #     False,
-    #     help="Is this a machine model?",  # todo autodetect
-    #     is_flag=True
-    # ),
     check_outdated: bool = typer.Option(
         False,
         "-o",

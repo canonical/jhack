@@ -35,6 +35,7 @@ from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
+_TAIL_VERSION = "0.3"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 
@@ -159,6 +160,9 @@ class EventLogMsg:
     # special for jhack-replay-emitted loglines
     jhack_replayed_evt_timestamp: str = ""
 
+    # special for charm-tracing-enabled charms
+    trace_id: str = ""
+
 
 @dataclass
 class EventDeferredLogMsg(EventLogMsg):
@@ -234,6 +238,7 @@ _deferral_colors = {
     "reemitted": "green",
     "bounced": Color.from_rgb(252, 115, 3),
 }
+_trace_id_color = Color.from_rgb(100, 100, 210)
 
 
 def _random_color():
@@ -271,6 +276,12 @@ class LogLineParser:
     event_deferred = re.compile(base_pattern + defer_suffix)
     event_deferred_from_relation = re.compile(base_relation_pattern + defer_suffix)
 
+    # unit-tempo-0: 12:28:24 DEBUG unit.tempo/0.juju-log Starting root trace with id=XXX.
+    # we ignore the relation tag since we don't really care with modifier loglines
+    trace_id = re.compile(
+        base_pattern + "(.* )?" + r"Starting root trace with id='(?P<trace_id>\S+)'\."
+    )
+
     custom_event_suffix = "Emitting custom event " + event_repr
     custom_event = re.compile(base_pattern + custom_event_suffix)  # ops >= 2.1
     custom_event_from_relation = re.compile(
@@ -301,6 +312,7 @@ class LogLineParser:
         event_replayed_jhack: ("jhack", "replay"),
         custom_event: ("custom",),
         custom_event_from_relation: ("custom",),
+        trace_id: ("trace_id",),
     }
 
     def __init__(self, model: str = None):
@@ -320,7 +332,7 @@ class LogLineParser:
                 tags = self.tags.get(matcher, ())
                 dct = match.groupdict()
                 dct["tags"] = tags
-                dct["event"] = self._uniform_event(dct["event"])
+                dct["event"] = self._uniform_event(dct.get("event", ""))
                 return dct
         return None
 
@@ -351,12 +363,16 @@ class LogLineParser:
             self.custom_event_from_relation,
         )
 
-    def match_jhack_modifiers(self, msg):
+    def match_jhack_modifiers(self, msg, trace_id: bool = False):
         # jhack fire/replay may emit some loglines that aim at modifying the meaning of
         # previously parsed loglines
         if self.uniter_events_only:
             return
-        match = self._match(msg, self.event_fired_jhack, self.event_replayed_jhack)
+        mods = [self.event_fired_jhack, self.event_replayed_jhack]
+        if trace_id:
+            # don't search for trace ids unless they are enabled
+            mods += [self.trace_id]
+        match = self._match(msg, *mods)
         return match
 
     def match_event_reemitted(self, msg):
@@ -381,6 +397,7 @@ class Processor:
         add_new_targets: bool = True,
         history_length: int = 10,
         show_ns: bool = True,
+        show_trace_ids: bool = False,
         color: _Color = "auto",
         show_defer: bool = False,
         event_filter_re: re.Pattern = None,
@@ -402,9 +419,10 @@ class Processor:
 
         self._show_ns = show_ns and show_defer
         self._show_defer = show_defer
+        self._show_trace_ids = show_trace_ids
+        self._next_msg_trace_id: Optional[str] = None
 
         self.evt_count = Counter()
-        self._lanes = {}
         self.tracking: Dict[str, List[EventLogMsg]] = {
             tgt.unit_name: [] for tgt in targets
         }
@@ -554,7 +572,7 @@ class Processor:
             return EventLogMsg(**match, mocked=False)
 
     def _match_jhack_modifiers(self, log: str) -> Optional[EventLogMsg]:
-        match = self.parser.match_jhack_modifiers(log)
+        match = self.parser.match_jhack_modifiers(log, trace_id=self._show_trace_ids)
         if match:
             if not self._match_filter(match["event"]):
                 return
@@ -575,9 +593,14 @@ class Processor:
         self._duplicate_cache.add(hsh)
 
     def _apply_jhack_mod(self, msg: EventLogMsg):
-        if "fire" in msg.tags:
-            # the previous event of this type was fired by jhack.
+        def _get_referenced_msg(unit: str) -> Optional[EventLogMsg]:
+            # this is the message we're referring to, the one we're modifying
             raw_table = self._raw_tables[msg.unit]
+            if not msg.event:
+                if not raw_table.msgs:
+                    logger.error("cannot reference the previous event: no messages.")
+                    return
+                return raw_table.msgs[0]
             try:
                 idx = raw_table.events.index(msg.event)
             except ValueError:
@@ -585,8 +608,19 @@ class Processor:
                     f"{msg.event} not found in raw_table. Ignoring tags {msg.tags}..."
                 )
                 return
+            return raw_table.msgs[idx]
+
+        if "fire" in msg.tags:
+            # the previous event of this type was fired by jhack.
             # copy over the tags
-            raw_table.msgs[idx].tags = msg.tags
+            referenced_msg = _get_referenced_msg(msg.unit)
+            if referenced_msg:
+                referenced_msg.tags = msg.tags
+
+        elif "trace_id" in msg.tags:
+            # the NEXT logged event of this type was traced by Tempo's trace_charm library.
+            # tag the event message with the trace id.
+            self._next_msg_trace_id = msg.trace_id
 
         elif "replay" in msg.tags:
             # the previous event of this type was replayed by jhack.
@@ -651,6 +685,13 @@ class Processor:
             self._apply_jhack_mod(msg)
 
         if mode in {"reemit", "emit"} or (mode == "jhack-mod" and "replay" in msg.tags):
+            if self._next_msg_trace_id:
+                # the trace id is one of the first thing the lib logs.
+                # Therefore, it actually occurs BEFORE the logline presenting the event is emitted.
+                # so we have to store it and pop it when the emission event logline comes in.
+                msg.trace_id = self._next_msg_trace_id
+                self._next_msg_trace_id = None
+
             self._timestamps.insert(0, msg.timestamp)
             # we need to update all *other* tables as well, to insert a
             # blank line where this event would appear
@@ -717,16 +758,21 @@ class Processor:
         # to add new rows to the top and keep old ones, but how do we know if
         # deferral lines have changed?
         self._rendered = True
-        table = Table(show_footer=False, expand=True)
+        table = Table(
+            show_footer=False, expand=True, title=f"Jhack tail v{_TAIL_VERSION}"
+        )
         table.add_column(header="timestamp", style="")
         unit_grids = []
         n_cols = 1
 
         ns_shown = self._show_ns
-        dfr_shown = self._show_defer
+        deferrals_shown = self._show_defer
+        traces_shown = self._show_trace_ids
         if ns_shown:
             n_cols += 1
-        if dfr_shown:
+        if deferrals_shown:
+            n_cols += 1
+        if traces_shown:
             n_cols += 1
 
         targets = self.targets
@@ -751,7 +797,7 @@ class Processor:
                 )
                 row = [rndr]
 
-                if self._show_defer:
+                if deferrals_shown:
                     deferral_status = raw_table.deferrals[i] or "null"
                     deferral_symbol = self._deferral_status_to_symbol[deferral_status]
                     style = (
@@ -762,11 +808,19 @@ class Processor:
                     deferral_rndr = Text(deferral_symbol, style=style)
                     row.append(deferral_rndr)
 
-                if self._show_ns:
+                if ns_shown:
                     n_rndr = (
                         Text(n, style=Style(color=raw_table.get_color(n))) if n else ""
                     )
                     row.insert(0, n_rndr)
+
+                if traces_shown:
+                    trace_rndr = (
+                        Text(msg.trace_id, style=Style(color=_trace_id_color))
+                        if msg.trace_id
+                        else ""
+                    )
+                    row.append(trace_rndr)
 
                 tgt_grid.add_row(*row)
 
@@ -934,6 +988,9 @@ def tail_events(
     show_defer: bool = typer.Option(
         False, "-d", "--show-defer", help="Visualize the defer graph."
     ),
+    show_trace_ids: bool = typer.Option(
+        False, "-t", "--show-trace-ids", help="Show Tempo trace IDs if available."
+    ),
     show_ns: bool = typer.Option(
         False,
         "-n",
@@ -984,6 +1041,7 @@ def tail_events(
         length=length,
         show_defer=show_defer,
         show_ns=show_ns,
+        show_trace_ids=show_trace_ids,
         watch=watch,
         color=color,
         files=file,
@@ -1007,6 +1065,7 @@ def _tail_events(
     length: int = 10,
     show_defer: bool = False,
     show_ns: bool = False,
+    show_trace_ids: bool = False,
     watch: bool = True,
     color: str = "auto",
     files: List[Union[str, Path]] = None,
@@ -1058,12 +1117,12 @@ def _tail_events(
         return
 
     event_filter_pattern = re.compile(event_filter) if event_filter else None
-
     processor = Processor(
         targets,
         add_new_targets,
         history_length=length,
         show_ns=show_ns,
+        show_trace_ids=show_trace_ids,
         color=color,
         show_defer=show_defer,
         event_filter_re=event_filter_pattern,
@@ -1156,4 +1215,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, targets="prom/0")
+    _tail_events(length=30, replay=True, targets="tempo/0", show_trace_ids=True)

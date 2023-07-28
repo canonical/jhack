@@ -5,6 +5,7 @@ from importlib import metadata
 from importlib.metadata import PackageNotFoundError
 from json import dumps as json_dumps
 from json import loads as json_loads
+from pathlib import Path
 from typing import Optional
 
 import requests_unixsocket
@@ -103,6 +104,16 @@ def print_env(format: Format = FormatOption):
             jhack_version = "<unknown version>"
 
     multipass_version = get_multipass_version()
+    try:
+        jhack_version = metadata.version("jhack")
+    except PackageNotFoundError:
+        # we are using jhack from sources.
+        # let's parse pyproject.toml
+        pyproject_toml = (
+            Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
+        )
+        jhack_version = toml.loads(pyproject_toml.read_text())["project"]["version"]
+
     data = {
         "jhack": jhack_version,
         "python": python_version,

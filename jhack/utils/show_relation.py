@@ -260,9 +260,6 @@ def get_metadata_from_status(
     app_status = status["applications"][endpoint.app_name]
     if app_status.get("subordinate-to"):
         units = {}
-        other_app_meta = status["applications"][other_endpoint.app_name]
-        other_app_meta.get("units")
-
         # todo: need to scavenge unit names from OTHER units' .subordinates field
         for app in status["applications"].values():
             for unit in app.get("units", {}).values():

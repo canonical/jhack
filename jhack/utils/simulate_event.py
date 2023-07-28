@@ -136,6 +136,11 @@ def _simulate_event(
     emit_juju_log: bool = True,
     model: str = None,
 ):
+    if not len(unit.split("/")) == 2:
+        raise ValueError(
+            f"invalid unit name: should be something like 'foo/0', not {unit}"
+        )
+
     env = _get_env(
         unit,
         event,
