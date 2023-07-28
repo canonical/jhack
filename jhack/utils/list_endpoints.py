@@ -80,7 +80,7 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]]) -> Table:
             table.add_row(
                 Text(role, style="bold " + color) if first else None,
                 *(
-                    [interface_name, endpoint_name]
+                    [endpoint_name, interface_name]
                     + (
                         [_supported_versions(libinfo, interface_name)]
                         if libinfo
@@ -98,8 +98,8 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]]) -> Table:
             row = (
                 [
                     Text("peers", style="bold yellow") if first else None,
-                    binding.interface,
                     binding.endpoint,
+                    binding.interface,
                 ]
                 + (["n/a"] if libinfo else [])
                 + (["<itself>"] if support_bound_to else [])
