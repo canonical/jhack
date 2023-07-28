@@ -77,7 +77,8 @@ def print_env(format: Format = FormatOption):
         logger.warning(
             "you are using the snapped version of jhack. "
             "The version information you see below matches what is available to the snap! "
-            "To see your *local* version information, you'll have to run jhack from sources, like a pro."
+            "To see your *local* version information, you'll have to run jhack from sources, "
+            "like a pro."
         )
 
     python_v = sys.version_info
