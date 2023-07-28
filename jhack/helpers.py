@@ -148,8 +148,9 @@ def cached_juju_status(app_name=None, model: str = None, json: bool = False):
     )
 
 
-def is_k8s_model(status=None):
-    status = status or juju_status(json=True)
+def is_k8s_model(status):
+    """Determine if this is a k8s model from a juju status."""
+
     if status["applications"]:
         # no machines = k8s model
         if not status.get("machines"):
@@ -274,6 +275,18 @@ def fetch_file(
 
 LibInfo = namedtuple("LibInfo", "owner, version, lib_name, revision")
 
+JujuVersion = namedtuple("JujuVersion", ("version", "build"))
+
+
+def juju_version() -> JujuVersion:
+    proc = JPopen("juju version".split())
+    out = proc.stdout.read().decode("utf-8")
+    if "-" in out:
+        v, tag = out.split("-", 1)
+    else:
+        v, tag = out, ""
+    return JujuVersion(tuple(map(int, v.split("."))), tag)
+
 
 def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
     if machine:
@@ -282,9 +295,13 @@ def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
     status = cached_juju_status(app, model=model, json=True)
     unit_name = status["applications"][app.split("/")[0]]["units"].popitem()[0]
 
-    # todo: if machine, adapt path
+    if get_substrate(model) == "k8s":
+        cwd = "."
+    else:
+        cwd = "/var/lib/juju"
+
     cmd = (
-        f"juju ssh {unit_name} find ./agents/unit-{unit_name.replace('/', '-')}/charm/lib "
+        f"juju ssh {unit_name} find {cwd}/agents/unit-{unit_name.replace('/', '-')}/charm/lib "
         "-type f "
         '-iname "*.py" '
         r'-exec grep "LIBPATCH" {} \+'
@@ -297,9 +314,12 @@ def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
     for lib in libs:
         # todo: if machine, adapt pattern
         # pattern: './agents/unit-zinc-k8s-0/charm/lib/charms/loki_k8s/v0/loki_push_api.py:LIBPATCH = 12'  # noqa
-        grps = re.search(
-            r".*/charms/(\w+)/v(\d+)/(\w+)\.py\:LIBPATCH\s\=\s(\d+)", lib
-        ).groups()
+        match = re.search(r".*/charms/(\w+)/v(\d+)/(\w+)\.py\:LIBPATCH\s\=\s(\d+)", lib)
+        if match:
+            grps = match.groups()
+        else:
+            logger.error(f"unable to determine libinfo from lib path {lib}")
+            grps = (None, None, None, None)
         libinfo.append(LibInfo(*grps))
 
     return libinfo
