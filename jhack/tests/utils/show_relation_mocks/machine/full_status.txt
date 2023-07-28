@@ -1,0 +1,21 @@
+Model  Controller  Cloud/Region         Version  SLA          Timestamp
+foo    lxdcloud    localhost/localhost  3.1.2    unsupported  08:47:24+02:00
+
+App        Version  Status  Scale  Charm      Channel  Rev  Exposed  Message
+kafka               active      1  kafka      3/edge   116  no       machine system settings are not optimal - see logs for info
+zookeeper           active      1  zookeeper  3/edge    99  no       
+
+Unit          Workload  Agent  Machine  Public address  Ports  Message
+kafka/0*      active    idle   0        10.202.33.94           machine system settings are not optimal - see logs for info
+zookeeper/0*  active    idle   1        10.202.33.167          
+
+Machine  State    Address        Inst id        Base          AZ  Message
+0        started  10.202.33.94   juju-92ef4d-0  ubuntu@22.04      Running
+1        started  10.202.33.167  juju-92ef4d-1  ubuntu@22.04      Running
+
+Relation provider    Requirer           Interface   Type     Message
+kafka:cluster        kafka:cluster      cluster     peer     
+kafka:restart        kafka:restart      rolling_op  peer     
+zookeeper:cluster    zookeeper:cluster  cluster     peer     
+zookeeper:restart    zookeeper:restart  rolling_op  peer     
+zookeeper:zookeeper  kafka:zookeeper    zookeeper   regular  

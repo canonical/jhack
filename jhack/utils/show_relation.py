@@ -261,7 +261,7 @@ def get_metadata_from_status(
     if app_status.get("subordinate-to"):
         units = {}
         other_app_meta = status["applications"][other_endpoint.app_name]
-        other_app_units = other_app_meta.get("units")
+        other_app_meta.get("units")
 
         # todo: need to scavenge unit names from OTHER units' .subordinates field
         for app in status["applications"].values():
@@ -471,7 +471,8 @@ def get_databags(
             },
         }
     elif relation.type == RelationType.cross_model:
-        assert raw_data.get("cross-model", False)
+        # assert raw_data.get("cross-model", False)
+        # has 'cross-model' gone from the data at some point?
         unit_data = raw_data["local-unit"]["data"] or {}
     else:
         unit_data = raw_data["related-units"][obj.unit_name]["data"]
@@ -603,7 +604,8 @@ def _match_endpoint(
     rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]
 ):
     if not ep2 or rel.type == RelationType.peer:
-        # we could use _match_provider as well, they should be equivalent so long as the peer relation is consistent
+        # we could use _match_provider as well, they should be equivalent
+        # so long as the peer relation is consistent
         match_peer = _match_requirer(rel, ep1) and _match_requirer(rel, ep2)
         return match_peer, False
 

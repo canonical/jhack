@@ -1,5 +1,4 @@
 import json
-import re
 from operator import itemgetter
 from typing import Optional
 
@@ -12,37 +11,29 @@ from jhack.helpers import (
     ColorOption,
     JPopen,
     RichSupportedColorOptions,
+    cached_juju_status,
     check_command_available,
-    juju_status,
+    get_libinfo,
 )
-from jhack.logger import logger as jhacklogger
+from jhack.logger import logger as jhack_logger
 
-logger = jhacklogger.getChild(__file__)
-
-_status_cache = None
+logger = jhack_logger.getChild(__file__)
 
 
-def _juju_status(target, model):
-    global _status_cache
-    if not _status_cache:
-        _status_cache = juju_status(target, model=model, json=True)
-    return _status_cache
-
-
-def _get_lib_info(charm_name):
+def _get_charmcraft_lib_info(charm_name):
     out = JPopen(f"charmcraft list-lib {charm_name} --format=json".split())
     return json.loads(out.stdout.read().decode("utf-8"))
 
 
-def get_lib_info(charm_name):
+def _check_outdated(charm_name):
     # dashes get turned into underscores to make it python-identifier-compliant.
     # so we get to try first with dashes.
     dashed_name = charm_name.replace("_", "-")
-    return _get_lib_info(dashed_name) or _get_lib_info(charm_name)
+    return _get_charmcraft_lib_info(dashed_name) or _get_charmcraft_lib_info(charm_name)
 
 
 def _add_app_info(table: Table, target: str, model: str):
-    status = _juju_status(target, model=model)
+    status = cached_juju_status(target, model=model, json=True)
     table.add_row("app name", target)
     app_name = target.split("/")[0]
     appinfo = status["applications"][app_name]
@@ -75,29 +66,7 @@ def _add_charm_lib_info(
         )
         check_outdated = False
 
-    status = _juju_status(app, model=model)
-    unit_name = status["applications"][app.split("/")[0]]["units"].popitem()[0]
-
-    # todo: if machine, adapt path
-    cmd = (
-        f"juju ssh {unit_name} find ./agents/unit-{unit_name.replace('/', '-')}/charm/lib "
-        "-type f "
-        '-iname "*.py" '
-        r'-exec grep "LIBPATCH" {} \+'
-    )
-    proc = JPopen(cmd.split())
-    out = proc.stdout.read().decode("utf-8")
-    libs = out.strip().split("\n")
-
-    # todo: if machine, adapt pattern
-    # pattern: './agents/unit-zinc-k8s-0/charm/lib/charms/loki_k8s/v0/loki_push_api.py:LIBPATCH = 12'  # noqa
-    libinfo = []
-    for lib in libs:
-        libinfo.append(
-            re.search(
-                r".*/charms/(\w+)/v(\d+)/(\w+)\.py\:LIBPATCH\s\=\s(\d+)", lib
-            ).groups()
-        )
+    libinfo = get_libinfo(app, model, machine)
 
     ch_lib_meta = {}
 
@@ -105,7 +74,7 @@ def _add_charm_lib_info(
         owners = set(map(itemgetter(0), libinfo))
         for owner in owners:
             logger.info(f"getting charmcraft lib info from {owner}")
-            lib_info_ch = get_lib_info(owner)
+            lib_info_ch = _check_outdated(owner)
             ch_lib_meta[owner] = {obj["library_name"]: obj for obj in lib_info_ch}
 
     def _check_version(owner, lib_name, version):
@@ -173,12 +142,6 @@ def _vinfo(
     table = Table(title="vinfo v0.1", show_header=False)
     table.add_column()
     table.add_column()
-
-    # app, _, unit_id = target.rpartition('/')
-    # if app:
-    #     target = app
-    # else:
-    #     target = unit_id
 
     _add_app_info(table, target, model)
     _add_charm_lib_info(

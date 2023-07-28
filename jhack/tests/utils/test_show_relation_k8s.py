@@ -8,10 +8,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 import pytest
 
-from jhack.utils.show_relation import (
-    _coalesce_endpoint_and_n,
-    _sync_show_relation,
-)
+from jhack.utils.show_relation import _coalesce_endpoint_and_n, _sync_show_relation
 
 
 def fake_juju_status(model=None, json: bool = False):
