@@ -635,6 +635,33 @@ To also check the charm lib versions against the latest available upstream:
 └─────────────────────────────────────────────┴────────────────────────┘
 ```
 
+# list-endpoints
+
+The `list-endpoints` command is a utility to view the integration endpoints a charm has to offer.
+
+```commandline
+                                                           endpoints v0.1                                                           
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ role          ┃ endpoint                   ┃ interface                       ┃ version       ┃ bound to                          ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ requires      │ certificates               │ tls-certificates                │ 2.10          │ -                                 │
+│               │ logging                    │ loki_push_api                   │ 0.21          │ -                                 │
+│               │ tracing                    │ tracing                         │ 0.6           │ -                                 │
+│               │ receive-ca-cert            │ certificate_transfer            │ 0.4           │ -                                 │
+│ provides      │ ingress                    │ ingress                         │ 1.17|2.5      │ alertmanager, catalogue           │
+│               │ ingress-per-unit           │ ingress_per_unit                │ 1.15          │ loki, prometheus                  │
+│               │ metrics-endpoint           │ prometheus_scrape               │ 0.41          │ prometheus                        │
+│               │ traefik-route              │ traefik_route                   │ 0.7           │ grafana                           │
+│               │ grafana-dashboard          │ grafana_dashboard               │ 0.34          │ -                                 │
+│ peers         │ peers                      │ traefik_peers                   │ n/a           │ <itself>                          │
+└───────────────┴────────────────────────────┴─────────────────────────────────┴───────────────┴───────────────────────────────────┘
+```
+
+in order to show the version of the library implementing a given interface, jhack naively attempts to match the interface name to a library file. It is standard practice to put a library for the `foo-bar-baz` interface in `lib/charms/owner_charm/v42/foo_bar_baz.py`, which allows jhack to deduce that the version of the library is `42.[whatever is in LIBPATCH]`. This however is not enforced; in that case you'll see a `<library not found>` tag instead.
+
+If multiple library files are found for a given interface, such as in the case of `ingress` in the example output above, jhack will assume that the charm supports both versions and print them all.
+
+
 # pull-cmr
 
 Ever went to the trouble of `juju offer`, then `juju consume`, `juju relate`? Done it once, and
