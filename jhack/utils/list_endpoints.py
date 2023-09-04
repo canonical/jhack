@@ -49,7 +49,9 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]]) -> Table:
 
     # FIXME: regression in juju 3.2
     #   https://bugs.launchpad.net/juju/+bug/2029113
-    support_bound_to = jujuversion.version[:2] <= (3, 1)
+    support_bound_to = jujuversion.version[:2] != (3, 2)
+
+    # support_bound_to = True
     if support_bound_to:
         table.add_column(header="bound to")
 
