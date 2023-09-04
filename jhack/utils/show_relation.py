@@ -24,7 +24,11 @@ from jhack.logger import logger
 
 logger = logger.getChild(__file__)
 
+_CACHING = True
+"""Toggle caching for juju api calls."""
+
 _JUJU_DATA_CACHE = {}
+
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 _UNIT_ID_RE = re.compile(r"/\d")
 _RELATIONS_RE = re.compile(
@@ -99,8 +103,14 @@ def purge(data: dict):
 
 
 @lru_cache
+def _cached_juju_status(*args, **kwargs):
+    return juju_status(*args, **kwargs)
+
+
 def _juju_status(*args, **kwargs):
     # to facilitate mocking in utests
+    if _CACHING:
+        return _cached_juju_status(*args, **kwargs)
     return juju_status(*args, **kwargs)
 
 
@@ -135,6 +145,37 @@ def _find_model_if_CMR(app_name, current_model: str = None):
     return current_model
 
 
+def _get_unit_info(
+    unit_name: str,
+    related_to: str = None,
+    endpoint: str = None,
+    model: str = None,
+) -> dict:
+    data = _show_unit(unit_name, related_to=related_to, endpoint=endpoint, model=model)
+    if not data:
+        raise ValueError(
+            f"no unit info could be grabbed for {unit_name}; "
+            f"are you sure it's a valid unit name?"
+        )
+    if unit_name not in data:
+        raise KeyError(
+            f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}"
+        )
+
+    unit_data = data[unit_name]
+    return unit_data
+
+
+@lru_cache
+def _cached_get_unit_info(
+    unit_name: str,
+    related_to: str = None,
+    endpoint: str = None,
+    model: str = None,
+) -> dict:
+    return _get_unit_info(unit_name, related_to, endpoint, model)
+
+
 def get_unit_info(
     unit_name: str,
     related_to: str = None,
@@ -164,24 +205,9 @@ def get_unit_info(
       provider-id: traefik-k8s-0
       address: 10.1.232.144
     """
-    signature = hash((unit_name, related_to, endpoint, model))
-    if cached_data := _JUJU_DATA_CACHE.get(signature):
-        return cached_data
-
-    data = _show_unit(unit_name, related_to=related_to, endpoint=endpoint, model=model)
-    if not data:
-        raise ValueError(
-            f"no unit info could be grabbed for {unit_name}; "
-            f"are you sure it's a valid unit name?"
-        )
-    if unit_name not in data:
-        raise KeyError(
-            f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}"
-        )
-
-    unit_data = data[unit_name]
-    _JUJU_DATA_CACHE[signature] = unit_data
-    return unit_data
+    if _CACHING:
+        return _cached_get_unit_info(unit_name, related_to, endpoint, model)
+    return _get_unit_info(unit_name, related_to, endpoint, model)
 
 
 def get_relation_by_endpoint(
@@ -1024,6 +1050,10 @@ def _sync_show_relation(
             return
 
         if watch:
+            global _CACHING
+            _CACHING = False
+            logger.info("running in watch-mode: caching DISABLED")
+
             elapsed = time.time() - start
             if elapsed < 1:
                 time.sleep(1.5 - elapsed)
