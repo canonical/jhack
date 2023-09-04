@@ -88,8 +88,10 @@ def configure():
             test_file.write_text("kuckadoodle-foo")
             test_file.unlink()
         except FileNotFoundError:
-            sys.exit(f"JUJU_DATA default directory not found at {jdata}. "
-                     f"Is the juju snap bootstrapped?")
+            sys.exit(
+                f"JUJU_DATA default directory not found at {jdata}. "
+                f"Is the juju snap bootstrapped?"
+            )
         except PermissionError:
             logger.error(
                 f"It seems like the snap doesn't have access to {jdata};"
