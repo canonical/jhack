@@ -998,11 +998,7 @@ def tail_events(
         help="Prefix deferred events with their deferral ID. "
         "Only applicable if show_defer=True.",
     ),
-    watch: bool = typer.Option(
-        True,
-        help="Keep listening.",
-        is_flag=True
-    ),
+    watch: bool = typer.Option(True, help="Keep listening.", is_flag=True),
     color: str = typer.Option(
         "auto",
         "-c",
