@@ -33,7 +33,7 @@ parts:
       VERSION=$(cat ./pyproject.toml | grep -Po 'version = "\K[^"]*')
       snapcraftctl set-version $VERSION
     stage-snaps:
-      - juju/3.0/beta
+      - juju/3.3/stable
 
 apps:
   jhack:
