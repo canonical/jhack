@@ -47,7 +47,9 @@ class IntegrationMatrix:
     ):
         self._model = model
         self._color = color
-        self._endpoints = gather_endpoints(model, apps or (), include_peers=include_peers)
+        self._endpoints = gather_endpoints(
+            model, apps or (), include_peers=include_peers
+        )
         self._apps = tuple(sorted(self._endpoints))
         self._include_peers = include_peers
 

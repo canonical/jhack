@@ -279,9 +279,8 @@ def _nuke(
         if nukeable.type == "model":
             nuked_models.add(nukeable.name)
             nukes.append(
-                f"juju destroy-model {nukeable.name} "
-                f"--force --no-wait --destroy-storage"
-                # fixme: older version supported -y here; don't we anymore?
+                "juju destroy-model --force --no-wait "
+                f"--destroy-storage --no-prompt {nukeable.name}"
             )
 
         elif nukeable.type == "app":
