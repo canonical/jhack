@@ -8,7 +8,7 @@ from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("gather_endpoints")
 
-AppName = Endpoint = Interface = RemoteAppName = str
+AppName = Endpoint = Interface = RemoteAppName = Owner = str
 RelationID = int
 
 
