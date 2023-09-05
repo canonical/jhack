@@ -41,10 +41,12 @@ def _implementations(libinfos: List[LibInfo], interface_name: str) -> List[LibIn
 
 
 def _normalize(name: str):
-    return name.lower().replace('-', '_')
+    return name.lower().replace("-", "_")
 
 
-def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]], app: str) -> Table:
+def _render(
+    endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]], app: str
+) -> Table:
     table = Table(title="endpoints v0.1", expand=True)
     table.add_column(header="role")
     table.add_column(header="endpoint")
@@ -99,7 +101,9 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]], app: str)
 
                 # highlight libs owned by the app we're looking at
                 owner_color = "cyan" if _normalize(owner) == _normalize(app) else "blue"
-                owner_tag = Text(owner, style=f"{owner_color}") + Text(":", style="default")
+                owner_tag = Text(owner, style=f"{owner_color}") + Text(
+                    ":", style="default"
+                )
 
             else:
                 owner_tag = ""
@@ -107,13 +111,9 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]], app: str)
             table.add_row(
                 Text(role, style="bold " + color) if first else None,
                 *(
-                        [endpoint_name, owner_tag + Text(interface_name, style="default")]
-                        + (
-                            [_supported_versions(implementations)]
-                            if libinfo
-                            else []
-                        )
-                        + remote_info
+                    [endpoint_name, owner_tag + Text(interface_name, style="default")]
+                    + ([_supported_versions(implementations)] if libinfo else [])
+                    + remote_info
                 ),
             )
             first = False
@@ -123,13 +123,13 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]], app: str)
         first = True
         for binding in endpoints["peers"]:
             row = (
-                    [
-                        Text("peers", style="bold yellow") if first else None,
-                        binding.endpoint,
-                        binding.interface,
-                    ]
-                    + (["n/a"] if libinfo else [])
-                    + (["<itself>"] if support_bound_to else [])
+                [
+                    Text("peers", style="bold yellow") if first else None,
+                    binding.endpoint,
+                    binding.interface,
+                ]
+                + (["n/a"] if libinfo else [])
+                + (["<itself>"] if support_bound_to else [])
             )
             table.add_row(*row)
 
@@ -139,10 +139,10 @@ def _render(endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]], app: str)
 
 
 def _list_endpoints(
-        app: str,
-        model: Optional[str] = None,
-        color: str = "auto",
-        show_versions: bool = False,
+    app: str,
+    model: Optional[str] = None,
+    color: str = "auto",
+    show_versions: bool = False,
 ):
     all_endpoints = gather_endpoints(model, (app,), include_peers=True)
     endpoints = all_endpoints.get(app)
@@ -157,18 +157,18 @@ def _list_endpoints(
 
 
 def list_endpoints(
-        app: str = typer.Argument(..., help="Application whose endpoints to show."),
-        show_versions: bool = typer.Option(
-            False,
-            "-v",
-            "--show-versions",
-            is_flag=True,
-            help="Show supported interface versions.",
-        ),
-        model: str = typer.Option(
-            None, "--model", "-m", help="Model in which to apply this command."
-        ),
-        color: Optional[str] = ColorOption,
+    app: str = typer.Argument(..., help="Application whose endpoints to show."),
+    show_versions: bool = typer.Option(
+        False,
+        "-v",
+        "--show-versions",
+        is_flag=True,
+        help="Show supported interface versions.",
+    ),
+    model: str = typer.Option(
+        None, "--model", "-m", help="Model in which to apply this command."
+    ),
+    color: Optional[str] = ColorOption,
 ):
     """Display the available integration endpoints."""
     _list_endpoints(app=app, model=model, show_versions=show_versions, color=color)
