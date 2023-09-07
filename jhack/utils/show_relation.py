@@ -219,20 +219,13 @@ def get_relation_by_endpoint(
     local_endpoint = obj.endpoint
     remote_endpoint = other_obj.endpoint
 
-    matches = [
-        r
-        for r in relations
-        if (
-            (
-                r["endpoint"] == local_endpoint
-                and r["related-endpoint"] == remote_endpoint
-            )
-            or (
-                r["endpoint"] == remote_endpoint
-                and r["related-endpoint"] == local_endpoint
-            )
-        )
-    ]
+    matches = []
+    for r in relations:
+        if (r["endpoint"] == local_endpoint or not local_endpoint) and (r["related-endpoint"] == remote_endpoint or not remote_endpoint):
+            matches.append(r)
+        elif (r["endpoint"] == remote_endpoint or not remote_endpoint) and (r["related-endpoint"] == local_endpoint or not local_endpoint):
+            matches.append(r)
+
     if relation.type == RelationType.regular:
         matches = [
             r
@@ -1067,4 +1060,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(n=0)
+    _sync_show_relation(endpoint1="traefik:ingress-per-unit", endpoint2="loki")
