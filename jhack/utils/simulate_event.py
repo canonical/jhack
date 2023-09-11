@@ -39,9 +39,17 @@ def _get_relation_id(
 
     for binding in relation_info:
         if binding["endpoint"] == endpoint:
-            remote_app = next(iter(binding["related-units"])).split("/")[0]
+            try:
+                remote_app = next(iter(binding["related-units"])).split("/")[0]
+            except KeyError:
+                # possible peer relation!
+                if binding["related-endpoint"] == endpoint:
+                    return binding["relation-id"]
+                raise
+
             if relation_remote_app and remote_app != relation_remote_app:
                 continue
+
             return binding["relation-id"]
 
     raise RuntimeError(f"unit {unit} has no active bindings to {endpoint}")
@@ -240,8 +248,8 @@ def simulate_event(
 
 if __name__ == "__main__":
     _simulate_event(
-        "trfk/0",
-        "update-status",
+        "catalogue/0",
+        "replicas-relation-created",
         print_captured_stdout=True,
         print_captured_stderr=True,
     )

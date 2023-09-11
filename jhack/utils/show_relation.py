@@ -221,9 +221,13 @@ def get_relation_by_endpoint(
 
     matches = []
     for r in relations:
-        if (r["endpoint"] == local_endpoint or not local_endpoint) and (r["related-endpoint"] == remote_endpoint or not remote_endpoint):
+        if (r["endpoint"] == local_endpoint or not local_endpoint) and (
+            r["related-endpoint"] == remote_endpoint or not remote_endpoint
+        ):
             matches.append(r)
-        elif (r["endpoint"] == remote_endpoint or not remote_endpoint) and (r["related-endpoint"] == local_endpoint or not local_endpoint):
+        elif (r["endpoint"] == remote_endpoint or not remote_endpoint) and (
+            r["related-endpoint"] == local_endpoint or not local_endpoint
+        ):
             matches.append(r)
 
     if relation.type == RelationType.regular:
