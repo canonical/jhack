@@ -1,5 +1,5 @@
 from functools import partial
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 import typer
 from rich.console import Console
@@ -26,13 +26,15 @@ def _implements(interface_name, lib: LibInfo):
     return _normalize(lib.lib_name) == _normalize(interface_name)
 
 
-def _supported_versions(implementations: List[LibInfo]):
+def _supported_versions(implementations: Sequence[LibInfo]):
     if not implementations:
         return "<library not found>"
     return "|".join(f"{lib.version}.{lib.revision}" for lib in implementations)
 
 
-def _implementations(libinfos: List[LibInfo], interface_name: str) -> List[LibInfo]:
+def _implementations(
+    libinfos: Sequence[LibInfo], interface_name: str
+) -> Sequence[LibInfo]:
     """List of LibInfos corresponding to libs that probably implement this interface.
 
     (based on their name)
@@ -45,7 +47,7 @@ def _normalize(name: str):
 
 
 def _render(
-    endpoints: AppEndpoints, libinfo: Optional[List[LibInfo]], app: str
+    endpoints: AppEndpoints, libinfo: Optional[Sequence[LibInfo]], app: str
 ) -> Table:
     table = Table(title="endpoints v0.1", expand=True)
     table.add_column(header="role")
@@ -150,7 +152,7 @@ def _list_endpoints(
         logger.error(f"app {app!r} not found in model {model or '<the current model>'}")
         exit(1)
 
-    libinfo = get_libinfo(app, model) if show_versions else None
+    libinfo = get_libinfo(app, model) if show_versions else ()
 
     c = Console(color_system=color)
     c.print(_render(endpoints, libinfo, app))
