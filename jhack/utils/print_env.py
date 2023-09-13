@@ -5,7 +5,6 @@ from importlib import metadata
 from importlib.metadata import PackageNotFoundError
 from json import dumps as json_dumps
 from json import loads as json_loads
-from pathlib import Path
 from typing import Optional
 
 import requests_unixsocket
@@ -36,23 +35,32 @@ def get_os_release():
 
 
 def _gather_juju_snaps_versions(format: Format = FormatOption):
-    url = "http+unix://%2Frun%2Fsnapd.socket/v2/snaps"
+    url = "http+unix://run/snapd.socket/v2/snaps"
 
     try:
         snap_info = requests_unixsocket.get(url)
         snap_info.raise_for_status()
         local_snaps = snap_info.json()["result"]
-    except ConnectionError:
+    except TypeError as e:
+        logger.error(f"urrlib3/requests lib incompatibility error: {e!r}")
+        local_snaps = []
+    except ConnectionError as e:
+        # fixme: remove when snapd-control is integrated
+        logger.error(f"connection error fetching snap info: {e}")
+        local_snaps = []
+    except Exception as e:
+        logger.error(f"unexpected exception fetching snap info: {e}")
         local_snaps = []
 
     versions = {
-        snap["name"]: f"{snap['version']} - {snap['revision']} ({snap['channel']})"
+        snap["name"]: f"{snap['version']} - {snap['revision']} ({snap['channeC l']})"
         for snap in local_snaps
         if snap["name"].startswith("juju")
     }
 
     if format == Format.json:
         return versions
+
     table = Table(
         show_header=False, show_edge=False, show_lines=False, show_footer=False
     )
@@ -104,15 +112,6 @@ def print_env(format: Format = FormatOption):
             jhack_version = "<unknown version>"
 
     multipass_version = get_multipass_version()
-    try:
-        jhack_version = metadata.version("jhack")
-    except PackageNotFoundError:
-        # we are using jhack from sources.
-        # let's parse pyproject.toml
-        pyproject_toml = (
-            Path(__file__).parent.parent.parent.absolute().joinpath("pyproject.toml")
-        )
-        jhack_version = toml.loads(pyproject_toml.read_text())["project"]["version"]
 
     data = {
         "jhack": jhack_version,
@@ -138,4 +137,4 @@ def print_env(format: Format = FormatOption):
 
 
 if __name__ == "__main__":
-    print_env(False)
+    print_env()
