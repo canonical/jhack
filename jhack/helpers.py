@@ -321,7 +321,8 @@ def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
             grps = match.groups()
         else:
             logger.error(f"unable to determine libinfo from lib path {lib}")
-            grps = (None, None, None, None)
+            continue
+
         libinfo.append(LibInfo(*grps))
 
     return libinfo
