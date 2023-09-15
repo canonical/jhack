@@ -62,7 +62,8 @@ def _render(
 
     # FIXME: regression in juju 3.2
     #   https://bugs.launchpad.net/juju/+bug/2029113
-    support_bound_to = jujuversion.version[:2] != (3, 2)
+    # support_bound_to = jujuversion.version[:2] != (3, 2)
+    support_bound_to = True
     if support_bound_to:
         table.add_column(header="bound to")
 
@@ -83,6 +84,7 @@ def _render(
                             f"This should be possible in juju {jujuversion.version}."
                         )
                         remote_info = ["<data unavailable>"]
+                        support_bound_to = False
 
                 else:
                     remote_info = ["-"]
@@ -108,7 +110,7 @@ def _render(
                 )
 
             else:
-                owner_tag = ""
+                owner_tag = Text("")
 
             table.add_row(
                 Text(role, style="bold " + color) if first else None,

@@ -103,21 +103,32 @@ class IntegrationMatrix:
             # mapping from each supported interface to the endpoints using that interface,
             # for the requirer.
             requirer_interfaces_to_endpoints = defaultdict(list)
-            for endpoint, (interface, connected_providers) in requires.items():
+            for endpoint, (interface, connected_provider_endpoints) in requires.items():
                 requirer_interfaces_to_endpoints[interface].append(
-                    (endpoint, connected_providers)
+                    (endpoint, connected_provider_endpoints)
                 )
 
             shared: List[RelationBinding] = []
 
-            for provider_endpoint, (interface, connected_requirers) in provides.items():
+            for provider_endpoint, (
+                interface,
+                connected_requirer_endpoints,
+            ) in provides.items():
                 requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[
                     interface
                 ]
+                connected_requirers = [
+                    obj["related-application"] for obj in connected_requirer_endpoints
+                ]
+
                 for (
                     requirer_endpoint,
-                    connected_providers,
+                    connected_provider_endpoints,
                 ) in requirer_endpoints_for_interface:
+                    connected_providers = [
+                        obj["related-application"]
+                        for obj in connected_provider_endpoints
+                    ]
                     active = (requirer in connected_requirers) and (
                         provider in connected_providers
                     )
@@ -483,21 +494,31 @@ def _cmr(remote, local=None, dry_run: bool = False):
         # mapping from each supported interface to the endpoints using that interface,
         # for the requirer.
         requirer_interfaces_to_endpoints = defaultdict(list)
-        for endpoint, (interface, connected_providers) in requires.items():
+        for endpoint, (interface, connected_provider_endpoints) in requires.items():
             requirer_interfaces_to_endpoints[interface].append(
-                (endpoint, connected_providers)
+                (endpoint, connected_provider_endpoints)
             )
 
         shared: List[RelationBinding] = []
 
-        for provider_endpoint, (interface, connected_requirers) in provides.items():
+        for provider_endpoint, (
+            interface,
+            connected_requirer_endpoints,
+        ) in provides.items():
             requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[
                 interface
             ]
+            connected_requirers = [
+                obj["related-application"] for obj in connected_requirer_endpoints
+            ]
+
             for (
                 requirer_endpoint,
-                connected_providers,
+                connected_provider_endpoints,
             ) in requirer_endpoints_for_interface:
+                connected_providers = [
+                    obj["related-application"] for obj in connected_provider_endpoints
+                ]
                 active = (requirer in connected_requirers) and (
                     provider in connected_providers
                 )
@@ -591,10 +612,10 @@ def _pull_cmr(
 
 
 if __name__ == "__main__":
-    # mtrx = IntegrationMatrix(include_peers=True)
+    mtrx = IntegrationMatrix(include_peers=True)
     # # mtrx.disconnect()
     # # mtrx.watch()
     # # mtrx.pprint()
-    # mtrx.pprint()
+    mtrx.pprint()
 
-    cmr("cos")
+    # cmr("cos")
