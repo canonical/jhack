@@ -13,29 +13,39 @@ More extensive documentation is provided in the cli itself. All commands can be 
 ##### from sources (dev setup):
 Clone the repo
 
-    pip install -r requirements.txt
-    pip install -e .
+```shell
+pip install -r requirements.txt
+pip install -e .
+```
 
 ##### as package (requires setuptools 61 or later):
 
-    pip install git+https://github.com/PietroPasotti/jhack
+```shell
+pip install git+https://github.com/PietroPasotti/jhack
+```
 
 ##### as snap:
 
-    sudo snap install --edge jhack
-    sudo snap connect jhack:dot-local-share-juju snapd
-    sudo snap connect jhack:ssh-read snapd
+```shell
+sudo snap install --edge jhack
+sudo snap connect jhack:dot-local-share-juju snapd
+sudo snap connect jhack:ssh-read snapd
+```
 
 The last binding is only necessary if you work on LXD models and use commands that rely on `juju ssh/juju scp`.
 
 #### Usage:
 
-    jhack [category] [command]
+```shell
+jhack [category] [command]
+```
 
 for example:
 
-    jhack utils tail
-    jhack model rm
+```shell
+jhack utils tail
+jhack model rm
+```
 
 
 #### Building:
