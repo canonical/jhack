@@ -93,6 +93,10 @@ def walk(
     return walked
 
 
+# TODO: add --watch flag to switch between the one-shot force-feed functionality and the legacy 'sync' mode
+#  - plus change warning
+
+
 def _sync(
     target: str,
     source_dirs: str = "./src;./lib",

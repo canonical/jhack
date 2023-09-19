@@ -235,7 +235,7 @@ def get_relation_by_endpoint(
             r
             for r in matches
             if obj.unit_name in r.get("related-units", set())
-            or r.get("cross-model", False)
+            and not r.get("cross-model")
         ]
 
     if not matches:
@@ -1064,4 +1064,6 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(endpoint1="traefik:ingress-per-unit", endpoint2="loki")
+    _sync_show_relation(
+        endpoint1="inflx:grafana-source", endpoint2="grafana:grafana-source"
+    )
