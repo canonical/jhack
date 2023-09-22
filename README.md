@@ -59,11 +59,11 @@ Happy hacking!
 # utils
 ## sync
 
-`jhack utils sync ./src application-name/0`
+`jhack utils sync application-name/0 -s ./src`
 
 Will watch the `./src` and `./lib` folders (recursively, by default) for changes and push any to the `application-name/0` unit.
 
-Pro tip: `jhack utils sync ./src application-name` will sync to all units of `application-name`!
+Pro tip: `jhack utils sync application-name -s ./src` will sync to all units of `application-name`!
 
 ## unbork-juju
 
