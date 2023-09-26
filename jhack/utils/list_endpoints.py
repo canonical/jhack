@@ -1,5 +1,5 @@
 from functools import partial
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 
 import typer
 from rich.console import Console

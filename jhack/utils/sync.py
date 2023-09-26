@@ -107,14 +107,22 @@ def _sync(
     dry_run: bool = False,
     include_files: str = ".*\.py$",
 ):
-    app, _, unit_tgt = target.rpartition("/")
+    _app_name, _, unit_tgt = target.rpartition("/")
 
-    if not app:
-        app = unit_tgt
+    if not _app_name:
+        _app_name = unit_tgt
         status = juju_status(json=True)
-        units = [
-            a.split("/")[1] for a in list(status["applications"][app].get("units", {}))
-        ]
+        if _app_name == "*":
+            units = [
+                unit_name.split("/")
+                for app in status["applications"].values()
+                for unit_name in app.get("units", {})
+            ]
+        else:
+            units = [
+                unit_name.split("/")
+                for unit_name in status["applications"][_app_name].get("units", {})
+            ]
     else:
         units = [unit_tgt]
 
@@ -135,11 +143,16 @@ def _sync(
                         container_name,
                         dry_run=dry_run,
                     )
-                    for unit, changed in product(units, changed_files)
+                    for (app, unit), changed in product(units, changed_files)
                 )
             )
         )
         time.sleep(refresh_rate)
+
+    msg = "ready to sync to: \n\t%s" % "\n\t".join(
+        (f"{app}/{unit}" for app, unit in units)
+    )
+    print(msg)
 
     source_folders = source_dirs.split(";")
     watch(
@@ -274,4 +287,4 @@ async def push_to_remote_juju_unit(
 
 
 if __name__ == "__main__":
-    _sync(target="traefik/0", dry_run=True)
+    _sync(target="*", dry_run=True)
