@@ -66,8 +66,8 @@ def _add_app_info(table: Table, target: str, model: str):
     appinfo = status["applications"][app_name]
     table.add_row(
         "charm",
-        f"{appinfo['charm-name']}: v{appinfo['charm-rev']} - "
-        f"{appinfo.get('charm-channel', '<local charm>')}",
+        f"{appinfo['charm-name']} | rev {appinfo['charm-rev']} | "
+        f"{appinfo.get('charm-channel', '<local charm>')} channel",
     )
     table.add_row("model", model or status["model"]["name"])
     table.add_row(
@@ -161,12 +161,10 @@ def _add_charm_lib_info(
 
         return OutdatedCheck(
             status,
-            Text(symbol, style="bold " + color)
-            + Text(" (", style="bold default")
+            Text(symbol + " ", style="bold " + color)
             + Text(str(upstream_v[0]), style=color)
             + "."
-            + Text(str(upstream_v[1]), style=color)
-            + Text(")", style="bold default"),
+            + Text(str(upstream_v[1]), style=color),
             lib_path,
         )
 
