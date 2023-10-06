@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jhack"
-# TODO: keep snapcraft.yaml in sync with version!
 version = "0.3.22"
 authors = [
     { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" }
