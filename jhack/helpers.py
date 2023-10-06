@@ -3,6 +3,7 @@ import json
 import json as jsn
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 from collections import namedtuple
@@ -290,6 +291,13 @@ def juju_version() -> JujuVersion:
     return JujuVersion(tuple(map(int, v.split("."))), tag)
 
 
+def get_local_libinfo(path: Path) -> List[LibInfo]:
+    """Get libinfo from local charm project."""
+
+    cmd = f"find {path}/lib -type f " '-iname "*.py" ' r'-exec grep "LIBPATCH" {} \+'
+    return _exec_and_parse_libinfo(cmd)
+
+
 def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
     if machine:
         raise NotImplementedError("machine libinfo not implemented yet.")
@@ -308,7 +316,11 @@ def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
         '-iname "*.py" '
         r'-exec grep "LIBPATCH" {} \+'
     )
-    proc = JPopen(cmd.split())
+    return _exec_and_parse_libinfo(cmd)
+
+
+def _exec_and_parse_libinfo(cmd: str):
+    proc = JPopen(shlex.split(cmd))
     out = proc.stdout.read().decode("utf-8")
     libs = out.strip().split("\n")
 
