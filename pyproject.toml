@@ -13,7 +13,6 @@ license.text = "Apache 2.0"
 keywords = ["juju", "hacks", "cli", "charm", "charming"]
 urls.Source = "https://github.com/PietroPasotti/jhack"
 dependencies = [
-    # TODO: keep snapcraft.yaml in sync with these!
     "typer(==0.7.0)",
     "ops(==1.5.3)",
     "rich(==13.3.0)",
