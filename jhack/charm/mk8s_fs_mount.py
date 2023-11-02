@@ -4,6 +4,9 @@ from pathlib import Path
 from random import random
 from subprocess import PIPE
 from typing import Optional, Tuple
+
+import typer
+
 from jhack.logger import logger as jhack_logger
 from jhack.helpers import JPopen
 import getpass
@@ -15,17 +18,19 @@ def _find_local_mk8s_mount(
     unit_name: str,
     model_name: Optional[str],
     container_name: Optional[str] = "charm",
-    remote_dir="/",
+    remote_dir: Optional[str] = None,
     *,
     pwd: str,
 ) -> Path:
     model = f" -m {model_name}" if model_name else ""
     random_fname = "." + "".join(str(random())) + ".jhack_find_sentinel"
 
-    touch = f"juju ssh --container {container_name} {unit_name}{model} touch {remote_dir}{random_fname}"
-    # print(touch)
+    if remote_dir is None:
+        remote_dir = "/var/lib/juju/" if container_name == "charm" else "/"
 
-    logger.debug(f"touching {random_fname} in {unit_name} : {container_name}")
+    touch = f"juju ssh --container {container_name} {unit_name}{model} touch {remote_dir}{random_fname}"
+
+    print(f"touching {remote_dir}{random_fname} in {unit_name} : {container_name}")
     proc = JPopen(shlex.split(touch))
 
     proc.wait()
@@ -74,7 +79,7 @@ def _open_local_mk8s_mount(
     unit_name: str,
     model_name: Optional[str],
     container_name: Optional[str] = "charm",
-    remote_dir: str = "/",
+    remote_dir: Optional[str] = None,
 ):
     pwd = getpass.getpass("Please enter your password: ")
     local_root = _find_local_mk8s_mount(
@@ -90,10 +95,35 @@ def _open_local_mk8s_mount(
 # container and use it to fork out a ssh server, then connect over sshfs.
 
 
-if __name__ == "__main__":
-    print(_open_local_mk8s_mount("trfk-edge/0", None, "charm"))
-    # print(
-    #     _open_local_mk8s_mount(
-    #         "trfk-edge/0", None, "traefik", remote_dir="/opt/traefik/juju/"
-    #     )
-    # )
+def open_local_mk8s_mount(
+    unit_name: str = typer.Argument(..., help="The target unit."),
+    model: str = typer.Option(
+        None,
+        "-m",
+        "--model",
+        help="Model the target unit is in. Defaults to the current model.",
+    ),
+    container_name: str = typer.Option(
+        None,
+        "-c",
+        "--container-name",
+        help="Container name to target. Defaults to ``charm``",
+    ),
+    container_dir: str = typer.Option(
+        None, "--container-dir", help="The directory in the container to open."
+    ),
+):
+    """Open a juju-owned charm or workload container as if it were a locally mounted filesystem.
+
+    NB Currently only works on local (as in localhost) development kubernetes deployments.
+    NB Requires your admin password in order to do some hopefully harmless hackery that has been described as:
+    - horrific
+    - disgusting
+    - ungodly
+    - cursed
+    - charming
+
+    NB if a directory appears empty, it might be that it's mounted to some place we can't reach it easily.
+    Use container_dir to open that directory DIRECTLY, and you should be able to xplore it.
+    """
+    return _open_local_mk8s_mount(unit_name, model, container_name, container_dir)
