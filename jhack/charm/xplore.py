@@ -1,15 +1,15 @@
+import getpass
 import shlex
 import subprocess
 from pathlib import Path
 from random import random
-from subprocess import PIPE
-from typing import Optional, Tuple
+from tempfile import TemporaryDirectory
+from typing import Optional, Union
 
 import typer
 
+from jhack.helpers import JPopen, get_substrate, check_command_available, show_unit
 from jhack.logger import logger as jhack_logger
-from jhack.helpers import JPopen
-import getpass
 
 logger = jhack_logger.getChild("mk8s_fs_mount")
 
@@ -17,14 +17,14 @@ logger = jhack_logger.getChild("mk8s_fs_mount")
 def _find_local_mk8s_mount(
     unit_name: str,
     model_name: Optional[str],
-    container_name: Optional[str] = "charm",
+    container_name: Optional[str] = None,
     remote_dir: Optional[str] = None,
     *,
     pwd: str,
 ) -> Path:
     model = f" -m {model_name}" if model_name else ""
     random_fname = "." + "".join(str(random())) + ".jhack_find_sentinel"
-
+    container_name = container_name or "charm"
     if remote_dir is None:
         remote_dir = "/var/lib/juju/" if container_name == "charm" else "/"
 
@@ -59,12 +59,21 @@ def _find_local_mk8s_mount(
         encoding="ascii",
     )
 
-    return Path(proc.stdout).parent
+    local_root = Path(proc.stdout).parent
+
+    # clean up that weird file
+    cleanup = f"juju ssh --container {container_name} {unit_name}{model} rm {remote_dir}{random_fname}"
+    JPopen(shlex.split(cleanup)).wait()
+    return local_root
 
 
-def _open_with_sudo_file_browser(root: Path, *, pwd: str):
-    cmd = f"sudo -S xdg-open {root}"
-    print(f"attempting to open {root} in your local file browser...")
+def _open_with_file_browser(root: Union[str, Path], *, pwd: Optional[str]):
+    if pwd:
+        print(f"attempting to open {root} as root in your local file browser...")
+        cmd = f"sudo -S xdg-open {root}"
+    else:
+        print(f"attempting to open {root} in your local file browser...")
+        cmd = f"xdg-open {root}"
 
     subprocess.run(
         cmd,
@@ -75,10 +84,29 @@ def _open_with_sudo_file_browser(root: Path, *, pwd: str):
     )
 
 
-def _open_local_mk8s_mount(
+def _xplore_machine(
     unit_name: str,
     model_name: Optional[str],
-    container_name: Optional[str] = "charm",
+    remote_dir: Optional[str] = None,
+    user: Optional[str] = None,
+):
+    if not check_command_available("sshfs"):
+        exit(f"sshfs not installed; please install it and try again.")
+
+    td = TemporaryDirectory()
+    user = user or "ubuntu"
+    remote_dir = remote_dir or "/"
+    machine_ip = show_unit(unit_name, model_name)["public-address"]
+    JPopen(shlex.split(f"sshfs {user}@{machine_ip}:{remote_dir} {td.name}"))
+
+    print(f"{user}@{machine_ip}:{remote_dir} mounted on {td.name}")
+    _open_with_file_browser(td.name, pwd=None)
+
+
+def _xplore_k8s(
+    unit_name: str,
+    model_name: Optional[str],
+    container_name: Optional[str] = None,
     remote_dir: Optional[str] = None,
 ):
     pwd = getpass.getpass("Please enter your password: ")
@@ -87,7 +115,21 @@ def _open_local_mk8s_mount(
     )
     logger.info(f"found local root: {local_root}")
 
-    _open_with_sudo_file_browser(local_root, pwd=pwd)
+    _open_with_file_browser(local_root, pwd=pwd)
+
+
+def _xplore(
+    unit_name: str,
+    model_name: Optional[str],
+    container_name: Optional[str] = None,
+    remote_dir: Optional[str] = None,
+):
+    if get_substrate(model_name) == "k8s":
+        return _xplore_k8s(unit_name, model_name, container_name, remote_dir)
+    else:
+        if container_name is not None:
+            logger.warning("container_name option is meaningless in machine models.")
+        return _xplore_machine(unit_name, model_name, remote_dir)
 
 
 # other approach to consider:
@@ -95,7 +137,7 @@ def _open_local_mk8s_mount(
 # container and use it to fork out a ssh server, then connect over sshfs.
 
 
-def open_local_mk8s_mount(
+def xplore(
     unit_name: str = typer.Argument(..., help="The target unit."),
     model: str = typer.Option(
         None,
@@ -107,7 +149,7 @@ def open_local_mk8s_mount(
         None,
         "-c",
         "--container-name",
-        help="Container name to target. Defaults to ``charm``",
+        help="Container name to target. Defaults to ``charm``. Only meaningful on k8s models.",
     ),
     container_dir: str = typer.Option(
         None, "--container-dir", help="The directory in the container to open."
@@ -115,8 +157,10 @@ def open_local_mk8s_mount(
 ):
     """Open a juju-owned charm or workload container as if it were a locally mounted filesystem.
 
-    NB Currently only works on local (as in localhost) development kubernetes deployments.
-    NB Requires your admin password in order to do some hopefully harmless hackery that has been described as:
+    NB Currently only works on local (as in localhost) development kubernetes deployments,
+    and only if it has hostpath storage enabled, or on local machine models.
+
+    NB Requires your admin password in order to do some (hopefully harmless) hackery that has been described as:
     - horrific
     - disgusting
     - ungodly
@@ -126,4 +170,4 @@ def open_local_mk8s_mount(
     NB if a directory appears empty, it might be that it's mounted to some place we can't reach it easily.
     Use container_dir to open that directory DIRECTLY, and you should be able to xplore it.
     """
-    return _open_local_mk8s_mount(unit_name, model, container_name, container_dir)
+    return _xplore(unit_name, model, container_name, container_dir)

@@ -27,7 +27,7 @@ def main():
     from jhack.charm.provision import provision
     from jhack.charm.record import record
     from jhack.charm.repack import refresh
-    from jhack.charm.mk8s_fs_mount import open_local_mk8s_mount
+    from jhack.charm.xplore import xplore
     from jhack.charm.sync import sync as sync_packed_charm
     from jhack.charm.update import update
     from jhack.charm.vinfo import vinfo
@@ -86,7 +86,7 @@ def main():
     charm.command(name="func", no_args_is_help=True)(functional.run)
     charm.command(name="sync", no_args_is_help=True)(sync_packed_charm)
     charm.command(name="vinfo", no_args_is_help=True)(vinfo)
-    charm.command(name="xplore", no_args_is_help=True)(open_local_mk8s_mount)
+    charm.command(name="xplore", no_args_is_help=True)(xplore)
     charm.command(name="provision")(provision)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")
