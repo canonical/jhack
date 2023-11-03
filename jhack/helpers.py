@@ -19,6 +19,7 @@ from jhack.logger import logger
 try:
     from enum import StrEnum
 except ImportError:
+    # older python versions support
     from enum import Enum
 
     class StrEnum(str, Enum):

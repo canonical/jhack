@@ -1,13 +1,15 @@
 import getpass
+import os
 import shlex
 import subprocess
 from pathlib import Path
 from random import random
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from typing import Optional, Union
 
 import typer
 
+from jhack.config import IS_SNAPPED, get_jhack_data_path
 from jhack.helpers import JPopen, get_substrate, check_command_available, show_unit
 from jhack.logger import logger as jhack_logger
 
@@ -93,14 +95,36 @@ def _xplore_machine(
     if not check_command_available("sshfs"):
         exit(f"sshfs not installed; please install it and try again.")
 
-    td = TemporaryDirectory()
+    # FIXME:
+    #  if we're snapped, we need to create tempdirs in some specific place, or we'll be apparmor'd
+    #  when we try to mount a fuse filesystem in it.
+    #  we create the tempdir in your home folder because apparently we can't write $SNAP_DATA (??)
+    #  either way, the directory appears to be empty so there's something going wrong with the
+    #  mount.
+
+    mounts_path = get_jhack_data_path() / "xplore-mounts"
+    mounts_path.mkdir(exist_ok=True)
+    td = Path(mkdtemp(dir=mounts_path))
+
     user = user or "ubuntu"
     remote_dir = remote_dir or "/"
     machine_ip = show_unit(unit_name, model_name)["public-address"]
-    JPopen(shlex.split(f"sshfs {user}@{machine_ip}:{remote_dir} {td.name}"))
+    proc = JPopen(
+        shlex.split(f"sshfs {user}@{machine_ip}:{remote_dir} {td}"), wait=True
+    )
+    sshfs_pid = proc.pid
 
-    print(f"{user}@{machine_ip}:{remote_dir} mounted on {td.name}")
-    _open_with_file_browser(td.name, pwd=None)
+    print(f"{user}@{machine_ip}:{remote_dir} mounted on {td}; pid={sshfs_pid}")
+    _open_with_file_browser(td, pwd=None)
+
+    cleanup_script = [f"kill -9 {sshfs_pid}", f"umount -f {td}", f"rm -rf {td}"]
+
+    cleanup_script_file = td.with_name("cleanup_" + td.name)
+    cleanup_script_file.write_text("\n".join(cleanup_script))
+
+    print(
+        f"When you are done, cleanup the mount and resources with: \n sudo {cleanup_script_file}"
+    )
 
 
 def _xplore_k8s(
@@ -170,4 +194,9 @@ def xplore(
     NB if a directory appears empty, it might be that it's mounted to some place we can't reach it easily.
     Use container_dir to open that directory DIRECTLY, and you should be able to xplore it.
     """
+    if IS_SNAPPED:
+        exit(
+            "this command is not supported in snapped mode because strict confinement is *tough*."
+            "Use jhack from sources (or pypi)."
+        )
     return _xplore(unit_name, model, container_name, container_dir)

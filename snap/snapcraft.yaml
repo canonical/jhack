@@ -32,6 +32,8 @@ parts:
       snapcraftctl build
       VERSION=$(cat ./pyproject.toml | grep -Po 'version = "\K[^"]*')
       snapcraftctl set-version $VERSION
+    stage-packages:
+      - sshfs
     stage-snaps:
       - juju/3.3/beta
 
@@ -41,13 +43,13 @@ apps:
     plugs:
       - network
       - network-bind
-
-      # do we need to add the custom plugs here as well?
       - dot-local-share-juju
       - dot-config-jhack
       - shared-memory
       - home-read
       - ssh-read
+      - fuse-support
+      - desktop
 
 plugs:
   # read-write access to .local/share/juju (JUJU_DATA)
@@ -74,3 +76,11 @@ plugs:
   # access ssh keys to make them available to the embedded juju snap
   ssh-read:
     interface: ssh-keys
+
+  # use xdg-open
+  desktop:
+    interface: desktop
+
+  # allow sshfs to bind /dev/fuse
+  fuse-support:
+    interface: fuse-support
