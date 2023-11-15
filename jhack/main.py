@@ -55,6 +55,8 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.scenario.snapshot import snapshot
+    from jhack.scenario.state_apply import state_apply
 
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
@@ -132,12 +134,22 @@ def main():
     conf.command(name="default")(print_defaults)
     conf.command(name="current")(print_current_config)
 
+    scenario = typer.Typer(
+        name="scenario",
+        help="""Commands to interact with scenario-powered State.""",
+        no_args_is_help=True,
+    )
+    scenario.command(name="snapshot")(snapshot)
+    scenario.command(name="state-apply")(state_apply)
+
     app.add_typer(conf, no_args_is_help=True)
     app.add_typer(jinx, no_args_is_help=True)
     app.add_typer(charm, no_args_is_help=True)
     app.add_typer(utils, no_args_is_help=True)
     app.add_typer(replay, no_args_is_help=True)
     app.add_typer(integration_matrix, no_args_is_help=True)
+
+    app.add_typer(scenario, no_args_is_help=True)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):
