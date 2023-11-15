@@ -26,13 +26,14 @@ from scenario.state import (
     StoredState,
     _EntityStatus,
 )
+from jhack.logger import logger as jhack_root_logger
 
 if TYPE_CHECKING:
     from scenario.state import AnyRelation
 
 SNAPSHOT_DATA_DIR = (Path(os.getcwd()).parent / "snapshot_storage").absolute()
 
-logger = logging.getLogger("snapshot")
+logger = jhack_root_logger.getChild("snapshot")
 
 
 def set_relation(relation: "AnyRelation") -> List[str]:

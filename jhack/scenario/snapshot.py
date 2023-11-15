@@ -9,7 +9,7 @@ import re
 import shlex
 import sys
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from enum import Enum
 from itertools import chain
 from pathlib import Path
@@ -22,9 +22,10 @@ import yaml
 from ops.storage import SQLiteStorage
 
 from scenario.runtime import UnitStateDB
-from scenario.scripts.errors import InvalidTargetModelName, InvalidTargetUnitName
-from scenario.scripts.logger import logger as root_scripts_logger
-from scenario.scripts.utils import JujuUnitName
+from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
+from jhack.logger import logger as jhack_root_logger
+from jhack.scenario.state_to_dict import state_to_dict
+from jhack.scenario.utils import JujuUnitName
 from scenario.state import (
     Address,
     BindAddress,
@@ -41,7 +42,7 @@ from scenario.state import (
     _EntityStatus,
 )
 
-logger = root_scripts_logger.getChild(__file__)
+logger = jhack_root_logger.getChild(__file__)
 
 JUJU_RELATION_KEYS = frozenset({"egress-subnets", "ingress-address", "private-address"})
 JUJU_CONFIG_KEYS = frozenset({})
@@ -310,6 +311,7 @@ class RemotePebbleClient:
 
 
 def fetch_file(
+    *,
     target: JujuUnitName,
     remote_path: Union[Path, str],
     container_name: str,
@@ -330,7 +332,7 @@ def get_mounts(
     model: Optional[str],
     container_name: str,
     container_meta: Dict,
-    fetch_files: Optional[List[Path]] = None,
+    fetch_files: Optional[Dict[Path, Path]] = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
 ) -> Dict[str, Mount]:
     """Get named Mounts from a container's metadata, and download specified files from the unit."""
@@ -368,7 +370,7 @@ def get_mounts(
         mount = mounts.get(mount_name)
         if not mount:
             # create the mount obj and tempdir
-            location = tempfile.TemporaryDirectory(prefix=str(temp_dir_base_path)).name
+            location = tempfile.TemporaryDirectory(dir=str(temp_dir_base_path)).name
             mount = Mount(src=src, location=location)
             mounts[mount_name] = mount
 
@@ -377,7 +379,7 @@ def get_mounts(
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         try:
             fetch_file(
-                target,
+                target=target,
                 container_name=container_name,
                 model=model,
                 remote_path=remote_path,
@@ -402,6 +404,7 @@ def get_container(
     remote_client = RemotePebbleClient(container_name, target, model)
     plan = remote_client.get_plan()
 
+    # todo find a way to include pebble layers?
     return Container(
         name=container_name,
         _base_plan=plan,
@@ -553,6 +556,22 @@ def _get_interface_from_metadata(endpoint: str, metadata: Dict) -> Optional[str]
     return None
 
 
+def _get_local_relation_data(relation_id: int, target: JujuUnitName, model: str):
+    local_unit_data_raw = _juju_exec(
+        target,
+        model,
+        f"relation-get -r {relation_id} - {target} --format json",
+    )
+    local_unit_data = json.loads(local_unit_data_raw)
+    local_app_data_raw = _juju_exec(
+        target,
+        model,
+        f"relation-get -r {relation_id} - {target} --format json --app",
+    )
+    local_app_data = json.loads(local_app_data_raw)
+    return local_unit_data, local_app_data
+
+
 def get_relations(
     target: JujuUnitName,
     model: Optional[str],
@@ -593,18 +612,18 @@ def get_relations(
 
         relation_id = raw_relation["relation-id"]
 
-        local_unit_data_raw = _juju_exec(
-            target,
-            model,
-            f"relation-get -r {relation_id} - {target} --format json",
-        )
-        local_unit_data = json.loads(local_unit_data_raw)
-        local_app_data_raw = _juju_exec(
-            target,
-            model,
-            f"relation-get -r {relation_id} - {target} --format json --app",
-        )
-        local_app_data = json.loads(local_app_data_raw)
+        try:
+            local_unit_data, local_app_data = _get_local_relation_data(
+                relation_id,
+                target,
+                model,
+            )
+        except json.JSONDecodeError:
+            logger.error(
+                f"error decoding relation data for {target}: relation with ID {relation_id} "
+                f"is probably dead but juju doesn't know yet.",
+            )
+            continue
 
         some_remote_unit_id = JujuUnitName(next(iter(related_units)))
 
@@ -711,7 +730,7 @@ class RemoteUnitStateDB(UnitStateDB):
 
     def _fetch_state(self):
         fetch_file(
-            self._target,
+            target=self._target,
             remote_path=self._target.remote_charm_root / ".unit-state.db",
             container_name="charm",
             local_path=self._state_file,
@@ -738,7 +757,7 @@ def _snapshot(
     include_dead_relation_networks=False,
     format: FormatOption = "state",
     event_name: Optional[str] = None,
-    fetch_files: Optional[Dict[str, List[Path]]] = None,
+    fetch_files: Optional[Dict[str, Dict[Path, Path]]] = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
 ):
     """see snapshot's docstring"""
@@ -870,7 +889,7 @@ def _snapshot(
         elif format == FormatOption.state:
             txt = format_state(state)
         elif format == FormatOption.json:
-            txt = json.dumps(asdict(state), indent=2)
+            txt = json.dumps(state_to_dict(state), indent=2)
         else:
             raise ValueError(f"unknown format {format}")
 
