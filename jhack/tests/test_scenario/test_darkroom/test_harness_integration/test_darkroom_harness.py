@@ -2,7 +2,7 @@ import yaml
 from ops import CharmBase
 from ops.testing import Harness
 
-from scenario.integrations.darkroom import Darkroom
+from jhack.scenario.integrations.darkroom import Darkroom
 
 
 class MyCharm(CharmBase):

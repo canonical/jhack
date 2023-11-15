@@ -5,8 +5,8 @@ from unittest.mock import patch, MagicMock
 from scenario import Container, Mount
 from scenario.scripts.utils import JujuUnitName
 
-from scenario.scripts.snapshot import get_container
-from scenario.scripts.state_apply import _gather_push_file_calls
+from jhack.scenario.snapshot import get_container
+from jhack.scenario.state_apply import _gather_push_file_calls
 
 
 def _fetch_file(*args, **kwargs):
@@ -18,9 +18,9 @@ def _get_plan(*args, **kwargs):
     return {"foo": "bar"}
 
 
-@patch("scenario.scripts.snapshot.fetch_file", new=_fetch_file)
-@patch("scenario.scripts.snapshot.RemotePebbleClient.get_plan", new=_get_plan)
-@patch("scenario.scripts.snapshot.RemotePebbleClient.can_connect", return_value=True)
+@patch("jhack.scenario.snapshot.fetch_file", new=_fetch_file)
+@patch("jhack.scenario.snapshot.RemotePebbleClient.get_plan", new=_get_plan)
+@patch("jhack.scenario.snapshot.RemotePebbleClient.can_connect", return_value=True)
 def test_get_container(can_connect):
     tempdir = TemporaryDirectory()
 

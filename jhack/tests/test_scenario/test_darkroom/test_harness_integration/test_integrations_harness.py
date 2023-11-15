@@ -6,7 +6,7 @@ from ops.testing import Harness
 
 import scenario
 from scenario import Model
-from scenario.integrations.darkroom import Darkroom
+from jhack.scenario.integrations.darkroom import Darkroom
 
 
 class MyCharm(CharmBase):

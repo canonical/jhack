@@ -1,12 +1,8 @@
 def test_install():
-    from scenario.integrations.darkroom import Darkroom
+    from jhack.scenario.integrations.darkroom import Darkroom
 
     l = []
-
-    def register_trace(t):
-        l.append(t)
-
-    Darkroom.install(register_trace)
+    Darkroom.install(l)
 
     import yaml
     from ops import CharmBase

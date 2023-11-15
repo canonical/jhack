@@ -12,8 +12,8 @@ from scenario import (
     State,
     SubordinateRelation,
 )
-from scenario.scripts.dict_to_state import dict_to_state
-from scenario.scripts.state_to_dict import state_to_dict
+from jhack.scenario.dict_to_state import dict_to_state
+from jhack.scenario.state_to_dict import state_to_dict
 
 
 @pytest.mark.parametrize(

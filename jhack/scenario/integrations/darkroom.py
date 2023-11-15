@@ -1,4 +1,46 @@
-"""Darkroom."""
+"""Darkroom.
+
+This is a python module meant to aid capturing a State from inside charm code.
+Where `snapshot` is a tool for cloud admins to inspect and manipulate States, Darkroom can be used
+by charm code to inspect its own state, or by testing code to convert from Harness tests to
+Scenario tests.
+Whether a charm is being executed by a testing harness (or Scenario Context), or by the
+Juju Unit agent, Darkroom will intercept the call and use the appropriate backend to gather
+all State information it needs.
+
+Note that there are certain components of the State which are only readable to a cloud admin, and
+not to the charm code itself at runtime, for example, the workload version or the contents of a
+remote application databag (if you're not leader).
+The fields we cannot retrieve because of this limited field of vision will be set to
+darkroom.UNKNOWN.
+
+The only dependencies of this module are ops and ops-scenario, which means that if you install
+those in a charm unit and copy over this module, you will be able to execute it.
+
+# Scenario or Harness testing backend usage:
+in `test_some.py`:
+>>> from darkroom import Darkroom
+>>> traces = []
+>>> Darkroom.install(traces)
+>>> # run tests with e.g. pytest.main()
+>>> print(traces)  # profit
+
+# LIVE backend usage:
+in `charm.py`:
+
+>>> if __name__ == '__main__':
+>>>     from darkroom import Darkroom
+>>>     traces = []
+>>>     Darkroom.install(traces, live=True)
+>>>     initial_state = Darkroom().capture()
+>>>
+>>>     from ops.main import main
+>>>     main(MyCharm)
+>>>
+>>>     print(initial_state)  # this is the state before any event is processed
+>>>     print(traces[0])  # this is the sequence of events and the resulting states
+>>>     # use responsibly!
+"""
 
 
 import logging
@@ -22,7 +64,7 @@ _SupportedBackends = Union[_TestingModelBackend, _ModelBackend, _MockModelBacken
 
 logger = logging.getLogger("darkroom")
 
-# todo move those to Scenario.State and add an Event._is_framework_event() method.
+# TODO move those to Scenario.State and add an Event._is_framework_event() method.
 FRAMEWORK_EVENT_NAMES = {"pre_commit", "commit"}
 
 
@@ -61,10 +103,8 @@ class Darkroom:
     Can be "installed" in a testing suite or live charm. This will autoattach it to the
     current context.
 
-    >>> l = []
-    >>> def register_trace(t):  # this will be called with each generated trace
-    >>>     l.append(t)
-    >>> Darkroom.install(register_trace)
+    >>> traces = []
+    >>> Darkroom.install(traces)
     >>> harness = Harness(MyCharm)
     >>> h.begin_with_initial_hooks()
     >>> assert l[0][0][0].name == "leader_settings_changed"
@@ -72,15 +112,17 @@ class Darkroom:
     >>> # now that Darkroom is installed, regardless of the testing backend we use to emit
     >>> #  events, they will be captured
     >>> scenario.Context(MyCharm).run("start")
-    >>> assert l[1][0][0].name == "start"
-    >>> assert l[1][0][1].unit_status == WaitingStatus("bar")
+    >>> assert traces[1][0][0].name == "start"
+    >>> assert traces[1][0][1].unit_status == WaitingStatus("bar")
 
     Usage in live charms:
     Edit charm.py to read:
     >>> if __name__ == '__main__':
     >>>     from darkroom import Darkroom
-    >>>     Darkroom.install(print, live=True)
+    >>>     traces = []
+    >>>     Darkroom.install(traces, live=True)
     >>>     ops.main(MyCharm)
+    >>>     print(traces)
     """
 
     def __init__(
@@ -139,6 +181,7 @@ class Darkroom:
     def _get_mode(
         backend: _SupportedBackends,
     ) -> Literal["harness", "scenario", "live"]:
+        """Validate that the backend is supported and cast to a mode literal str."""
         if isinstance(backend, _TestingModelBackend):
             return "harness"
         elif isinstance(backend, _MockModelBackend):
@@ -149,10 +192,12 @@ class Darkroom:
             raise TypeError(backend)
 
     def capture(self, backend: _SupportedBackends) -> State:
+        """Capture the state as it is right now."""
         mode = self._get_mode(backend)
         logger.info(f"capturing in mode = `{mode}`.")
 
         if isinstance(backend, _MockModelBackend):
+            # scenario is kind enough to hand us the state on a silver platter
             return backend._state
 
         state = State(
@@ -177,7 +222,7 @@ class Darkroom:
         return int(backend.unit_name.split("/")[1])
 
     @staticmethod
-    def _get_workload_version(backend: _SupportedBackends) -> int:
+    def _get_workload_version(backend: _SupportedBackends) -> str:
         # only available in testing: a live charm can't get its own workload version.
         return getattr(backend, "_workload_version", UNKNOWN)
 
@@ -191,7 +236,7 @@ class Darkroom:
         try:
             raw = backend.status_get(is_app=True)
             return StatusBase.from_name(message=raw["message"], name=raw["status"])
-        except ModelError:
+        except ModelError:  # missing leadership
             return UNKNOWN
 
     @staticmethod
@@ -350,27 +395,33 @@ class Darkroom:
         Framework._emit = _darkroom_emit
 
     @staticmethod
-    def install(listener: Callable[[_Trace], None], live: bool = False):
+    def install(traces_list: List[_Trace], live: bool = False):
         """Patch Harness so that every time a new instance is created, a Darkroom is attached to it.
 
         Note that the trace will be initially empty and will be filled up as the harness emits events.
         So only access the traces when you're sure the harness is done emitting.
+
+        Usage:
+        >>> traces = []
+        >>> Darkroom.install(traces)
+        >>> # do something that will emit events on a charm, possibly multiple times
+        >>> print(traces)  # profit
         """
-        Darkroom._install_on_harness(listener)
-        Darkroom._install_on_scenario(listener)
+        Darkroom._install_on_harness(traces_list)
+        Darkroom._install_on_scenario(traces_list)
 
         if live:
             # if we are in a live event context, we attach and register a single trace
             trace = []
-            listener(trace)
+            traces_list.append(trace)
 
             # we don't do this automatically, but instead do it on an explicit live=True,
             # because otherwise listener will be called with an empty trace at the
-            # beginning of every run.
+            # beginning of every (non-live) run.
             Darkroom().attach(lambda e, s: trace.append((e, s)))
 
     @staticmethod
-    def _install_on_scenario(listener: Callable[[_Trace], None]):
+    def _install_on_scenario(trace_list: List[_Trace]):
         from scenario import Context
 
         if not getattr(Context, "__orig_init__", None):
@@ -380,7 +431,7 @@ class Darkroom:
 
         def patch(context: Context, *args, **kwargs):
             trace = []
-            listener(trace)
+            trace_list.append(trace)
             Context.__orig__init__(context, *args, **kwargs)
             dr = Darkroom()
             dr.attach(listener=lambda event, state: trace.append((event, state)))
@@ -388,7 +439,7 @@ class Darkroom:
         Context.__init__ = patch
 
     @staticmethod
-    def _install_on_harness(listener: Callable[[_Trace], None]):
+    def _install_on_harness(trace_list: List[_Trace]):
         from ops.testing import Harness
 
         if not getattr(Harness, "__orig_init__", None):
@@ -398,7 +449,7 @@ class Darkroom:
 
         def patch(harness: Harness, *args, **kwargs):
             trace = []
-            listener(trace)
+            trace_list.append(trace)
             Harness.__orig_init__(harness, *args, **kwargs)
             dr = Darkroom()
             dr.attach(listener=lambda event, state: trace.append((event, state)))

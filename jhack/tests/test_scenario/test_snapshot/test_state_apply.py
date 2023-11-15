@@ -1,7 +1,7 @@
 import pytest
 
 from scenario import State
-from scenario.scripts.state_apply import (
+from jhack.scenario.state_apply import (
     JujuUnitName,
     _gather_juju_exec_cmds,
     _gather_raw_calls,
