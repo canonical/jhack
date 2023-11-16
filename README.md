@@ -761,3 +761,61 @@ have the same role (since juju will allow relating over those... won't it?)
 ## clear
 
 `jhack imatrix clear` is the opposite of fill: it will attempt to remove all relations in the matrix.
+
+
+# Scenario
+Jhack offers some scripts to work with [Scenario](https://github.com/canonical/ops-scenario).
+
+## snapshot
+Snapshot's purpose is to gather the `State` data structure from a real, live charm running in some cloud your local juju
+client has access to. This is handy in case:
+
+- you want to write a test about the state the charm you're developing is currently in
+- your charm is bork or in some inconsistent state, and you want to write a test to check the charm will handle it
+  correctly the next time around (aka regression testing)
+- you are new to Scenario and want to quickly get started with a real-life example.
+
+Suppose you have a Juju model with a `prometheus-k8s` unit deployed as `prometheus-k8s/0`. If you type
+`scenario snapshot prometheus-k8s/0`, you will get a printout of the State object. Pipe that out into some file, import
+all you need from `scenario`, and you have a working `State` that you can `Context.run` events with.
+
+You can also pass a `--format` flag to obtain instead:
+
+- a jsonified `State` data structure, for portability
+- a full-fledged pytest test case (with imports and all), where you only have to fill in the charm type and the event
+  that you wish to trigger.
+
+## state-apply
+
+If you write to disk a snapshot as json with `scenario snapshot foo/0 --format json | state.json`, you can then open it 
+in an editor and make changes at will to the state data.
+For example you can change unit status, relation data, a stored state's value, or remove a deferred event.
+
+Then you can type `scenario state-apply foo/0 ./state.json` and jhack will do its utmost to force-feed the modified 
+state into the `foo/0` unit.
+
+It will call `status-set, relation-set, state-set` and even write files to disk, attempting to match the state you 
+supplied as closely as possible.
+
+### Limitations
+
+It's important to understand what `state-apply` _cannot_ do:
+- change another application's data (i.e. a relation's `remote_[app|unit]_data`)
+- change its own leadership status
+- change a model's name, uuid, etc...
+- add or remove a relation, network, etc...
+
+And many other things.
+
+In a nutshell, `state-apply` _can_ only do:
+- what the charm unit itself could do by making the appropriate hook tool calls
+- what the admin could do by using wisely `juju exec, juju ssh, juju scp` on the specific target unit alone
+
+
+## Future work
+- [x] `scenario state-apply` to force-feed a unit a previously snapshotted State data structure.
+- [ ] forward-port all `jhack replay` functionality to a scenario.State backend.
+  - [ ] `scenario recorder install` install on a unit a script to automatically snapshot the state before/after each event the unit receives.
+  - [ ] `scenario recorder download-db`
+  - [ ] `scenario recorder replay`
+  - [ ] integrate with Theatre to see the graph expand in real time
