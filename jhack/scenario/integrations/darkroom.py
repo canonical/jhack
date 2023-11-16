@@ -421,18 +421,29 @@ class Darkroom:
             Darkroom().attach(lambda e, s: trace.append((e, s)))
 
     @staticmethod
+    def uninstall():
+        """If installed on Harness or Scenario backends, lift the patch."""
+        from ops.testing import Harness
+        from scenario import Context
+
+        for typ in [Harness, Context]:
+            if getattr(typ, "__orig_init__", None):
+                typ.__init__ = typ.__orig_init__
+                delattr(typ, "__orig_init__")
+
+    @staticmethod
     def _install_on_scenario(trace_list: List[_Trace]):
         from scenario import Context
 
         if not getattr(Context, "__orig_init__", None):
-            Context.__orig__init__ = Context.__init__
+            Context.__orig_init__ = Context.__init__
             # do not simply use Context.__init__ because
             # if we instantiate multiple Contexts we'll keep adding to the older harnesses' traces.
 
         def patch(context: Context, *args, **kwargs):
             trace = []
             trace_list.append(trace)
-            Context.__orig__init__(context, *args, **kwargs)
+            Context.__orig_init__(context, *args, **kwargs)
             dr = Darkroom()
             dr.attach(listener=lambda event, state: trace.append((event, state)))
 

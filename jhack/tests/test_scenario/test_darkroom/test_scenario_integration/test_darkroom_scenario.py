@@ -1,6 +1,4 @@
-import yaml
 from ops import CharmBase
-from ops.testing import Harness
 from scenario import Context, State
 
 from jhack.scenario.integrations.darkroom import Darkroom
@@ -11,6 +9,8 @@ class MyCharm(CharmBase):
 
 
 def test_attach():
+    Darkroom.uninstall()  # ensure any previous run did not pollute Context.__init__
+
     l = []
     d = Darkroom().attach(lambda e, s: l.append((e, s)))
     c = Context(MyCharm, meta=MyCharm.META)
