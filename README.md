@@ -785,8 +785,35 @@ You can also pass a `--format` flag to obtain instead:
 - a full-fledged pytest test case (with imports and all), where you only have to fill in the charm type and the event
   that you wish to trigger.
 
+## state-apply
+
+If you write to disk a snapshot as json with `scenario snapshot foo/0 --format json | state.json`, you can then open it 
+in an editor and make changes at will to the state data.
+For example you can change unit status, relation data, a stored state's value, or remove a deferred event.
+
+Then you can type `scenario state-apply foo/0 ./state.json` and jhack will do its utmost to force-feed the modified 
+state into the `foo/0` unit.
+
+It will call `status-set, relation-set, state-set` and even write files to disk, attempting to match the state you 
+supplied as closely as possible.
+
+### Limitations
+
+It's important to understand what `state-apply` _cannot_ do:
+- change another application's data (i.e. a relation's `remote_[app|unit]_data`)
+- change its own leadership status
+- change a model's name, uuid, etc...
+- add or remove a relation, network, etc...
+
+And many other things.
+
+In a nutshell, `state-apply` _can_ only do:
+- what the charm unit itself could do by making the appropriate hook tool calls
+- what the admin could do by using wisely `juju exec, juju ssh, juju scp` on the specific target unit alone
+
+
 ## Future work
-- [ ] `scenario state-apply` to force-feed a unit a previously snapshotted State data structure.
+- [x] `scenario state-apply` to force-feed a unit a previously snapshotted State data structure.
 - [ ] forward-port all `jhack replay` functionality to a scenario.State backend.
   - [ ] `scenario recorder install` install on a unit a script to automatically snapshot the state before/after each event the unit receives.
   - [ ] `scenario recorder download-db`
