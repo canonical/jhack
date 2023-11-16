@@ -66,6 +66,7 @@ logger = logging.getLogger("darkroom")
 
 # TODO move those to Scenario.State and add an Event._is_framework_event() method.
 FRAMEWORK_EVENT_NAMES = {"pre_commit", "commit"}
+_ORIG_INIT_PATCH_NAME = "__orig_init__"
 
 
 class _Unknown:
@@ -127,20 +128,20 @@ class Darkroom:
 
     def __init__(
         self,
-        skip_framework_events: bool = True,
-        skip_custom_events: bool = False,
+        capture_framework_events: bool = False,
+        capture_custom_events: bool = True,
     ):
-        self._skip_framework_events = skip_framework_events
-        self._skip_custom_events = skip_custom_events
+        self._capture_framework_events = capture_framework_events
+        self._capture_custom_events = capture_custom_events
 
     def _listen_to(self, event: Event, framework: "Framework") -> bool:
         """Whether this event should be captured or not.
 
         Depends on the init-provided skip config.
         """
-        if self._skip_framework_events and event.name in FRAMEWORK_EVENT_NAMES:
+        if not self._capture_framework_events and event.name in FRAMEWORK_EVENT_NAMES:
             return False
-        if not self._skip_custom_events:
+        if self._capture_custom_events:
             return True
 
         # derive the charmspec from the framework.
@@ -153,8 +154,8 @@ class Darkroom:
         except StopIteration as e:
             raise RuntimeError("unable to find charm in framework objects") from e
 
+        charm_root = framework.charm_dir
         try:
-            charm_root = framework.charm_dir
             meta = charm_root / "metadata.yaml"
             if not meta.exists():
                 raise RuntimeError("metadata.yaml not found")
@@ -170,12 +171,16 @@ class Darkroom:
             )
         except Exception as e:
             # todo: fall back to generating from framework._meta
-            raise RuntimeError("cannot autoload charm spec") from e
+            raise RuntimeError(
+                f"cannot autoload charm spec: {charm_root} (where {charm_type} lives)"
+                f" is an invalid charm repo."
+            ) from e
 
         if not event._is_builtin_event(charm_spec):
-            return False
+            # builtin = not custom
+            return True
 
-        return True
+        return False
 
     @staticmethod
     def _get_mode(
@@ -395,7 +400,12 @@ class Darkroom:
         Framework._emit = _darkroom_emit
 
     @staticmethod
-    def install(traces_list: List[_Trace], live: bool = False):
+    def install(
+        traces_list: List[_Trace],
+        live: bool = False,
+        capture_framework_events: bool = False,
+        capture_custom_events: bool = True,
+    ):
         """Patch Harness so that every time a new instance is created, a Darkroom is attached to it.
 
         Note that the trace will be initially empty and will be filled up as the harness emits events.
@@ -407,8 +417,16 @@ class Darkroom:
         >>> # do something that will emit events on a charm, possibly multiple times
         >>> print(traces)  # profit
         """
-        Darkroom._install_on_harness(traces_list)
-        Darkroom._install_on_scenario(traces_list)
+        Darkroom._install_on_harness(
+            traces_list,
+            capture_framework_events=capture_framework_events,
+            capture_custom_events=capture_custom_events,
+        )
+        Darkroom._install_on_scenario(
+            traces_list,
+            capture_framework_events=capture_framework_events,
+            capture_custom_events=capture_custom_events,
+        )
 
         if live:
             # if we are in a live event context, we attach and register a single trace
@@ -427,42 +445,56 @@ class Darkroom:
         from scenario import Context
 
         for typ in [Harness, Context]:
-            if getattr(typ, "__orig_init__", None):
-                typ.__init__ = typ.__orig_init__
-                delattr(typ, "__orig_init__")
+            if getattr(typ, _ORIG_INIT_PATCH_NAME, None):
+                typ.__init__ = getattr(typ, _ORIG_INIT_PATCH_NAME)
+                delattr(typ, _ORIG_INIT_PATCH_NAME)
 
     @staticmethod
-    def _install_on_scenario(trace_list: List[_Trace]):
+    def _install_on_scenario(
+        trace_list: List[_Trace],
+        capture_framework_events: bool = False,
+        capture_custom_events: bool = False,
+    ):
         from scenario import Context
 
-        if not getattr(Context, "__orig_init__", None):
-            Context.__orig_init__ = Context.__init__
+        if not getattr(Context, _ORIG_INIT_PATCH_NAME, None):
+            setattr(Context, _ORIG_INIT_PATCH_NAME, Context.__init__)
             # do not simply use Context.__init__ because
             # if we instantiate multiple Contexts we'll keep adding to the older harnesses' traces.
 
         def patch(context: Context, *args, **kwargs):
             trace = []
             trace_list.append(trace)
-            Context.__orig_init__(context, *args, **kwargs)
-            dr = Darkroom()
+            getattr(Context, _ORIG_INIT_PATCH_NAME)(context, *args, **kwargs)
+            dr = Darkroom(
+                capture_custom_events=capture_custom_events,
+                capture_framework_events=capture_framework_events,
+            )
             dr.attach(listener=lambda event, state: trace.append((event, state)))
 
         Context.__init__ = patch
 
     @staticmethod
-    def _install_on_harness(trace_list: List[_Trace]):
+    def _install_on_harness(
+        trace_list: List[_Trace],
+        capture_framework_events: bool = False,
+        capture_custom_events: bool = False,
+    ):
         from ops.testing import Harness
 
-        if not getattr(Harness, "__orig_init__", None):
-            Harness.__orig_init__ = Harness.__init__
+        if not getattr(Harness, _ORIG_INIT_PATCH_NAME, None):
+            setattr(Harness, _ORIG_INIT_PATCH_NAME, Harness.__init__)
             # do not simply use Harness.__init__ because
             # if we instantiate multiple harnesses we'll keep adding to the older harnesses' traces.
 
         def patch(harness: Harness, *args, **kwargs):
             trace = []
             trace_list.append(trace)
-            Harness.__orig_init__(harness, *args, **kwargs)
-            dr = Darkroom()
+            getattr(Harness, _ORIG_INIT_PATCH_NAME)(harness, *args, **kwargs)
+            dr = Darkroom(
+                capture_custom_events=capture_custom_events,
+                capture_framework_events=capture_framework_events,
+            )
             dr.attach(listener=lambda event, state: trace.append((event, state)))
 
         Harness.__init__ = patch
