@@ -143,6 +143,7 @@ def _simulate_event(
     print_captured_stderr: bool = False,
     emit_juju_log: bool = True,
     model: str = None,
+    dry_run: bool = False,
 ):
     if not len(unit.split("/")) == 2:
         raise ValueError(
@@ -169,6 +170,10 @@ def _simulate_event(
         juju_exec_cmd = "sudo " + juju_exec_cmd
 
     cmd = f"juju ssh {_model}{unit} {juju_exec_cmd} -u {unit} {env} ./dispatch"
+
+    if dry_run:
+        print(f"would run: \n\t{cmd}")
+        return
 
     logger.info(cmd)
     proc = JPopen(cmd.split())
@@ -230,6 +235,9 @@ def simulate_event(
     model: str = typer.Option(
         None, "-m", "--model", help="Which model to apply the command to."
     ),
+    dry_run: bool = typer.Option(
+        None, "--dry-run", help="Do nothing, print out what would have happened."
+    ),
 ):
     """Simulates an event on a unit.
 
@@ -243,6 +251,7 @@ def simulate_event(
         print_captured_stdout=show_output,
         print_captured_stderr=show_output,
         model=model,
+        dry_run=dry_run,
     )
 
 
