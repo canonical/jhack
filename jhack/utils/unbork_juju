@@ -4,7 +4,7 @@ set -eou pipefail
 readonly user="$(whoami)"
 
 controller_name="mk8scloud"
-model_name="cos"
+model_name="foo"
 juju_channel="stable"
 microk8s_channel="stable"
 
@@ -54,7 +54,7 @@ if which juju ; then
     if juju controllers --format json | jq -r '.controllers | keys[]' 2> /dev/null | grep "${controller_name}" 2>&1 > /dev/null; then
         echo "Unregistering controller '${controller_name}'"
         # Unregister the controller from Juju
-        juju unregister "${controller_name}" -y
+        juju unregister "${controller_name}" --no-prompt
     fi
     echo "purging juju"
     sudo snap remove --purge juju
