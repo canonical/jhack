@@ -233,6 +233,9 @@ _custom_event_color = Color.from_rgb(120, 150, 240)
 _jhack_event_color = Color.from_rgb(200, 200, 50)
 _jhack_fire_event_color = Color.from_rgb(250, 200, 50)
 _jhack_replay_event_color = Color.from_rgb(100, 100, 150)
+_collect_app_status_event_color = Color.from_rgb(225, 50, 50)
+_collect_unit_status_event_color = Color.from_rgb(225, 150, 150)
+
 _deferral_colors = {
     "deferred": "red",
     "reemitted": "green",
@@ -315,8 +318,31 @@ class LogLineParser:
         trace_id: ("trace_id",),
     }
 
-    def __init__(self, model: str = None):
+    def __init__(
+        self,
+        model: str = None,
+        include_framework_events: bool = False,
+        event_filter_re: Optional[re.Pattern] = None,
+    ):
         self._loglevel = model_loglevel(model=model)
+        self._include_framework_events = include_framework_events
+        self._event_filter_re = event_filter_re
+
+    def _filter_match(self, event_name: str) -> bool:
+        """Check whether we should be matching this event or skipping it."""
+        if self._include_framework_events and event_name in {
+            "commit",
+            "pre_commit",
+            "collect_unit_status",
+            "collect_app_status",
+        }:
+            return False
+
+        if not self._event_filter_re:
+            return True
+
+        match = self._event_filter_re.match(event_name)
+        return bool(match)
 
     @property
     def uniter_events_only(self) -> bool:
@@ -332,7 +358,13 @@ class LogLineParser:
                 tags = self.tags.get(matcher, ())
                 dct = match.groupdict()
                 dct["tags"] = tags
-                dct["event"] = self._uniform_event(dct.get("event", ""))
+                event_name = self._uniform_event(dct.get("event", ""))
+
+                if not self._filter_match(event_name):
+                    logger.debug(f"skipped {event_name} match")
+                    continue
+
+                dct["event"] = event_name
                 return dct
         return None
 
@@ -398,9 +430,10 @@ class Processor:
         history_length: int = 10,
         show_ns: bool = True,
         show_trace_ids: bool = False,
+        include_framework_events: bool = False,
         color: _Color = "auto",
         show_defer: bool = False,
-        event_filter_re: re.Pattern = None,
+        event_filter_re: Optional[re.Pattern] = None,
         model: str = None,
     ):
         self.targets = list(targets)
@@ -411,7 +444,6 @@ class Processor:
             color = None
 
         self.console = console = Console(color_system=color)
-        self.event_filter_re = event_filter_re
         self._raw_tables: Dict[str, RawTable] = {
             target.unit_name: RawTable() for target in targets
         }
@@ -436,7 +468,11 @@ class Processor:
 
         self._warned_about_orphans = False
 
-        self.parser = LogLineParser(model=model)
+        self.parser = LogLineParser(
+            model=model,
+            include_framework_events=include_framework_events,
+            event_filter_re=event_filter_re,
+        )
         self._rendered = False
 
     def _warn_about_orphaned_event(self, evt):
@@ -539,20 +575,11 @@ class Processor:
         self.tracking[unit].append(reemitted)
         logger.debug(f"reemitted {reemitted.event}")
 
-    def _match_filter(self, event_name: str) -> bool:
-        """If the user specified an event name regex filter, run it."""
-        if not self.event_filter_re:
-            return True
-        match = self.event_filter_re.match(event_name)
-        return bool(match)
-
     def _match_event_deferred(self, log: str) -> Optional[EventDeferredLogMsg]:
         if "Deferring" not in log:
             return
         match = self.parser.match_event_deferred(log)
         if match:
-            if not self._match_filter(match["event"]):
-                return
             return EventDeferredLogMsg(**match, mocked=False)
 
     def _match_event_reemitted(self, log: str) -> Optional[EventReemittedLogMsg]:
@@ -560,22 +587,16 @@ class Processor:
             return
         match = self.parser.match_event_reemitted(log)
         if match:
-            if not self._match_filter(match["event"]):
-                return
             return EventReemittedLogMsg(**match, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
         match = self.parser.match_event_emitted(log)
         if match:
-            if not self._match_filter(match["event"]):
-                return
             return EventLogMsg(**match, mocked=False)
 
     def _match_jhack_modifiers(self, log: str) -> Optional[EventLogMsg]:
         match = self.parser.match_jhack_modifiers(log, trace_id=self._show_trace_ids)
         if match:
-            if not self._match_filter(match["event"]):
-                return
             return EventLogMsg(**match, mocked=False)
 
     def _add_new_target(self, msg: EventLogMsg):
@@ -717,7 +738,12 @@ class Processor:
     def _get_event_color(self, msg: EventLogMsg) -> Color:
         event = msg.event
         if "custom" in msg.tags:
-            return _custom_event_color
+            if msg.event == "collect_unit_status":
+                return _collect_unit_status_event_color
+            elif msg.event == "collect_app_status":
+                return _collect_app_status_event_color
+            else:
+                return _custom_event_color
         if "operator" in msg.tags:
             return _operator_event_color
         if "jhack" in msg.tags:
@@ -1023,6 +1049,13 @@ def tail_events(
         "  -f '(?!update)' --> all events except those starting with 'update'."
         "  -f 'ingress' --> all events starting with 'ingress'.",
     ),
+    include_framework_events: Optional[str] = typer.Option(
+        None,
+        "--framework-events",
+        is_flag=True,
+        help="Whether to include Framework events (ops-generated custom events), "
+        "such as `commit, pre-commit, collect_unit_status, collect_app_status`.",
+    ),
     model: str = typer.Option(
         None, "-m", "--model", help="Which model to apply the command to."
     ),
@@ -1047,6 +1080,7 @@ def tail_events(
         files=file,
         event_filter=filter_events,
         model=model,
+        include_framework_events=include_framework_events,
     )
 
 
@@ -1065,6 +1099,7 @@ def _tail_events(
     length: int = 10,
     show_defer: bool = False,
     show_ns: bool = False,
+    include_framework_events: bool = False,
     show_trace_ids: bool = False,
     watch: bool = True,
     color: str = "auto",
@@ -1122,6 +1157,7 @@ def _tail_events(
         add_new_targets,
         history_length=length,
         show_ns=show_ns,
+        include_framework_events=include_framework_events,
         show_trace_ids=show_trace_ids,
         color=color,
         show_defer=show_defer,

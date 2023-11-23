@@ -6,7 +6,7 @@ readonly user="$(whoami)"
 controller_name="mk8scloud"
 model_name="foo"
 juju_channel="stable"
-microk8s_channel="stable"
+microk8s_channel="1.29-strict/edge"
 
 usage() { echo "Usage: $0 [-J <string>] [-M <string>] [-m <string>] [-c <string>] -" 1>&2; exit 1; }
 
