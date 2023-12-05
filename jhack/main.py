@@ -148,7 +148,6 @@ def main():
     app.add_typer(utils, no_args_is_help=True)
     app.add_typer(replay, no_args_is_help=True)
     app.add_typer(integration_matrix, no_args_is_help=True)
-
     app.add_typer(scenario, no_args_is_help=True)
 
     @app.callback()
