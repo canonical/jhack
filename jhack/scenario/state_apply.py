@@ -3,7 +3,6 @@
 # See LICENSE file for licensing details.
 
 import json
-import logging
 import os
 import shlex
 import sys
@@ -12,10 +11,6 @@ from subprocess import CalledProcessError, run
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 import typer
-
-from jhack.scenario.dict_to_state import dict_to_state
-from jhack.scenario.errors import InvalidTargetUnitName, StateApplyError
-from jhack.scenario.utils import JujuUnitName
 from scenario.state import (
     Container,
     DeferredEvent,
@@ -26,7 +21,11 @@ from scenario.state import (
     StoredState,
     _EntityStatus,
 )
+
 from jhack.logger import logger as jhack_root_logger
+from jhack.scenario.dict_to_state import dict_to_state
+from jhack.scenario.errors import InvalidTargetUnitName, StateApplyError
+from jhack.scenario.utils import JujuUnitName
 
 if TYPE_CHECKING:
     from scenario.state import AnyRelation

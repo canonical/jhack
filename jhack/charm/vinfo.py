@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 from operator import itemgetter
 from pathlib import Path
-from subprocess import getoutput, getstatusoutput
+from subprocess import getstatusoutput
 from typing import Optional, Tuple, Union
 
 import typer

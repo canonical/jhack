@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict
 
 from ops import SecretRotate, pebble
-
 from scenario import Model, State
 from scenario.state import (
     Address,
