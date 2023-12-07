@@ -3,10 +3,10 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch, MagicMock
 
 from scenario import Container, Mount
-from scenario.scripts.utils import JujuUnitName
 
 from jhack.scenario.snapshot import get_container
 from jhack.scenario.state_apply import _gather_push_file_calls
+from jhack.scenario.utils import JujuUnitName
 
 
 def _fetch_file(*args, **kwargs):
