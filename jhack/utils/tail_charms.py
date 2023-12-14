@@ -952,7 +952,6 @@ class Processor:
         table_centered = Align.center(table)
         self.live.update(table_centered)
         self.live.refresh()
-        self.live.stop()
 
     def update_if_empty(self):
         if self._rendered:
@@ -1197,6 +1196,7 @@ def _tail_events(
         pass  # quit
     finally:
         processor.quit()
+        processor.live.stop()
 
     return processor  # for testing
 
