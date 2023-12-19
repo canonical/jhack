@@ -30,7 +30,7 @@ parts:
     source: .
     override-build: |
       craftctl default
-      VERSION=$(cat ./pyproject.toml | grep -Po 'version = "\K[^"]*')
+      VERSION="$(grep -Po 'version = "\K[^"]*' ./pyproject.toml)"
       craftctl set version="${VERSION}"
     stage-snaps:
       - juju/3.3/beta
