@@ -1,5 +1,5 @@
 name: jhack
-base: core20
+base: core22
 
 architectures:
 #  - build-on: s390x
