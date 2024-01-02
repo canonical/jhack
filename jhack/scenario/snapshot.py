@@ -20,12 +20,7 @@ import ops.pebble
 import typer
 import yaml
 from ops.storage import SQLiteStorage
-
 from scenario.runtime import UnitStateDB
-from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
-from jhack.logger import logger as jhack_root_logger
-from jhack.scenario.state_to_dict import state_to_dict
-from jhack.scenario.utils import JujuUnitName
 from scenario.state import (
     Address,
     BindAddress,
@@ -41,6 +36,11 @@ from scenario.state import (
     State,
     _EntityStatus,
 )
+
+from jhack.logger import logger as jhack_root_logger
+from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
+from jhack.scenario.state_to_dict import state_to_dict
+from jhack.scenario.utils import JujuUnitName
 
 logger = jhack_root_logger.getChild(__file__)
 

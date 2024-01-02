@@ -3,7 +3,7 @@
 # See LICENSE file for licensing details.
 from pathlib import Path
 
-from scenario.scripts.errors import InvalidTargetUnitName
+from jhack.scenario.errors import InvalidTargetUnitName
 
 
 class JujuUnitName(str):

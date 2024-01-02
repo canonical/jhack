@@ -51,7 +51,6 @@ import yaml
 from ops import CharmBase, EventBase
 from ops.model import ModelError, SecretRotate, StatusBase, _ModelBackend
 from ops.testing import _TestingModelBackend
-
 from scenario import Container, Event, Model, Network, Port, Relation, Secret, State
 from scenario.mocking import _MockModelBackend
 from scenario.state import _CharmSpec

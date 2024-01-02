@@ -1,11 +1,11 @@
 import ops
 import pytest
-import yaml
-from ops import CharmBase, BlockedStatus, WaitingStatus
-from ops.testing import Harness
-
 import scenario
+import yaml
+from ops import BlockedStatus, CharmBase, WaitingStatus
+from ops.testing import Harness
 from scenario import Model
+
 from jhack.scenario.integrations.darkroom import Darkroom
 
 

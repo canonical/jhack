@@ -5,7 +5,7 @@ def test_install():
     Darkroom.install(l)
 
     from ops import CharmBase
-    from scenario import Context, State, Relation
+    from scenario import Context, Relation, State
 
     class MyCharm(CharmBase):
         META = {"name": "joseph", "requires": {"foo": {"interface": "bar"}}}

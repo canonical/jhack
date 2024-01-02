@@ -1,9 +1,5 @@
-import json
-from dataclasses import asdict
 
 import pytest
-from ops import pebble
-
 from scenario import (
     Container,
     Network,
@@ -12,6 +8,7 @@ from scenario import (
     State,
     SubordinateRelation,
 )
+
 from jhack.scenario.dict_to_state import dict_to_state
 from jhack.scenario.state_to_dict import state_to_dict
 

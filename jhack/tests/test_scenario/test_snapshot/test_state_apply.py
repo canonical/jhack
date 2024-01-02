@@ -1,6 +1,6 @@
 import pytest
-
 from scenario import State
+
 from jhack.scenario.state_apply import (
     JujuUnitName,
     _gather_juju_exec_cmds,
