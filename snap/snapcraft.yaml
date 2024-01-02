@@ -1,5 +1,5 @@
 name: jhack
-base: core20
+base: core22
 
 architectures:
 #  - build-on: s390x
@@ -29,9 +29,9 @@ parts:
     plugin: python
     source: .
     override-build: |
-      snapcraftctl build
-      VERSION=$(cat ./pyproject.toml | grep -Po 'version = "\K[^"]*')
-      snapcraftctl set-version $VERSION
+      craftctl default
+      VERSION="$(grep -Po 'version = "\K[^"]*' ./pyproject.toml)"
+      craftctl set version="${VERSION}"
     stage-snaps:
       - juju/3.3/beta
 
