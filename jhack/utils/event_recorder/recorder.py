@@ -499,7 +499,7 @@ class Context:
 @dataclass
 class Scene:
     event: Event
-    context: Context = Context()
+    context: Context = field(default_factory=Context)
 
     @staticmethod
     def from_dict(obj):
