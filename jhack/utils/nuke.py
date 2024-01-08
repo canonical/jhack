@@ -292,7 +292,7 @@ def _nuke(
                 continue
 
             nukes.append(
-                f"juju remove-application {nukeable.name} " f"--force --no-wait"
+                f"juju remove-application {nukeable.name} " f"--force --no-prompt"
             )
 
         elif nukeable.type == "relation":
