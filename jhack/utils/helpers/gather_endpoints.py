@@ -65,7 +65,13 @@ def gather_endpoints(
             continue
 
         app_eps = {}
-        unit = next(iter(app["units"]))
+
+        is_subordinate = app.get("subordinate-to")
+        if is_subordinate:
+            unit = f"{app_name}/0"
+        else:
+            unit = next(iter(app["units"]))
+
         try:
             metadata = fetch_file(unit, "metadata.yaml", model=model)
         except RuntimeError as e:
@@ -95,3 +101,7 @@ def gather_endpoints(
         eps[app_name] = app_eps
 
     return eps
+
+
+if __name__ == "__main__":
+    gather_endpoints("lxd:demo")

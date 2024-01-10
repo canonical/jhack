@@ -3,7 +3,7 @@ import re
 import time
 from collections import defaultdict
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Iterable
 
 import typer
 from rich.align import Align
@@ -551,17 +551,14 @@ def _cmr(remote, local=None, dry_run: bool = False):
     cmr = Prompt.ask("Pick a CMR", choices=list(opts) + ["ALL"], default=list(opts)[0])
 
     if cmr == "ALL":
-        for prov, binding, req in opts.values():
-            _pull_cmr(prov, binding, req, remote, local, dry_run)
+        _pull_cmrs(opts.values(), remote, local, dry_run)
     else:
         prov, binding, req = opts[cmr]
-        _pull_cmr(prov, binding, req, remote, local, dry_run)
+        _pull_cmrs((prov, binding, req), remote, local, dry_run)
 
 
-def _pull_cmr(
-    prov: str,
-    binding: RelationBinding,
-    req: str,
+def _pull_cmrs(
+    specs: Iterable[Tuple[str, RelationBinding, str]],  # provider, binding, requirer
     remote: str,
     local: Optional[str],
     dry_run: bool,
@@ -576,39 +573,50 @@ def _pull_cmr(
         )
 
     c = Console()
-    txt = (
-        Text("Pulling ")
-        + fmt_endpoint(remote, req, binding.requirer_endpoint)
-        + " --> ["
-        + Text(binding.interface, style="green")
-        + "] --> "
-        + fmt_endpoint(local, prov, binding.provider_endpoint)
-    )
-    c.print(txt)
 
-    controller_prefix = ""
-    controller = ""
-    if ":" in remote:
-        controller_name, model = remote.split(":")
-        controller_prefix = f"{controller_name}:"
-        controller = f" -c {controller_name}"
-    else:
-        model = remote
+    setup_scripts = []
+    relate_scripts = []
 
-    script = [
-        f"juju offer{controller} {model}.{req}:{binding.requirer_endpoint}",
-        f"juju consume {controller_prefix}admin/{model}.{req}",
-        f"juju relate {req}:{binding.requirer_endpoint} {prov}:{binding.provider_endpoint}",
-    ]
+    for prov, binding, req in specs:
+        txt = (
+            Text("Pulling ")
+            + fmt_endpoint(remote, req, binding.requirer_endpoint)
+            + " --> ["
+            + Text(binding.interface, style="green")
+            + "] --> "
+            + fmt_endpoint(local, prov, binding.provider_endpoint)
+        )
+        c.print(txt)
+
+        controller_prefix = ""
+        controller = ""
+        if ":" in remote:
+            controller_name, model = remote.split(":")
+            controller_prefix = f"{controller_name}:"
+            controller = f" -c {controller_name}"
+        else:
+            model = remote
+
+        setup_scripts += [
+            f"juju offer{controller} {model}.{req}:{binding.requirer_endpoint}",
+            f"juju consume {controller_prefix}admin/{model}.{req}",
+        ]
+        relate_scripts += [
+            f"juju relate {req}:{binding.requirer_endpoint} {prov}:{binding.provider_endpoint}",
+        ]
 
     if dry_run:
-        print("would run:", "\n\t".join(script))
+        print("would run:", "\n\t".join(setup_scripts))
+        print("and then:", "\n\t".join(relate_scripts))
         return
 
-    for cmd in script:
+    # first create/consume all offers, then relate all of them.
+    # else juju will complain that you can't modify an offer that already has some
+    # connected consumers
+    for cmd in setup_scripts + relate_scripts:
         if JPopen(cmd.split()).wait() != 0:
-            print(f"{cmd} failed. Aborting...")
-            return
+            print(f"{cmd} failed")
+            continue
 
 
 if __name__ == "__main__":
