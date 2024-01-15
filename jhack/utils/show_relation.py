@@ -224,11 +224,16 @@ def get_relation_by_endpoint(
         if (r["endpoint"] == local_endpoint or not local_endpoint) and (
             r["related-endpoint"] == remote_endpoint or not remote_endpoint
         ):
-            matches.append(r)
+            candidate = r
         elif (r["endpoint"] == remote_endpoint or not remote_endpoint) and (
             r["related-endpoint"] == local_endpoint or not local_endpoint
         ):
-            matches.append(r)
+            candidate = r
+        else:
+            continue
+
+        if obj.unit_name in candidate.get("related-units", set()):
+            matches.append(candidate)
 
     if relation.type == RelationType.regular:
         matches = [
@@ -367,10 +372,22 @@ def get_content(
         other_model_status = _juju_status(model=other_model, json=True)
         other_app_status = other_model_status["applications"][other_obj.app_name]
     else:
+        other_model_status = status
         other_app_status = status["applications"][other_obj.app_name]
 
+    # try to determine the ID of SOME unit of the other application
     if relation.type == RelationType.peer:
         other_unit_id = units[0]
+    #
+    # elif relation.type == RelationType.cross_model:
+    #     if other_obj.unit_id is not None:
+    #         other_unit_id = other_obj.unit_id
+    #     else:
+    #         next(other_app_status['units'])
+    #
+    #         # we attempt to determine the remote unit ID from this unit's show-unit output.
+    #         unit_info = get_unit_info(obj.unit_name, model=model)
+    #         cmrs = [r for r in unit_info["relation-info"] if r.get("cross-model")]
 
     elif primaries := other_app_status.get("subordinate-to"):
         # the remote end is a subordinate!
@@ -391,13 +408,20 @@ def get_content(
                 raise RuntimeError(
                     f"unable to find primary with a subordinate unit of {other_obj.app_name}"
                 )
+            other_unit_id = RelationEndpointURL(sub_unit_found).unit_id
 
         else:
-            raise NotImplementedError(
-                "relations between subordinates? Is that even a thing?"
-            )
+            # this app is sub and related to some other app or viceversa
+            other_units = other_app_status.get("units")
+            if other_units:
+                other_unit_id = RelationEndpointURL(next(iter(other_units))).unit_id
+            else:
+                # we need to get the units of the primary.
+                primary_units = other_model_status["applications"][primaries[0]][
+                    "units"
+                ]
+                other_unit_id = RelationEndpointURL(next(iter(primary_units))).unit_id
 
-        other_unit_id = RelationEndpointURL(sub_unit_found).unit_id
     else:
         other_unit_id = RelationEndpointURL(
             next(iter(other_app_status["units"]))
@@ -1065,5 +1089,6 @@ def _sync_show_relation(
 
 if __name__ == "__main__":
     _sync_show_relation(
-        endpoint1="inflx:grafana-source", endpoint2="grafana:grafana-source"
+        endpoint1="prometheus:receive-remote-write",
+        endpoint2="gagent/0:send-remote-write",
     )
