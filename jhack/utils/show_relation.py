@@ -132,13 +132,18 @@ def _show_unit(
 
 def _find_model_if_CMR(app_name, current_model: str = None):
     """Find out if app_name is in current_model, if not, return the SAAS-exposed model it is in."""
-    status = _juju_status(model=current_model, json=True)
+    status = _juju_status(json=True)
     if app_name not in status["applications"]:
         logger.info(
             f"app_name {app_name!r} not found in "
             f"{current_model or '<current model>'!r}: this must be a CMR"
         )
-        saas_url = status["application-endpoints"][app_name]["url"]
+
+        try:
+            saas_url = status["application-endpoints"][app_name]["url"]
+        except KeyError:
+            exit(f"application {app_name} not found in local model or as SAAS")
+
         other_model = saas_url.split(".")[0]
         logger.info(f"other app is in model {other_model!r}.")
         return other_model
@@ -224,11 +229,16 @@ def get_relation_by_endpoint(
         if (r["endpoint"] == local_endpoint or not local_endpoint) and (
             r["related-endpoint"] == remote_endpoint or not remote_endpoint
         ):
-            matches.append(r)
+            candidate = r
         elif (r["endpoint"] == remote_endpoint or not remote_endpoint) and (
             r["related-endpoint"] == local_endpoint or not local_endpoint
         ):
-            matches.append(r)
+            candidate = r
+        else:
+            continue
+
+        if obj.unit_name in candidate.get("related-units", set()):
+            matches.append(candidate)
 
     if relation.type == RelationType.regular:
         matches = [
@@ -275,7 +285,6 @@ class AppRelationData:
 
 def get_metadata_from_status(
     endpoint: RelationEndpointURL,
-    other_endpoint: RelationEndpointURL,
     model: str = None,
 ):
     status = _juju_status(model=model, json=True)
@@ -326,11 +335,10 @@ def get_metadata_from_status(
 
 def get_units_and_meta(
     endpoint: RelationEndpointURL,
-    other_endpoint: RelationEndpointURL,
     model: str = None,
 ):
     """Get app name and unit count from url; url is either `app_name/0` or `app_name`."""
-    meta = get_metadata_from_status(endpoint, other_endpoint, model=model)
+    meta = get_metadata_from_status(endpoint, model=model)
     if endpoint.unit_id is not None:
         units = (int(endpoint.unit_id),)
     else:
@@ -345,32 +353,35 @@ def get_content(
     include_default_juju_keys: bool = False,
     model: str = None,
     other_model: str = None,
-    assume_local: bool = False,
 ) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     # in k8s there's always a 0 unit, in machine that's not the case.
     # so even though we need 'any' remote unit name, we still need to query the status
     # to find out what units there are.
     status = _juju_status(model=model, json=True)
-    if not other_model:
-        if relation.type is RelationType.cross_model and assume_local:
-            other_model = _find_model_if_CMR(other_obj.app_name, current_model=model)
-        elif relation.type is RelationType.cross_model:
-            other_model = None  # current model.
-        else:
-            other_model = model
-
-    units, meta = get_units_and_meta(obj, other_obj, model)
+    units, meta = get_units_and_meta(obj, model)
 
     if other_model != model:
         logger.info(f"other app is in model {other_model!r}. Pulling status...")
         other_model_status = _juju_status(model=other_model, json=True)
         other_app_status = other_model_status["applications"][other_obj.app_name]
     else:
+        other_model_status = status
         other_app_status = status["applications"][other_obj.app_name]
 
+    # try to determine the ID of SOME unit of the other application
     if relation.type == RelationType.peer:
         other_unit_id = units[0]
+    #
+    # elif relation.type == RelationType.cross_model:
+    #     if other_obj.unit_id is not None:
+    #         other_unit_id = other_obj.unit_id
+    #     else:
+    #         next(other_app_status['units'])
+    #
+    #         # we attempt to determine the remote unit ID from this unit's show-unit output.
+    #         unit_info = get_unit_info(obj.unit_name, model=model)
+    #         cmrs = [r for r in unit_info["relation-info"] if r.get("cross-model")]
 
     elif primaries := other_app_status.get("subordinate-to"):
         # the remote end is a subordinate!
@@ -391,13 +402,20 @@ def get_content(
                 raise RuntimeError(
                     f"unable to find primary with a subordinate unit of {other_obj.app_name}"
                 )
+            other_unit_id = RelationEndpointURL(sub_unit_found).unit_id
 
         else:
-            raise NotImplementedError(
-                "relations between subordinates? Is that even a thing?"
-            )
+            # this app is sub and related to some other app or viceversa
+            other_units = other_app_status.get("units")
+            if other_units:
+                other_unit_id = RelationEndpointURL(next(iter(other_units))).unit_id
+            else:
+                # we need to get the units of the primary.
+                primary_units = other_model_status["applications"][primaries[0]][
+                    "units"
+                ]
+                other_unit_id = RelationEndpointURL(next(iter(primary_units))).unit_id
 
-        other_unit_id = RelationEndpointURL(sub_unit_found).unit_id
     else:
         other_unit_id = RelationEndpointURL(
             next(iter(other_app_status["units"]))
@@ -543,8 +561,8 @@ def get_relation_data(
         requirer_endpoint,
         relation,
         include_default_juju_keys,
-        model=model,
-        assume_local=True,
+        model=_find_model_if_CMR(provider_endpoint.app_name, current_model=model),
+        other_model=_find_model_if_CMR(requirer_endpoint.app_name, current_model=model),
     )
     requirer_data = get_content(
         requirer_endpoint,
@@ -552,7 +570,7 @@ def get_relation_data(
         relation,
         include_default_juju_keys,
         model=provider_data.other_model,
-        other_model=model,
+        other_model=provider_data.model,
     )
     return RelationData(provider=provider_data, requirer=requirer_data)
 
@@ -1065,5 +1083,6 @@ def _sync_show_relation(
 
 if __name__ == "__main__":
     _sync_show_relation(
-        endpoint1="inflx:grafana-source", endpoint2="grafana:grafana-source"
+        endpoint1="loki",
+        endpoint2="gagent",
     )

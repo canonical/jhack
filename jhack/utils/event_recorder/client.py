@@ -212,7 +212,7 @@ def purge_db(
 
 
 def _copy_recorder_script(unit: str):
-    if not "/" in unit:
+    if "/" not in unit:
         exit(f"invalid unit name: {unit!r}; should contain `/<unit id>`")
 
     unit_sanitized = unit.replace("/", "-")

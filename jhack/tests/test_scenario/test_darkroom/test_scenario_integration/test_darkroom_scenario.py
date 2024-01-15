@@ -12,7 +12,7 @@ def test_attach():
     Darkroom.uninstall()  # ensure any previous run did not pollute Context.__init__
 
     l = []
-    d = Darkroom().attach(lambda e, s: l.append((e, s)))
+    Darkroom().attach(lambda e, s: l.append((e, s)))
     c = Context(MyCharm, meta=MyCharm.META)
     c.run("start", State())
 
