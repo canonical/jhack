@@ -132,13 +132,18 @@ def _show_unit(
 
 def _find_model_if_CMR(app_name, current_model: str = None):
     """Find out if app_name is in current_model, if not, return the SAAS-exposed model it is in."""
-    status = _juju_status(model=current_model, json=True)
+    status = _juju_status(json=True)
     if app_name not in status["applications"]:
         logger.info(
             f"app_name {app_name!r} not found in "
             f"{current_model or '<current model>'!r}: this must be a CMR"
         )
-        saas_url = status["application-endpoints"][app_name]["url"]
+
+        try:
+            saas_url = status["application-endpoints"][app_name]["url"]
+        except KeyError:
+            exit(f"application {app_name} not found in local model or as SAAS")
+
         other_model = saas_url.split(".")[0]
         logger.info(f"other app is in model {other_model!r}.")
         return other_model
@@ -280,7 +285,6 @@ class AppRelationData:
 
 def get_metadata_from_status(
     endpoint: RelationEndpointURL,
-    other_endpoint: RelationEndpointURL,
     model: str = None,
 ):
     status = _juju_status(model=model, json=True)
@@ -331,11 +335,10 @@ def get_metadata_from_status(
 
 def get_units_and_meta(
     endpoint: RelationEndpointURL,
-    other_endpoint: RelationEndpointURL,
     model: str = None,
 ):
     """Get app name and unit count from url; url is either `app_name/0` or `app_name`."""
-    meta = get_metadata_from_status(endpoint, other_endpoint, model=model)
+    meta = get_metadata_from_status(endpoint, model=model)
     if endpoint.unit_id is not None:
         units = (int(endpoint.unit_id),)
     else:
@@ -350,22 +353,13 @@ def get_content(
     include_default_juju_keys: bool = False,
     model: str = None,
     other_model: str = None,
-    assume_local: bool = False,
 ) -> AppRelationData:
     """Get the content of the databag of `obj`, as seen from `other_obj`."""
     # in k8s there's always a 0 unit, in machine that's not the case.
     # so even though we need 'any' remote unit name, we still need to query the status
     # to find out what units there are.
     status = _juju_status(model=model, json=True)
-    if not other_model:
-        if relation.type is RelationType.cross_model and assume_local:
-            other_model = _find_model_if_CMR(other_obj.app_name, current_model=model)
-        elif relation.type is RelationType.cross_model:
-            other_model = None  # current model.
-        else:
-            other_model = model
-
-    units, meta = get_units_and_meta(obj, other_obj, model)
+    units, meta = get_units_and_meta(obj, model)
 
     if other_model != model:
         logger.info(f"other app is in model {other_model!r}. Pulling status...")
@@ -567,8 +561,8 @@ def get_relation_data(
         requirer_endpoint,
         relation,
         include_default_juju_keys,
-        model=model,
-        assume_local=True,
+        model=_find_model_if_CMR(provider_endpoint.app_name, current_model=model),
+        other_model=_find_model_if_CMR(requirer_endpoint.app_name, current_model=model),
     )
     requirer_data = get_content(
         requirer_endpoint,
@@ -576,7 +570,7 @@ def get_relation_data(
         relation,
         include_default_juju_keys,
         model=provider_data.other_model,
-        other_model=model,
+        other_model=provider_data.model,
     )
     return RelationData(provider=provider_data, requirer=requirer_data)
 
@@ -1089,6 +1083,6 @@ def _sync_show_relation(
 
 if __name__ == "__main__":
     _sync_show_relation(
-        endpoint1="prometheus:receive-remote-write",
-        endpoint2="gagent/0:send-remote-write",
+        endpoint1="loki",
+        endpoint2="gagent",
     )

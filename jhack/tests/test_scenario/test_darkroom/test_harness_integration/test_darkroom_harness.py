@@ -12,7 +12,7 @@ class MyCharm(CharmBase):
 def test_attach():
     h = Harness(MyCharm, meta=yaml.safe_dump(MyCharm.META))
     l = []
-    d = Darkroom().attach(lambda e, s: l.append((e, s)))
+    Darkroom().attach(lambda e, s: l.append((e, s)))
     h.begin()
     h.add_relation("foo", "remote")
 
