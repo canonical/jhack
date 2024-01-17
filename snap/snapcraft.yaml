@@ -1,4 +1,7 @@
 name: jhack
+
+# we're stuck with core20 until juju bumps to core22
+# as Juju depends on libssl 1.1 which is hard to get on core22
 base: core20
 
 architectures:
