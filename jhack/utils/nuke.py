@@ -503,4 +503,4 @@ def nuke(
 
 
 if __name__ == "__main__":
-    _nuke(None)
+    _nuke("gagent", dry_run=True)

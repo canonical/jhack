@@ -254,29 +254,28 @@ async def push_to_remote_juju_unit(
     machine_charm = get_substrate() == "machine"
 
     if not machine_charm:
-        if dry_run:
-            print(f"would scp: {file} --> {app}/{unit}:{remote_file_path}")
-            return
-
         container_opt = f"--container {container_name} " if container_name else ""
         cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
+        if dry_run:
+            print(f"would run {cmd!r}")
+            return
+
         proc = JPopen(cmd.split(" "))
 
     else:
-        if dry_run:
-            print(
-                f"would cat: {file} --> juju ssh {app}/{unit} sudo -i "
-                f"'sudo tee {remote_file_path}'"
-            )
-            return
-
         cmd = (
             f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee {remote_file_path}'"
         )
+
+        if dry_run:
+            print(f"would run :{cmd!r}")
+            return
+
         proc = JPopen([cmd], shell=True)
 
+    proc.wait()
     retcode = proc.returncode
-    if retcode is not None:
+    if retcode is not 0:
         logger.error(
             f"{cmd} errored with code {retcode}: "
             f"\nstdout={proc.stdout.read()}, "
