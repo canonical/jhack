@@ -275,7 +275,7 @@ async def push_to_remote_juju_unit(
 
     proc.wait()
     retcode = proc.returncode
-    if retcode is not 0:
+    if retcode != 0:
         logger.error(
             f"{cmd} errored with code {retcode}: "
             f"\nstdout={proc.stdout.read()}, "

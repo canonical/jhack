@@ -20,7 +20,7 @@ def harness():
 
 def test_base(harness):
     harness.begin()
-    state = Darkroom().capture(harness.model._backend)
+    Darkroom().capture(harness.model._backend)
 
 
 @pytest.mark.parametrize("leader", (True, False))

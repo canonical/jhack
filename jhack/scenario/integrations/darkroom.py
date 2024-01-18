@@ -45,7 +45,7 @@ in `charm.py`:
 
 import logging
 import os
-from typing import TYPE_CHECKING, Callable, List, Literal, Sequence, Tuple, Union, Dict
+from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Sequence, Tuple, Union
 
 import yaml
 from ops import CharmBase, EventBase
@@ -350,10 +350,9 @@ class Darkroom:
             grants = s.grants.get(relation_id, set())
 
             remote_grants = set()
-            granted = False
             for grant in grants:
                 if grant in (backend.unit_name, backend.app_name):
-                    granted = grant
+                    pass
                 else:
                     remote_grants.add(grant)
 
