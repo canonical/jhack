@@ -23,7 +23,11 @@ def state_to_dict(state: State) -> Dict:
     for f in fields(state):
         key = f.name
         raw_value = getattr(state, f.name)
-        if key == "relations":
+        if key == "networks":
+            serialized_value = {
+                name: asdict(network) for name, network in raw_value.items()
+            }
+        elif key == "relations":
             serialized_value = [_relation_to_dict(r) for r in raw_value]
         else:
             if isinstance(raw_value, list):

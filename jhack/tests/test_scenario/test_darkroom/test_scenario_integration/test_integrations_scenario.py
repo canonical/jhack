@@ -21,7 +21,6 @@ def harness():
 def test_base(harness):
     harness.begin()
     state = Darkroom().capture(harness.model._backend)
-    assert state.unit_id == 0
 
 
 @pytest.mark.parametrize("leader", (True, False))
