@@ -11,7 +11,7 @@ def test_install():
         META = {"name": "joseph", "requires": {"foo": {"interface": "bar"}}}
 
     # unique states
-    s1, s2, s3, s4, s5, s6, s7 = [State(unit_id=i) for i in range(7)]
+    s1, s2, s3, s4, s5, s6, s7 = [State() for _ in range(7)]
 
     c = Context(MyCharm, meta=MyCharm.META)
     c.run("start", s1)

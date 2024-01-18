@@ -118,7 +118,9 @@ def dict_to_state(state_json: Dict) -> State:
         elif key == "relations":
             overrides[key] = [_dict_to_relation(obj) for obj in value]
         elif key == "networks":
-            overrides[key] = [_dict_to_network(obj) for obj in value]
+            overrides[key] = {
+                name: _dict_to_network(obj) for name, obj in value.items()
+            }
         elif key == "resources":
             overrides[key] = {name: Path(obj) for name, obj in value.items()}
         elif key == "containers":

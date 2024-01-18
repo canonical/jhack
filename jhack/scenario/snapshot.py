@@ -203,10 +203,10 @@ def get_networks(
     metadata: Dict,
     include_dead: bool = False,
     relations: Tuple[str, ...] = (),
-) -> List[Network]:
+) -> Dict[str, Network]:
     """Get all Networks from this unit."""
     logger.info("getting networks...")
-    networks = [get_network(target, model, "juju-info")]
+    networks = {"juju-info": get_network(target, model, "juju-info")}
 
     endpoints = relations  # only alive relations
     if include_dead:
@@ -218,7 +218,7 @@ def get_networks(
 
     for endpoint in endpoints:
         logger.debug(f"  getting network for endpoint {endpoint!r}")
-        networks.append(get_network(target, model, endpoint))
+        networks[endpoint] = get_network(target, model, endpoint)
     return networks
 
 
@@ -840,7 +840,7 @@ def _snapshot(
                     include_dead=include_dead_relation_networks,
                     relations=endpoints,
                 ),
-                [],
+                {},
             ),
             secrets=if_include(
                 "S",

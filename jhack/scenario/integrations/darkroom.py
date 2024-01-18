@@ -45,7 +45,7 @@ in `charm.py`:
 
 import logging
 import os
-from typing import TYPE_CHECKING, Callable, List, Literal, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Sequence, Tuple, Union
 
 import yaml
 from ops import CharmBase, EventBase
@@ -64,7 +64,12 @@ _SupportedBackends = Union[_TestingModelBackend, _ModelBackend, _MockModelBacken
 logger = logging.getLogger("darkroom")
 
 # TODO move those to Scenario.State and add an Event._is_framework_event() method.
-FRAMEWORK_EVENT_NAMES = {"pre_commit", "commit"}
+FRAMEWORK_EVENT_NAMES = {
+    "pre_commit",
+    "commit",
+    "collect_unit_status",
+    "collect_app_status",
+}
 _ORIG_INIT_PATCH_NAME = "__orig_init__"
 
 
@@ -212,7 +217,6 @@ class Darkroom:
             secrets=self._get_secrets(backend),
             opened_ports=self._get_opened_ports(backend),
             leader=self._get_leader(backend),
-            unit_id=self._get_unit_id(backend),
             app_status=self._get_app_status(backend),
             unit_status=self._get_unit_status(backend),
             workload_version=self._get_workload_version(backend),
@@ -334,10 +338,8 @@ class Darkroom:
             containers.append(Container(name=name, mounts=c.mounts))
         return containers
 
-    def _get_networks(self, backend: _SupportedBackends) -> List[Network]:
-        networks = [
-            Network(name=nw_name, **nw) for nw_name, nw in backend._networks.items()
-        ]
+    def _get_networks(self, backend: _SupportedBackends) -> Dict[str, Network]:
+        networks = {nw_name: Network(**nw) for nw_name, nw in backend._networks.items()}
         return networks
 
     def _get_secrets(self, backend: _SupportedBackends) -> List[Secret]:
@@ -348,10 +350,9 @@ class Darkroom:
             grants = s.grants.get(relation_id, set())
 
             remote_grants = set()
-            granted = False
             for grant in grants:
                 if grant in (backend.unit_name, backend.app_name):
-                    granted = grant
+                    pass
                 else:
                     remote_grants.add(grant)
 
@@ -359,11 +360,9 @@ class Darkroom:
                 Secret(
                     id=s.id,
                     label=s.label,
-                    contents=backend.secret_get(s.id),
-                    granted=granted,
+                    contents={0: backend.secret_get(id=s.id)},
                     remote_grants={relation_id: remote_grants},
                     description=s.description,
-                    owner=s.owner_name,
                     rotate=s.rotate_policy or SecretRotate.NEVER,
                     expire=s.expire_time,
                 ),

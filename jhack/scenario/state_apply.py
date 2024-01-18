@@ -45,9 +45,12 @@ def set_relation(relation: "AnyRelation") -> List[str]:
 
 
 def set_relations(relations: Iterable["AnyRelation"]) -> List[str]:
-    logger.info("preparing relations...")
     out = []
     for relation in relations:
+        logger.info(f"applying relation {relation.endpoint}...")
+
+        # fixme: this will only ADD/override data; it will not remove existing data.
+        #  You need to pass "" as value to do that.
         out.extend(set_relation(relation))
     return out
 
@@ -57,25 +60,31 @@ def set_status(
     app_status: _EntityStatus,
     app_version: str,
 ) -> List[str]:
-    logger.info("preparing status...")
     cmds = []
 
     if unit_status.name == "unknown":
         logger.warning("Cannot set unit status to unknown. Only Juju can.")
     else:
-        cmds.append(f"status-set {unit_status.name} {unit_status.message}")
+        logger.info("applying unit status...")
+        cmds.append(f"status-set {unit_status.name} {unit_status.message!r}")
 
     if app_status.name == "unknown":
         logger.warning("Cannot set app status to unknown. Only Juju can.")
     else:
-        cmds.append(f"status-set --application {app_status.name} {app_status.message}")
+        logger.info("applying app status...")
+        cmds.append(
+            f"status-set --application {app_status.name} {app_status.message!r}"
+        )
 
-    cmds.append(f'application-version-set "{app_version}"')
+    if app_version:
+        logger.info("applying application version...")
+        cmds.append(f'application-version-set "{app_version}"')
+
     return cmds
 
 
 def set_config(config: Dict[str, str], target: JujuUnitName) -> List[str]:
-    logger.info("preparing config...")
+    logger.info("applying config...")
     cmds = []
     if config:
         for key, value in config.items():
@@ -84,7 +93,7 @@ def set_config(config: Dict[str, str], target: JujuUnitName) -> List[str]:
 
 
 def set_opened_ports(opened_ports: List[Port]) -> List[str]:
-    logger.info("preparing opened ports...")
+    logger.info("applying opened ports...")
     # fixme: this will only open new ports, it will not close all already-open ports.
 
     cmds = []
@@ -96,14 +105,14 @@ def set_opened_ports(opened_ports: List[Port]) -> List[str]:
 
 
 def set_containers(containers: Iterable[Container]) -> List[str]:
-    logger.info("preparing containers...")
+    logger.info("applying containers...")
     if containers:
         logger.warning("set_containers not implemented yet")
     return []
 
 
 def set_secrets(secrets: Iterable[Secret]) -> List[str]:
-    logger.info("preparing secrets...")
+    logger.info("applying secrets...")
     if secrets:
         logger.warning("set_secrets not implemented yet")
     return []
@@ -112,14 +121,14 @@ def set_secrets(secrets: Iterable[Secret]) -> List[str]:
 def set_deferred_events(
     deferred_events: Iterable[DeferredEvent],
 ) -> List[str]:
-    logger.info("preparing deferred_events...")
+    logger.info("applying deferred_events...")
     if deferred_events:
         logger.warning("set_deferred_events not implemented yet")
     return []
 
 
 def set_stored_state(stored_state: Iterable[StoredState]) -> List[str]:
-    logger.info("preparing stored_state...")
+    logger.info("applying stored_state...")
     if stored_state:
         logger.warning("set_stored_state not implemented yet")
     return []
@@ -130,7 +139,6 @@ def exec_in_unit(target: JujuUnitName, model: str, cmds: List[str]):
 
     _model = f" -m {model}" if model else ""
     for cmd in cmds:
-        print(cmd[:12])
         j_exec_cmd = f"juju exec -u {target}{_model} -- {cmd}"
         try:
             run(shlex.split(j_exec_cmd))
@@ -262,7 +270,7 @@ def _state_apply(
         print("would do:")
         for cmd in j_exec_cmds:
             print(
-                f'\t juju exec -u {target}{model or "<the current model>"} -- "{cmd}"',
+                f'\t juju exec -m {model or "<the current model>"} -u {target} -- "{cmd}"',
             )
         for cmd in cmds:
             print(f"\t {cmd}")
