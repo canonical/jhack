@@ -57,6 +57,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.utils.remote_debug import remote_debug
 
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
@@ -70,6 +71,7 @@ def main():
     utils.command(name="fire", no_args_is_help=True)(simulate_event)
     utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     utils.command(name="print-env")(print_env)
+    utils.command(name="remote-debug", no_args_is_help=True)(remote_debug)
 
     jinx = typer.Typer(
         name="jinx",
