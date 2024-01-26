@@ -21,6 +21,7 @@ def watch(
     include_files: str = None,
     recursive: bool = True,
     refresh_rate: float = 1.0,
+    skip_initial_sync: bool = False,
 ):
     """Watches a directory for changes; on any, calls on_change back with them."""
 
@@ -43,9 +44,16 @@ def watch(
         logger.error("nothing to watch")
         return
 
-    msg = "watching: \n\t%s" % "\n\t".join(map(str, watch_list))
-    print(msg)
-    print("Ctrl+C to interrupt")
+    if not skip_initial_sync:
+        print("initiating initial sync...")
+        on_change(watch_list)
+        print("remote up to speed with local. Starting watcher...")
+
+    print("watching: \n\t%s" % "\n\t".join(map(str, watch_list)))
+    print(
+        "Kill the process (Ctrl+C) to interrupt. "
+        "Any local changes will be pushed to the remote(s)."
+    )
 
     hashes = {}
     while True:
@@ -105,6 +113,7 @@ def _sync(
     refresh_rate: float = 1,
     recursive: bool = True,
     dry_run: bool = False,
+    skip_initial_sync: bool = False,
     include_files: str = ".*\.py$",
 ):
     _app_name, _, unit_tgt = target.rpartition("/")
@@ -149,10 +158,10 @@ def _sync(
         )
         time.sleep(refresh_rate)
 
-    msg = "ready to sync to: \n\t%s" % "\n\t".join(
-        (f"{app}/{unit}" for app, unit in units)
+    print(
+        "ready to sync to: \n\t%s"
+        % "\n\t".join((f"{app}/{unit}" for app, unit in units))
     )
-    print(msg)
 
     source_folders = source_dirs.split(";")
     watch(
@@ -161,6 +170,7 @@ def _sync(
         include_files,
         recursive,
         refresh_rate,
+        skip_initial_sync=skip_initial_sync,
     )
 
 
@@ -212,6 +222,13 @@ def sync(
         help="A regex to filter the watchable files with. By defauly, we only sync *.py "
         "files.",
     ),
+    skip_initial_sync: bool = typer.Option(
+        False,
+        "--skip-initial-sync",
+        "-S",
+        help="Skip the initial sync. "
+        "This means only the files you touch AFTER the process is started will be synced.",
+    ),
 ):
     """Syncs a local folder to a remote juju unit via juju scp.
 
@@ -237,6 +254,7 @@ def sync(
         recursive=recursive,
         dry_run=dry_run,
         include_files=include_files,
+        skip_initial_sync=skip_initial_sync,
     )
 
 
