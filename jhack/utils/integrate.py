@@ -478,10 +478,13 @@ def cmr(remote, local=None, dry_run: bool = False):
 
 
 def _cmr(remote, local=None, dry_run: bool = False):
+    print(f"gathering imatrix for model {local or '<the current model>'}")
     mtrx1 = IntegrationMatrix(model=local)
+    print(f"gathering imatrix for model {remote}")
     mtrx2 = IntegrationMatrix(model=remote)
     apps1 = mtrx1._apps
     apps2 = mtrx2._apps
+    print(f"{len(apps1)} and {len(apps2)} found respectively \n")
 
     cmrs: Dict[Tuple[AppName, AppName], List[RelationBinding]] = {}
 
@@ -554,7 +557,7 @@ def _cmr(remote, local=None, dry_run: bool = False):
         _pull_cmrs(opts.values(), remote, local, dry_run)
     else:
         prov, binding, req = opts[cmr]
-        _pull_cmrs((prov, binding, req), remote, local, dry_run)
+        _pull_cmrs(((prov, binding, req),), remote, local, dry_run)
 
 
 def _pull_cmrs(

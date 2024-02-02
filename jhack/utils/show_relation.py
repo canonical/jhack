@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 import typer
 
@@ -216,11 +216,19 @@ def get_unit_info(
 
 
 def get_relation_by_endpoint(
-    relations,
+    relations: List[Dict[str, Any]],
     obj: RelationEndpointURL,
     other_obj: RelationEndpointURL,
     relation: "Relation",
 ):
+    if relation.type == RelationType.peer:
+        matches = [r for r in relations if r["endpoint"] == relation.requirer_endpoint]
+        if len(matches) != 1:
+            raise ValueError(
+                f"Would expect a single peer on {relation.requirer_endpoint}"
+            )
+        return matches[0]
+
     local_endpoint = obj.endpoint
     remote_endpoint = other_obj.endpoint
 
@@ -237,7 +245,10 @@ def get_relation_by_endpoint(
         else:
             continue
 
-        if obj.unit_name in candidate.get("related-units", set()):
+        if relation.type == RelationType.cross_model and candidate.get("cross-model"):
+            matches.append(candidate)
+
+        elif obj.unit_name in candidate.get("related-units", set()):
             matches.append(candidate)
 
     if relation.type == RelationType.regular:
@@ -255,8 +266,9 @@ def get_relation_by_endpoint(
             f"in {other_obj.app_name!r}"
         )
     if len(matches) > 1:
+        # fixme: if these are CMRs, it could be https://github.com/canonical/jhack/issues/129
         raise ValueError(
-            f"multiple relations found with remote endpoint={remote_endpoint!r} "
+            f"multiple relations ({len(matches)}) found with remote endpoint={remote_endpoint!r} "
             f"and local endpoint={local_endpoint!r} "
             f"in {other_obj.app_name!r} (relations={matches})"
         )
@@ -485,8 +497,8 @@ def get_databags(
     """
     data = get_unit_info(
         other_obj.unit_name,
-        obj.unit_name,
-        endpoint=other_obj.endpoint,
+        # obj.unit_name,
+        # endpoint=other_obj.endpoint,
         model=other_model,
     )
     relations = data.get("relation-info")
@@ -1079,6 +1091,6 @@ def _sync_show_relation(
 
 if __name__ == "__main__":
     _sync_show_relation(
-        endpoint1="loki",
-        endpoint2="gagent",
+        "loki",
+        "gagent",
     )
