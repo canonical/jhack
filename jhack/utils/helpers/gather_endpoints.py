@@ -70,7 +70,13 @@ def gather_endpoints(
         if is_subordinate:
             unit = f"{app_name}/0"
         else:
-            unit = next(iter(app["units"]))
+            try:
+                unit = next(iter(app["units"]))
+            except KeyError as e:
+                raise RuntimeError(
+                    f"juju status for {app_name} has no 'units' field. "
+                    f"Is the app still bootstrapping?"
+                ) from e
 
         try:
             metadata = fetch_file(unit, "metadata.yaml", model=model)
