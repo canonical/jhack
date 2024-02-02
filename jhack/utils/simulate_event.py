@@ -1,4 +1,10 @@
-from typing import List
+import os
+import shlex
+import subprocess
+import sys
+import threading
+from subprocess import Popen, PIPE
+from typing import List, Optional
 
 import typer
 
@@ -69,6 +75,7 @@ def _get_env(
     override: List[str] = None,
     operator_dispatch: bool = False,
     model: str = None,
+    debug_at: Optional[str] = None,
 ):
     current_model = get_current_model()
     env = {
@@ -76,6 +83,9 @@ def _get_env(
         "JUJU_MODEL_NAME": current_model,
         "JUJU_UNIT_NAME": unit,
     }
+
+    if debug_at:
+        env["JUJU_DEBUG_AT"] = debug_at
 
     if endpoint := _get_relation_endpoint(event):
         relation_remote_app = None
@@ -143,6 +153,7 @@ def _simulate_event(
     print_captured_stderr: bool = False,
     emit_juju_log: bool = True,
     model: str = None,
+    debug_at: Optional[str] = None,
     dry_run: bool = False,
 ):
     if not len(unit.split("/")) == 2:
@@ -155,6 +166,7 @@ def _simulate_event(
         event,
         relation_remote=relation_remote,
         override=env_override,
+        debug_at=debug_at,
         operator_dispatch=operator_dispatch,
     )
 
@@ -176,17 +188,23 @@ def _simulate_event(
         return
 
     logger.info(cmd)
-    proc = JPopen(cmd.split())
-    proc.wait()
-    if proc.returncode != 0:
-        logger.error(f"cmd {cmd} terminated with {proc.returncode}")
-        logger.error(f"stdout={proc.stdout.read()}")
-        logger.error(f"stderr={proc.stderr.read()}")
+
+    if debug_at:
+        os.system('gnome-terminal -- bash -c "' + shlex.quote(cmd) + ';bash"')
+
     else:
-        if print_captured_stdout and (stdout := proc.stdout.read()):
-            print(f"[captured stdout: ]\n{stdout.decode('utf-8')}")
-        if print_captured_stderr and (stderr := proc.stderr.read()):
-            print(f"[captured stderr: ]\n{stderr.decode('utf-8')}")
+        proc = JPopen(cmd.split(), text=True)
+        proc.wait()
+
+        if proc.returncode != 0:
+            logger.error(f"cmd {cmd} terminated with {proc.returncode}")
+            logger.error(f"stdout={proc.stdout.read()}")
+            logger.error(f"stderr={proc.stderr.read()}")
+        else:
+            if print_captured_stdout and (stdout := proc.stdout.read()):
+                print(f"[captured stdout: ]\n{stdout}")
+            if print_captured_stderr and (stderr := proc.stderr.read()):
+                print(f"[captured stderr: ]\n{stderr}")
 
     in_model = f" in model {model}" if model else ""
     print(f"Fired {event} on {unit}{in_model}.")
@@ -206,6 +224,12 @@ def simulate_event(
         " - 'start'"
         " - 'config-changed' # no underscores"
         " - 'my-relation-name-relation-joined' # write it out in full",
+    ),
+    debug_at: Optional[str] = typer.Option(
+        None,
+        help="If set, opens a pdb session same as with juju debug-code."
+        " - 'all' # any breakpoint, even user-set"
+        " - 'hook' # operator-specific breakpoint, right at the top of the first event handler",
     ),
     relation_remote: str = typer.Option(
         None,
@@ -252,6 +276,7 @@ def simulate_event(
         print_captured_stderr=show_output,
         model=model,
         dry_run=dry_run,
+        debug_at=debug_at,
     )
 
 
