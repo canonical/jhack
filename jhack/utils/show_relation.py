@@ -718,11 +718,7 @@ def _coalesce_endpoint_and_n(
             ep_url_1.app_name if not app1 else ep_url_2.app_name if not app2 else None
         )
         if app_not_found:
-            msg += (
-                f" {app_not_found!r} not found in model {model or '<the current model>'!r}; \n"
-                f"are you trying to show a CMR? If so, you need to \n"
-                f"pass `-m <the model where {app_not_found!r} lives>`"
-            )
+            msg += f" {app_not_found!r} not found in model {model or '<the current model>'!r}."
             raise RuntimeError(msg)
         raise RuntimeError(msg)
 
