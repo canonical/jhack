@@ -254,6 +254,34 @@ def modify_remote_file(unit: str, path: str):
         check_call(cmd)
 
 
+def push_file(unit: str, local_path: Path, remote_path: str, model: str = None):
+    if remote_path.startswith("/"):
+        remote_path = remote_path[1:]
+    unit_sanitized = unit.replace("/", "-")
+    model_arg = f" -m {model}" if model else ""
+    full_remote_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+    cmd = f"juju scp{model_arg} {local_path} {unit}:{full_remote_path}"
+    try:
+        check_output(shlex.split(cmd))
+    except CalledProcessError as e:
+        raise RuntimeError(f"Failed to push {local_path} to {unit_sanitized}.") from e
+
+
+def rm_file(unit: str, remote_path: str, model: str = None):
+    if remote_path.startswith("/"):
+        remote_path = remote_path[1:]
+    unit_sanitized = unit.replace("/", "-")
+    model_arg = f" -m {model}" if model else ""
+    full_remote_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+    cmd = f"juju ssh{model_arg} {unit} rm {full_remote_path}"
+    try:
+        check_output(shlex.split(cmd))
+    except CalledProcessError as e:
+        raise RuntimeError(
+            f"Failed to remove {full_remote_path} from {unit_sanitized}."
+        ) from e
+
+
 def fetch_file(
     unit: str, remote_path: str, local_path: Path = None, model: str = None
 ) -> Optional[str]:
