@@ -23,14 +23,18 @@ from ops.main import (
 MODULE_NAME = os.getenv("CHARM_RPC_MODULE_NAME")  # string
 ENTRYPOINT = os.getenv("CHARM_RPC_ENTRYPOINT")  # string
 SCRIPT_NAME = os.getenv("CHARM_RPC_SCRIPT_NAME")  # string
+LOGLEVEL = os.getenv("CHARM_RPC_LOGLEVEL")  # string
+
+logger = logging.getLogger("charm-rpc")
+logger.setLevel(LOGLEVEL)
 
 
 def rpc(charm):
     # load module
     module = importlib.import_module(MODULE_NAME)
     entrypoint = getattr(module, ENTRYPOINT)
-    logging.debug(
-        f"found entrypoint {ENTRYPOINT} in {SCRIPT_NAME}. Invoking on charm..."
+    logger.debug(
+        f"found entrypoint {ENTRYPOINT!r} in {SCRIPT_NAME}. Invoking on charm..."
     )
     return_value = entrypoint(charm)
     return return_value
@@ -42,7 +46,7 @@ def ops_main_rpc(charm_class: Type[ops.CharmBase], use_juju_for_storage: bool):
     model_backend = ops.model._ModelBackend()
     debug = "JUJU_DEBUG" in os.environ
     setup_root_logging(model_backend, debug=debug)
-    logging.debug("charm rpc dispatch v0.1 up and running.")
+    logger.debug("charm rpc dispatch v0.1 up and running.")
 
     # not a real event, but we don't care
     os.environ["JUJU_DISPATCH_PATH"] = "charm-rpc"
@@ -67,12 +71,6 @@ def ops_main_rpc(charm_class: Type[ops.CharmBase], use_juju_for_storage: bool):
 
     if use_juju_for_storage is None:
         use_juju_for_storage = _should_use_controller_storage(charm_state_path, meta)
-    elif use_juju_for_storage:
-        warnings.warn(
-            "Controller storage is deprecated; it's intended for "
-            "podspec charms and will be removed in a future release.",
-            category=DeprecationWarning,
-        )
 
     if use_juju_for_storage:
         store = ops.storage.JujuStorage()
@@ -84,7 +82,7 @@ def ops_main_rpc(charm_class: Type[ops.CharmBase], use_juju_for_storage: bool):
     framework.set_breakpointhook()
     charm = charm_class(framework)
 
-    logging.debug(f"instantiated charm {charm.__class__.__name__}")
+    logger.debug(f"instantiated charm {charm.__class__.__name__}")
     return charm
 
 
@@ -110,7 +108,7 @@ def load_charm_type() -> Type[ops.CharmBase]:
             and issubclass(obj, ops.CharmBase)
             and obj.__name__ != "CharmBase"
         ):
-            logging.debug(f"found charm type {obj}")
+            logger.debug(f"found charm type {obj}")
             return obj
 
     raise RuntimeError("couldn't find any charm type in charm.py")
@@ -122,8 +120,9 @@ def main():
     charm = ops_main_rpc(charm_type, use_juju_for_storage=use_juju_for_storage)
     output = rpc(charm)
 
-    # todo: worth it sending back pickles instead?
-    print(output)
+    if output is not None:
+        print(output)
+
     sys.exit(0)
 
 

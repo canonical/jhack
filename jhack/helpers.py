@@ -264,7 +264,7 @@ def push_file(unit: str, local_path: Path, remote_path: str, model: str = None):
     try:
         check_output(shlex.split(cmd))
     except CalledProcessError as e:
-        raise RuntimeError(f"Failed to push {local_path} to {unit_sanitized}.") from e
+        raise RuntimeError(f"Failed to push {local_path} to {unit}.") from e
 
 
 def rm_file(unit: str, remote_path: str, model: str = None):

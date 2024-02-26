@@ -1,9 +1,15 @@
+import importlib
+import inspect
+import os
 import shlex
+import sys
+from importlib.util import spec_from_file_location, module_from_spec
 from pathlib import Path
 from subprocess import run
 from typing import Optional
 
 import typer
+from ops import CharmBase
 
 from jhack.helpers import push_file, rm_file
 from jhack.utils.tail_charms import Target
@@ -62,6 +68,36 @@ def charm_rpc(
     )
 
 
+class InvalidScriptOrEntrypointError(Exception):
+    """Raised if script or entrypoint are invalid."""
+
+
+def verify_signature(script, entrypoint):
+    logger.debug(f"verifying signature of {script}::{entrypoint}")
+
+    spec = spec_from_file_location(script.name, str(script.absolute()))
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    try:
+        entrypoint = getattr(module, entrypoint)
+    except AttributeError as e:
+        raise InvalidScriptOrEntrypointError(
+            f"identifier {entrypoint} not found in {module}."
+        ) from e
+
+    sig = inspect.signature(entrypoint)
+    params = list(sig.parameters.values())
+    if not (len(params) == 1 and params[0].name == "charm"):
+        raise InvalidScriptOrEntrypointError(
+            f"The crpc entrypoint {entrypoint!r} has the wrong signature. "
+            "It needs to take a single positional argument called 'charm'. This will be a "
+            "subclass of `ops.CharmBase`."
+        )
+
+    logger.debug(f"{script}::{entrypoint} signature OK")
+
+
 def _charm_rpc(
     target: str,
     script: Path,
@@ -85,6 +121,8 @@ def _charm_rpc(
 
     target = Target.from_name(target)
 
+    verify_signature(script, entrypoint)
+
     # TODO: we could attempt to load the module and verify the signature of the entrypoint now
     logger.info(f"pushing crpc module {script}...")
     remote_rpc_module_path = f"src/{crpc_module_name}.py"
@@ -102,6 +140,7 @@ def _charm_rpc(
             "CHARM_RPC_MODULE_NAME": crpc_module_name,
             "CHARM_RPC_ENTRYPOINT": entrypoint,
             "CHARM_RPC_SCRIPT_NAME": script.name,
+            "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
             "PYTHONPATH": "lib:venv",
         }.items()
     )
