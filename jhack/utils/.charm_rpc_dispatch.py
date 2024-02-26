@@ -40,7 +40,7 @@ def rpc(charm):
     return return_value
 
 
-def ops_main_rpc(charm_class: Type[ops.CharmBase], use_juju_for_storage: bool):
+def ops_main_rpc(charm_class: Type[ops.charm.CharmBase], use_juju_for_storage: bool):
     charm_dir = _get_charm_dir()
 
     model_backend = ops.model._ModelBackend()
@@ -86,7 +86,7 @@ def ops_main_rpc(charm_class: Type[ops.CharmBase], use_juju_for_storage: bool):
     return charm
 
 
-def check_controller_storage(charm_type: Type[ops.CharmBase]) -> bool:
+def check_controller_storage(charm_type: Type[ops.charm.CharmBase]) -> bool:
     # try to guesstimate if the charm is using controller storage or not.
     # unfortunately this is probably best done in the hackiest way possible
     charm_source = Path(inspect.getmodule(charm_type).__file__).read_text()
@@ -100,12 +100,12 @@ def check_controller_storage(charm_type: Type[ops.CharmBase]) -> bool:
     return False
 
 
-def load_charm_type() -> Type[ops.CharmBase]:
+def load_charm_type() -> Type[ops.charm.CharmBase]:
     module = importlib.import_module("charm")
     for identifier, obj in module.__dict__.items():
         if (
             isinstance(obj, type)
-            and issubclass(obj, ops.CharmBase)
+            and issubclass(obj, ops.charm.CharmBase)
             and obj.__name__ != "CharmBase"
         ):
             logger.debug(f"found charm type {obj}")

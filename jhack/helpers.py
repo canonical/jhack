@@ -254,17 +254,87 @@ def modify_remote_file(unit: str, path: str):
         check_call(cmd)
 
 
-def push_file(unit: str, local_path: Path, remote_path: str, model: str = None):
-    if remote_path.startswith("/"):
-        remote_path = remote_path[1:]
-    unit_sanitized = unit.replace("/", "-")
+def _push_file_k8s_cmd(
+    unit: str,
+    local_path: Path,
+    remote_path: str,
+    is_full_path: bool = False,
+    container: Optional[str] = None,
+    model: str = None,
+):
+
+    container_arg = f" --container {container} " if container else ""
     model_arg = f" -m {model}" if model else ""
-    full_remote_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
-    cmd = f"juju scp{model_arg} {local_path} {unit}:{full_remote_path}"
-    try:
-        check_output(shlex.split(cmd))
-    except CalledProcessError as e:
-        raise RuntimeError(f"Failed to push {local_path} to {unit}.") from e
+
+    if is_full_path:
+        # todo: should we strip the initial / in some cases?
+        full_remote_path = remote_path
+    else:
+        unit_sanitized = unit.replace("/", "-")
+        full_remote_path = (
+            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+        )
+    cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
+    return cmd
+
+
+def _push_file_machine_cmd(
+    unit: str,
+    local_path: Path,
+    remote_path: str,
+    is_full_path: bool = False,
+    model: str = None,
+):
+    model_arg = f" -m {model}" if model else ""
+
+    if is_full_path:
+        full_remote_path = remote_path
+    else:
+        unit_sanitized = unit.replace("/", "-")
+        full_remote_path = (
+            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+        )
+    cmd = f"cat {local_path} | juju ssh {unit}{model_arg} sudo -i 'sudo tee {full_remote_path}' > /dev/null"
+    return cmd
+
+
+def push_file(
+    unit: str,
+    local_path: Path,
+    remote_path: str,
+    is_full_path: bool = False,
+    container: Optional[str] = None,
+    model: str = None,
+    dry_run: bool = False,
+):
+    if get_substrate() == "machine":
+        cmd = _push_file_machine_cmd(
+            unit=unit,
+            local_path=local_path,
+            remote_path=remote_path,
+            is_full_path=is_full_path,
+            model=model,
+        )
+    else:
+        cmd = _push_file_k8s_cmd(
+            unit=unit,
+            local_path=local_path,
+            remote_path=remote_path,
+            is_full_path=is_full_path,
+            container=container,
+            model=model,
+        )
+
+    if dry_run:
+        print(f"would run {cmd}")
+        return
+
+    proc = JPopen([cmd], shell=True)
+    proc.wait()
+    retcode = proc.returncode
+    if retcode != 0:
+        logger.error(f"{cmd} errored with code {retcode}: ")
+        raise RuntimeError(f"Failed to push {local_path} to {unit}.")
 
 
 def rm_file(unit: str, remote_path: str, model: str = None):
