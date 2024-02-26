@@ -9,7 +9,7 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, get_substrate, juju_status
+from jhack.helpers import JPopen, get_substrate, juju_status, push_file
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -123,19 +123,19 @@ def _sync(
         status = juju_status(json=True)
         if _app_name == "*":
             units = [
-                unit_name.split("/")
+                unit_name
                 for app in status["applications"].values()
                 for unit_name in app.get("units", {})
             ]
         else:
             units = [
-                unit_name.split("/")
+                unit_name
                 for unit_name in status["applications"][_app_name].get("units", {})
             ]
     else:
-        units = [unit_tgt]
+        units = [target]
 
-    remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit}/charm/"
+    remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
 
     def on_change(changed_files):
         if not changed_files:
@@ -147,21 +147,17 @@ def _sync(
                     push_to_remote_juju_unit(
                         changed,
                         remote_root,
-                        app,
                         unit,
                         container_name,
                         dry_run=dry_run,
                     )
-                    for (app, unit), changed in product(units, changed_files)
+                    for unit, changed in product(units, changed_files)
                 )
             )
         )
         time.sleep(refresh_rate)
 
-    print(
-        "ready to sync to: \n\t%s"
-        % "\n\t".join((f"{app}/{unit}" for app, unit in units))
-    )
+    print("ready to sync to: \n\t%s" % "\n\t".join(units))
 
     source_folders = source_dirs.split(";")
     watch(
@@ -261,46 +257,27 @@ def sync(
 async def push_to_remote_juju_unit(
     file: Path,
     remote_root: str,
-    app,
     unit: str,
     container_name,
     dry_run: bool = False,
 ):
+    app, _, unit_id = unit.rpartition("/")
     remote_file_path = (remote_root + str(file)[len(os.getcwd()) + 1 :]).format(
-        unit=unit, app=app
+        unit_id=unit_id, app=app
     )
-    machine_charm = get_substrate() == "machine"
 
-    if not machine_charm:
-        container_opt = f"--container {container_name} " if container_name else ""
-        cmd = f"juju scp {container_opt}{file} {app}/{unit}:{remote_file_path}"
-        if dry_run:
-            print(f"would run {cmd!r}")
-            return
+    push_file(
+        unit,
+        file,
+        remote_file_path,
+        is_full_path=True,
+        container=container_name,
+        dry_run=dry_run,
+    )
+    if dry_run:
+        return
 
-        proc = JPopen(cmd.split(" "))
-
-    else:
-        cmd = (
-            f"cat {file} | juju ssh {app}/{unit} sudo -i 'sudo tee {remote_file_path}'"
-        )
-
-        if dry_run:
-            print(f"would run :{cmd!r}")
-            return
-
-        proc = JPopen([cmd], shell=True)
-
-    proc.wait()
-    retcode = proc.returncode
-    if retcode != 0:
-        logger.error(
-            f"{cmd} errored with code {retcode}: "
-            f"\nstdout={proc.stdout.read()}, "
-            f"\nstderr={proc.stderr.read()}"
-        )
-
-    print(f"synced {file} -> {app}/{unit}")
+    print(f"synced {file} -> {unit}")
 
 
 if __name__ == "__main__":
