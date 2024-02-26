@@ -1,8 +1,10 @@
 import importlib
 import inspect
 import os
+import select
 import shlex
 import sys
+import tempfile
 from importlib.util import spec_from_file_location, module_from_spec
 from pathlib import Path
 from subprocess import run
@@ -20,8 +22,12 @@ logger = jhack_logger.getChild("crpc")
 
 def charm_rpc(
     target: str = typer.Argument(..., help="Target unit or database file."),
-    script: Path = typer.Argument(
-        ..., help="Path to a python script to be executed in the charm context."
+    script: Path = typer.Option(
+        None,
+        "-i",
+        "--input",
+        help="Path to a python script to be executed in the charm context."
+        "If not provided, we'll take STDIN.",
     ),
     entrypoint: str = typer.Option(
         "main",
@@ -76,7 +82,12 @@ def verify_signature(script, entrypoint):
     logger.debug(f"verifying signature of {script}::{entrypoint}")
 
     spec = spec_from_file_location(script.name, str(script.absolute()))
-    module = module_from_spec(spec)
+    try:
+        module = module_from_spec(spec)
+    except AttributeError:
+        logger.debug(f"failed to import {script}; signature verification skipped")
+        return
+
     spec.loader.exec_module(module)
 
     try:
@@ -115,6 +126,26 @@ def _charm_rpc(
         the script's entrypoint instead of being passed to ops.main standard event loop
     3. cleans up
     """
+    tf = None
+    if script is None:
+        tf = tempfile.NamedTemporaryFile(dir=Path("~").expanduser())
+        f = Path(tf.name)
+
+        # from https://stackoverflow.com/questions/3762881/how-do-i-check-if-stdin-has-some-data
+        stdin_has_data = select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]
+        if not stdin_has_data:
+            raise RuntimeError("no script provided in stdin or as `--input`.")
+
+        stdin = sys.stdin.read()
+        f.write_text(stdin)
+        script = f
 
     if not script.exists():
         raise FileNotFoundError(script)
@@ -157,3 +188,6 @@ def _charm_rpc(
             rm_file(target.unit_name, remote_rpc_dispatch_path, model=model)
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
+
+    if tf:
+        tf.close()
