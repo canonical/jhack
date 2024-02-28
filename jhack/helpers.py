@@ -294,6 +294,10 @@ def _push_file_machine_cmd(
         full_remote_path = (
             f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
         )
+
+    # FIXME:
+    #  run this before, and `juju scp` will work.
+    #  juju ssh {unit} -- "sudo mkdir -p /root/.ssh; sudo cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys"
     cmd = f"cat {local_path} | juju ssh {unit}{model_arg} sudo -i 'sudo tee {full_remote_path}' > /dev/null"
     return cmd
 
