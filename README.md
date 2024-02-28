@@ -819,3 +819,24 @@ In a nutshell, `state-apply` _can_ only do:
   - [ ] `scenario recorder download-db`
   - [ ] `scenario recorder replay`
   - [ ] integrate with Theatre to see the graph expand in real time
+
+
+# CRPC
+`jhack crpc` is a script that allows you to upload a python script to one or multiple live Juju 
+units and running them with the charm instance as an argument.
+
+```python
+# ./path/to/script.py
+def main(charm):
+    relations = charm.model.relations['bar']
+    for relation in relations:
+        print(relation.app, relation.data[relation.app]['key'])
+        relation.data[relation.app]['other-key'] = 'value'
+```
+
+Now type:
+
+> `jhack crpc myapp/0 --input ./path/to/script.py`
+
+and you should see as output the current value of the `key` application data setting. 
+You will also see that the `other-key` has been updated to `"value"`.
