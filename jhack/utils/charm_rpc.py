@@ -1,27 +1,33 @@
-import importlib
 import inspect
 import os
 import select
 import shlex
 import sys
 import tempfile
+from functools import partial
 from importlib.util import spec_from_file_location, module_from_spec
+from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from subprocess import run
 from typing import Optional
 
 import typer
-from ops import CharmBase
 
-from jhack.helpers import push_file, rm_file
-from jhack.utils.tail_charms import Target
+from jhack.helpers import push_file, rm_file, juju_status
 from jhack.logger import logger as jhack_logger
+from jhack.utils.nuke import timeout
+from jhack.utils.tail_charms import Target
 
 logger = jhack_logger.getChild("crpc")
 
 
 def charm_rpc(
-    target: str = typer.Argument(..., help="Target unit or database file."),
+    target: str = typer.Argument(
+        ...,
+        help="Target unit or application name. "
+        "Using an application name will run the script on all units.",
+    ),
     script: Path = typer.Option(
         None,
         "-i",
@@ -150,10 +156,46 @@ def _charm_rpc(
     if not script.exists():
         raise FileNotFoundError(script)
 
-    target = Target.from_name(target)
-
     verify_signature(script, entrypoint)
 
+    targets = []
+    if "/" not in target:
+        # app name received. run on all units.
+        status = juju_status(app_name=target, model=model, json=True)
+        targets.extend(
+            Target.from_name(u) for u in status["applications"][target]["units"]
+        )
+
+    else:
+        targets.append(Target.from_name(target))
+
+    with Pool(len(targets)) as pool:
+        logger.debug(f"initiating async crpc calls to {targets}")
+        pool.map(
+            partial(
+                _exec_crpc_script,
+                script=script,
+                entrypoint=entrypoint,
+                crpc_module_name=crpc_module_name,
+                crpc_dispatch_name=crpc_dispatch_name,
+                model=model,
+                cleanup=cleanup,
+                tf=tf,
+            ),
+            targets,
+        )
+
+
+def _exec_crpc_script(
+    target: Target,
+    script: Path,
+    entrypoint: str,
+    crpc_module_name: str,
+    crpc_dispatch_name: str,
+    model: str,
+    cleanup: bool,
+    tf: Optional[tempfile._TemporaryFileWrapper],
+):
     # TODO: we could attempt to load the module and verify the signature of the entrypoint now
     logger.info(f"pushing crpc module {script}...")
     remote_rpc_module_path = f"src/{crpc_module_name}.py"
