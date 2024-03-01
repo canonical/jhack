@@ -7,16 +7,13 @@ import tempfile
 from functools import partial
 from importlib.util import spec_from_file_location, module_from_spec
 from multiprocessing import Pool
-from multiprocessing.pool import ThreadPool
 from pathlib import Path
 from subprocess import run
-from typing import Optional
 
 import typer
 
 from jhack.helpers import push_file, rm_file, juju_status
 from jhack.logger import logger as jhack_logger
-from jhack.utils.nuke import timeout
 from jhack.utils.tail_charms import Target
 
 logger = jhack_logger.getChild("crpc")
@@ -180,7 +177,6 @@ def _charm_rpc(
                 crpc_dispatch_name=crpc_dispatch_name,
                 model=model,
                 cleanup=cleanup,
-                tf=tf,
             ),
             targets,
         )
@@ -194,7 +190,6 @@ def _exec_crpc_script(
     crpc_dispatch_name: str,
     model: str,
     cleanup: bool,
-    tf: Optional[tempfile._TemporaryFileWrapper],
 ):
     # TODO: we could attempt to load the module and verify the signature of the entrypoint now
     logger.info(f"pushing crpc module {script}...")
@@ -230,6 +225,3 @@ def _exec_crpc_script(
             rm_file(target.unit_name, remote_rpc_dispatch_path, model=model)
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
-
-    if tf:
-        tf.close()
