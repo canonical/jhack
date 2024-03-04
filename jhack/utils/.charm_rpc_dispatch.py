@@ -3,23 +3,28 @@ import inspect
 import logging
 import os
 import sys
-import warnings
 from pathlib import Path
-from typing import Type
+from typing import Dict, Type
 
 import ops
 import ops.storage
 from ops.main import (
-    _get_charm_dir,
-    setup_root_logging,
-    _Dispatcher,
-    CharmMeta,
     CHARM_STATE_FILE,
+    CharmMeta,
     JujuVersion,
+    _Dispatcher,
+    _get_charm_dir,
     _should_use_controller_storage,
+    setup_root_logging,
 )
 
 
+def _deserialize_env(s: str) -> Dict[str, str]:
+    env = dict((pair.split("=") for pair in s.split(" ")))
+    return env
+
+
+ENV: Dict[str, str] = _deserialize_env(os.getenv("CHARM_RPC_ENV"))
 MODULE_NAME = os.getenv("CHARM_RPC_MODULE_NAME")  # string
 ENTRYPOINT = os.getenv("CHARM_RPC_ENTRYPOINT")  # string
 SCRIPT_NAME = os.getenv("CHARM_RPC_SCRIPT_NAME")  # string
@@ -48,8 +53,8 @@ def ops_main_rpc(charm_class: Type[ops.charm.CharmBase], use_juju_for_storage: b
     setup_root_logging(model_backend, debug=debug)
     logger.debug("charm rpc dispatch v0.1 up and running.")
 
-    # not a real event, but we don't care
-    os.environ["JUJU_DISPATCH_PATH"] = "charm-rpc"
+    # inject the juju envvars we need
+    os.environ.update(ENV)
 
     dispatcher = _Dispatcher(charm_dir)
     metadata = (charm_dir / "metadata.yaml").read_text()

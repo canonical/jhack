@@ -39,6 +39,7 @@ def main():
     from jhack.scenario.snapshot import snapshot
     from jhack.scenario.state_apply import state_apply
     from jhack.utils import integrate
+    from jhack.utils.charm_rpc import charm_rpc
     from jhack.utils.event_recorder.client import (
         dump_db,
         emit,
@@ -51,7 +52,6 @@ def main():
     from jhack.utils.nuke import nuke
     from jhack.utils.print_env import print_env
     from jhack.utils.show_relation import sync_show_relation
-    from jhack.utils.charm_rpc import charm_rpc
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event
     from jhack.utils.sync import sync as sync_deployed_charm

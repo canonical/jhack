@@ -5,15 +5,17 @@ import shlex
 import sys
 import tempfile
 from functools import partial
-from importlib.util import spec_from_file_location, module_from_spec
+from importlib.util import module_from_spec, spec_from_file_location
 from multiprocessing import Pool
 from pathlib import Path
 from subprocess import run
+from typing import List
 
 import typer
 
-from jhack.helpers import push_file, rm_file, juju_status
+from jhack.helpers import juju_status, push_file, rm_file
 from jhack.logger import logger as jhack_logger
+from jhack.utils.simulate_event import build_event_env
 from jhack.utils.tail_charms import Target
 
 logger = jhack_logger.getChild("crpc")
@@ -56,6 +58,27 @@ def charm_rpc(
         help="Remove all files created onto the unit when you're done.",
         is_flag=True,
     ),
+    validate: bool = typer.Option(
+        True,
+        help="Attempt to load the entrypoint from the crpc script to validate its signature.",
+        is_flag=True,
+    ),
+    env_override: List[str] = typer.Option(
+        None,
+        "--env",
+        help="Key-value mapping to override any ENV with. For whatever reason."
+        "E.g."
+        " --event foo-pebble-ready --env JUJU_DEPARTING_UNIT_NAME=remote/0 --env FOO=bar",
+    ),
+    event: str = typer.Option(
+        "charm-rpc",
+        "--event",
+        help="The name of an event whose context to simulate. "
+        "Needs to be a valid event name for the unit; e.g. \n"
+        " - 'start' \n"
+        " - 'config-changed' \n"
+        " - 'my-relation-name-relation-joined' # write it out in full",
+    ),
 ):
     """Executes a function defined in a local python script onto a live Juju unit,
     passing to it the charm instance.
@@ -64,6 +87,11 @@ def charm_rpc(
         $ echo "def main(charm):\n    print("welcome to", charm.unit.name)" > crpc.py
         $ jhack crpc myapp/1 crpc.py
          --> welcome to myapp/1
+
+    By default, it sets up a generic hook environment (no event-type-specific envvars are set up).
+    Essentially identical to running the script in the context of an ``update-status`` event.
+    If you want to execute the script in the context of a specific event, you can use the
+    ``--event`` option.
     """
 
     _charm_rpc(
@@ -74,6 +102,9 @@ def charm_rpc(
         crpc_dispatch_name=crpc_dispatch_name,
         model=model,
         cleanup=cleanup,
+        validate=validate,
+        env_override=env_override,
+        event=event,
     )
 
 
@@ -120,8 +151,10 @@ def _charm_rpc(
     crpc_dispatch_name: str,
     model: str,
     cleanup: bool,
+    validate: bool,
+    event: str,
+    env_override: List[str],
 ):
-
     """Rpc local script on live charm.
 
     1. uploads a local script to a charm unit
@@ -129,7 +162,6 @@ def _charm_rpc(
         the script's entrypoint instead of being passed to ops.main standard event loop
     3. cleans up
     """
-    tf = None
     if script is None:
         tf = tempfile.NamedTemporaryFile(dir=Path("~").expanduser())
         f = Path(tf.name)
@@ -153,7 +185,15 @@ def _charm_rpc(
     if not script.exists():
         raise FileNotFoundError(script)
 
-    verify_signature(script, entrypoint)
+    if validate:
+        try:
+            verify_signature(script, entrypoint)
+        except Exception as e:
+            logger.debug(e, exc_info=True)
+            logger.error(
+                f"encountered exception while verifying entrypoint signature... {e}"
+                f"Proceeding..."
+            )
 
     targets = []
     if "/" not in target:
@@ -177,6 +217,8 @@ def _charm_rpc(
                 crpc_dispatch_name=crpc_dispatch_name,
                 model=model,
                 cleanup=cleanup,
+                event=event,
+                env_override=env_override,
             ),
             targets,
         )
@@ -190,21 +232,32 @@ def _exec_crpc_script(
     crpc_dispatch_name: str,
     model: str,
     cleanup: bool,
+    event: str,
+    env_override: List[str],
 ):
-    # TODO: we could attempt to load the module and verify the signature of the entrypoint now
     logger.info(f"pushing crpc module {script}...")
     remote_rpc_module_path = f"src/{crpc_module_name}.py"
     push_file(target.unit_name, script, remote_rpc_module_path, model=model)
 
-    logger.info(f"pushing crpc dispatch script...")
+    logger.info("pushing crpc dispatch script...")
     remote_rpc_dispatch_path = f"src/{crpc_dispatch_name}.py"
     dispatch = Path(__file__).parent / ".charm_rpc_dispatch.py"
     push_file(target.unit_name, dispatch, remote_rpc_dispatch_path, model=model)
 
-    logger.info(f"preparing environment...")
+    if event or env_override:
+        evt = event or "charm-rpc"
+        logger.info(f"preparing environment for event {evt!r}...")
+        crpc_env = build_event_env(
+            target.unit_name, evt, override=env_override, model=model
+        )
+    else:
+        logger.info("setting up generic event context...")
+        crpc_env = "JUJU_DISPATCH_PATH=charm-rpc"
+
     env = " ".join(
         f"{key}={val}"
         for key, val in {
+            "CHARM_RPC_ENV": crpc_env,
             "CHARM_RPC_MODULE_NAME": crpc_module_name,
             "CHARM_RPC_ENTRYPOINT": entrypoint,
             "CHARM_RPC_SCRIPT_NAME": script.name,
@@ -213,7 +266,7 @@ def _exec_crpc_script(
         }.items()
     )
 
-    logger.info(f"executing crpc...")
+    logger.info("executing crpc...")
     exec_dispatch_cmd = f"juju exec --unit {target.unit_name} -- {env} python3 ./src/{crpc_dispatch_name}.py"
 
     run(shlex.split(exec_dispatch_cmd))

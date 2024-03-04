@@ -262,7 +262,6 @@ def _push_file_k8s_cmd(
     container: Optional[str] = None,
     model: str = None,
 ):
-
     container_arg = f" --container {container} " if container else ""
     model_arg = f" -m {model}" if model else ""
 
