@@ -821,8 +821,26 @@ In a nutshell, `state-apply` _can_ only do:
   - [ ] integrate with Theatre to see the graph expand in real time
 
 
-# CRPC
-`jhack crpc` is a script that allows you to upload a python script to one or multiple live Juju 
+# crpc
+`jhack crpc` is a command that allows you to evaluate simple one-line expressions in the context of a live charm (or multiple units thereof).
+
+> `jhack crpc myapp/0 self.model.relations`
+
+and you should see as output the current list of relations the charm has, for example
+
+> `[<ops.model.Relation ingress:50>]`
+
+Similarly, if the charm has a method called `_foobar`, you could write:
+
+> `jhack crpc myapp/0 self._foobar() + 42`
+
+and see the result in your standard output.
+
+Run the command with `--help` for additional options and configuration.
+
+
+# script
+`jhack script` is a command that allows you to upload a python script to one or multiple live Juju 
 units and running them with the charm instance as an argument.
 
 ```python
@@ -836,7 +854,9 @@ def main(charm):
 
 Now type:
 
-> `jhack crpc myapp/0 --input ./path/to/script.py`
+> `jhack script myapp/0 --input ./path/to/script.py`
 
 and you should see as output the current value of the `key` application data setting. 
 You will also see that the `other-key` has been updated to `"value"`.
+
+Run the command with `--help` for additional options and configuration.
