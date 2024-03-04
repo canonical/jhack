@@ -62,13 +62,14 @@ def _get_relation_endpoint(event: str):
     return False
 
 
-def _get_env(
+def build_event_env(
     unit,
     event,
     relation_remote: str = None,
     override: List[str] = None,
     operator_dispatch: bool = False,
     model: str = None,
+    glue: str = " ",
 ):
     current_model = get_current_model()
     env = {
@@ -130,7 +131,7 @@ def _get_env(
         logger.debug(f"removed {juju_context_id}")
         del env[juju_context_id]
 
-    return " ".join(f"{k}={v}" for k, v in env.items())
+    return glue.join(f"{k}={v}" for k, v in env.items())
 
 
 def _simulate_event(
@@ -150,7 +151,7 @@ def _simulate_event(
             f"invalid unit name: should be something like 'foo/0', not {unit}"
         )
 
-    env = _get_env(
+    env = build_event_env(
         unit,
         event,
         relation_remote=relation_remote,

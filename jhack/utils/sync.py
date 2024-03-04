@@ -9,7 +9,7 @@ from typing import List
 
 import typer
 
-from jhack.helpers import JPopen, get_substrate, juju_status, push_file
+from jhack.helpers import juju_status, push_file
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)

@@ -1,55 +1,76 @@
+import base64
 import importlib
 import inspect
 import logging
 import os
 import sys
-import warnings
 from pathlib import Path
-from typing import Type
+from typing import Dict, Type
 
 import ops
 import ops.storage
 from ops.main import (
-    _get_charm_dir,
-    setup_root_logging,
-    _Dispatcher,
-    CharmMeta,
     CHARM_STATE_FILE,
+    CharmMeta,
     JujuVersion,
+    _Dispatcher,
+    _get_charm_dir,
     _should_use_controller_storage,
+    setup_root_logging,
 )
 
 
+def _deserialize_env(s: str) -> Dict[str, str]:
+    env = dict((pair.split("=") for pair in s.split(" ")))
+    return env
+
+
+ENV: Dict[str, str] = _deserialize_env(os.getenv("CHARM_RPC_ENV"))
 MODULE_NAME = os.getenv("CHARM_RPC_MODULE_NAME")  # string
 ENTRYPOINT = os.getenv("CHARM_RPC_ENTRYPOINT")  # string
-SCRIPT_NAME = os.getenv("CHARM_RPC_SCRIPT_NAME")  # string
 LOGLEVEL = os.getenv("CHARM_RPC_LOGLEVEL")  # string
+EVAL_EXPR = os.getenv("CHARM_RPC_EXPR")  # string
 
 logger = logging.getLogger("charm-rpc")
 logger.setLevel(LOGLEVEL)
 
 
+def _decode(expr: str) -> str:
+    return base64.b64decode(expr.encode("utf-8")).decode("ascii")
+
+
 def rpc(charm):
-    # load module
-    module = importlib.import_module(MODULE_NAME)
-    entrypoint = getattr(module, ENTRYPOINT)
-    logger.debug(
-        f"found entrypoint {ENTRYPOINT!r} in {SCRIPT_NAME}. Invoking on charm..."
-    )
-    return_value = entrypoint(charm)
-    return return_value
+    if MODULE_NAME:
+        logger.debug("running rpc in script mode")
+
+        # load module
+        module = importlib.import_module(MODULE_NAME)
+        entrypoint = getattr(module, ENTRYPOINT)
+        logger.debug(
+            f"found entrypoint {ENTRYPOINT!r} in crpc script. Invoking on charm..."
+        )
+        return_value = entrypoint(charm)
+        return return_value
+
+    elif EVAL_EXPR:
+        expr = _decode(EVAL_EXPR)
+        logger.debug(f"running rpc in eval-expr mode: \n" f"expr={expr!r}")
+        try:
+            return eval(expr, {"self": charm})
+        except Exception:  # noqa
+            logger.exception(f"failed executing {expr} in with self={charm}.")
 
 
 def ops_main_rpc(charm_class: Type[ops.charm.CharmBase], use_juju_for_storage: bool):
+    # inject the juju envvars we need
+    os.environ.update(ENV)
+
     charm_dir = _get_charm_dir()
 
     model_backend = ops.model._ModelBackend()
     debug = "JUJU_DEBUG" in os.environ
     setup_root_logging(model_backend, debug=debug)
     logger.debug("charm rpc dispatch v0.1 up and running.")
-
-    # not a real event, but we don't care
-    os.environ["JUJU_DISPATCH_PATH"] = "charm-rpc"
 
     dispatcher = _Dispatcher(charm_dir)
     metadata = (charm_dir / "metadata.yaml").read_text()

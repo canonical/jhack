@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import typer
 
