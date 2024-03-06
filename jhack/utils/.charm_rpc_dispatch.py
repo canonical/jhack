@@ -56,7 +56,7 @@ def rpc(charm):
         expr = _decode(EVAL_EXPR)
         logger.debug(f"running rpc in eval-expr mode: \n" f"expr={expr!r}")
         try:
-            return eval(expr, {"self": charm})
+            return eval(expr, {"self": charm, "ops": ops})
         except Exception:  # noqa
             logger.exception(f"failed executing {expr} in with self={charm}.")
 
