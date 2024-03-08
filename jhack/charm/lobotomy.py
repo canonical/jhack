@@ -111,7 +111,7 @@ def _do_lobotomy(
     if not undo:
         push_file(
             target.unit_name,
-            local_path=Path(__file__).parent / "dispatch-lobo",
+            local_path=Path(__file__).parent / "dispatch_lobo.sh",
             remote_path="dispatch",
             model=model,
             container="charm",

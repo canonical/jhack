@@ -17,7 +17,7 @@ def unbork_juju(
     new model to it.
     Have a good day!
     """
-    unbork_juju_script = Path(__file__).parent / "unbork_juju"
+    unbork_juju_script = Path(__file__).parent / "unbork_juju.sh"
     if not unbork_juju_script.exists():
         raise RuntimeError(
             f"unbork_juju script not found. Is it where it should be? "
