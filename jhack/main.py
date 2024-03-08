@@ -50,7 +50,7 @@ def main():
     from jhack.utils.ffwd import fast_forward
     from jhack.utils.list_endpoints import list_endpoints
     from jhack.utils.nuke import nuke
-    from jhack.utils.print_env import print_env
+    from jhack.utils.print_env import jhack_version, print_env
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event
@@ -109,12 +109,13 @@ def main():
 
     app = typer.Typer(
         name="jhack",
-        help="Hacky, wacky, but ultimately charming."
-        "Home is https://github.com/PietroPasotti/jhack. "
+        help="Hacky, wacky, but ultimately charming.\n"
+        "Home is https://github.com/canonical/jhack.\n"
         "Head there for feature requests, bugs, etc...",
         no_args_is_help=True,
         rich_markup_mode="markdown",
     )
+    app.command(name="version")(jhack_version)
     app.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
     app.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
     app.command(name="show-stored", no_args_is_help=True)(show_stored)

@@ -82,6 +82,28 @@ def get_multipass_version():
     return multipass_version
 
 
+def jhack_version():
+    """Print the currently installed jhack version and exit."""
+    print(get_jhack_version())
+
+
+def get_jhack_version():
+    try:
+        jhack_version = metadata.version("jhack")
+    except PackageNotFoundError:
+        # jhack not installed but being used from sources:
+        pyproject = JHACK_PROJECT_ROOT / "pyproject.toml"
+        if pyproject.exists():
+            jhack_version = (
+                toml.load(pyproject)
+                .get("project", {})
+                .get("version", "<unknown version>")
+            )
+        else:
+            jhack_version = "<unknown version>"
+    return jhack_version
+
+
 def print_env(format: Format = FormatOption):
     """Print the details of the juju environment for use in bug reports."""
     if IS_SNAPPED:
@@ -97,24 +119,10 @@ def print_env(format: Format = FormatOption):
         f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
     )
 
-    try:
-        jhack_version = metadata.version("jhack")
-    except PackageNotFoundError:
-        # jhack not installed but being used from sources:
-        pyproject = JHACK_PROJECT_ROOT / "pyproject.toml"
-        if pyproject.exists():
-            jhack_version = (
-                toml.load(pyproject)
-                .get("project", {})
-                .get("version", "<unknown version>")
-            )
-        else:
-            jhack_version = "<unknown version>"
-
     multipass_version = get_multipass_version()
 
     data = {
-        "jhack": jhack_version,
+        "jhack": get_jhack_version(),
         "python": python_version,
         "juju-* snaps": _gather_juju_snaps_versions(format=format),
         "microk8s": get_output("microk8s version") or NOT_INSTALLED,
