@@ -65,7 +65,83 @@ def charm_rpc(
         " - 'my-relation-name-relation-joined' # write it out in full",
     ),
 ):
-    """Executes a method call on the charm instance."""
+    """Evaluates an expression in the context of a live charm.
+
+    RENAMED to ``jhack eval``.
+    """
+    logger.warning("`jhack crpc` is being renamed; please use `jhack eval`.")
+    _charm_rpc(
+        target=target,
+        expr=expr,
+        model=model,
+        cleanup=cleanup,
+        crpc_dispatch_name=crpc_dispatch_name,
+        env_override=env_override,
+        event=event,
+    )
+
+
+def charm_eval(
+    target: str = typer.Argument(
+        ...,
+        help="Target unit or application name. "
+        "Using an application name will evaluate the expression on all units.",
+    ),
+    expr: str = typer.Argument(
+        ...,
+        help="Path to an object or callable starting from the charm instance. "
+        "Can start with ``self.``, or it can be omitted."
+        "Examples: \n"
+        "- .model.relations['foo']\n"
+        "- self.ingress.is_ready\n",
+    ),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
+    cleanup: bool = typer.Option(
+        True,
+        help="Remove all files created onto the unit when you're done.",
+        is_flag=True,
+    ),
+    crpc_dispatch_name: str = typer.Option(
+        "crpc_dispatch",
+        help="Name of the (temporary) file containing the dispatch script.",
+    ),
+    env_override: List[str] = typer.Option(
+        None,
+        "--env",
+        help="Key-value mapping to override any ENV with. For whatever reason."
+        "E.g."
+        " --event foo-pebble-ready --env JUJU_DEPARTING_UNIT_NAME=remote/0 --env FOO=bar",
+    ),
+    event: str = typer.Option(
+        "charm-rpc",
+        "--event",
+        help="The name of an event whose context to simulate. "
+        "Needs to be a valid event name for the unit; e.g. \n"
+        " - 'start' \n"
+        " - 'config-changed' \n"
+        " - 'my-relation-name-relation-joined' # write it out in full",
+    ),
+):
+    """Evaluates an expression in the context of a live charm.
+
+    You can retrieve any value you can access from the charm instance:
+    >>> $ jhack eval unit/0 self.app.name
+    >>> "unit"
+
+    You can invoke any method you can refer at from the charm instance:
+    >>> $ jhack eval unit/0 self._adder._add(1, 1)
+    >>> 2
+
+    With a bit of effort you can also set attributes:
+    >>> $ jhack eval unit/0 setattr(self.unit, "status", ops.ActiveStatus("foo"))
+    >>> None
+
+    And of course mutate anything the charm can mutate
+    >>> $ jhack eval unit/0 self._some_relation.data[self.unit].__setitem__("foo", "bar")
+    >>> None
+    """
     _charm_rpc(
         target=target,
         expr=expr,
@@ -83,10 +159,8 @@ def charm_script(
         help="Target unit or application name. "
         "Using an application name will run the script on all units.",
     ),
-    script: Path = typer.Option(
+    script: Path = typer.Argument(
         None,
-        "-i",
-        "--input",
         help="Path to a python script to be executed in the charm context."
         "If not provided, we'll take STDIN.",
     ),

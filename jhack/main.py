@@ -39,7 +39,7 @@ def main():
     from jhack.scenario.snapshot import snapshot
     from jhack.scenario.state_apply import state_apply
     from jhack.utils import integrate
-    from jhack.utils.charm_rpc import charm_rpc, charm_script
+    from jhack.utils.charm_rpc import charm_eval, charm_rpc, charm_script
     from jhack.utils.event_recorder.client import (
         dump_db,
         emit,
@@ -72,6 +72,7 @@ def main():
     utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     utils.command(name="print-env")(print_env)
     utils.command(name="crpc", no_args_is_help=True)(charm_rpc)
+    utils.command(name="eval", no_args_is_help=True)(charm_eval)
     utils.command(name="script", no_args_is_help=True)(charm_script)
 
     jinx = typer.Typer(
@@ -127,6 +128,7 @@ def main():
     app.command(name="jenv")(print_env)
     app.command(name="list-endpoints")(list_endpoints)
     app.command(name="crpc", no_args_is_help=True)(charm_rpc)
+    app.command(name="eval", no_args_is_help=True)(charm_eval)
     app.command(name="script", no_args_is_help=True)(charm_script)
 
     conf = typer.Typer(
