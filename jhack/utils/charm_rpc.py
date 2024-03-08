@@ -411,7 +411,7 @@ def _charm_rpc(
 def _push_crpc_dispatch_script(target, model, crpc_dispatch_name):
     logger.info("pushing crpc dispatch script...")
     remote_rpc_dispatch_path = f"src/{crpc_dispatch_name}.py"
-    dispatch = Path(__file__).parent / ".charm_rpc_dispatch.py"
+    dispatch = Path(__file__).parent / "charm_rpc_dispatch.py"
     push_file(target.unit_name, dispatch, remote_rpc_dispatch_path, model=model)
     return remote_rpc_dispatch_path
 
