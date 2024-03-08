@@ -7,10 +7,12 @@ import shlex
 import subprocess
 import tempfile
 from collections import namedtuple
+from dataclasses import dataclass
 from functools import lru_cache
+from itertools import chain
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Sequence, Tuple
 
 import typer
 
@@ -439,6 +441,62 @@ def _exec_and_parse_libinfo(cmd: str):
         libinfo.append(LibInfo(*grps))
 
     return libinfo
+
+
+@dataclass
+class Target:
+    app: str
+    unit: int
+    leader: bool = False
+
+    @staticmethod
+    def from_name(name: str):
+        if "/" not in name:
+            logger.warning(
+                "invalid target name: expected `<app_name>/<unit_id>`; "
+                f"got {name!r}."
+            )
+        app, unit_ = name.split("/")
+        leader = unit_.endswith("*")
+        unit = unit_.strip("*")
+        return Target(app, unit, leader=leader)
+
+    @property
+    def unit_name(self):
+        return f"{self.app}/{self.unit}"
+
+    @property
+    def charm_root_path(self):
+        return Path(f"/var/lib/juju/agents/unit-{self.app}-{self.unit}/charm")
+
+    def __hash__(self):
+        return hash((self.app, self.unit, self.leader))
+
+
+def get_all_units(model: str = None) -> Sequence[Target]:
+    status = juju_status(json=True, model=model)
+    # sub charms don't have units or applications
+    units = list(
+        chain(
+            *(app.get("units", ()) for app in status.get("applications", {}).values())
+        )
+    )
+    return tuple(map(Target.from_name, units))
+
+
+def get_units(*apps, model: str = None) -> Sequence[Target]:
+    status = juju_status(json=True, model=model)
+    # sub charms don't have units or applications
+    units = list(
+        chain(
+            *(
+                app_val.get("units", ())
+                for app_name, app_val in status.get("applications", {}).items()
+                if (not apps or app_name in apps)
+            )
+        )
+    )
+    return tuple(map(Target.from_name, units))
 
 
 if __name__ == "__main__":

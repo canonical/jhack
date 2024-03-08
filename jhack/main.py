@@ -30,6 +30,7 @@ def main():
     from jhack.charm.sync import sync as sync_packed_charm
     from jhack.charm.update import update
     from jhack.charm.vinfo import vinfo
+    from jhack.charm.lobotomy import lobotomy
     from jhack.conf.conf import print_current_config, print_defaults
     from jhack.jinx.cleanup import cleanup as jinx_cleanup
     from jhack.jinx.init import init_jinx as jinx_init
@@ -91,6 +92,7 @@ def main():
     charm.command(name="func", no_args_is_help=True)(functional.run)
     charm.command(name="sync", no_args_is_help=True)(sync_packed_charm)
     charm.command(name="vinfo", no_args_is_help=True)(vinfo)
+    charm.command(name="lobotomy", no_args_is_help=True)(lobotomy)
     charm.command(name="provision")(provision)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")

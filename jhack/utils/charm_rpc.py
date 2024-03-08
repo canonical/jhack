@@ -14,10 +14,9 @@ from typing import List
 
 import typer
 
-from jhack.helpers import juju_status, push_file, rm_file
+from jhack.helpers import Target, juju_status, push_file, rm_file
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
-from jhack.utils.tail_charms import Target
 
 logger = jhack_logger.getChild("crpc")
 
