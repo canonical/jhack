@@ -821,10 +821,10 @@ In a nutshell, `state-apply` _can_ only do:
   - [ ] integrate with Theatre to see the graph expand in real time
 
 
-# crpc
-`jhack crpc` is a command that allows you to evaluate simple one-line expressions in the context of a live charm (or multiple units thereof).
+# eval
+`jhack eval` is a command that allows you to evaluate simple one-line expressions in the context of a live charm (or multiple units thereof).
 
-> `jhack crpc myapp/0 self.model.relations`
+> `jhack eval myapp/0 self.model.relations`
 
 and you should see as output the current list of relations the charm has, for example
 
@@ -832,7 +832,7 @@ and you should see as output the current list of relations the charm has, for ex
 
 Similarly, if the charm has a method called `_foobar`, you could write:
 
-> `jhack crpc myapp/0 self._foobar() + 42`
+> `jhack eval myapp/0 self._foobar() + 42`
 
 and see the result in your standard output.
 
