@@ -311,6 +311,7 @@ def push_file(
     container: Optional[str] = None,
     model: str = None,
     dry_run: bool = False,
+    make_executable: bool = False,
 ):
     if get_substrate() == "machine":
         cmd = _push_file_machine_cmd(

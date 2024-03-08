@@ -118,6 +118,17 @@ def _do_lobotomy(
             dry_run=dry_run,
         )
 
+        subprocess.check_call(
+            [
+                "juju",
+                "ssh",
+                target.unit_name,
+                "chmod",
+                "+x",
+                target.charm_root_path / "dispatch",
+            ]
+        )
+
     if undo:
         print(f"{target.unit_name}: lobotomy reversed")
     else:
