@@ -860,3 +860,11 @@ and you should see as output the current value of the `key` application data set
 You will also see that the `other-key` has been updated to `"value"`.
 
 Run the command with `--help` for additional options and configuration.
+
+# lobotomy
+
+Helpful when you have to endure an event storm.
+
+`jhack lobotomy myapp/0` will temporarily disable event processing for the charm. Juju will not be aware anything out of the ordinary is going on, but the charm will ignore all events and be effectively disconnected from the Juju state machine and allow all events to go through transparently.
+
+Usage:

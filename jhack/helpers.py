@@ -311,7 +311,6 @@ def push_file(
     container: Optional[str] = None,
     model: str = None,
     dry_run: bool = False,
-    make_executable: bool = False,
 ):
     if get_substrate() == "machine":
         cmd = _push_file_machine_cmd(
@@ -479,24 +478,37 @@ def get_all_units(model: str = None) -> Sequence[Target]:
     # sub charms don't have units or applications
     units = list(
         chain(
-            *(app.get("units", ()) for app in status.get("applications", {}).values())
+            *(
+                _get_units(app, status)
+                for app in status.get("applications", {}).values()
+            )
         )
     )
     return tuple(map(Target.from_name, units))
 
 
+def _get_units(app, status):
+    units = []
+    principals = status["applications"][app].get("subordinate-to", False)
+    if principals:
+        # sub charm = one unit per principal unit
+        for principal in principals:
+            machines = [
+                u["machine"]
+                for u in status["applications"][principal]["units"].values()
+            ]
+            units.extend(f"{app}/{machine}" for machine in machines)
+
+    else:
+        units.extend(status["applications"][app]["units"].keys())
+    return units
+
+
 def get_units(*apps, model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
-    # sub charms don't have units or applications
-    units = list(
-        chain(
-            *(
-                app_val.get("units", ())
-                for app_name, app_val in status.get("applications", {}).items()
-                if (not apps or app_name in apps)
-            )
-        )
-    )
+    if not apps:
+        apps = status.get("applications", {}).keys()
+    units = list(chain(*(_get_units(app, status) for app in apps)))
     return tuple(map(Target.from_name, units))
 
 

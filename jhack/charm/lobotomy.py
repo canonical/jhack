@@ -1,7 +1,8 @@
 import shlex
 import subprocess
+import tempfile
 from pathlib import Path
-from subprocess import check_output, CalledProcessError
+from subprocess import CalledProcessError, check_output
 from typing import List, Optional
 
 import typer
@@ -9,7 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import get_all_units, Target, push_file, get_units
+from jhack.helpers import Target, get_all_units, get_units, push_file
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -29,23 +30,25 @@ def _parse_target(target: List[str], model: str) -> List[Target]:
     return unit_targets
 
 
+def _is_lobotomized(target: Target):
+    """Return False if not, return an optional list of events (for selective lobotomy)."""
+    # if dispatch.ori is present; dispatch is lobo dispatch (or cleanup failed; either way)
+    cmd = f"juju ssh {target.unit_name} cat {target.charm_root_path/'dispatch.ori'} | grep DISABLED="
+    try:
+        out = check_output(shlex.split(cmd), stderr=subprocess.PIPE)
+        return out
+    except CalledProcessError:
+        return False
+
+
 def _print_plan(targets: List[Target]):
-    table = {}
-    for target in targets:
-        # if dispatch.ori is present; dispatch is lobo dispatch (or cleanup failed; either way)
-        cmd = f"juju ssh {target.unit_name} ls {target.charm_root_path/'dispatch.ori'}"
-        try:
-            check_output(shlex.split(cmd), stderr=subprocess.PIPE)
-            table[target] = True
-
-        except CalledProcessError:
-            table[target] = False
-
+    table = {target: _is_lobotomized(target) for target in targets}
     t = Table("unit", "lobotomy", title="lobotomy plan")
     for target, l in table.items():
         t.add_row(
             target.unit_name,
             Text("active" if l else "inactive", style="bold red" if l else "green"),
+            None if l is False else (l or "ALL"),
         )
 
     Console().print(t)
@@ -54,6 +57,7 @@ def _print_plan(targets: List[Target]):
 def _lobotomy(
     target: List[str],
     _all: bool = False,
+    events: List[str] = None,
     dry_run: bool = False,
     model: Optional[str] = None,
     undo: Optional[bool] = False,
@@ -79,11 +83,21 @@ def _lobotomy(
 
     for t in targets:
         logger.info(f"lobotomizing {t}...")
-        _do_lobotomy(t, model, dry_run, undo)
+        _do_lobotomy(t, model, dry_run, undo, events)
+
+
+def _events_to_hookpaths_list(events: Optional[List[str]]):
+    if not events:
+        return None
+    return ",".join(f"hooks/{e}" for e in events)
 
 
 def _do_lobotomy(
-    target: Target, model: Optional[str], dry_run: bool = False, undo: bool = False
+    target: Target,
+    model: Optional[str],
+    dry_run: bool = False,
+    undo: bool = False,
+    events: Optional[List[str]] = None,
 ):
     if undo:
         # move dispatch.ori back to dispatch
@@ -94,6 +108,10 @@ def _do_lobotomy(
             return
 
     else:
+        if _is_lobotomized(target):
+            logger.error(f"target {target.unit_name} already lobotomized. Skipping...")
+            return
+
         # move dispatch to dispatch.ori
         move_cmd = f"juju ssh {target.unit_name} mv {target.charm_root_path/'dispatch'} {target.charm_root_path/'dispatch.ori'}"
         # push lobo dispatch in place of dispatch
@@ -105,18 +123,25 @@ def _do_lobotomy(
     else:
         try:
             check_output(shlex.split(move_cmd))
-        except CalledProcessError as e:
-            logger.exception(e)
+        except CalledProcessError:
+            logger.exception(move_cmd)
 
     if not undo:
-        push_file(
-            target.unit_name,
-            local_path=Path(__file__).parent / "dispatch_lobo.sh",
-            remote_path="dispatch",
-            model=model,
-            container="charm",
-            dry_run=dry_run,
-        )
+        with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
+            p = Path(tf.name)
+            p.write_text(
+                (Path(__file__).parent / "dispatch_lobo.sh")
+                .read_text()
+                .replace("{%DISABLED%}", _events_to_hookpaths_list(events) or "ALL")
+            )
+            push_file(
+                target.unit_name,
+                local_path=p,
+                remote_path="dispatch",
+                model=model,
+                container="charm",
+                dry_run=dry_run,
+            )
 
         subprocess.check_call(
             [
@@ -139,7 +164,14 @@ def lobotomy(
     target: List[str] = typer.Argument(
         None,
         help="The target to lobotomize. Can be an app (lobotomizes all units),"
-        " or a unit (lobotomizes that unit only).",
+        " or a unit (lobotomizes that unit only). "
+        "If not provided, will lobotomize the whole model.",
+    ),
+    events: List[str] = typer.Option(
+        None,
+        "-e",
+        "--events",
+        help="If you wish to restrict the lobotomy to specific events.",
     ),
     _all: bool = typer.Option(
         False,
@@ -164,7 +196,13 @@ def lobotomy(
 ):
     """Lobotomizes one or multiple charms, preventing them from processing any incoming events."""
     return _lobotomy(
-        target=target, _all=_all, undo=undo, dry_run=dry_run, model=model, plan=plan
+        target=target,
+        _all=_all,
+        undo=undo,
+        dry_run=dry_run,
+        model=model,
+        plan=plan,
+        events=events,
     )
 
 

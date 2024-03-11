@@ -24,13 +24,13 @@ def main():
 
     from jhack.charm import functional
     from jhack.charm.init import init
+    from jhack.charm.lobotomy import lobotomy
     from jhack.charm.provision import provision
     from jhack.charm.record import record
     from jhack.charm.repack import refresh
     from jhack.charm.sync import sync as sync_packed_charm
     from jhack.charm.update import update
     from jhack.charm.vinfo import vinfo
-    from jhack.charm.lobotomy import lobotomy
     from jhack.conf.conf import print_current_config, print_defaults
     from jhack.jinx.cleanup import cleanup as jinx_cleanup
     from jhack.jinx.init import init_jinx as jinx_init
