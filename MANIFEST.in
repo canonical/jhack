@@ -1,2 +1,3 @@
 include jhack/conf/jhack_config_defaults.toml
-include jhack/utils/unbork_juju
+include jhack/utils/unbork_juju.sh
+include jhack/charm/dispatch_lobo.sh

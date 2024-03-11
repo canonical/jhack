@@ -24,6 +24,7 @@ def main():
 
     from jhack.charm import functional
     from jhack.charm.init import init
+    from jhack.charm.lobotomy import lobotomy
     from jhack.charm.provision import provision
     from jhack.charm.record import record
     from jhack.charm.repack import refresh
@@ -91,6 +92,7 @@ def main():
     charm.command(name="func", no_args_is_help=True)(functional.run)
     charm.command(name="sync", no_args_is_help=True)(sync_packed_charm)
     charm.command(name="vinfo", no_args_is_help=True)(vinfo)
+    charm.command(name="lobotomy", no_args_is_help=True)(lobotomy)
     charm.command(name="provision")(provision)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")

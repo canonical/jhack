@@ -10,14 +10,13 @@ from importlib.util import module_from_spec, spec_from_file_location
 from multiprocessing import Pool
 from pathlib import Path
 from subprocess import run
-from typing import List
+from typing import List, Optional
 
 import typer
 
-from jhack.helpers import juju_status, push_file, rm_file
+from jhack.helpers import Target, juju_status, push_file, rm_file, get_units
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
-from jhack.utils.tail_charms import Target
 
 logger = jhack_logger.getChild("crpc")
 
@@ -47,6 +46,13 @@ def charm_rpc(
     crpc_dispatch_name: str = typer.Option(
         "crpc_dispatch",
         help="Name of the (temporary) file containing the dispatch script.",
+    ),
+    charm_name: Optional[str] = typer.Option(
+        None,
+        "-c",
+        "--charm-name",
+        help="Name of the charm type to import from `charm.py`. Useful if your charm.py "
+        "contains more than one charm type (e.g. if you have a base class...).",
     ),
     env_override: List[str] = typer.Option(
         None,
@@ -78,6 +84,7 @@ def charm_rpc(
         crpc_dispatch_name=crpc_dispatch_name,
         env_override=env_override,
         event=event,
+        charm_name=charm_name,
     )
 
 
@@ -106,6 +113,13 @@ def charm_eval(
     crpc_dispatch_name: str = typer.Option(
         "crpc_dispatch",
         help="Name of the (temporary) file containing the dispatch script.",
+    ),
+    charm_name: Optional[str] = typer.Option(
+        None,
+        "-c",
+        "--charm-name",
+        help="Name of the charm type to import from `charm.py`. Useful if your charm.py "
+        "contains more than one charm type (e.g. if you have a base class...).",
     ),
     env_override: List[str] = typer.Option(
         None,
@@ -150,6 +164,7 @@ def charm_eval(
         crpc_dispatch_name=crpc_dispatch_name,
         env_override=env_override,
         event=event,
+        charm_name=charm_name,
     )
 
 
@@ -179,6 +194,13 @@ def charm_script(
     crpc_dispatch_name: str = typer.Option(
         "crpc_dispatch",
         help="Name of the (temporary) file containing the dispatch script.",
+    ),
+    charm_name: Optional[str] = typer.Option(
+        None,
+        "-c",
+        "--charm-name",
+        help="Name of the charm type to import from `charm.py`. Useful if your charm.py "
+        "contains more than one charm type (e.g. if you have a base class...).",
     ),
     model: str = typer.Option(
         None, "-m", "--model", help="Which model to apply the command to."
@@ -235,6 +257,7 @@ def charm_script(
         validate=validate,
         env_override=env_override,
         event=event,
+        charm_name=charm_name,
     )
 
 
@@ -284,6 +307,7 @@ def _charm_script(
     validate: bool,
     event: str,
     env_override: List[str],
+    charm_name: Optional[str],
 ):
     """Execute local script on live charm.
 
@@ -340,6 +364,7 @@ def _charm_script(
                 cleanup=cleanup,
                 event=event,
                 env_override=env_override,
+                charm_name=charm_name,
             ),
             targets,
         )
@@ -357,10 +382,7 @@ def _get_targets(target, model):
     targets = []
     if "/" not in target:
         # app name received. run on all units.
-        status = juju_status(app_name=target, model=model, json=True)
-        targets.extend(
-            Target.from_name(u) for u in status["applications"][target]["units"]
-        )
+        targets.extend(get_units(target))
 
     else:
         targets.append(Target.from_name(target))
@@ -380,6 +402,7 @@ def _charm_rpc(
     cleanup: bool,
     event: str,
     env_override: List[str],
+    charm_name: Optional[str],
 ):
     """Rpc a live charm method.
 
@@ -403,6 +426,7 @@ def _charm_rpc(
                 cleanup=cleanup,
                 event=event,
                 env_override=env_override,
+                charm_name=charm_name,
             ),
             targets,
         )
@@ -438,6 +462,7 @@ def _exec_crpc_script(
     model: str,
     cleanup: bool,
     event: str,
+    charm_name: Optional[str],
     env_override: List[str],
 ):
     logger.info(f"pushing crpc module {script}...")
@@ -455,6 +480,7 @@ def _exec_crpc_script(
             "CHARM_RPC_ENV": crpc_env,
             "CHARM_RPC_MODULE_NAME": crpc_module_name,
             "CHARM_RPC_ENTRYPOINT": entrypoint,
+            "CHARM_RPC_CHARM_NAME": charm_name,
             "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
             "PYTHONPATH": "lib:venv",
         }.items()
@@ -485,21 +511,23 @@ def _exec_crpc_expr(
     cleanup: bool,
     event: str,
     env_override: List[str],
+    charm_name: Optional[str],
 ):
     remote_rpc_dispatch_path = _push_crpc_dispatch_script(
         target, model, crpc_dispatch_name
     )
     crpc_env = _prepare_crpc_env(target, event, env_override, model)
 
-    env = " ".join(
-        f"{key}={val}"
-        for key, val in {
-            "CHARM_RPC_ENV": crpc_env,
-            "CHARM_RPC_EXPR": expr,
-            "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
-            "PYTHONPATH": "lib:venv",
-        }.items()
-    )
+    env_dict = {
+        "CHARM_RPC_ENV": crpc_env,
+        "CHARM_RPC_EXPR": expr,
+        "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
+        "PYTHONPATH": "lib:venv",
+    }
+    if charm_name:
+        env_dict["CHARM_RPC_CHARM_NAME"] = charm_name
+
+    env = " ".join(f"{key}={val}" for key, val in env_dict.items())
 
     _run_crpc(target, env, crpc_dispatch_name)
 

@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Dict, Type
+from typing import Dict, Optional, Type
 
 import ops
 import ops.storage
@@ -30,6 +30,7 @@ MODULE_NAME = os.getenv("CHARM_RPC_MODULE_NAME")  # string
 ENTRYPOINT = os.getenv("CHARM_RPC_ENTRYPOINT")  # string
 LOGLEVEL = os.getenv("CHARM_RPC_LOGLEVEL")  # string
 EVAL_EXPR = os.getenv("CHARM_RPC_EXPR")  # string
+CHARM_NAME = os.getenv("CHARM_RPC_CHARM_NAME")  # string
 
 logger = logging.getLogger("charm-rpc")
 logger.setLevel(LOGLEVEL)
@@ -58,7 +59,7 @@ def rpc(charm):
         try:
             return eval(expr, {"self": charm, "ops": ops})
         except Exception:  # noqa
-            logger.exception(f"failed executing {expr} in with self={charm}.")
+            logger.exception(f"failed executing {expr!r} in with self={charm}.")
 
 
 def ops_main_rpc(charm_class: Type[ops.charm.CharmBase], use_juju_for_storage: bool):
@@ -122,17 +123,44 @@ def check_controller_storage(charm_type: Type[ops.charm.CharmBase]) -> bool:
 
 
 def load_charm_type() -> Type[ops.charm.CharmBase]:
+    charm_name: Optional[str] = CHARM_NAME
+
     module = importlib.import_module("charm")
-    for identifier, obj in module.__dict__.items():
+    charm_subclasses = [
+        (identifier, obj)
+        for identifier, obj in module.__dict__.items()
         if (
             isinstance(obj, type)
             and issubclass(obj, ops.charm.CharmBase)
-            and obj.__name__ != "CharmBase"
-        ):
-            logger.debug(f"found charm type {obj}")
-            return obj
+            and identifier != "CharmBase"
+        )
+    ]
 
-    raise RuntimeError("couldn't find any charm type in charm.py")
+    logger.debug(f"found charm types {charm_subclasses}")
+
+    if charm_name:
+        by_name = [obj for i, obj in charm_subclasses if i == charm_name]
+    else:
+        by_name = [obj for _, obj in charm_subclasses]
+
+    if len(by_name) < 1:
+        if charm_name and charm_subclasses:
+            options = ", ".join((a[0] for a in charm_subclasses))
+            raise RuntimeError(
+                f"couldn't find any charm type called "
+                f"{charm_name!r} in charm.py; only {options!r}"
+            )
+        raise RuntimeError("couldn't find any charm type in charm.py")
+
+    if len(by_name) > 1 and not charm_name:
+        options = ", ".join((a[0] for a in charm_subclasses))
+
+        raise RuntimeError(
+            "Multiple charm types found! Pass a `--charm-name` "
+            f"to help us narrow down the search. Found: {options}."
+        )
+
+    return by_name[0]
 
 
 def main():
