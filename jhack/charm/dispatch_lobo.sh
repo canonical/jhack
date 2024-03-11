@@ -1,5 +1,7 @@
 #!/bin/sh
-#DISABLED={%DISABLED%}  # jhack template
+
+# template filled in by jhack
+DISABLED={%DISABLED%}
 
 # special case: full lobotomy
 if [ "$DISABLED" = "ALL" ]
@@ -8,8 +10,8 @@ then
   exit 0
 fi
 
-case ",$DISABLED," in
-  (*,"$JUJU_DISPATCH_PATH",*)
+case ",$JUJU_DISPATCH_PATH," in
+  (*,"$DISABLED",*)
    juju-log selective lobotomy ACTIVE: event "${JUJU_DISPATCH_PATH}" ignored.;;
   (*) exec ./dispatch.ori;;
 esac

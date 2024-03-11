@@ -696,7 +696,7 @@ Pick a CMR [0.0/0.1/1.0/2.0/3.0/4.0/5.0/6.0/6.1] (0.0): 1.0
 relating <this model>.prom:self-metrics-endpoint <-[prometheus_scrape]-> cos.prometheus:metrics-endpoint
 ```
 
-![img.png](jhack/resources/img.png)
+![img.png](jhack/resources/noice-img.png)
 
 # jinx
 Used to play around with [jinx (YAMLess Charms)](https://github.com/PietroPasotti/jinx)
@@ -861,10 +861,22 @@ You will also see that the `other-key` has been updated to `"value"`.
 
 Run the command with `--help` for additional options and configuration.
 
-# lobotomy
+# charm lobotomy
 
-Helpful when you have to endure an event storm.
+Helpful when you have to endure an event storm, or when you want a charm to temporarily suspend event processing for whatever reason.
 
-`jhack lobotomy myapp/0` will temporarily disable event processing for the charm. Juju will not be aware anything out of the ordinary is going on, but the charm will ignore all events and be effectively disconnected from the Juju state machine and allow all events to go through transparently.
+`jhack charm lobotomy myapp/0` will temporarily disable event processing for the charm. This is a total lobotomy. Juju will not be aware anything out of the ordinary is going on, but the charm will ignore all events and be effectively disconnected from the Juju state machine and allow all events to go through transparently.
 
-Usage:
+`jhack charm lobotomy myapp myotherapp -e update-status -e foo-relation-changed` will lobotomize all units of `myapp` and `myotherapp`, and selectively so: they only ignore those specific events, and let any other go through to the charm.
+
+`jhack charm lobotomy --all`: will lobotomize all applications in the current model
+
+At any time, you can do `jhack lobotomy --plan` to view in a handy table what, lobotomy-wise, the status of the model is.
+
+![img.png](jhack/resources/lobotomy-img.png)
+
+To reverse a lobotomy, do `jhack charm lobotomy myapp/0 --undo`.
+ 
+`jhack charm lobotomy myapp myotherapp --undo`: removes the lobotomy from all units of `myapp` and `myotherapp`.
+
+`jhack charm lobotomy --undo` will delobotomize the whole model.
