@@ -5,7 +5,6 @@ import sys
 import time
 from collections import Counter
 from dataclasses import dataclass, field
-from itertools import chain
 from pathlib import Path
 from typing import (
     Callable,
@@ -29,7 +28,7 @@ from rich.style import Style
 from rich.table import Column, Table
 from rich.text import Text
 
-from jhack.helpers import JPopen, juju_status
+from jhack.helpers import JPopen, Target, get_all_units
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
@@ -70,43 +69,6 @@ def model_loglevel(model: str = None):
             f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
         )
     return "WARNING"  # the default
-
-
-@dataclass
-class Target:
-    app: str
-    unit: int
-    leader: bool = False
-
-    @staticmethod
-    def from_name(name: str):
-        if "/" not in name:
-            logger.warning(
-                "invalid target name: expected `<app_name>/<unit_id>`; "
-                f"got {name!r}."
-            )
-        app, unit_ = name.split("/")
-        leader = unit_.endswith("*")
-        unit = unit_.strip("*")
-        return Target(app, unit, leader=leader)
-
-    @property
-    def unit_name(self):
-        return f"{self.app}/{self.unit}"
-
-    def __hash__(self):
-        return hash((self.app, self.unit, self.leader))
-
-
-def get_all_units(model: str = None) -> Sequence[Target]:
-    status = juju_status(json=True, model=model)
-    # sub charms don't have units or applications
-    units = list(
-        chain(
-            *(app.get("units", ()) for app in status.get("applications", {}).values())
-        )
-    )
-    return tuple(map(Target.from_name, units))
 
 
 def parse_targets(targets: str = None, model: str = None) -> Sequence[Target]:
@@ -232,6 +194,7 @@ _operator_event_color = Color.from_rgb(252, 115, 3)
 _custom_event_color = Color.from_rgb(120, 150, 240)
 _jhack_event_color = Color.from_rgb(200, 200, 50)
 _jhack_fire_event_color = Color.from_rgb(250, 200, 50)
+_jhack_lobotomy_event_color = Color.from_rgb(150, 210, 110)
 _jhack_replay_event_color = Color.from_rgb(100, 100, 150)
 _deferral_colors = {
     "deferred": "red",
@@ -300,6 +263,11 @@ class LogLineParser:
         base_relation_pattern + reemitted_suffix_new
     )
 
+    lobotomy_suffix = (
+        "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
+    )
+    lobotomy_skipped_event = re.compile(base_pattern + lobotomy_suffix)
+
     uniter_event = re.compile(
         r"^unit-(?P<unit_name>\S+)-(?P<unit_number>\d+): (?P<timestamp>\S+( \S+)?) "
         r'(?P<loglevel>\S+) juju\.worker\.uniter\.operation ran "(?P<event>\S+)" hook '
@@ -309,6 +277,7 @@ class LogLineParser:
     tags = {
         operator_event: ("operator",),
         event_fired_jhack: ("jhack", "fire"),
+        lobotomy_skipped_event: ("jhack", "lobotomy"),
         event_replayed_jhack: ("jhack", "replay"),
         custom_event: ("custom",),
         custom_event_from_relation: ("custom",),
@@ -327,6 +296,9 @@ class LogLineParser:
         return event.replace("-", "_")
 
     def _match(self, msg, *matchers) -> Optional[Dict[str, str]]:
+        if not matchers:
+            raise ValueError("no matchers provided")
+
         for matcher in matchers:
             if match := matcher.match(msg):
                 tags = self.tags.get(matcher, ())
@@ -342,6 +314,9 @@ class LogLineParser:
         return self._match(msg, self.event_deferred, self.event_deferred_from_relation)
 
     def match_event_emitted(self, msg):
+        if match := self._match(msg, self.lobotomy_skipped_event):
+            return match
+
         if self.uniter_events_only:
             match = self._match(msg, self.uniter_event)
             if not match:
@@ -357,6 +332,7 @@ class LogLineParser:
         return self._match(
             msg,
             self.event_emitted,
+            self.lobotomy_skipped_event,
             self.event_emitted_from_relation,
             self.operator_event,
             self.custom_event,
@@ -725,6 +701,8 @@ class Processor:
                 return _jhack_fire_event_color
             elif "replay" in msg.tags:
                 return _jhack_replay_event_color
+            elif "lobotomy" in msg.tags:
+                return _jhack_lobotomy_event_color
             return _jhack_event_color
 
         if event in _event_colors:
@@ -736,12 +714,15 @@ class Processor:
         return _default_event_color
 
     _fire_symbol = "🔥"
+    _lobotomy_symbol = "✂"
     _replay_symbol = "⟳"
 
     @classmethod
     def _get_event_text(cls, event: str, msg: EventLogMsg):
         event_text = event
         if "jhack" in msg.tags:
+            if "lobotomy" in msg.tags:
+                event_text += f" {cls._lobotomy_symbol}"
             if "fire" in msg.tags:
                 event_text += f" {cls._fire_symbol}"
             if "replay" in msg.tags:
@@ -1215,4 +1196,4 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, targets="tempo/0", show_trace_ids=True)
+    _tail_events(length=30, replay=True, targets="gagent/0")
