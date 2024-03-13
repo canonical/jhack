@@ -591,7 +591,8 @@ def get_relations(
             return relation_data
         else:
             for key in JUJU_RELATION_KEYS:
-                del relation_data[key]
+                if key in relation_data:
+                    del relation_data[key]
         return relation_data
 
     relations = []
