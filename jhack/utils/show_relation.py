@@ -1010,13 +1010,10 @@ def sync_show_relation(
 ):
     """Displays the databags of two applications or units involved in a relation.
 
-    Examples:
-
-    $ jhack utils show-relation my_app/0:relation_name other_app/2:other_name
-
-    $ jhack utils show-relation my_app:relation_name other_app/2:other_name
-
-    $ jhack utils show-relation my_app:relation_name other_app:other_name
+    Examples:\n
+    - ``$ jhack utils show-relation my_app other_app`` - if there only is one integration\n
+    - ``$ jhack utils show-relation my_app:relation_name other_app`` - if there are multiple\n
+    - ``$ jhack utils show-relation my_app/1:relation_name other_app/2:other_name`` - only show these specific unit's databags
     """
     return _sync_show_relation(
         endpoint1=endpoint1,
