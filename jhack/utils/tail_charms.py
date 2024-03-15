@@ -378,6 +378,7 @@ class Processor:
         show_defer: bool = False,
         event_filter_re: re.Pattern = None,
         model: str = None,
+        flip: bool = False,
     ):
         self.targets = list(targets)
         self.add_new_targets = add_new_targets
@@ -395,6 +396,7 @@ class Processor:
 
         self._show_ns = show_ns and show_defer
         self._show_defer = show_defer
+        self._flip = flip
         self._show_trace_ids = show_trace_ids
         self._next_msg_trace_id: Optional[str] = None
 
@@ -759,11 +761,7 @@ class Processor:
         targets = self.targets
         raw_tables = self._raw_tables
         for target in targets:
-            tgt_grid = Table.grid(
-                *(Column("", no_wrap=True) for _ in range(n_cols)),
-                expand=True,
-                padding=(0, 1, 0, 1),
-            )
+            tgt_rows = []
             raw_table = raw_tables[target.unit_name]
             for i, (msg, event, n) in enumerate(
                 zip(raw_table.msgs, raw_table.events, raw_table.ns)
@@ -803,14 +801,34 @@ class Processor:
                     )
                     row.append(trace_rndr)
 
+                tgt_rows.append(row)
+
+            tgt_grid = Table.grid(
+                *(Column("", no_wrap=True) for _ in range(n_cols)),
+                expand=True,
+                padding=(0, 1, 0, 1),
+            )
+            n_tgt_rows = len(tgt_rows) - 1
+            for i, row in enumerate(reversed(tgt_rows) if self._flip else tgt_rows):
+                row[0].style += Style(underline=i == (n_tgt_rows if self._flip else 0))
                 tgt_grid.add_row(*row)
 
             table.add_column(header=target.unit_name, style="")
             unit_grids.append(tgt_grid)
 
         _timestamps_grid = Table.grid("", expand=True)
-        for tstamp in self._timestamps:
-            _timestamps_grid.add_row(tstamp, style=Style(color=_tstamp_color))
+
+        timestamps = self._timestamps
+        n_evt_timestamps = len(timestamps) - 1
+        evt_timestamps = reversed(timestamps) if self._flip else timestamps
+        for i, tstamp in enumerate(evt_timestamps):
+            _timestamps_grid.add_row(
+                tstamp,
+                style=Style(
+                    color=_tstamp_color,
+                    underline=i == (n_evt_timestamps if self._flip else 0),
+                ),
+            )
 
         table.add_row(_timestamps_grid, *unit_grids)
         if _debug:
@@ -979,6 +997,7 @@ def tail_events(
         "Only applicable if show_defer=True.",
     ),
     watch: bool = typer.Option(True, help="Keep listening.", is_flag=True),
+    flip: bool = typer.Option(False, help="Last events last.", is_flag=True),
     color: str = typer.Option(
         "auto",
         "-c",
@@ -1027,6 +1046,7 @@ def tail_events(
         files=file,
         event_filter=filter_events,
         model=model,
+        flip=flip,
     )
 
 
@@ -1045,6 +1065,7 @@ def _tail_events(
     length: int = 10,
     show_defer: bool = False,
     show_ns: bool = False,
+    flip: bool = False,
     show_trace_ids: bool = False,
     watch: bool = True,
     color: str = "auto",
@@ -1107,6 +1128,7 @@ def _tail_events(
         show_defer=show_defer,
         event_filter_re=event_filter_pattern,
         model=model,
+        flip=flip,
     )
 
     try:

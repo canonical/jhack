@@ -988,14 +988,14 @@ def sync_show_relation(
         None,
         "-n",
         help="Relation number. "
-        "An ID corresponding to the row in juj status --relations."
-        "Alternative to passing endpoint1(+endpoint2).",
+        "An ID corresponding to the row in ``juju status --relations``."
+        "Alternative to passing endpoint1 (+endpoint2).",
     ),
     show_juju_keys: bool = typer.Option(
         False,
         "--show-juju-keys",
         "-s",
-        help="Show from the unit databags the data provided by juju: "
+        help="Show in the unit databags the data provided by juju: "
         "ingress-address, private-address, egress-subnets.",
     ),
     hide_empty_databags: bool = typer.Option(
@@ -1013,7 +1013,13 @@ def sync_show_relation(
     Examples:\n
     - ``$ jhack utils show-relation my_app other_app`` - if there only is one integration\n
     - ``$ jhack utils show-relation my_app:relation_name other_app`` - if there are multiple\n
-    - ``$ jhack utils show-relation my_app/1:relation_name other_app/2:other_name`` - only show these specific unit's databags
+    - ``$ jhack utils show-relation my_app/1:relation_name other_app/2`` - only show these specific units' databags\n
+
+
+    Should work seamlessly for CMRs, peer, and subordinate relations
+        Examples:\n
+    - ``$ jhack utils show-relation my_app:peers`` - peer relation\n
+    - ``$ jhack utils show-relation my_app:foo cross_model_app:bar`` - CMRs\n
     """
     return _sync_show_relation(
         endpoint1=endpoint1,
