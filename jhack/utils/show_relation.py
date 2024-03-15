@@ -5,6 +5,7 @@ import re
 import sys
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
@@ -792,10 +793,8 @@ async def render_relation(
     endpoint2: str = None,
     n: int = None,
     include_default_juju_keys: bool = False,
-    hide_empty_databags: bool = False,
     model: str = None,
-    format: Format = Format.auto,
-):
+) -> Tuple[Relation, Tuple[AppRelationData, ...]]:
     """Pprints relation databags for a juju relation
     >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
@@ -820,16 +819,7 @@ async def render_relation(
         include_default_juju_keys=include_default_juju_keys,
     )
 
-    if format == Format.auto:
-        return _rich_format_table(
-            entities, relation, hide_empty_databags=hide_empty_databags
-        )
-
-    elif format == Format.json:
-        return _format_json(entities, relation.type)
-
-    else:
-        raise FormatUnavailable(format)
+    return relation, entities
 
 
 def _format_json(entities: Tuple[AppRelationData, ...], relation_type: RelationType):
@@ -1004,6 +994,12 @@ def sync_show_relation(
     watch: bool = typer.Option(
         False, "-w", "--watch", help="Keep watching for changes."
     ),
+    diff: bool = typer.Option(
+        False,
+        "-d",
+        "--diff",
+        help="On exit, print a diff showing what's changed during this time.",
+    ),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
     color: Optional[str] = ColorOption,
     format: Format = FormatOption,
@@ -1031,6 +1027,7 @@ def sync_show_relation(
         model=model,
         color=color,
         format=format,
+        diff=diff,
     )
 
 
@@ -1042,9 +1039,13 @@ def _sync_show_relation(
     hide_empty_databags: bool = False,
     model: str = None,
     watch: bool = False,
+    diff: bool = False,
     color: RichSupportedColorOptions = "auto",
     format: FormatOption = "auto",
 ):
+    if diff and not watch:
+        logger.warning("``diff`` flag only has sense with ``watch``")
+
     try:
         import rich  # noqa
     except ImportError:
@@ -1057,39 +1058,59 @@ def _sync_show_relation(
         color = None
     console = Console(color_system=color)
 
-    while True:
-        start = time.time()
+    history: List[Tuple[datetime, Relation, Tuple[AppRelationData, ...]]] = []
+    try:
+        while True:
+            start = time.time()
 
-        table = asyncio.run(
-            render_relation(
-                endpoint1,
-                endpoint2,
-                n=n,
-                include_default_juju_keys=show_juju_keys,
-                hide_empty_databags=hide_empty_databags,
-                model=model,
-                format=format,
+            relation, entities = asyncio.run(
+                render_relation(
+                    endpoint1,
+                    endpoint2,
+                    n=n,
+                    include_default_juju_keys=show_juju_keys,
+                    model=model,
+                )
             )
-        )
 
-        if table is None:
-            return
+            if format == Format.auto:
+                table = _rich_format_table(
+                    entities, relation, hide_empty_databags=hide_empty_databags
+                )
 
-        if watch:
-            global _CACHING
-            _CACHING = False
-            logger.info("running in watch-mode: caching DISABLED")
+            elif format == Format.json:
+                table = _format_json(entities, relation.type)
 
-            elapsed = time.time() - start
-            if elapsed < 1:
-                time.sleep(1.5 - elapsed)
-                _JUJU_DATA_CACHE.clear()
-            # we clear RIGHT BEFORE printing to prevent flickering
-            console.clear()
-        console.print(table)
+            else:
+                raise FormatUnavailable(format)
 
-        if not watch:
-            return
+            if watch:
+                global _CACHING
+                _CACHING = False
+                logger.info("running in watch-mode: caching DISABLED")
+
+                elapsed = time.time() - start
+                if elapsed < 1:
+                    time.sleep(1.5 - elapsed)
+                    _JUJU_DATA_CACHE.clear()
+
+                # if the relation data structure has changed, we log it
+                if diff and not history:
+                    logger.debug("setting up history...")
+                    history.append((datetime.now(), relation, entities))
+                elif diff and history and history[-1] != relation:
+                    logger.debug("change detected; snapshotting relation")
+                    history.append((datetime.now(), relation, entities))
+
+                # we clear RIGHT BEFORE printing to prevent flickering
+                console.clear()
+            console.print(table)
+
+            if not watch:
+                return
+    finally:
+        if history:
+            print(history)
 
 
 if __name__ == "__main__":
