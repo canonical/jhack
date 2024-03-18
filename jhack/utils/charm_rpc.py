@@ -14,7 +14,7 @@ from typing import List, Optional
 
 import typer
 
-from jhack.helpers import Target, juju_status, push_file, rm_file, get_units
+from jhack.helpers import Target, get_units, push_file, rm_file
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
 
@@ -371,11 +371,10 @@ def _charm_script(
 
 
 def _build_rpc_expr(path: str) -> str:
-    if not path.startswith("self."):
-        path = "self." + path
-    elif path.startswith("."):
-        path = "self" + path
-    return path
+    if path.startswith("self."):
+        return path
+    if path.startswith("."):
+        return "self" + path
 
 
 def _get_targets(target, model):

@@ -10,24 +10,10 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import Target, get_all_units, get_units, push_file, get_substrate
+from jhack.helpers import Target, get_all_units, get_substrate, parse_target, push_file
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
-
-
-def _parse_target(target: List[str], model: str) -> List[Target]:
-    unit_targets = []
-    for tgt in target:
-        if "/" in tgt:
-            unit_targets.append(Target.from_name(tgt))
-        try:
-            unit_targets.extend(get_units(tgt, model=model))
-        except KeyError:
-            logger.error(
-                f"invalid target {tgt!r}: not an unit, nor an application in model {model or '<the current model>'!r}"
-            )
-    return unit_targets
 
 
 def _parse_disabled(out):
@@ -79,7 +65,8 @@ def _lobotomy(
             logger.warning(f"`all` flag overrules provided targets {target}.")
         targets.extend(get_all_units(model))
     elif target:
-        targets.extend(_parse_target(target, model))
+        for tgt in target:
+            targets.extend(parse_target(tgt, model))
 
     if not targets:
         exit("no targets provided. Aborting...")
