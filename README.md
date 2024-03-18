@@ -427,6 +427,8 @@ Examples:
 
 `jhack fire traefik/0 update-status`
 
+`jhack fire traefik/leader traefik-pebble-ready`
+
 `jhack fire traefik/0 ingress-per-unit-relation-changed`
 
 Pro tip: use `fire` it in combination with `jhack sync` to quickly iterate and repeatedly execute the charm 'as if' a specific event was being fired.
@@ -435,6 +437,13 @@ Caveats:
 careless usage can rapidly and irrevocably bork your charm, since the events being fired in this way are not real juju events, therefore the charm state and the juju state can rapidly desync. E.g. Juju thinks everything is fine with the charm, but you just simulated a 'remove' event, following which the charm duly stopped all workload services, cleared a database and got ready to gracefully teardown. If after that Juju decides to fire any event, the charm will rightfully be surprised because it thought it was about to be killed.
 
 However, if all of your event handlers truly are idempotent (hem hem) you should be *fine*.
+
+
+Note: you can do 
+
+`jhack fire traefik update-status`
+
+to fire the event on all traefik units!
 
 
 # replay

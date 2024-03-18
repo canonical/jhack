@@ -12,7 +12,7 @@ from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
-from typing import List, Literal, Optional, Sequence, Tuple
+from typing import Callable, List, Literal, Optional, Sequence, Tuple
 
 import typer
 
@@ -482,12 +482,14 @@ def get_all_units(model: str = None) -> Sequence[Target]:
     return tuple(map(Target.from_name, units))
 
 
-def _get_units(app, status):
+def _get_units(app, status, predicate: Optional[Callable] = None):
     units = []
     principals = status["applications"][app].get("subordinate-to", False)
     if principals:
         # sub charm = one unit per principal unit
         for principal in principals:
+            if predicate and not predicate(principal):
+                continue
             machines = [
                 u["machine"]
                 for u in status["applications"][principal]["units"].values()
@@ -495,7 +497,10 @@ def _get_units(app, status):
             units.extend(f"{app}/{machine}" for machine in machines)
 
     else:
-        units.extend(status["applications"][app]["units"].keys())
+        for k, meta in status["applications"][app]["units"].items():
+            if predicate and not predicate(meta):
+                continue
+            units.append(k)
     return units
 
 
@@ -507,5 +512,29 @@ def get_units(*apps, model: str = None) -> Sequence[Target]:
     return tuple(map(Target.from_name, units))
 
 
+def get_leader_unit(app, model: str = None) -> Target:
+    status = juju_status(json=True, model=model)
+    leaders = _get_units(app, status, predicate=lambda unit: unit.get("leader"))
+    return Target.from_name(leaders[0])
+
+
+def parse_target(target: str, model: str = None) -> List[Target]:
+    unit_targets = []
+    if "/" in target:
+        prefix, _, suffix = target.rpartition("/")
+        if suffix in {"*", "leader"}:
+            unit_targets.append(get_leader_unit(prefix, model=model))
+        else:
+            unit_targets.append(Target.from_name(target))
+    else:
+        try:
+            unit_targets.extend(get_units(target, model=model))
+        except KeyError:
+            logger.error(
+                f"invalid target {target!r}: not an unit, nor an application in model {model or '<the current model>'!r}"
+            )
+    return unit_targets
+
+
 if __name__ == "__main__":
-    get_substrate()
+    print(parse_target("traefik"))

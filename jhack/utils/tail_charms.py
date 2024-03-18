@@ -810,7 +810,10 @@ class Processor:
             )
             n_tgt_rows = len(tgt_rows) - 1
             for i, row in enumerate(reversed(tgt_rows) if self._flip else tgt_rows):
-                row[0].style += Style(underline=i == (n_tgt_rows if self._flip else 0))
+                if row[0]:
+                    row[0].style += Style(
+                        underline=i == (n_tgt_rows if self._flip else 0)
+                    )
                 tgt_grid.add_row(*row)
 
             table.add_column(header=target.unit_name, style="")
