@@ -35,25 +35,24 @@ def get_os_release():
 
 
 def _gather_juju_snaps_versions(format: Format = FormatOption):
-    url = "http+unix://run/snapd.socket/v2/snaps"
-
+    local_snaps = []
     try:
-        snap_info = requests_unixsocket.get(url)
-        snap_info.raise_for_status()
-        local_snaps = snap_info.json()["result"]
+        installed_snaps = get_output('snap list').splitlines()
+        juju_snaps = [snap.split() for snap in installed_snaps if snap.startswith('juju')]
+        for name, version, revision, channel, _owner, _notes in juju_snaps:
+            local_snaps.append(
+                {"name":name, "version":version, "revision":revision, "channel":channel}
+            )
     except TypeError as e:
         logger.error(f"urrlib3/requests lib incompatibility error: {e!r}")
-        local_snaps = []
     except ConnectionError as e:
         # fixme: remove when snapd-control is integrated
         logger.error(f"connection error fetching snap info: {e}")
-        local_snaps = []
     except Exception as e:
         logger.error(f"unexpected exception fetching snap info: {e}")
-        local_snaps = []
 
     versions = {
-        snap["name"]: f"{snap['version']} - {snap['revision']} ({snap['channeC l']})"
+        snap["name"]: f"{snap['version']} - {snap['revision']} ({snap['channel']})"
         for snap in local_snaps
         if snap["name"].startswith("juju")
     }
