@@ -375,6 +375,7 @@ def _build_rpc_expr(path: str) -> str:
         return path
     if path.startswith("."):
         return "self" + path
+    return path
 
 
 def _get_targets(target, model):
