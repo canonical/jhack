@@ -371,8 +371,6 @@ def _charm_script(
 
 
 def _build_rpc_expr(path: str) -> str:
-    if path.startswith("self."):
-        return path
     if path.startswith("."):
         return "self" + path
     return path
