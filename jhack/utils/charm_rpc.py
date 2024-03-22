@@ -1,5 +1,6 @@
 import base64
 import inspect
+import multiprocessing
 import os
 import select
 import shlex
@@ -412,22 +413,28 @@ def _charm_rpc(
     encoded_expr = _encode(expr)
 
     targets = _get_targets(target, model)
+    do_crpc = partial(
+        _exec_crpc_expr,
+        expr=encoded_expr,
+        crpc_dispatch_name=crpc_dispatch_name,
+        model=model,
+        cleanup=cleanup,
+        event=event,
+        env_override=env_override,
+        charm_name=charm_name,
+    )
 
-    with Pool(len(targets)) as pool:
-        logger.debug(f"initiating async crpc calls to {targets}")
-        pool.map(
-            partial(
-                _exec_crpc_expr,
-                expr=encoded_expr,
-                crpc_dispatch_name=crpc_dispatch_name,
-                model=model,
-                cleanup=cleanup,
-                event=event,
-                env_override=env_override,
-                charm_name=charm_name,
-            ),
-            targets,
-        )
+    ps = []
+    for target in targets:
+        logger.debug(f"initiating async crpc call to {target}")
+        p = multiprocessing.Process(target=do_crpc, args=(target,))
+        p.start()
+        ps.append(p)
+
+    # TODO: gather output and print it by target
+    # FIXME: joining will mangle the shell
+    # for p in ps:
+    #     p.join()
 
 
 def _push_crpc_dispatch_script(target, model, crpc_dispatch_name):

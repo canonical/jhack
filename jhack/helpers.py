@@ -536,5 +536,11 @@ def parse_target(target: str, model: str = None) -> List[Target]:
     return unit_targets
 
 
+def get_notices(unit: str, container_name: str, model: str = None):
+    _model = f"{model} " if model else ""
+    cmd = f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}/pebble.socket http://localhost/v1/notices"
+    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
+
+
 if __name__ == "__main__":
-    print(parse_target("traefik"))
+    print(get_notices("tempo/0", "tempo"))

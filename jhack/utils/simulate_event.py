@@ -1,3 +1,5 @@
+import contextlib
+import multiprocessing
 import sys
 from functools import partial
 from multiprocessing import Pool
@@ -13,6 +15,7 @@ from jhack.helpers import (
     juju_log,
     parse_target,
     show_unit,
+    get_notices,
 )
 from jhack.logger import logger as jhack_logger
 
@@ -24,6 +27,7 @@ _RELATION_EVENT_SUFFIXES = {
     "-relation-departed",
 }
 _PEBBLE_READY_SUFFIX = "-pebble-ready"
+_PEBBLE_CUSTOM_NOTICE_SUFFIX = "-pebble-custom-notice"
 OPS_DISPATCH = "OPERATOR_DISPATCH"
 juju_context_id = "JUJU_CONTEXT_ID"
 
@@ -70,6 +74,7 @@ def build_event_env(
     unit,
     event,
     relation_remote: str = None,
+    notice_id: int = None,
     override: List[str] = None,
     operator_dispatch: bool = False,
     model: str = None,
@@ -98,6 +103,52 @@ def build_event_env(
 
     if event.endswith(_PEBBLE_READY_SUFFIX):
         env["JUJU_WORKLOAD_NAME"] = event[: -len(_PEBBLE_READY_SUFFIX)]
+
+    if event.endswith(_PEBBLE_CUSTOM_NOTICE_SUFFIX):
+        container_name = event[: -len(_PEBBLE_CUSTOM_NOTICE_SUFFIX)]
+        env["JUJU_WORKLOAD_NAME"] = container_name
+
+        notices_list = get_notices(unit, container_name, model=model)
+        existing_notices = {n["id"]: n for n in notices_list}
+        if notice_id:
+            notice = existing_notices.get(notice_id)
+            if not notice:
+                if existing_notices:
+                    logger.error(
+                        f"notice_id {notice_id!r} not found. Try with: {list(existing_notices)}."
+                    )
+                else:
+                    logger.error(f"container {container_name} has no notices!")
+                exit(
+                    f"notice on container {container_name} with id {notice_id} not found on {unit}"
+                )
+
+        elif len(notices_list) == 1:
+            # if we only have one, we can skip the below
+            notice = notices_list[0]
+
+        elif len(notices_list) > 0:
+            # notice picker v0.1
+            print(f"existing notices for {unit}:{container_name}")
+            for n_id, n_dict in existing_notices.items():
+                print(f"{n_id}: \t {n_dict['key']}")
+            print()
+
+            options = set(map(str, existing_notices)) | {
+                "abort",
+            }
+            prompt = "select a notice ID to fire (or enter 'abort' to exit)"
+            while not (i := input(prompt)) in options:
+                pass
+            if i == "abort":
+                exit("aborted.")
+            notice = existing_notices[i]
+        else:
+            exit(f"unit {unit} has no noticed defined on {container_name}")
+
+        env["JUJU_NOTICE_ID"] = notice["id"]
+        env["JUJU_NOTICE_TYPE"] = notice["type"]
+        env["JUJU_NOTICE_KEY"] = notice["key"]
 
     if override:
         for opt in override:
@@ -143,6 +194,7 @@ def _build_command(
     event,
     model,
     relation_remote: str = None,
+    notice_id: str = None,
     operator_dispatch: bool = False,
     env_override: List[str] = None,
 ):
@@ -150,6 +202,7 @@ def _build_command(
         unit,
         event,
         relation_remote=relation_remote,
+        notice_id=notice_id,
         override=env_override,
         operator_dispatch=operator_dispatch,
     )
@@ -178,20 +231,21 @@ def _juju_exec_cmd(
 ):
     cmd, unit_name = args
     logger.info(cmd)
-    proc = JPopen(cmd.split())
+    proc = JPopen(cmd.split(), text=True)
     proc.wait()
+
     if proc.returncode != 0:
         logger.error(f"cmd {cmd} terminated with {proc.returncode}")
         logger.error(f"stdout={proc.stdout.read()}")
         logger.error(f"stderr={proc.stderr.read()}")
     else:
         if print_captured_stdout and (stdout := proc.stdout.read()):
-            logger.info(f"[captured stdout: ]\n{stdout.decode('utf-8')}")
+            logger.info(f"[captured stdout: ]\n{stdout}")
         if print_captured_stderr and (stderr := proc.stderr.read()):
-            logger.info(f"[captured stderr: ]\n{stderr.decode('utf-8')}")
+            logger.info(f"[captured stderr: ]\n{stderr}")
 
     in_model = f" in model {model}" if model else ""
-    logger.info(f"Fired {event} on {unit_name}{in_model}.\n")
+    logger.info(f"Fired {event} on {unit_name}{in_model}.")
 
     if emit_juju_log:
         juju_log(unit_name, f"The previous {event} was fired by jhack.", model=model)
@@ -201,6 +255,7 @@ def _simulate_event(
     target: str,
     event,
     relation_remote: str = None,
+    notice_id: str = None,
     operator_dispatch: bool = False,
     env_override: List[str] = None,
     print_captured_stdout: bool = False,
@@ -208,6 +263,7 @@ def _simulate_event(
     emit_juju_log: bool = True,
     model: str = None,
     dry_run: bool = False,
+    parallel: bool = False,
 ):
     targets = [t.unit_name for t in parse_target(target, model=model)]
     if not targets:
@@ -221,6 +277,7 @@ def _simulate_event(
             event,
             model,
             relation_remote,
+            notice_id,
             operator_dispatch,
             env_override,
         )
@@ -232,19 +289,32 @@ def _simulate_event(
         print(f"would run: \n\t {cmdlist}")
         return
 
-    with Pool(len(targets)) as pool:
-        logger.debug(f"initiating async fire of {event} onto {targets}")
-        pool.map(
-            partial(
-                _juju_exec_cmd,
-                print_captured_stdout=print_captured_stdout,
-                print_captured_stderr=print_captured_stderr,
-                model=model,
-                event=event,
-                emit_juju_log=emit_juju_log,
-            ),
-            zip(cmds, targets),
-        )
+    _fire = partial(
+        _juju_exec_cmd,
+        print_captured_stdout=print_captured_stdout,
+        print_captured_stderr=print_captured_stderr,
+        model=model,
+        event=event,
+        emit_juju_log=emit_juju_log,
+    )
+
+    if parallel and len(targets) > 1:
+        logger.debug(f"initiating async emission of {event} onto {targets}")
+        ps = []
+        for obj in zip(cmds, targets):
+            p = multiprocessing.Process(target=_fire, args=(obj,))
+            print(f"launched on {obj[1]}")
+            p.start()
+            ps.append(p)
+
+        # FIXME: joining will mangle the shell
+        # for p in ps:
+        #     p.join()
+
+    else:
+        logger.debug(f"initiating sync emission of {event} onto {targets}")
+        for obj in zip(cmds, targets):
+            _fire(obj)
 
 
 def simulate_event(
@@ -278,12 +348,18 @@ def simulate_event(
         " - fire foo-relation-departed --remote bar/0  # the remote bar/0 unit left the "
         "'foo' relation.",
     ),
+    notice_id: str = typer.Option(
+        None,
+        help="ID of the notice that a `*-pebble-custom-notice` is about."
+        "Given that a custom-notice event can represent one of multiple possible notices, "
+        "we might need to disambiguate between them. If you don't pass one, you will"
+        "be interactively prompted to select one between the possible options.",
+    ),
     show_output: bool = typer.Option(
         True,
-        "-s",
-        "--show-output",
         help="Whether to show the stdout/stderr captured during the scope of the event. "
         "If False, it should show up anyway in the juju debug-log.",
+        is_flag=True,
     ),
     env_override: List[str] = typer.Option(
         None,
@@ -299,6 +375,12 @@ def simulate_event(
     dry_run: bool = typer.Option(
         None, "--dry-run", help="Do nothing, print out what would have happened."
     ),
+    parallel: bool = typer.Option(
+        None,
+        "--parallel",
+        "-p",
+        help="Fire the events in parallel, if there's multiple.",
+    ),
 ):
     """Simulates an event on a unit.
 
@@ -308,11 +390,13 @@ def simulate_event(
         target,
         event,
         relation_remote=relation_remote,
+        notice_id=notice_id,
         env_override=env_override,
         print_captured_stdout=show_output,
         print_captured_stderr=show_output,
         model=model,
         dry_run=dry_run,
+        parallel=parallel,
     )
 
 
