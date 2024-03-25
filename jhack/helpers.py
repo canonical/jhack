@@ -110,7 +110,7 @@ def _JPopen(args: Tuple[str], wait: bool, silent_fail: bool = False, **kwargs): 
 
     # this will presumably only ever branch if wait==True
     if proc.returncode not in {0, None}:
-        msg = f"failed to invoke juju command ({args}, {kwargs})"
+        msg = f"failed to invoke command ({args}, {kwargs})"
         if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
             msg += (
                 " If you see an ERROR above saying something like "

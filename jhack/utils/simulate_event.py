@@ -1,5 +1,6 @@
 import contextlib
 import multiprocessing
+import shlex
 import sys
 from functools import partial
 from multiprocessing import Pool
@@ -129,7 +130,7 @@ def build_event_env(
 
         elif len(notices_list) > 0:
             # notice picker v0.1
-            print(f"existing notices for {unit}:{container_name}")
+            print(f"existing notices for {unit}:{container_name}\nID: \t name")
             for n_id, n_dict in existing_notices.items():
                 print(f"{n_id}: \t {n_dict['key']}")
             print()
@@ -137,7 +138,7 @@ def build_event_env(
             options = set(map(str, existing_notices)) | {
                 "abort",
             }
-            prompt = "select a notice ID to fire (or enter 'abort' to exit)"
+            prompt = "select a notice ID to fire (or enter 'abort' to exit): "
             while not (i := input(prompt)) in options:
                 pass
             if i == "abort":
