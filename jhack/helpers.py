@@ -542,5 +542,17 @@ def get_notices(unit: str, container_name: str, model: str = None):
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 
+def get_secrets(model: str = None) -> dict:
+    _model = f"{model} " if model else ""
+    cmd = f"juju secrets {_model} --format=json"
+    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
+
+
+def show_secret(secret_id, model: str = None) -> dict:
+    _model = f"{model} " if model else ""
+    cmd = f"juju show-secret {_model} {secret_id} --format=json"
+    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
+
+
 if __name__ == "__main__":
     print(get_notices("tempo/0", "tempo"))

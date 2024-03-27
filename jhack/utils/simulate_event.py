@@ -1,9 +1,7 @@
-import contextlib
 import multiprocessing
-import shlex
 import sys
 from functools import partial
-from multiprocessing import Pool
+from itertools import count
 from typing import List
 
 import typer
@@ -11,12 +9,14 @@ import typer
 from jhack.helpers import (
     JPopen,
     get_current_model,
+    get_notices,
+    get_secrets,
     get_substrate,
     juju_agent_version,
     juju_log,
     parse_target,
+    show_secret,
     show_unit,
-    get_notices,
 )
 from jhack.logger import logger as jhack_logger
 
@@ -26,6 +26,12 @@ _RELATION_EVENT_SUFFIXES = {
     "-relation-joined",
     "-relation-broken",
     "-relation-departed",
+}
+_SECRET_EVENTS = {
+    "secret-changed",
+    "secret-removed",
+    "secret-rotate",
+    "secret-expired",
 }
 _PEBBLE_READY_SUFFIX = "-pebble-ready"
 _PEBBLE_CUSTOM_NOTICE_SUFFIX = "-pebble-custom-notice"
@@ -71,11 +77,19 @@ def _get_relation_endpoint(event: str):
     return False
 
 
+_unique_label_ctr = count()
+
+
+def _get_auto_label():
+    return f"no-label-{next(_unique_label_ctr)}"
+
+
 def build_event_env(
     unit,
     event,
     relation_remote: str = None,
     notice_id: int = None,
+    secret_id_or_label: str = None,
     override: List[str] = None,
     operator_dispatch: bool = False,
     model: str = None,
@@ -104,6 +118,64 @@ def build_event_env(
 
     if event.endswith(_PEBBLE_READY_SUFFIX):
         env["JUJU_WORKLOAD_NAME"] = event[: -len(_PEBBLE_READY_SUFFIX)]
+
+    if event in _SECRET_EVENTS:
+        existing_secrets = get_secrets(model=model)
+        app = unit.split("/")[0]
+
+        secrets = {
+            secret: metadata["owner"]
+            for secret, metadata in existing_secrets.items()
+            if metadata["owner"] in (unit, app)
+        }
+
+        if len(secrets) == 1:
+            secret = list(secrets)[0]
+            print(f"unit has only one secret: {secret!r}")
+            secret_id_or_label = secret
+
+        labels = {}
+        all_labels = set()
+
+        if not secret_id_or_label:
+            print("no secret ID or label provided.")
+            print(f"Existing secrets for {unit}:")
+            print(f"\t(owner): \tsecret_id {11*' '}\tlabel")
+
+        for secret, owner in secrets.items():
+            secret_meta = show_secret(secret, model=model)
+            label = secret_meta[secret].get("label", None)
+
+            if not label or label in all_labels:
+                auto_label = _get_auto_label()
+                label = auto_label
+
+            labels[secret] = label
+            all_labels.add(label)
+
+            if not secret_id_or_label:
+                print(f"\t({owner}): \t{secret} \t{label or '-'}")
+
+        # labels are guaranteed to be unique, so we can reverse the map
+        labels.update(dict((labels[k], k) for k in labels))
+
+        if not secret_id_or_label:
+            options = set(labels) | set(secrets) | {"abort"}
+            prompt = "Enter label or ID (or 'abort' to give up): "
+            while (secret_id_or_label := input(prompt)) not in options:
+                pass
+            if secret_id_or_label == "abort":
+                exit("aborted.")
+
+        if secret_id_or_label in secrets:
+            secret_id = secret_id_or_label
+            label = labels.get(secret_id, None)
+        else:
+            label = secret_id_or_label
+            secret_id = labels[label]
+
+        env["JUJU_SECRET_ID"] = secret_id
+        env["JUJU_SECRET_LABEL"] = label or ""
 
     if event.endswith(_PEBBLE_CUSTOM_NOTICE_SUFFIX):
         container_name = event[: -len(_PEBBLE_CUSTOM_NOTICE_SUFFIX)]
@@ -139,7 +211,7 @@ def build_event_env(
                 "abort",
             }
             prompt = "select a notice ID to fire (or enter 'abort' to exit): "
-            while not (i := input(prompt)) in options:
+            while (i := input(prompt)) not in options:
                 pass
             if i == "abort":
                 exit("aborted.")
@@ -196,6 +268,7 @@ def _build_command(
     model,
     relation_remote: str = None,
     notice_id: str = None,
+    secret_id_or_label: str = None,
     operator_dispatch: bool = False,
     env_override: List[str] = None,
 ):
@@ -204,6 +277,7 @@ def _build_command(
         event,
         relation_remote=relation_remote,
         notice_id=notice_id,
+        secret_id_or_label=secret_id_or_label,
         override=env_override,
         operator_dispatch=operator_dispatch,
     )
@@ -257,6 +331,7 @@ def _simulate_event(
     event,
     relation_remote: str = None,
     notice_id: str = None,
+    secret_id_or_label: str = None,
     operator_dispatch: bool = False,
     env_override: List[str] = None,
     print_captured_stdout: bool = False,
@@ -274,13 +349,14 @@ def _simulate_event(
 
     cmds = tuple(
         _build_command(
-            target,
-            event,
-            model,
-            relation_remote,
-            notice_id,
-            operator_dispatch,
-            env_override,
+            unit=target,
+            event=event,
+            model=model,
+            relation_remote=relation_remote,
+            notice_id=notice_id,
+            secret_id_or_label=secret_id_or_label,
+            operator_dispatch=operator_dispatch,
+            env_override=env_override,
         )
         for target in targets
     )
@@ -356,6 +432,13 @@ def simulate_event(
         "we might need to disambiguate between them. If you don't pass one, you will"
         "be interactively prompted to select one between the possible options.",
     ),
+    secret: str = typer.Option(
+        None,
+        help="ID or label of a secret known to the unit."
+        "Given that secret events can be about one of multiple possible secrets, "
+        "we might need to disambiguate between them. If you don't pass one, you will"
+        "be interactively prompted to select one between the possible options.",
+    ),
     show_output: bool = typer.Option(
         True,
         help="Whether to show the stdout/stderr captured during the scope of the event. "
@@ -392,6 +475,7 @@ def simulate_event(
         event,
         relation_remote=relation_remote,
         notice_id=notice_id,
+        secret_id_or_label=secret,
         env_override=env_override,
         print_captured_stdout=show_output,
         print_captured_stderr=show_output,

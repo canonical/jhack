@@ -7,7 +7,6 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 from typing import Optional
 
-import requests_unixsocket
 import toml
 from rich.console import Console
 from rich.table import Table
@@ -37,11 +36,18 @@ def get_os_release():
 def _gather_juju_snaps_versions(format: Format = FormatOption):
     local_snaps = []
     try:
-        installed_snaps = get_output('snap list').splitlines()
-        juju_snaps = [snap.split() for snap in installed_snaps if snap.startswith('juju')]
+        installed_snaps = get_output("snap list").splitlines()
+        juju_snaps = [
+            snap.split() for snap in installed_snaps if snap.startswith("juju")
+        ]
         for name, version, revision, channel, _owner, _notes in juju_snaps:
             local_snaps.append(
-                {"name":name, "version":version, "revision":revision, "channel":channel}
+                {
+                    "name": name,
+                    "version": version,
+                    "revision": revision,
+                    "channel": channel,
+                }
             )
     except TypeError as e:
         logger.error(f"urrlib3/requests lib incompatibility error: {e!r}")
