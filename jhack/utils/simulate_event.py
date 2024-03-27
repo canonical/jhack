@@ -129,6 +129,9 @@ def build_event_env(
             if metadata["owner"] in (unit, app)
         }
 
+        if not secrets:
+            exit(f"no secrets found for {unit}")
+
         if len(secrets) == 1:
             secret = list(secrets)[0]
             print(f"unit has only one secret: {secret!r}")
