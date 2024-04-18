@@ -76,7 +76,7 @@ def _just_deploy_this(path: Path, name: str = None, dry_run: bool = False):
         return
 
     print(f"deploying {path} as {name}")
-    subprocess.run(*shlex.split(cmd))
+    subprocess.run(shlex.split(cmd))
 
 
 def just_deploy_this(
