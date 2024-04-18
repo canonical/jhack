@@ -7,6 +7,7 @@ from pathlib import Path
 
 import typer
 
+
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
 sys.path.append(str(Path(os.path.realpath(__file__)).parent.parent))
@@ -59,6 +60,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.utils.just_deploy_this import just_deploy_this
 
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
@@ -72,6 +74,7 @@ def main():
     utils.command(name="fire", no_args_is_help=True)(simulate_event)
     utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     utils.command(name="print-env")(print_env)
+    utils.command(name="deploy")(just_deploy_this)
     utils.command(name="crpc", no_args_is_help=True)(charm_rpc)
     utils.command(name="eval", no_args_is_help=True)(charm_eval)
     utils.command(name="script", no_args_is_help=True)(charm_script)
@@ -125,6 +128,10 @@ def main():
     app.command(name="show-stored", no_args_is_help=True)(show_stored)
     app.command(name="tail")(tail_events)
     app.command(name="nuke")(nuke)
+    app.command(
+        name="deploy",
+        context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    )(just_deploy_this)
     app.command(name="fire", no_args_is_help=True)(simulate_event)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
@@ -175,7 +182,7 @@ def main():
     if LOGLEVEL != "WARNING":
         typer.echo(f"::= Verbose mode ({LOGLEVEL}). =::")
 
-    app()
+    app(ignore_unknown_options=True)
 
 
 if __name__ == "__main__":

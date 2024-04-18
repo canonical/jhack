@@ -106,8 +106,9 @@ def walk(
 
 
 def _sync(
-    target: str,
+    targets: List[str],
     source_dirs: str = "./src;./lib",
+    touch: List[Path] = None,
     remote_root: str = None,
     container_name: str = "charm",
     refresh_rate: float = 1,
@@ -116,26 +117,47 @@ def _sync(
     skip_initial_sync: bool = False,
     include_files: str = ".*\.py$",
 ):
-    _app_name, _, unit_tgt = target.rpartition("/")
+    units = set()
+    for target in targets:
+        _app_name, _, unit_tgt = target.rpartition("/")
 
-    if not _app_name:
-        _app_name = unit_tgt
-        status = juju_status(json=True)
-        if _app_name == "*":
-            units = [
-                unit_name
-                for app in status["applications"].values()
-                for unit_name in app.get("units", {})
-            ]
+        if not _app_name:
+            _app_name = unit_tgt
+            status = juju_status(json=True)
+            if _app_name == "*":
+                units.update(
+                    unit_name
+                    for app in status["applications"].values()
+                    for unit_name in app.get("units", {})
+                )
+            else:
+                units.update(
+                    unit_name
+                    for unit_name in status["applications"][_app_name].get("units", {})
+                )
         else:
-            units = [
-                unit_name
-                for unit_name in status["applications"][_app_name].get("units", {})
-            ]
-    else:
-        units = [target]
+            units.add(target)
 
     remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
+
+    if touch:
+        coros = []
+        for file in touch:
+            for unit in units:
+                coros.append(
+                    push_to_remote_juju_unit(
+                        file,
+                        remote_root,
+                        unit,
+                        container_name,
+                        dry_run=dry_run,
+                    )
+                )
+
+        loop = asyncio.events.get_event_loop()
+        loop.run_until_complete(asyncio.gather(*coros))
+        print("done.")
+        return
 
     def on_change(changed_files):
         if not changed_files:
@@ -171,9 +193,9 @@ def _sync(
 
 
 def sync(
-    target: str = typer.Argument(
+    targets: List[str] = typer.Argument(
         ...,
-        help="The unit or app that you wish to sync to. "
+        help="The units or apps that you wish to sync to. "
         "Example: traefik/0."
         "If syncing to an app, the changes will be pushed to every unit.",
     ),
@@ -225,6 +247,12 @@ def sync(
         help="Skip the initial sync. "
         "This means only the files you touch AFTER the process is started will be synced.",
     ),
+    touch: List[Path] = typer.Option(
+        None,
+        "--touch",
+        help="Only push these files and exit. "
+        "Overrules --skip-initial-sync and --source-dirs",
+    ),
 ):
     """Syncs a local folder to a remote juju unit via juju scp.
 
@@ -233,7 +261,7 @@ def sync(
       'tester-charm'; you can sync the local src with the remote src by
       running:
 
-      jhack utils sync tester-charm/0 ./tests/integration/tester_charm/src
+      jhack sync tester-charm/0 ./tests/integration/tester_charm/src
 
       The remote root defaults to whatever juju ssh defaults to; that is
       / for workload containers but /var/lib/juju for sidecar containers.
@@ -242,8 +270,9 @@ def sync(
       control over.
     """
     return _sync(
-        target=target,
+        targets=targets,
         source_dirs=source_dirs,
+        touch=touch,
         remote_root=remote_root,
         container_name=container_name,
         refresh_rate=refresh_rate,
@@ -262,9 +291,9 @@ async def push_to_remote_juju_unit(
     dry_run: bool = False,
 ):
     app, _, unit_id = unit.rpartition("/")
-    remote_file_path = (remote_root + str(file)[len(os.getcwd()) + 1 :]).format(
-        unit_id=unit_id, app=app
-    )
+    remote_file_path = (
+        remote_root + str(file.absolute())[len(os.getcwd()) + 1 :]
+    ).format(unit_id=unit_id, app=app)
 
     push_file(
         unit,
@@ -273,6 +302,7 @@ async def push_to_remote_juju_unit(
         is_full_path=True,
         container=container_name,
         dry_run=dry_run,
+        mkdir_remote=True,
     )
     if dry_run:
         return

@@ -263,8 +263,9 @@ def _push_file_k8s_cmd(
     is_full_path: bool = False,
     container: Optional[str] = None,
     model: str = None,
+    mkdir_remote: bool = False,
 ):
-    container_arg = f" --container {container} " if container else ""
+    container_arg = f" --container {container}" if container else ""
     model_arg = f" -m {model}" if model else ""
 
     if is_full_path:
@@ -275,7 +276,12 @@ def _push_file_k8s_cmd(
         full_remote_path = (
             f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
         )
+
     cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
+    if mkdir_remote:
+        mkdir_cmd = f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        return f"{mkdir_cmd} && {cmd}"
+
     return cmd
 
 
@@ -285,6 +291,7 @@ def _push_file_machine_cmd(
     remote_path: str,
     is_full_path: bool = False,
     model: str = None,
+    mkdir_remote: bool = False,
 ):
     model_arg = f" -m {model}" if model else ""
 
@@ -300,6 +307,13 @@ def _push_file_machine_cmd(
     #  run this before, and `juju scp` will work.
     #  juju ssh {unit} -- "sudo mkdir -p /root/.ssh; sudo cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys"
     cmd = f"cat {local_path} | juju ssh {unit}{model_arg} sudo -i 'sudo tee {full_remote_path}' > /dev/null"
+
+    if mkdir_remote:
+        mkdir_cmd = (
+            f"juju ssh{model_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        )
+        return f"{mkdir_cmd} && {cmd}"
+
     return cmd
 
 
@@ -311,6 +325,7 @@ def push_file(
     container: Optional[str] = None,
     model: str = None,
     dry_run: bool = False,
+    mkdir_remote: bool = False,
 ):
     if get_substrate() == "machine":
         cmd = _push_file_machine_cmd(
@@ -319,6 +334,7 @@ def push_file(
             remote_path=remote_path,
             is_full_path=is_full_path,
             model=model,
+            mkdir_remote=mkdir_remote,
         )
     else:
         cmd = _push_file_k8s_cmd(
@@ -328,6 +344,7 @@ def push_file(
             is_full_path=is_full_path,
             container=container,
             model=model,
+            mkdir_remote=mkdir_remote,
         )
 
     if dry_run:

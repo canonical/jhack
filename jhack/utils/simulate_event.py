@@ -460,7 +460,7 @@ def simulate_event(
         None, "-m", "--model", help="Which model to apply the command to."
     ),
     dry_run: bool = typer.Option(
-        None, "--dry-run", help="Do nothing, print out what would have happened."
+        None, help="Do nothing, print out what would have happened.", is_flag=True
     ),
     parallel: bool = typer.Option(
         None,
