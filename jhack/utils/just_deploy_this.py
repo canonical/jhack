@@ -1,9 +1,7 @@
 import shlex
-import sys
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
-import click
 import typer
 import yaml
 from click import Choice
@@ -56,7 +54,6 @@ def _just_deploy_this(path: Path, name: str = None, dry_run: bool = False):
     raw_resources = raw_meta.get("resources", {})
     resources_args = []
     for resource_name, resource_meta in raw_resources.items():
-
         upstream_source = resource_meta.get("upstream-source")
         if not upstream_source:
             print(f"No upstream-source found for {resource_name}.")

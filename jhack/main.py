@@ -2,12 +2,10 @@
 import logging
 import os
 import sys
-from contextvars import ContextVar
 from importlib.util import find_spec
 from pathlib import Path
 
 import typer
-
 
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
@@ -51,6 +49,7 @@ def main():
         purge_db,
     )
     from jhack.utils.ffwd import fast_forward
+    from jhack.utils.just_deploy_this import just_deploy_this
     from jhack.utils.list_endpoints import list_endpoints
     from jhack.utils.nuke import nuke
     from jhack.utils.print_env import jhack_version, print_env
@@ -61,7 +60,6 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
-    from jhack.utils.just_deploy_this import just_deploy_this
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
