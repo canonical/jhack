@@ -9,7 +9,9 @@ from click import Choice
 suffixes = ["-k8s", "-operator"]
 
 
-def _just_deploy_this(path: Path, name: str = None, dry_run: bool = False):
+def _just_deploy_this(
+    path: Path, name: str = None, dry_run: bool = False, refresh: bool = False
+):
     if path.name.endswith(".charm"):
         charms = [path]
     else:
@@ -67,9 +69,10 @@ def _just_deploy_this(path: Path, name: str = None, dry_run: bool = False):
         extra_args = []
 
     extra_args = " " + " ".join(extra_args) if extra_args else ""
-    cmd = (
-        f"juju deploy {charm.absolute()} {' '.join(resources_args)} {name}{extra_args}"
-    )
+    if refresh:
+        cmd = f"juju refresh {name} --file {charm.absolute()} {' '.join(resources_args)}{extra_args}"
+    else:
+        cmd = f"juju deploy {charm.absolute()} {' '.join(resources_args)} {name}{extra_args}"
 
     if dry_run:
         print(f"would run:\n\t{cmd}")
@@ -80,7 +83,6 @@ def _just_deploy_this(path: Path, name: str = None, dry_run: bool = False):
 
 
 def just_deploy_this(
-    ctx: typer.Context,
     path: Path = typer.Argument(
         Path(),
         help="Path to a charm repository root (or a `.charm` file).",
@@ -91,7 +93,10 @@ def just_deploy_this(
         "gently trimmed version of the charm name, omitting -k8s or -operator prefixes.",
     ),
     dry_run: bool = typer.Option(
-        None, help="Do nothing, print out what would have happened.", is_flag=True
+        False, help="Do nothing, print out what would have happened.", is_flag=True
+    ),
+    refresh: bool = typer.Option(
+        False, help="Refresh instead of deploying", is_flag=True
     ),
 ):
     """Just Deploy This. (Pretty please).
@@ -103,8 +108,9 @@ def just_deploy_this(
     - ``$ jhack deploy ./``\n
     - ``$ jhack deploy ./some/path/foo_k8s.charm bar``\n
     - ``$ jhack deploy ./some/path/foo.charm bar -- --to-machine 42``
+    - ``$ jhack deploy ./some/path/foo.charm bar --refresh -- --to-machine 42``
     """
-    _just_deploy_this(path, name, dry_run=dry_run)
+    _just_deploy_this(path, name, dry_run=dry_run, refresh=refresh)
 
 
 if __name__ == "__main__":
