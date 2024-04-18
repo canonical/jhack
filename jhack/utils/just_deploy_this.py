@@ -1,4 +1,5 @@
 import shlex
+import sys
 from pathlib import Path
 import subprocess
 
@@ -63,11 +64,15 @@ def _just_deploy_this(path: Path, name: str = None, dry_run: bool = False):
 
         resources_args.append(f"--resource {resource_name}={upstream_source}")
 
-    # from jhack.main import get_passthrough_args
-    #
-    # passthrough = " ".join(get_passthrough_args())
+    try:
+        extra_args = typer.Typer._extra_args
+    except AttributeError:
+        extra_args = []
 
-    cmd = f"juju deploy {charm.absolute()} {' '.join(resources_args)} {name}"
+    extra_args = " " + " ".join(extra_args) if extra_args else ""
+    cmd = (
+        f"juju deploy {charm.absolute()} {' '.join(resources_args)} {name}{extra_args}"
+    )
 
     if dry_run:
         print(f"would run:\n\t{cmd}")

@@ -2,6 +2,7 @@
 import logging
 import os
 import sys
+from contextvars import ContextVar
 from importlib.util import find_spec
 from pathlib import Path
 
@@ -62,6 +63,11 @@ def main():
     from jhack.utils.unleash import vanity
     from jhack.utils.just_deploy_this import just_deploy_this
 
+    if "--" in sys.argv:
+        sep = sys.argv.index("--")
+        typer.Typer._extra_args = sys.argv[sep + 1 :]
+        sys.argv = sys.argv[:sep]
+
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
     utils.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
@@ -74,7 +80,6 @@ def main():
     utils.command(name="fire", no_args_is_help=True)(simulate_event)
     utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     utils.command(name="print-env")(print_env)
-    utils.command(name="deploy")(just_deploy_this)
     utils.command(name="crpc", no_args_is_help=True)(charm_rpc)
     utils.command(name="eval", no_args_is_help=True)(charm_eval)
     utils.command(name="script", no_args_is_help=True)(charm_script)
@@ -130,7 +135,10 @@ def main():
     app.command(name="nuke")(nuke)
     app.command(
         name="deploy",
-        context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+        context_settings={
+            "allow_extra_args": True,
+            "ignore_unknown_options": True,
+        },
     )(just_deploy_this)
     app.command(name="fire", no_args_is_help=True)(simulate_event)
     app.command(name="ffwd")(fast_forward)
