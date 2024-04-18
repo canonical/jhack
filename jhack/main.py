@@ -133,13 +133,7 @@ def main():
     app.command(name="show-stored", no_args_is_help=True)(show_stored)
     app.command(name="tail")(tail_events)
     app.command(name="nuke")(nuke)
-    app.command(
-        name="deploy",
-        context_settings={
-            "allow_extra_args": True,
-            "ignore_unknown_options": True,
-        },
-    )(just_deploy_this)
+    app.command(name="deploy")(just_deploy_this)
     app.command(name="fire", no_args_is_help=True)(simulate_event)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unbork-juju")(unbork_juju)
