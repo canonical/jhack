@@ -70,7 +70,7 @@ def _just_deploy_this(
 
     extra_args = " " + " ".join(extra_args) if extra_args else ""
     if refresh:
-        cmd = f"juju refresh {name} --file {charm.absolute()} {' '.join(resources_args)}{extra_args}"
+        cmd = f"juju refresh {name} --path {charm.absolute()} {' '.join(resources_args)}{extra_args}"
     else:
         cmd = f"juju deploy {charm.absolute()} {' '.join(resources_args)} {name}{extra_args}"
 
