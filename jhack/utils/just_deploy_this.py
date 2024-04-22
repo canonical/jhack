@@ -25,11 +25,13 @@ def _just_deploy_this(
         for i, c in enumerate(charms):
             print(f"{i}: {c}")
 
-        charm = typer.prompt(
+        choice = typer.prompt(
             "pick one",
-            default=charms[0],
+            default="0",
             type=Choice(list(map(str, range(len(charms))))),
         )
+        charm = charms[int(choice)]
+
     else:
         charm = charms[0]
 
@@ -78,7 +80,7 @@ def _just_deploy_this(
         print(f"would run:\n\t{cmd}")
         return
 
-    print(f"deploying {path} as {name}")
+    print(f"deploying {charm} as {name}")
     subprocess.run(shlex.split(cmd))
 
 
