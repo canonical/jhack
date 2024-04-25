@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List
 
 import typer
+import yaml
 
 from jhack.helpers import juju_status, push_file
 from jhack.logger import logger
@@ -106,7 +107,7 @@ def walk(
 
 
 def _sync(
-    targets: List[str],
+    targets: List[str] = None,
     source_dirs: str = "./src;./lib",
     touch: List[Path] = None,
     remote_root: str = None,
@@ -117,6 +118,32 @@ def _sync(
     skip_initial_sync: bool = False,
     include_files: str = ".*\.py$",
 ):
+    if targets is None:
+        local_charm_meta = Path.cwd() / "charmcraft.yaml"
+        if not local_charm_meta.exists():
+            exit(
+                "you need to cd to a charm repo root for `jhack sync` to work without targets argument. "
+                "Alternatively, pass a juju unit/application name as first argument."
+            )
+
+        name = yaml.safe_load(local_charm_meta.read_text()).get("name")
+        if not name:
+            name = yaml.safe_load((Path.cwd() / "metadata.yaml").read_text()).get(
+                "name"
+            )
+            if not name:
+                exit(
+                    "could not find name in charmcraft.yaml / metadata.yaml. "
+                    "Specify a target manually."
+                )
+
+        status = juju_status(json=True)
+        targets = [
+            app
+            for app, appmeta in status["applications"].items()
+            if appmeta["charm-name"] == name
+        ]
+
     units = set()
     for target in targets:
         _app_name, _, unit_tgt = target.rpartition("/")
@@ -194,7 +221,7 @@ def _sync(
 
 def sync(
     targets: List[str] = typer.Argument(
-        ...,
+        None,
         help="The units or apps that you wish to sync to. "
         "Example: traefik/0."
         "If syncing to an app, the changes will be pushed to every unit.",
@@ -311,4 +338,7 @@ async def push_to_remote_juju_unit(
 
 
 if __name__ == "__main__":
-    _sync(target="*", dry_run=True)
+    import os
+
+    os.chdir("/home/pietro/canonical/tempo-k8s")
+    _sync(dry_run=True)

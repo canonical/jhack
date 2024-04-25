@@ -89,6 +89,7 @@ def build_event_env(
     event,
     relation_remote: str = None,
     notice_id: int = None,
+    relation_id: int = None,
     secret_id_or_label: str = None,
     override: List[str] = None,
     operator_dispatch: bool = False,
@@ -109,7 +110,19 @@ def build_event_env(
             env["JUJU_REMOTE_APP"] = relation_remote_app
             env["JUJU_REMOTE_UNIT"] = relation_remote
 
-        relation_id = _get_relation_id(unit, endpoint, relation_remote_app, model=model)
+        if relation_id is None:
+            try:
+                relation_id = _get_relation_id(
+                    unit, endpoint, relation_remote_app, model=model
+                )
+            except RuntimeError:
+                logger.warning(
+                    f"failed to obtain a relation ID for a relation over {endpoint}. "
+                    f"No active bindings found. "
+                    f"Pass one manually with `--relation-id`. Proceeding with 9999."
+                )
+                relation_id = 9999
+
         env["JUJU_RELATION"] = endpoint
         env["JUJU_RELATION_ID"] = str(relation_id)
 
@@ -270,6 +283,7 @@ def _build_command(
     event,
     model,
     relation_remote: str = None,
+    relation_id: int = None,
     notice_id: str = None,
     secret_id_or_label: str = None,
     operator_dispatch: bool = False,
@@ -280,6 +294,7 @@ def _build_command(
         event,
         relation_remote=relation_remote,
         notice_id=notice_id,
+        relation_id=relation_id,
         secret_id_or_label=secret_id_or_label,
         override=env_override,
         operator_dispatch=operator_dispatch,
@@ -333,6 +348,7 @@ def _simulate_event(
     target: str,
     event,
     relation_remote: str = None,
+    relation_id: int = None,
     notice_id: str = None,
     secret_id_or_label: str = None,
     operator_dispatch: bool = False,
@@ -356,6 +372,7 @@ def _simulate_event(
             event=event,
             model=model,
             relation_remote=relation_remote,
+            relation_id=relation_id,
             notice_id=notice_id,
             secret_id_or_label=secret_id_or_label,
             operator_dispatch=operator_dispatch,
@@ -435,6 +452,13 @@ def simulate_event(
         "we might need to disambiguate between them. If you don't pass one, you will"
         "be interactively prompted to select one between the possible options.",
     ),
+    relation_id: int = typer.Option(
+        None,
+        help="ID of the relation that a `*-relation-*` event is about."
+        "Given that a relation event can represent one of multiple possible relations, "
+        "we might need to disambiguate between them. If you don't pass one, we will grab "
+        "the first one we can find and, if none can be found, we will use `9999`.",
+    ),
     secret: str = typer.Option(
         None,
         help="ID or label of a secret known to the unit."
@@ -478,6 +502,7 @@ def simulate_event(
         event,
         relation_remote=relation_remote,
         notice_id=notice_id,
+        relation_id=relation_id,
         secret_id_or_label=secret,
         env_override=env_override,
         print_captured_stdout=show_output,
