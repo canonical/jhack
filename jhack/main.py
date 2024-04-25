@@ -126,7 +126,7 @@ def main():
         rich_markup_mode="markdown",
     )
     app.command(name="version")(jhack_version)
-    app.command(name="sync", no_args_is_help=True)(sync_deployed_charm)
+    app.command(name="sync")(sync_deployed_charm)
     app.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
     app.command(name="show-stored", no_args_is_help=True)(show_stored)
     app.command(name="tail")(tail_events)
