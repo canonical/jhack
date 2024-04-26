@@ -117,7 +117,7 @@ def _get_apps_and_relations(
             apps = 0
             continue
 
-        if line.startswith("Relation "):
+        if line.startswith("Integration ") or line.startswith("Relation "):
             relation = 1
             apps = 0
             continue
@@ -237,14 +237,17 @@ def _nuke(
     if not cur_model:
         nukeables = []
 
+    # user typed `jhack nuke`.
     elif obj is None and not borked and not selectors:
         logger.info("No object | selectors provided, we'll nuke the current model.")
         nukeables = [Nukeable(cur_model, "model")]
 
+    # user typed `jhack nuke something`.
     else:
         if obj is None:
             # means we passed selectors:
-            assert selectors, "invalid usage"
+            if not selectors:
+                exit("invalid usage. Provide selectors or a target.")
             obj = ""  # FIXME: kinda hacky
 
         if obj == "*" and selectors is None:
@@ -503,4 +506,4 @@ def nuke(
 
 
 if __name__ == "__main__":
-    _nuke("gagent", dry_run=True)
+    _nuke("ssc:", dry_run=True)
