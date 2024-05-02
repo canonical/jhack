@@ -1,11 +1,11 @@
 import asyncio
-import os
 import re
 import time
 import typing
 from itertools import product
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+import os
 
 import typer
 import yaml
@@ -42,7 +42,7 @@ def watch(
         watch_list += walk(path, recursive, check_file)
 
     if not watch_list:
-        logger.error("nothing to watch")
+        logger.error("nothing to watch. Pass something to --source-dirs")
         return
 
     if not skip_initial_sync:
@@ -118,6 +118,8 @@ def _sync(
     skip_initial_sync: bool = False,
     include_files: str = ".*\.py$",
 ):
+    status = juju_status(json=True)
+
     if targets is None:
         local_charm_meta = Path.cwd() / "charmcraft.yaml"
         if not local_charm_meta.exists():
@@ -137,12 +139,14 @@ def _sync(
                     "Specify a target manually."
                 )
 
-        status = juju_status(json=True)
         targets = [
             app
             for app, appmeta in status["applications"].items()
             if appmeta["charm-name"] == name
         ]
+
+    if "*" in targets:
+        targets = list(status["applications"])
 
     units = set()
     for target in targets:
@@ -150,7 +154,6 @@ def _sync(
 
         if not _app_name:
             _app_name = unit_tgt
-            status = juju_status(json=True)
             if _app_name == "*":
                 units.update(
                     unit_name
@@ -164,6 +167,9 @@ def _sync(
                 )
         else:
             units.add(target)
+
+    if not units:
+        exit("No targets found.")
 
     remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
 
@@ -206,7 +212,7 @@ def _sync(
         )
         time.sleep(refresh_rate)
 
-    print("ready to sync to: \n\t%s" % "\n\t".join(units))
+    print("Ready to sync to: \n\t%s" % "\n\t".join(units))
 
     source_folders = source_dirs.split(";")
     watch(
@@ -220,11 +226,13 @@ def _sync(
 
 
 def sync(
-    targets: List[str] = typer.Argument(
+    target: Optional[List[str]] = typer.Argument(
         None,
         help="The units or apps that you wish to sync to. "
         "Example: traefik/0."
-        "If syncing to an app, the changes will be pushed to every unit.",
+        "If syncing to an app, the changes will be pushed to every unit."
+        "If you omit the target altogether, it will try to determine what app to sync to "
+        "based on the CWD. If you pass ``*``, it will sync to ALL apps.",
     ),
     source_dirs: str = typer.Option(
         "./src;./lib",
@@ -297,7 +305,7 @@ def sync(
       control over.
     """
     return _sync(
-        targets=targets,
+        targets=target,
         source_dirs=source_dirs,
         touch=touch,
         remote_root=remote_root,
@@ -338,7 +346,5 @@ async def push_to_remote_juju_unit(
 
 
 if __name__ == "__main__":
-    import os
-
     os.chdir("/home/pietro/canonical/tempo-k8s")
     _sync(dry_run=True)

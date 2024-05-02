@@ -4,6 +4,7 @@ import inspect
 import logging
 import os
 import sys
+import traceback
 from pathlib import Path
 from typing import Dict, Optional, Type
 
@@ -41,6 +42,7 @@ def _decode(expr: str) -> str:
 
 
 def rpc(charm):
+    """Execute RPC in script or eval-expr mode depending on context vars."""
     if MODULE_NAME:
         logger.debug("running rpc in script mode")
 
@@ -50,16 +52,24 @@ def rpc(charm):
         logger.debug(
             f"found entrypoint {ENTRYPOINT!r} in crpc script. Invoking on charm..."
         )
-        return_value = entrypoint(charm)
-        return return_value
+        try:
+            return entrypoint(charm)
+        except Exception as e:  # noqa
+            print(
+                f"CHARM RPC ERROR: failed executing {entrypoint!r}({charm}): \n"
+                f"{traceback.format_exc()}"
+            )
 
     elif EVAL_EXPR:
         expr = _decode(EVAL_EXPR)
-        logger.debug(f"running rpc in eval-expr mode: \n" f"expr={expr!r}")
+        logger.debug(f"running rpc in eval-expr mode: \n\texpr={expr!r}")
         try:
             return eval(expr, {"self": charm, "ops": ops})
-        except Exception:  # noqa
-            logger.exception(f"failed executing {expr!r} in with self={charm}.")
+        except Exception as e:  # noqa
+            print(
+                f"CHARM RPC ERROR: failed executing {expr!r} in with self={charm}: \n"
+                f"{traceback.format_exc()}"
+            )
 
 
 def ops_main_rpc(charm_class: Type[ops.charm.CharmBase], use_juju_for_storage: bool):
