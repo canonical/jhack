@@ -120,7 +120,7 @@ def _sync(
 ):
     status = juju_status(json=True)
 
-    if targets is None:
+    if not targets:
         local_charm_meta = Path.cwd() / "charmcraft.yaml"
         if not local_charm_meta.exists():
             exit(
