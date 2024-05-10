@@ -1,11 +1,11 @@
 import asyncio
+import os
 import re
 import time
 import typing
 from itertools import product
 from pathlib import Path
 from typing import List, Optional
-import os
 
 import typer
 import yaml
