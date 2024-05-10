@@ -19,7 +19,7 @@ from jhack.logger import logger
 logger = logger.getChild("nuke")
 
 ASK_FOR_CONFIRMATION = CONFIG.get("nuke", "ask_for_confirmation")
-KINDLY = CONFIG.get("nuke", "kindly")
+GENTLY = CONFIG.get("nuke", "gently")
 BLINK = CONFIG.get("nuke", "blink")
 
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
@@ -232,7 +232,7 @@ def _nuke(
     n: int = None,
     dry_run: bool = False,
     color: _Color = "auto",
-    kindly: bool = KINDLY,
+    gently: bool = GENTLY,
 ):
     cur_model = model or get_current_model()
 
@@ -275,7 +275,7 @@ def _nuke(
         )
         logger.debug(f"Gathered: {nukeables}")
 
-    politeness = " --force" if kindly else ""
+    politeness = " --force" if gently else ""
     nukes = []
     nuked_apps = set()
     nuked_models = set()
@@ -454,8 +454,8 @@ def nuke(
     dry_run: bool = typer.Option(
         None, "--dry-run", help="Do nothing, print out what would have happened."
     ),
-    kindly: bool = typer.Option(
-        False, "--kindly", help="Do not --force whenever you can.", is_flag=True
+    gently: bool = typer.Option(
+        False, "--gently", help="Do not --force whenever you can.", is_flag=True
     ),
     color: Optional[str] = typer.Option(
         "auto",
@@ -504,7 +504,7 @@ def nuke(
         n=n,
         dry_run=dry_run,
         color=color,
-        kindly=kindly,
+        gently=gently,
     )
     if not what:
         _nuke(None, **kwargs)
