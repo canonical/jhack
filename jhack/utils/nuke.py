@@ -19,6 +19,7 @@ from jhack.logger import logger
 logger = logger.getChild("nuke")
 
 ASK_FOR_CONFIRMATION = CONFIG.get("nuke", "ask_for_confirmation")
+KINDLY = CONFIG.get("nuke", "kindly")
 BLINK = CONFIG.get("nuke", "blink")
 
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
@@ -231,6 +232,7 @@ def _nuke(
     n: int = None,
     dry_run: bool = False,
     color: _Color = "auto",
+    kindly: bool = KINDLY,
 ):
     cur_model = model or get_current_model()
 
@@ -273,6 +275,7 @@ def _nuke(
         )
         logger.debug(f"Gathered: {nukeables}")
 
+    politeness = " --force" if kindly else ""
     nukes = []
     nuked_apps = set()
     nuked_models = set()
@@ -282,7 +285,7 @@ def _nuke(
         if nukeable.type == "model":
             nuked_models.add(nukeable.name)
             nukes.append(
-                "juju destroy-model --force --no-wait "
+                f"juju destroy-model{politeness} --no-wait "
                 f"--destroy-storage --no-prompt {nukeable.name}"
             )
 
@@ -295,7 +298,7 @@ def _nuke(
                 continue
 
             nukes.append(
-                f"juju remove-application {nukeable.name} " f"--force --no-prompt"
+                f"juju remove-application {nukeable.name}{politeness} --no-prompt"
             )
 
         elif nukeable.type == "relation":
@@ -451,6 +454,9 @@ def nuke(
     dry_run: bool = typer.Option(
         None, "--dry-run", help="Do nothing, print out what would have happened."
     ),
+    kindly: bool = typer.Option(
+        False, "--kindly", help="Do not --force whenever you can.", is_flag=True
+    ),
     color: Optional[str] = typer.Option(
         "auto",
         "-c",
@@ -498,6 +504,7 @@ def nuke(
         n=n,
         dry_run=dry_run,
         color=color,
+        kindly=kindly,
     )
     if not what:
         _nuke(None, **kwargs)

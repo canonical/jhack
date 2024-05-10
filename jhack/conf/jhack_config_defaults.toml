@@ -1,3 +1,7 @@
 [nuke]
 ask_for_confirmation = true
 blink = false
+kindly = false
+
+[tail]
+remove_empty_columns = true

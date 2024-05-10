@@ -3,7 +3,7 @@ import random
 import re
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
@@ -19,6 +19,7 @@ from typing import (
     cast,
 )
 
+import rich
 import typer
 from rich.align import Align
 from rich.color import Color
@@ -28,6 +29,7 @@ from rich.style import Style
 from rich.table import Column, Table
 from rich.text import Text
 
+from jhack.conf.conf import CONFIG
 from jhack.helpers import JPopen, Target, get_all_units
 from jhack.logger import logger as jhacklogger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
@@ -37,6 +39,7 @@ logger = jhacklogger.getChild(__file__)
 _TAIL_VERSION = "0.3"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
+REMOVE_EMPTY_COLUMNS = CONFIG.get("tail", "remove_empty_columns")
 
 
 def model_loglevel(model: str = None):
@@ -363,6 +366,19 @@ class LogLineParser:
         )
 
 
+class _RawTableHistory:
+    def __init__(self):
+        self.events = []
+        self.ns = []
+        self.deferrals = []
+
+
+class _History:
+    def __init__(self):
+        self.timestamps = []
+        self.raw_tables = defaultdict(_RawTableHistory)
+
+
 class Processor:
     # FIXME: why does sometime event/relation_event work, and sometimes
     #  uniter_event does? OF Version?
@@ -379,10 +395,15 @@ class Processor:
         event_filter_re: re.Pattern = None,
         model: str = None,
         flip: bool = False,
+        output: str = None,
     ):
         self.targets = list(targets)
+        self.output = Path(output) if output else None
         self.add_new_targets = add_new_targets
         self.history_length = history_length
+        # collects items that get popped from the list because we're exceeding the length
+        # in case on exit we want to output the whole log to file.
+        self.history = _History()
 
         if color == "no":
             color = None
@@ -763,9 +784,22 @@ class Processor:
         for target in targets:
             tgt_rows = []
             raw_table = raw_tables[target.unit_name]
+
+            if REMOVE_EMPTY_COLUMNS:
+                if not any(raw_table.events):
+                    logger.debug(
+                        f"skipping column for {target.unit_name} because it is empty"
+                    )
+                    continue
+
             for i, (msg, event, n) in enumerate(
                 zip(raw_table.msgs, raw_table.events, raw_table.ns)
             ):
+                # fixme: find out how Nones can end up in there
+                if not event or not msg or not n:
+                    logger.debug("intercepted Nones in raw table data")
+                    continue
+
                 rndr = (
                     Text(
                         self._get_event_text(event, msg),
@@ -915,20 +949,40 @@ class Processor:
 
         logger.info("cropping table")
         lst: List
-        for lst in (
-            self._timestamps,
-            *(raw.deferrals for raw in self._raw_tables.values()),
-            *(raw.events for raw in self._raw_tables.values()),
-            *(raw.ns for raw in self._raw_tables.values()),
-        ):
-            while len(lst) > self.history_length:
-                lst.pop()  # pop first
+
+        while len(self._timestamps) > self.history_length:
+            self.history.timestamps.append(self._timestamps.pop())  # pop first
+
+        for unit_name, raw_table in self._raw_tables.items():
+            while len(raw_table.events) > self.history_length:
+                self.history.raw_tables[unit_name].events.append(
+                    raw_table.events.pop()
+                )  # pop first
+            while len(raw_table.deferrals) > self.history_length:
+                self.history.raw_tables[unit_name].deferrals.append(
+                    raw_table.deferrals.pop()
+                )  # pop first
+            while len(raw_table.ns) > self.history_length:
+                self.history.raw_tables[unit_name].ns.append(
+                    raw_table.ns.pop()
+                )  # pop first
 
     def quit(self):
-        """Print a goodbye message."""
+        """Print a goodbye message and output a summary to file if requested."""
         if not self._rendered:
             self.live.update("No events caught.", refresh=True)
             return
+
+        # load back history into current memory
+        history = self.history
+
+        # prepend all things we popped during cropping
+        self._timestamps = history.timestamps + self._timestamps
+        for unit_name, rt in self._raw_tables.items():
+            rt.deferrals = history.raw_tables[unit_name].deferrals + rt.deferrals
+            rt.events = history.raw_tables[unit_name].events + rt.events
+            rt.ns = history.raw_tables[unit_name].ns + rt.ns
+        # the raw tables we have now should run up to the beginning of time
 
         table = cast(Table, self.render().renderable)
         table.rows[-1].end_section = True
@@ -954,6 +1008,19 @@ class Processor:
         table_centered = Align.center(table)
         self.live.update(table_centered)
         self.live.refresh()
+
+        output = self.output
+        if not output:
+            return
+        if not output.parent.exists():
+            logger.warning("output directory does not exist")
+            return
+
+        try:
+            with open(output, "w") as o_file:
+                rich.print(table, file=o_file)
+        except:
+            logger.exception(f"failed to write to {output}")
 
     def update_if_empty(self):
         if self._rendered:
@@ -1028,6 +1095,12 @@ def tail_events(
     model: str = typer.Option(
         None, "-m", "--model", help="Which model to apply the command to."
     ),
+    output: str = typer.Option(
+        None,
+        "-o",
+        "--output",
+        help="Print the whole captured event history to a file on exit.",
+    ),
 ):
     """Pretty-print a table with the events that are fired on juju units
     in the current model.
@@ -1050,6 +1123,7 @@ def tail_events(
         event_filter=filter_events,
         model=model,
         flip=flip,
+        output=output,
     )
 
 
@@ -1077,6 +1151,7 @@ def _tail_events(
     # for script use only
     _on_event: Callable[[EventLogMsg], None] = None,
     model: str = None,
+    output: str = None,
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -1132,6 +1207,7 @@ def _tail_events(
         event_filter_re=event_filter_pattern,
         model=model,
         flip=flip,
+        output=output,
     )
 
     try:
