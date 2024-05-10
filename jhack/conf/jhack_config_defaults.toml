@@ -5,3 +5,4 @@ kindly = false
 
 [tail]
 remove_empty_columns = true
+automatically_bump_loglevel = false

@@ -1,11 +1,13 @@
 import enum
 import random
 import re
+import shlex
 import sys
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
+from subprocess import getoutput, run
 from typing import (
     Callable,
     Dict,
@@ -40,6 +42,7 @@ _TAIL_VERSION = "0.4"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 REMOVE_EMPTY_COLUMNS = CONFIG.get("tail", "remove_empty_columns")
+AUTO_BUMP_LOGLEVEL_DEFAULT = CONFIG.get("tail", "automatically_bump_loglevel")
 
 
 def model_loglevel(model: str = None):
@@ -74,15 +77,14 @@ def model_loglevel(model: str = None):
     return "WARNING"  # the default
 
 
-def parse_targets(targets: str = None, model: str = None) -> Sequence[Target]:
+def parse_targets(targets: List[str] = None, model: str = None) -> Sequence[Target]:
     if not targets:
         return get_all_units(model=model)
 
     all_units = None  # cache of all units according to juju status
 
-    targets_ = targets.split(";")
     out = set()
-    for target in targets_:
+    for target in targets:
         if "/" in target:
             out.add(Target.from_name(target))
         else:
@@ -1027,10 +1029,10 @@ class Processor:
 
 
 def tail_events(
-    targets: str = typer.Argument(
+    target: List[str] = typer.Argument(
         None,
-        help="Semicolon-separated list of targets to follow. "
-        "Example: 'foo/0;foo/1;bar/2'. By default, it will follow all "
+        help="Target to follow. Example: 'foo/0' or 'bar' (all bar units). "
+        "By default, it will follow all "
         "available targets.",
     ),
     add_new_targets: bool = typer.Option(
@@ -1099,13 +1101,22 @@ def tail_events(
         "--output",
         help="Print the whole captured event history to a file on exit.",
     ),
+    auto_bump_loglevel: bool = typer.Option(
+        AUTO_BUMP_LOGLEVEL_DEFAULT,
+        "-b",
+        "--auto-bump-loglevel",
+        is_flag=True,
+        help="Set unit loglevel to TRACE automatically, and set it back on exit to whatever it "
+        "previously was. Allows for more accurate event traces. You can enabled it by default in "
+        "jhack conf.",
+    ),
 ):
-    """Pretty-print a table with the events that are fired on juju units
+    """Pretty-print a table with the events that are being fired on juju units
     in the current model.
-    Examples: jhack tail mongo-k8s/2  |  jhack tail -d
+    Examples: jhack tail mongo-k8s/2  ||  jhack tail -d
     """
     return _tail_events(
-        targets=targets,
+        targets=target,
         add_new_targets=add_new_targets,
         level=level,
         replay=replay,
@@ -1122,6 +1133,7 @@ def tail_events(
         model=model,
         flip=flip,
         output=output,
+        auto_bump_loglevel=auto_bump_loglevel,
     )
 
 
@@ -1131,7 +1143,7 @@ def _get_debug_log(cmd):
 
 
 def _tail_events(
-    targets: str = None,
+    targets: List[str] = None,
     add_new_targets: bool = True,
     level: LEVELS = "DEBUG",
     replay: bool = True,  # listen from beginning of time?
@@ -1150,6 +1162,7 @@ def _tail_events(
     _on_event: Callable[[EventLogMsg], None] = None,
     model: str = None,
     output: str = None,
+    auto_bump_loglevel: bool = False,
 ):
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -1192,6 +1205,10 @@ def _tail_events(
     if dry_run:
         print(" ".join(cmd))
         return
+
+    previous_loglevel = ""
+    if auto_bump_loglevel:
+        previous_loglevel = bump_loglevel()
 
     event_filter_pattern = re.compile(event_filter) if event_filter else None
     processor = Processor(
@@ -1275,6 +1292,9 @@ def _tail_events(
     except KeyboardInterrupt:
         pass  # quit
     finally:
+        if auto_bump_loglevel:
+            debump_loglevel(previous_loglevel)
+
         processor.quit()
         processor.live.stop()
 
@@ -1292,6 +1312,31 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
     charlist = list(s)
     charlist[index] = char.get(charlist[index], char[None])
     return "".join(charlist)
+
+
+def bump_loglevel() -> str:
+    cmd = "juju model-config logging-config"
+    old_config = getoutput(cmd).strip()
+    cfgs = old_config.split(";")
+    new_config = []
+
+    for cfg in cfgs:
+        n, lvl = cfg.split("=")
+        if n == "unit":
+            logger.debug(f"existing unit-level logging config found: was {lvl}")
+            continue
+        new_config.append(cfg)
+
+    new_config.append("unit=TRACE")
+
+    cmd = f"juju model-config logging-config={';'.join(new_config)!r}"
+    run(shlex.split(cmd))
+    return old_config
+
+
+def debump_loglevel(previous: str):
+    cmd = f"juju model-config logging-config={previous!r}"
+    run(shlex.split(cmd))
 
 
 if __name__ == "__main__":
