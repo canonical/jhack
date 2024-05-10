@@ -36,7 +36,7 @@ from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
 logger = jhacklogger.getChild(__file__)
 
-_TAIL_VERSION = "0.3"
+_TAIL_VERSION = "0.4"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 REMOVE_EMPTY_COLUMNS = CONFIG.get("tail", "remove_empty_columns")
@@ -713,20 +713,21 @@ class Processor:
 
             raw_table.add_blank_row()
 
-    def _get_event_color(self, msg: EventLogMsg) -> Color:
-        event = msg.event
-        if "custom" in msg.tags:
-            return _custom_event_color
-        if "operator" in msg.tags:
-            return _operator_event_color
-        if "jhack" in msg.tags:
-            if "fire" in msg.tags:
-                return _jhack_fire_event_color
-            elif "replay" in msg.tags:
-                return _jhack_replay_event_color
-            elif "lobotomy" in msg.tags:
-                return _jhack_lobotomy_event_color
-            return _jhack_event_color
+    def _get_event_color(self, event: str, msg: Optional[EventLogMsg]) -> Color:
+        if msg:
+            event = msg.event
+            if "custom" in msg.tags:
+                return _custom_event_color
+            if "operator" in msg.tags:
+                return _operator_event_color
+            if "jhack" in msg.tags:
+                if "fire" in msg.tags:
+                    return _jhack_fire_event_color
+                elif "replay" in msg.tags:
+                    return _jhack_replay_event_color
+                elif "lobotomy" in msg.tags:
+                    return _jhack_lobotomy_event_color
+                return _jhack_event_color
 
         if event in _event_colors:
             return _event_colors.get(event, _default_event_color)
@@ -741,7 +742,9 @@ class Processor:
     _replay_symbol = "⟳"
 
     @classmethod
-    def _get_event_text(cls, event: str, msg: EventLogMsg):
+    def _get_event_text(cls, event: str, msg: Optional[EventLogMsg]):
+        if not msg:
+            return event
         event_text = event
         if "jhack" in msg.tags:
             if "lobotomy" in msg.tags:
@@ -795,15 +798,10 @@ class Processor:
             for i, (msg, event, n) in enumerate(
                 zip(raw_table.msgs, raw_table.events, raw_table.ns)
             ):
-                # fixme: find out how Nones can end up in there
-                if not event or not msg or not n:
-                    logger.debug("intercepted Nones in raw table data")
-                    continue
-
                 rndr = (
                     Text(
                         self._get_event_text(event, msg),
-                        style=Style(color=self._get_event_color(msg)),
+                        style=Style(color=self._get_event_color(event, msg)),
                     )
                     if event
                     else ""
@@ -1297,4 +1295,5 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, targets="gagent/0")
+    logger.setLevel("DEBUG")
+    _tail_events(length=30, replay=True)
