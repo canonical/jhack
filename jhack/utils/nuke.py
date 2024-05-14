@@ -275,7 +275,7 @@ def _nuke(
         )
         logger.debug(f"Gathered: {nukeables}")
 
-    politeness = " --force" if gently else ""
+    politeness = " --force" if not gently else ""
     nukes = []
     nuked_apps = set()
     nuked_models = set()
