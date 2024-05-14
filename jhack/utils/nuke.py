@@ -275,7 +275,7 @@ def _nuke(
         )
         logger.debug(f"Gathered: {nukeables}")
 
-    politeness = " --force" if not gently else ""
+    politeness = " --force --no-wait" if not gently else ""
     nukes = []
     nuked_apps = set()
     nuked_models = set()
@@ -285,7 +285,7 @@ def _nuke(
         if nukeable.type == "model":
             nuked_models.add(nukeable.name)
             nukes.append(
-                f"juju destroy-model{politeness} --no-wait "
+                f"juju destroy-model{politeness} "
                 f"--destroy-storage --no-prompt {nukeable.name}"
             )
 
