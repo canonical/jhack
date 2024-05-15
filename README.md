@@ -56,6 +56,12 @@ jhack model rm
 
 Happy hacking!
 
+
+# devmode and destructive commands
+
+
+
+
 # utils
 ## sync
 
@@ -706,22 +712,6 @@ relating <this model>.prom:self-metrics-endpoint <-[prometheus_scrape]-> cos.pro
 ```
 
 ![img.png](jhack/resources/noice-img.png)
-
-# jinx
-Used to play around with [jinx (YAMLess Charms)](https://github.com/PietroPasotti/jinx)
-
-## install
-
-`jhack jinx install`
-
-Downloads the jinx source.
-
-## init
-
-`jhack jinx init`
-
-Basically `jinxcraft init`.
-
 
 # imatrix
 

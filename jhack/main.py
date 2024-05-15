@@ -24,7 +24,7 @@ def main():
 
     configure()
 
-    def devmode_only(command):
+    def devmode_only(command, dry_run_on_fail=True):
         command.__doc__ = command.__doc__ + "\n\n **--this command is DEVMODE ONLY--**"
 
         @functools.wraps(command)
@@ -32,10 +32,13 @@ def main():
             from jhack.conf.conf import check_destructive_commands_allowed
 
             fn_name = getattr(command, "__name__", str(command))
-            if not check_destructive_commands_allowed(fn_name, _check_only=True):
-                if "dry_run" in kwargs:
-                    kwargs["dry_run"] = True
-                    command(*args, **kwargs)
+            if dry_run_on_fail:
+                if not check_destructive_commands_allowed(fn_name, _check_only=True):
+                    if "dry_run" in kwargs:
+                        kwargs["dry_run"] = True
+                        print("devmode disabled: proceeding with dry_run=True. \n")
+                        command(*args, **kwargs)
+                        print()
 
                 # check again, but this time raise and exit 1
                 check_destructive_commands_allowed(fn_name)
@@ -114,8 +117,12 @@ def main():
         name="imatrix", help="Commands to view and manage the integration matrix."
     )
     integration_matrix.command(name="view")(integrate.show)
-    integration_matrix.command(name="fill")(devmode_only(integrate.link))
-    integration_matrix.command(name="clear")(devmode_only(integrate.clear))
+    integration_matrix.command(name="fill")(
+        devmode_only(integrate.link, dry_run_on_fail=False)
+    )
+    integration_matrix.command(name="clear")(
+        devmode_only(integrate.clear, dry_run_on_fail=False)
+    )
 
     app = typer.Typer(
         name="jhack",
