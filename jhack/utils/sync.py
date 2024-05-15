@@ -257,7 +257,7 @@ def sync(
         1, "--refresh-rate", help="Rate at which we will check for changes, in seconds."
     ),
     recursive: bool = typer.Option(
-        True,
+        False,
         "--recursive",
         is_flag=True,
         help="Whether we should watch the directories recursively for changes.",
