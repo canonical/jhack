@@ -52,8 +52,9 @@ def _lobotomy(
     events: List[str] = None,
     dry_run: bool = False,
     model: Optional[str] = None,
-    undo: Optional[bool] = False,
-    plan: Optional[bool] = False,
+    undo: bool = False,
+    plan: bool = False,
+    retry: bool = False,
 ):
     targets: List[Target] = []
     if undo or plan:
@@ -87,7 +88,7 @@ def _lobotomy(
 
     for t in targets:
         logger.info(f"lobotomizing {t}...")
-        _do_lobotomy(t, model, dry_run, undo, events)
+        _do_lobotomy(t, model, dry_run, undo, events, retry)
 
 
 def _events_to_hookpaths_list(events: Optional[List[str]]):
@@ -102,6 +103,7 @@ def _do_lobotomy(
     dry_run: bool = False,
     undo: bool = False,
     events: Optional[List[str]] = None,
+    retry: bool = False,
 ):
     is_machine = get_substrate(model) == "machine"
     sudo = " sudo" if is_machine else ""
@@ -136,6 +138,7 @@ def _do_lobotomy(
                 (Path(__file__).parent / "dispatch_lobo.sh")
                 .read_text()
                 .replace("{%DISABLED%}", _events_to_hookpaths_list(events) or "ALL")
+                .replace("{%EXIT_CODE%}", "1" if retry else "0")
             )
             push_file(
                 target.unit_name,
@@ -193,7 +196,20 @@ def lobotomy(
         help="Undoes a lobotomy.",
     ),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
-    dry_run: bool = False,
+    retry: bool = typer.Option(
+        False,
+        "--retry",
+        is_flag=True,
+        help="Tell juju to keep retrying calling the intercepted hook."
+        "Note that this will prevent the model from progressing further, as juju will "
+        "effectively be stuck at the first failing hook for the lobotomized units.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        is_flag=True,
+        help="Don't actually do anything, just print what would have happened.",
+    ),
 ):
     """Lobotomizes one or multiple charms, preventing them from processing any incoming events."""
     return _lobotomy(
@@ -204,6 +220,7 @@ def lobotomy(
         model=model,
         plan=plan,
         events=events,
+        retry=retry,
     )
 
 
