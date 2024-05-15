@@ -258,7 +258,7 @@ def sync(
     ),
     recursive: bool = typer.Option(
         True,
-        "/--non-recursive",
+        " /--non-recursive",
         help="Whether we should watch the directories recursively for changes.",
     ),
     dry_run: bool = typer.Option(
