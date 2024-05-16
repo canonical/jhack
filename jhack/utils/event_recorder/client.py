@@ -8,6 +8,7 @@ from typing import Optional, Union
 
 import typer
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import fetch_file, juju_log, modify_remote_file
 from jhack.logger import logger
 from jhack.utils.event_recorder.memo_tools import (
@@ -149,6 +150,7 @@ def emit(
     dry_run: bool = False,
 ):
     """Select the `idx`th event stored on the unit db and re-fire it."""
+    check_destructive_commands_allowed("replay.emit")
     _check_installed(unit)
     _emit(unit, idx, db_path, dry_run=dry_run, operator_dispatch=operator_dispatch)
 
@@ -207,6 +209,7 @@ def purge_db(
     db_path=DEFAULT_DB_NAME,
 ):
     """Purge the database (by default, all of it) or a specific event."""
+    check_destructive_commands_allowed("replay.purge_db")
     _check_installed(unit)
     return _purge_db(unit, idx, db_path)
 
@@ -335,6 +338,7 @@ def _install(unit: str):
 
 def install(unit: str):
     """Install the record spyware on the given unit."""
+    check_destructive_commands_allowed("replay.install")
     return _install(unit)
 
 

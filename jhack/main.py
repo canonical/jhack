@@ -1,6 +1,4 @@
 #!/bin/python3
-import functools
-import inspect
 import logging
 import os
 import sys
@@ -24,28 +22,9 @@ def main():
 
     configure()
 
-    def devmode_only(command, dry_run_on_fail=True):
+    def devmode_only(command):
         command.__doc__ = command.__doc__ + "\n\n **--this command is DEVMODE ONLY--**"
-
-        @functools.wraps(command)
-        def wrapped(*args, **kwargs):
-            from jhack.conf.conf import check_destructive_commands_allowed
-
-            fn_name = getattr(command, "__name__", str(command))
-            if dry_run_on_fail:
-                if not check_destructive_commands_allowed(fn_name, _check_only=True):
-                    if "dry_run" in kwargs:
-                        kwargs["dry_run"] = True
-                        print("devmode disabled: proceeding with dry_run=True. \n")
-                        command(*args, **kwargs)
-                        print()
-
-                # check again, but this time raise and exit 1
-                check_destructive_commands_allowed(fn_name)
-
-            return command(*args, **kwargs)
-
-        return wrapped
+        return command
 
     from jhack.charm import functional
     from jhack.charm.init import init
@@ -96,7 +75,7 @@ def main():
 
     utils.command(name="unbork-juju")(devmode_only(unbork_juju))
     utils.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
-    utils.command(name="pull-cmr", no_args_is_help=True)(devmode_only(integrate.cmr))
+    utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
 
     charm = typer.Typer(name="charm", help="Charmcrafting utilities.")
     charm.command(name="update", no_args_is_help=True)(update)
@@ -109,20 +88,16 @@ def main():
     replay = typer.Typer(name="replay", help="Commands to replay events.")
     replay.command(name="install", no_args_is_help=True)(devmode_only(install))
     replay.command(name="purge", no_args_is_help=True)(devmode_only(purge_db))
-    replay.command(name="list", no_args_is_help=True)(devmode_only(list_events))
-    replay.command(name="dump", no_args_is_help=True)(devmode_only(dump_db))
+    replay.command(name="list", no_args_is_help=True)(list_events)
+    replay.command(name="dump", no_args_is_help=True)(dump_db)
     replay.command(name="emit", no_args_is_help=True)(devmode_only(emit))
 
     integration_matrix = typer.Typer(
         name="imatrix", help="Commands to view and manage the integration matrix."
     )
     integration_matrix.command(name="view")(integrate.show)
-    integration_matrix.command(name="fill")(
-        devmode_only(integrate.link, dry_run_on_fail=False)
-    )
-    integration_matrix.command(name="clear")(
-        devmode_only(integrate.clear, dry_run_on_fail=False)
-    )
+    integration_matrix.command(name="fill")(devmode_only(integrate.link))
+    integration_matrix.command(name="clear")(devmode_only(integrate.clear))
 
     app = typer.Typer(
         name="jhack",
@@ -148,8 +123,8 @@ def main():
     app.command(name="nuke")(devmode_only(nuke))
     app.command(name="deploy")(devmode_only(just_deploy_this))
     app.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
-    app.command(name="pull-cmr", no_args_is_help=True)(devmode_only(integrate.cmr))
-    app.command(name="charm-info", no_args_is_help=True)(devmode_only(vinfo))
+    app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
+    app.command(name="charm-info", no_args_is_help=True)(vinfo)
     app.command(name="eval", no_args_is_help=True)(devmode_only(charm_eval))
     app.command(name="script", no_args_is_help=True)(devmode_only(charm_script))
 
@@ -171,6 +146,7 @@ def main():
     scenario.command(name="snapshot")(snapshot)
     scenario.command(name="state-apply")(devmode_only(state_apply))
 
+    # register all subcommands
     app.add_typer(conf, no_args_is_help=True)
     app.add_typer(charm, no_args_is_help=True)
     app.add_typer(utils, no_args_is_help=True)

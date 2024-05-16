@@ -15,6 +15,7 @@ from typing import List, Optional
 
 import typer
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import Target, get_units, push_file, rm_file
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
@@ -90,6 +91,7 @@ def charm_eval(
     >>> $ jhack eval unit/0 self._some_relation.data[self.unit].__setitem__("foo", "bar")
     >>> None
     """
+    check_destructive_commands_allowed("eval")
     _charm_rpc(
         target=target,
         expr=expr,
@@ -179,7 +181,7 @@ def charm_script(
     If you want to execute the script in the context of a specific event, you can use the
     ``--event`` option.
     """
-
+    check_destructive_commands_allowed("script")
     _charm_script(
         target=target,
         script=script,

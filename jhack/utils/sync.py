@@ -10,6 +10,7 @@ from typing import List, Optional
 import typer
 import yaml
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status, push_file
 from jhack.logger import logger
 
@@ -304,6 +305,8 @@ def sync(
       you pass will be interpreted to this relative remote root which we have no
       control over.
     """
+    check_destructive_commands_allowed("sync")
+
     return _sync(
         targets=target,
         source_dirs=source_dirs,

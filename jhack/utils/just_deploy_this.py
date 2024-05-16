@@ -6,6 +6,8 @@ import typer
 import yaml
 from click import Choice
 
+from jhack.conf.conf import check_destructive_commands_allowed
+
 suffixes = ["-k8s", "-operator"]
 
 
@@ -79,6 +81,7 @@ def _just_deploy_this(
     if dry_run:
         print(f"would run:\n\t{cmd}")
         return
+    check_destructive_commands_allowed("deploy", cmd)
 
     print(f"deploying {charm} as {name}")
     subprocess.run(shlex.split(cmd))

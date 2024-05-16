@@ -57,9 +57,20 @@ jhack model rm
 Happy hacking!
 
 
-# devmode and destructive commands
+# Disclaimer
 
+Many of the commands jhack offers are pretty destructive or bring a high risk of catastrophic failure and random explosions.
 
+These commands will prompt the user for confirmation before proceeding, after, whenever possible, showing the low-level (Juju) commands it would run.
+
+## Enabling devmode
+
+You can permanently enable devmode by setting `~/.config/jhack/config.toml` (see `jhack conf`) and set `[general]enable_destructive_commands_NO_PRODUCTION_zero_guarantees` to `true`.
+
+Otherwise, set the `JHACK_PROFILE=devmode` envvar to run a single command without the confirmation prompt. 
+
+As only exception, nuke has a double safeguard in that even if you enable devmode, you will still get a confirmation prompt.
+To disable that one, set `[nuke]ask_for_confirmation` to `false`.
 
 
 # utils
@@ -423,7 +434,7 @@ By using this tool you acknowledge the possibility of it bricking your model or 
   So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.
 
 ### YOLO mode
-- use `jhack conf` to create your very own `~/.jhack_config.toml` and set `nuke.ask_for_confirmation = false`.
+Even in devmode, `nuke` has a confirmation prompt. Look at `jhack conf` to find out how you can set `[nuke]ask_for_confirmation = false`.
 
 
 # fire

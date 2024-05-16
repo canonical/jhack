@@ -1,8 +1,11 @@
 import os
 import sys
+from enum import Enum
 from pathlib import Path
+from typing import Union
 
 import toml
+import typer
 
 from jhack.config import get_jhack_config_path
 from jhack.logger import logger as jhacklogger
@@ -89,21 +92,36 @@ def print_current_config():
     CONFIG.pprint()
 
 
-def check_destructive_commands_allowed(msg: str, _check_only=False):
+class Denied:
+    def __bool__(self):
+        return False
+
+
+class _Reason(str, Enum):
+    confirmed = "confirmed"
+    devmode = "devmode"
+
+
+class Allowed:
+    def __init__(self, reason: _Reason):
+        self.reason = reason
+
+    def __bool__(self):
+        return True
+
+
+def check_destructive_commands_allowed(
+    msg: str, dry_run_cmd: str = "", _check_only=False
+) -> Union[Denied, Allowed]:
     if os.getenv("JHACK_PROFILE") == "devmode":
-        if _check_only:
-            return True
-        logger.debug(f"running destructive command {msg} with profile = devmode.")
-        return
+        logger.debug(f"operation {msg} allowed by devmode profile.")
+        return Allowed(_Reason.devmode)
 
     if not CONFIG.get(
         "general", "enable_destructive_commands_NO_PRODUCTION_zero_guarantees"
     ):
-        if _check_only:
-            return False
-
         preamble = (
-            "in order to run this command, you must enable destructive mode. "
+            "in order to run this command without confirmation prompt, you must enable destructive mode. "
             "this mode is intended for development environments and should be disabled "
             "in production! This is *for your own good*. "
         )
@@ -113,22 +131,42 @@ def check_destructive_commands_allowed(msg: str, _check_only=False):
         )
 
         if CONFIG.is_default:
-            logger.error(
-                preamble
-                + "If you know better, you can run `jhack conf default |> ~/.config/jhack/config.toml` "
+            body = (
+                "If you know better, you can run `jhack conf default |> ~/.config/jhack/config.toml` "
                 "and edit that file and set `[general]enable_destructive_commands_NO_PRODUCTION_zero_guarantees` "
-                "to `true`. " + closure
+                "to `true`. "
             )
         else:
-            logger.error(
-                preamble
-                + "If you know better, you can edit your `~/.config/jhack/config.toml` "
+            body = (
+                "If you know better, you can edit your `~/.config/jhack/config.toml` "
                 "and set `[general]enable_destructive_commands_NO_PRODUCTION_zero_guarantees` "
-                "to `true`. " + closure
+                "to `true`. "
             )
+        logger.warning(preamble + body + closure)
 
-        exit(f"operation not allowed: {msg}")
-    logger.debug(f"running destructive command {msg}, as allowed by conf.")
+        if dry_run_cmd:
+            print(f"{msg!r} would run: \n\t {dry_run_cmd}")
+
+        confirmation_msg = (
+            "confirm"
+            if dry_run_cmd
+            else "this command is potentially very destructive; continue"
+        )
+        try:
+            if not typer.confirm(confirmation_msg, default=False):
+                if _check_only:
+                    return Denied()
+                exit("operation disallowed by user")
+        except typer.Abort:
+            if _check_only:
+                return Denied()
+            exit("aborted")
+
+        logger.debug(f"operation {msg} allowed by user.")
+        return Allowed(_Reason.confirmed)
+
+    logger.debug(f"operation {msg} allowed by conf.")
+    return Allowed(_Reason.devmode)
 
 
 CONFIG = Config()

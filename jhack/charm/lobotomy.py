@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import Target, get_all_units, get_substrate, parse_target, push_file
 from jhack.logger import logger
 
@@ -114,7 +115,6 @@ def _do_lobotomy(
             print("would run:")
             print(f"\t{move_cmd}")
             return
-
     else:
         # move dispatch to dispatch.ori
         move_cmd = f"juju ssh {target.unit_name}{sudo} mv {target.charm_root_path/'dispatch'} {target.charm_root_path/'dispatch.ori'}"
@@ -124,6 +124,10 @@ def _do_lobotomy(
         print(f"\t{move_cmd}")
 
     else:
+        check_destructive_commands_allowed(
+            "lobotomy", move_cmd + " ... and some more nasty commands"
+        )
+
         try:
             check_output(shlex.split(move_cmd))
         except CalledProcessError:

@@ -22,6 +22,7 @@ from scenario.state import (
     _EntityStatus,
 )
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.logger import logger as jhack_root_logger
 from jhack.scenario.dict_to_state import dict_to_state
 from jhack.scenario.errors import InvalidTargetUnitName, StateApplyError
@@ -275,7 +276,7 @@ def _state_apply(
         for cmd in cmds:
             print(f"\t {cmd}")
         return
-
+    check_destructive_commands_allowed("state-apply")
     # we gather juju-exec commands to run them all at once in the unit.
     exec_in_unit(target, model, j_exec_cmds)
     # non-juju-exec commands are ran one by one, individually
