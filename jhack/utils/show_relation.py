@@ -1013,7 +1013,8 @@ def sync_show_relation(
     Examples:\n
     - ``$ jhack utils show-relation my_app other_app`` - if there only is one integration\n
     - ``$ jhack utils show-relation my_app:relation_name other_app`` - if there are multiple\n
-    - ``$ jhack utils show-relation my_app/1:relation_name other_app/2`` - only show these specific units' databags\n
+    - ``$ jhack utils show-relation my_app/1:relation_name other_app/2`` -
+      only show these specific units' databags\n
 
 
     Should work seamlessly for CMRs, peer, and subordinate relations

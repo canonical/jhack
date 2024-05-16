@@ -35,13 +35,18 @@ def _is_lobotomized(target: Target):
 def _print_plan(targets: List[Target]):
     table = {target: _is_lobotomized(target) for target in targets}
     t = Table("unit", "lobotomy", "events", title="lobotomy plan")
-    for target, l in table.items():
+    for target, lobotomized in table.items():
         t.add_row(
             target.unit_name,
-            Text("active" if l else "inactive", style="bold red" if l else "green"),
-            Text("n/a", style="light grey")
-            if l is False
-            else (l or Text("all", style="bold red")),
+            Text(
+                "active" if lobotomized else "inactive",
+                style="bold red" if lobotomized else "green",
+            ),
+            (
+                Text("n/a", style="light grey")
+                if lobotomized is False
+                else (lobotomized or Text("all", style="bold red"))
+            ),
         )
 
     Console().print(t)
@@ -110,14 +115,22 @@ def _do_lobotomy(
     sudo = " sudo" if is_machine else ""
     if undo:
         # move dispatch.ori back to dispatch
-        move_cmd = f"juju ssh {target.unit_name}{sudo} mv {target.charm_root_path/'dispatch.ori'} {target.charm_root_path/'dispatch'}"
+        move_cmd = (
+            f"juju ssh {target.unit_name}{sudo} mv "
+            f"{target.charm_root_path/'dispatch.ori'} "
+            f"{target.charm_root_path/'dispatch'}"
+        )
         if dry_run:
             print("would run:")
             print(f"\t{move_cmd}")
             return
     else:
         # move dispatch to dispatch.ori
-        move_cmd = f"juju ssh {target.unit_name}{sudo} mv {target.charm_root_path/'dispatch'} {target.charm_root_path/'dispatch.ori'}"
+        move_cmd = (
+            f"juju ssh {target.unit_name}{sudo} mv "
+            f"{target.charm_root_path/'dispatch'} "
+            f"{target.charm_root_path/'dispatch.ori'}"
+        )
 
     if dry_run:
         print("would run:")

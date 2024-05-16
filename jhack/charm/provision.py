@@ -164,9 +164,10 @@ def _provision(
     status = juju_status(json=True)
     targets = tuple(_get_provisioner_targets(target, status))
 
-    check_destructive_commands_allowed(
-        "provision", f"would run {tf_script} on {targets}"
-    )
+    if not dry_run:
+        check_destructive_commands_allowed(
+            "provision", f"would run {tf_script} on {targets}"
+        )
 
     if dry_run:
         print(f"would run: {tf_script}")

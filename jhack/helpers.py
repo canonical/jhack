@@ -279,7 +279,10 @@ def _push_file_k8s_cmd(
 
     cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
     if mkdir_remote:
-        mkdir_cmd = f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        mkdir_cmd = (
+            f"juju ssh{model_arg}{container_arg} {unit} mkdir -p "
+            f"{Path(full_remote_path).parent}"
+        )
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -305,8 +308,12 @@ def _push_file_machine_cmd(
 
     # FIXME:
     #  run this before, and `juju scp` will work.
-    #  juju ssh {unit} -- "sudo mkdir -p /root/.ssh; sudo cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys"
-    cmd = f"cat {local_path} | juju ssh {unit}{model_arg} sudo -i 'sudo tee {full_remote_path}' > /dev/null"
+    #  juju ssh {unit} -- "sudo mkdir -p /root/.ssh; sudo cp /home/ubuntu/.ssh/authorized_keys
+    #  /root/.ssh/authorized_keys"
+    cmd = (
+        f"cat {local_path} | juju ssh {unit}{model_arg} sudo -i 'sudo tee "
+        f"{full_remote_path}' > /dev/null"
+    )
 
     if mkdir_remote:
         mkdir_cmd = (
@@ -548,14 +555,18 @@ def parse_target(target: str, model: str = None) -> List[Target]:
             unit_targets.extend(get_units(target, model=model))
         except KeyError:
             logger.error(
-                f"invalid target {target!r}: not an unit, nor an application in model {model or '<the current model>'!r}"
+                f"invalid target {target!r}: not an unit, nor an application in model "
+                f"{model or '<the current model>'!r}"
             )
     return unit_targets
 
 
 def get_notices(unit: str, container_name: str, model: str = None):
     _model = f"{model} " if model else ""
-    cmd = f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}/pebble.socket http://localhost/v1/notices"
+    cmd = (
+        f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
+        f"/pebble.socket http://localhost/v1/notices"
+    )
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 

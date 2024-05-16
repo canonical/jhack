@@ -340,8 +340,8 @@ def _charm_rpc(
 ):
     """Rpc a live charm method.
 
-    Executes dispatch on a patched init script so the charm is set up and a specific method is called
-    instead of being passed to ops.main standard event loop.
+    Executes dispatch on a patched init script so the charm is set up and a specific
+    method is called instead of being passed to ops.main standard event loop.
     """
     expr = _build_rpc_expr(expr)
     logger.debug(f"rpc expression: {expr!r}")
@@ -439,7 +439,10 @@ def _exec_crpc_script(
 
 def _run_crpc(target, env, crpc_dispatch_name):
     logger.info("executing crpc...")
-    exec_dispatch_cmd = f"juju exec --unit {target.unit_name} -- {env} python3 ./src/{crpc_dispatch_name}.py"
+    exec_dispatch_cmd = (
+        f"juju exec --unit {target.unit_name} -- "
+        f"{env} python3 ./src/{crpc_dispatch_name}.py"
+    )
     run(shlex.split(exec_dispatch_cmd))
 
 

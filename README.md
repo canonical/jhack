@@ -64,6 +64,7 @@ Many of the commands jhack offers are pretty destructive or bring a high risk of
 These commands will prompt the user for confirmation before proceeding, after, whenever possible, showing the low-level (Juju) commands it would run.
 
 ## Enabling devmode
+In devmode, destructive commands will be run without requiring a confirmation prompt.
 
 You can permanently enable devmode by setting `~/.config/jhack/config.toml` (see `jhack conf`) and set `[general]enable_destructive_commands_NO_PRODUCTION_zero_guarantees` to `true`.
 

@@ -60,9 +60,9 @@ class IntegrationMatrix:
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[
-            List[Union[List[PeerBinding], List[RelationBinding]]]
-        ] = self._build_matrix()
+        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = (
+            self._build_matrix()
+        )
 
     def refresh(self):
         self._endpoints = gather_endpoints(model=self._model, apps=self._apps)
@@ -155,9 +155,9 @@ class IntegrationMatrix:
         t = Table(
             show_header=False,
             expand=True,
-            border_style=self.peer_cell_border_style
-            if peer
-            else self.cell_border_style,
+            border_style=(
+                self.peer_cell_border_style if peer else self.cell_border_style
+            ),
         )
         t.add_column("")
 

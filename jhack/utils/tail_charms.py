@@ -950,8 +950,6 @@ class Processor:
             return
 
         logger.info("cropping table")
-        lst: List
-
         while len(self._timestamps) > self.history_length:
             self.history.timestamps.append(self._timestamps.pop())  # pop first
 
@@ -1021,7 +1019,7 @@ class Processor:
         try:
             with open(output, "w") as o_file:
                 rich.print(table, file=o_file)
-        except:
+        except Exception:
             logger.exception(f"failed to write to {output}")
 
     def update_if_empty(self):

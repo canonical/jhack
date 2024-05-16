@@ -103,7 +103,8 @@ def walk(
     return walked
 
 
-# TODO: add --watch flag to switch between the one-shot force-feed functionality and the legacy 'sync' mode
+# TODO: add --watch flag to switch between the one-shot force-feed functionality and the
+#  legacy 'sync' mode
 #  - plus change warning
 
 
@@ -125,7 +126,8 @@ def _sync(
         local_charm_meta = Path.cwd() / "charmcraft.yaml"
         if not local_charm_meta.exists():
             exit(
-                "you need to cd to a charm repo root for `jhack sync` to work without targets argument. "
+                "you need to cd to a charm repo root for `jhack sync` "
+                "to work without targets argument. "
                 "Alternatively, pass a juju unit/application name as first argument."
             )
 

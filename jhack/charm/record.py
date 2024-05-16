@@ -14,8 +14,7 @@ KeyValueMapping = Dict[str, str]
 
 
 class HasWrite(Protocol):
-    def write(self, text: str):
-        ...
+    def write(self, text: str): ...
 
 
 logger = logger.getChild(__file__)
