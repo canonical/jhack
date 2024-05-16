@@ -602,7 +602,7 @@ def _pull_cmrs(
 
         setup_scripts += [
             f"juju offer{controller} {model}.{req}:{binding.requirer_endpoint}",
-            f"juju consume {controller_prefix}admin/{model}.{req}",
+            f"juju consume {controller_prefix}{model}.{req}",
         ]
         relate_scripts += [
             f"juju relate {req}:{binding.requirer_endpoint} {prov}:{binding.provider_endpoint}",

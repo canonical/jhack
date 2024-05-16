@@ -60,6 +60,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.utils.deployment_graph import unravel
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
@@ -81,6 +82,7 @@ def main():
     utils.command(name="crpc", no_args_is_help=True)(charm_rpc)
     utils.command(name="eval", no_args_is_help=True)(charm_eval)
     utils.command(name="script", no_args_is_help=True)(charm_script)
+    utils.command(name="unravel", no_args_is_help=True)(unravel)
 
     jinx = typer.Typer(
         name="jinx",
