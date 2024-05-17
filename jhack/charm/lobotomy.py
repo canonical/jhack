@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import Target, get_all_units, get_substrate, parse_target, push_file
 from jhack.logger import logger
 
@@ -34,13 +35,18 @@ def _is_lobotomized(target: Target):
 def _print_plan(targets: List[Target]):
     table = {target: _is_lobotomized(target) for target in targets}
     t = Table("unit", "lobotomy", "events", title="lobotomy plan")
-    for target, l in table.items():
+    for target, lobotomized in table.items():
         t.add_row(
             target.unit_name,
-            Text("active" if l else "inactive", style="bold red" if l else "green"),
-            Text("n/a", style="light grey")
-            if l is False
-            else (l or Text("all", style="bold red")),
+            Text(
+                "active" if lobotomized else "inactive",
+                style="bold red" if lobotomized else "green",
+            ),
+            (
+                Text("n/a", style="light grey")
+                if lobotomized is False
+                else (lobotomized or Text("all", style="bold red"))
+            ),
         )
 
     Console().print(t)
@@ -52,8 +58,9 @@ def _lobotomy(
     events: List[str] = None,
     dry_run: bool = False,
     model: Optional[str] = None,
-    undo: Optional[bool] = False,
-    plan: Optional[bool] = False,
+    undo: bool = False,
+    plan: bool = False,
+    retry: bool = False,
 ):
     targets: List[Target] = []
     if undo or plan:
@@ -87,7 +94,7 @@ def _lobotomy(
 
     for t in targets:
         logger.info(f"lobotomizing {t}...")
-        _do_lobotomy(t, model, dry_run, undo, events)
+        _do_lobotomy(t, model, dry_run, undo, events, retry)
 
 
 def _events_to_hookpaths_list(events: Optional[List[str]]):
@@ -102,26 +109,38 @@ def _do_lobotomy(
     dry_run: bool = False,
     undo: bool = False,
     events: Optional[List[str]] = None,
+    retry: bool = False,
 ):
     is_machine = get_substrate(model) == "machine"
     sudo = " sudo" if is_machine else ""
     if undo:
         # move dispatch.ori back to dispatch
-        move_cmd = f"juju ssh {target.unit_name}{sudo} mv {target.charm_root_path/'dispatch.ori'} {target.charm_root_path/'dispatch'}"
+        move_cmd = (
+            f"juju ssh {target.unit_name}{sudo} mv "
+            f"{target.charm_root_path/'dispatch.ori'} "
+            f"{target.charm_root_path/'dispatch'}"
+        )
         if dry_run:
             print("would run:")
             print(f"\t{move_cmd}")
             return
-
     else:
         # move dispatch to dispatch.ori
-        move_cmd = f"juju ssh {target.unit_name}{sudo} mv {target.charm_root_path/'dispatch'} {target.charm_root_path/'dispatch.ori'}"
+        move_cmd = (
+            f"juju ssh {target.unit_name}{sudo} mv "
+            f"{target.charm_root_path/'dispatch'} "
+            f"{target.charm_root_path/'dispatch.ori'}"
+        )
 
     if dry_run:
         print("would run:")
         print(f"\t{move_cmd}")
 
     else:
+        check_destructive_commands_allowed(
+            "lobotomy", move_cmd + " ... and some more nasty commands"
+        )
+
         try:
             check_output(shlex.split(move_cmd))
         except CalledProcessError:
@@ -136,6 +155,7 @@ def _do_lobotomy(
                 (Path(__file__).parent / "dispatch_lobo.sh")
                 .read_text()
                 .replace("{%DISABLED%}", _events_to_hookpaths_list(events) or "ALL")
+                .replace("{%EXIT_CODE%}", "1" if retry else "0")
             )
             push_file(
                 target.unit_name,
@@ -193,7 +213,20 @@ def lobotomy(
         help="Undoes a lobotomy.",
     ),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
-    dry_run: bool = False,
+    retry: bool = typer.Option(
+        False,
+        "--retry",
+        is_flag=True,
+        help="Tell juju to keep retrying calling the intercepted hook."
+        "Note that this will prevent the model from progressing further, as juju will "
+        "effectively be stuck at the first failing hook for the lobotomized units.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        is_flag=True,
+        help="Don't actually do anything, just print what would have happened.",
+    ),
 ):
     """Lobotomizes one or multiple charms, preventing them from processing any incoming events."""
     return _lobotomy(
@@ -204,6 +237,7 @@ def lobotomy(
         model=model,
         plan=plan,
         events=events,
+        retry=retry,
     )
 
 

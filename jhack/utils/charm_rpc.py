@@ -15,78 +15,12 @@ from typing import List, Optional
 
 import typer
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import Target, get_units, push_file, rm_file
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
 
 logger = jhack_logger.getChild("crpc")
-
-
-def charm_rpc(
-    target: str = typer.Argument(
-        ...,
-        help="Target unit or application name. "
-        "Using an application name will run the script on all units.",
-    ),
-    expr: str = typer.Argument(
-        ...,
-        help="Path to an object or callable starting from the charm instance. "
-        "Can start with ``self.``, or it can be omitted."
-        "Examples: \n"
-        "- .model.relations['foo']\n"
-        "- self.ingress.is_ready\n",
-    ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
-    cleanup: bool = typer.Option(
-        True,
-        help="Remove all files created onto the unit when you're done.",
-        is_flag=True,
-    ),
-    crpc_dispatch_name: str = typer.Option(
-        "crpc_dispatch",
-        help="Name of the (temporary) file containing the dispatch script.",
-    ),
-    charm_name: Optional[str] = typer.Option(
-        None,
-        "-c",
-        "--charm-name",
-        help="Name of the charm type to import from `charm.py`. Useful if your charm.py "
-        "contains more than one charm type (e.g. if you have a base class...).",
-    ),
-    env_override: List[str] = typer.Option(
-        None,
-        "--env",
-        help="Key-value mapping to override any ENV with. For whatever reason."
-        "E.g."
-        " --event foo-pebble-ready --env JUJU_DEPARTING_UNIT_NAME=remote/0 --env FOO=bar",
-    ),
-    event: str = typer.Option(
-        "charm-rpc",
-        "--event",
-        help="The name of an event whose context to simulate. "
-        "Needs to be a valid event name for the unit; e.g. \n"
-        " - 'start' \n"
-        " - 'config-changed' \n"
-        " - 'my-relation-name-relation-joined' # write it out in full",
-    ),
-):
-    """Evaluates an expression in the context of a live charm.
-
-    RENAMED to ``jhack eval``.
-    """
-    logger.warning("`jhack crpc` is being renamed; please use `jhack eval`.")
-    _charm_rpc(
-        target=target,
-        expr=expr,
-        model=model,
-        cleanup=cleanup,
-        crpc_dispatch_name=crpc_dispatch_name,
-        env_override=env_override,
-        event=event,
-        charm_name=charm_name,
-    )
 
 
 def charm_eval(
@@ -157,6 +91,7 @@ def charm_eval(
     >>> $ jhack eval unit/0 self._some_relation.data[self.unit].__setitem__("foo", "bar")
     >>> None
     """
+    check_destructive_commands_allowed("eval")
     _charm_rpc(
         target=target,
         expr=expr,
@@ -246,7 +181,7 @@ def charm_script(
     If you want to execute the script in the context of a specific event, you can use the
     ``--event`` option.
     """
-
+    check_destructive_commands_allowed("script")
     _charm_script(
         target=target,
         script=script,
@@ -405,8 +340,8 @@ def _charm_rpc(
 ):
     """Rpc a live charm method.
 
-    Executes dispatch on a patched init script so the charm is set up and a specific method is called
-    instead of being passed to ops.main standard event loop.
+    Executes dispatch on a patched init script so the charm is set up and a specific
+    method is called instead of being passed to ops.main standard event loop.
     """
     expr = _build_rpc_expr(expr)
     logger.debug(f"rpc expression: {expr!r}")
@@ -504,7 +439,10 @@ def _exec_crpc_script(
 
 def _run_crpc(target, env, crpc_dispatch_name):
     logger.info("executing crpc...")
-    exec_dispatch_cmd = f"juju exec --unit {target.unit_name} -- {env} python3 ./src/{crpc_dispatch_name}.py"
+    exec_dispatch_cmd = (
+        f"juju exec --unit {target.unit_name} -- "
+        f"{env} python3 ./src/{crpc_dispatch_name}.py"
+    )
     run(shlex.split(exec_dispatch_cmd))
 
 

@@ -10,6 +10,7 @@ from typing import List, Optional
 import typer
 import yaml
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status, push_file
 from jhack.logger import logger
 
@@ -102,7 +103,8 @@ def walk(
     return walked
 
 
-# TODO: add --watch flag to switch between the one-shot force-feed functionality and the legacy 'sync' mode
+# TODO: add --watch flag to switch between the one-shot force-feed functionality and the
+#  legacy 'sync' mode
 #  - plus change warning
 
 
@@ -124,7 +126,8 @@ def _sync(
         local_charm_meta = Path.cwd() / "charmcraft.yaml"
         if not local_charm_meta.exists():
             exit(
-                "you need to cd to a charm repo root for `jhack sync` to work without targets argument. "
+                "you need to cd to a charm repo root for `jhack sync` "
+                "to work without targets argument. "
                 "Alternatively, pass a juju unit/application name as first argument."
             )
 
@@ -304,6 +307,8 @@ def sync(
       you pass will be interpreted to this relative remote root which we have no
       control over.
     """
+    check_destructive_commands_allowed("sync")
+
     return _sync(
         targets=target,
         source_dirs=source_dirs,

@@ -1,8 +1,17 @@
 [nuke]
+# always ask for confirmation on jhack nuke
 ask_for_confirmation = true
+# have the bomb be blinky
 blink = false
+# nuke without --force --no-wait
 gently = false
 
 [tail]
+# pop empty columns from tail output
 remove_empty_columns = true
+# bump loglevel to unit=TRACE before tailing, and pop it back to whatever it was before when tail exits
 automatically_bump_loglevel = false
+
+[general]
+# valid values: ["production", "development"]
+enable_destructive_commands_NO_PRODUCTION_zero_guarantees = false

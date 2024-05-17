@@ -22,6 +22,7 @@ from scenario.state import (
     _EntityStatus,
 )
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.logger import logger as jhack_root_logger
 from jhack.scenario.dict_to_state import dict_to_state
 from jhack.scenario.errors import InvalidTargetUnitName, StateApplyError
@@ -222,7 +223,8 @@ def _gather_push_file_calls(
 
             for root, _, files in os.walk(mount.src):
                 for file in files:
-                    # `file` is the absolute path of the object as it would be on the container filesystem.
+                    # `file` is the absolute path of the object as it would be on the
+                    # container filesystem.
                     # we need to relativize it to the tempdir the mount is simulated by.
                     # dest_path = Path(file).relative_to(mount.src)
                     dest_path = (
@@ -275,7 +277,7 @@ def _state_apply(
         for cmd in cmds:
             print(f"\t {cmd}")
         return
-
+    check_destructive_commands_allowed("state-apply")
     # we gather juju-exec commands to run them all at once in the unit.
     exec_in_unit(target, model, j_exec_cmds)
     # non-juju-exec commands are ran one by one, individually
@@ -313,7 +315,7 @@ def state_apply(
         "For k8s units, it's supposed to be a {container_name: {Path: Path}} mapping listing "
         "the files that need to be pushed to the each container and their destinations.",
     ),
-    # TODO: generalize "push_files" to allow passing '.' for the 'charm' container or 'the machine'.
+    # TODO: generalize "push_files" to allow passing '.' for the 'charm' container or 'the machine'
     data_dir: Path = typer.Option(
         SNAPSHOT_DATA_DIR,
         "--data-dir",

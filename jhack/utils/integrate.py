@@ -15,6 +15,7 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions
 from jhack.logger import logger as jhack_logger
 from jhack.utils.helpers.gather_endpoints import (
@@ -59,9 +60,9 @@ class IntegrationMatrix:
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[
-            List[Union[List[PeerBinding], List[RelationBinding]]]
-        ] = self._build_matrix()
+        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = (
+            self._build_matrix()
+        )
 
     def refresh(self):
         self._endpoints = gather_endpoints(model=self._model, apps=self._apps)
@@ -154,9 +155,9 @@ class IntegrationMatrix:
         t = Table(
             show_header=False,
             expand=True,
-            border_style=self.peer_cell_border_style
-            if peer
-            else self.cell_border_style,
+            border_style=(
+                self.peer_cell_border_style if peer else self.cell_border_style
+            ),
         )
         t.add_column("")
 
@@ -343,6 +344,8 @@ class IntegrationMatrix:
 
         if dry_run:
             return
+
+        check_destructive_commands_allowed(f"imatrix {verb}", "\n\t".join(cmd_list))
 
         console = Console()
         console.print(f"{verb.title()}ing relations...")

@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.style import Style
 from rich.text import Text
 
-from jhack.conf.conf import CONFIG
+from jhack.conf.conf import CONFIG, check_destructive_commands_allowed
 from jhack.helpers import JPopen, get_current_model, get_models, juju_status
 from jhack.logger import logger
 
@@ -355,6 +355,8 @@ def _nuke(
         except typer.Abort:
             print("\nAborted.")
             return
+    else:
+        check_destructive_commands_allowed("nuke", "\t\n".join(nukes))
 
     if color == "no":
         color = None

@@ -6,6 +6,7 @@ from typing import List
 
 import typer
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import (
     JPopen,
     get_current_model,
@@ -381,10 +382,12 @@ def _simulate_event(
         for target in targets
     )
 
+    cmdlist = "\n\t".join(cmds)
     if dry_run:
-        cmdlist = "\n\t".join(cmds)
         print(f"would run: \n\t {cmdlist}")
         return
+
+    check_destructive_commands_allowed("fire", cmdlist)
 
     _fire = partial(
         _juju_exec_cmd,

@@ -173,7 +173,7 @@ class RawTable:
 
 
 _event_colors = {
-    "update_status": Color.from_rgb(50, 50, 50),
+    "update_status": Color.from_rgb(150, 150, 50),
     "collect_metrics": Color.from_rgb(50, 50, 50),
     "leader_elected": Color.from_rgb(26, 184, 68),
     "leader_settings_changed": Color.from_rgb(26, 184, 68),
@@ -797,6 +797,7 @@ class Processor:
                     )
                     continue
 
+            msg: Optional[EventLogMsg]
             for i, (msg, event, n) in enumerate(
                 zip(raw_table.msgs, raw_table.events, raw_table.ns)
             ):
@@ -828,10 +829,11 @@ class Processor:
                     row.insert(0, n_rndr)
 
                 if traces_shown:
+                    trace_id = msg.trace_id if msg else None
                     trace_rndr = (
-                        Text(msg.trace_id, style=Style(color=_trace_id_color))
-                        if msg.trace_id
-                        else ""
+                        Text(trace_id, style=Style(color=_trace_id_color))
+                        if trace_id
+                        else "-"
                     )
                     row.append(trace_rndr)
 
@@ -948,8 +950,6 @@ class Processor:
             return
 
         logger.info("cropping table")
-        lst: List
-
         while len(self._timestamps) > self.history_length:
             self.history.timestamps.append(self._timestamps.pop())  # pop first
 
@@ -1019,7 +1019,7 @@ class Processor:
         try:
             with open(output, "w") as o_file:
                 rich.print(table, file=o_file)
-        except:
+        except Exception:
             logger.exception(f"failed to write to {output}")
 
     def update_if_empty(self):
@@ -1099,7 +1099,7 @@ def tail_events(
         None,
         "-o",
         "--output",
-        help="Print the whole captured event history to a file on exit.",
+        help="Replay the whole event history log and output it to a file. Overrides --watch.",
     ),
     auto_bump_loglevel: bool = typer.Option(
         AUTO_BUMP_LOGLEVEL_DEFAULT,
@@ -1164,6 +1164,10 @@ def _tail_events(
     output: str = None,
     auto_bump_loglevel: bool = False,
 ):
+    if output:
+        logger.debug("output mode. Overriding watch.")
+        watch = False
+
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
 
@@ -1273,6 +1277,11 @@ def _tail_events(
                     break
 
                 replay_mode = False
+                # we're done replaying.
+                # if we're in output mode, we've caught up with the juju log and we can exit
+                if output:
+                    exit()
+
                 continue
 
             if line:

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import JPopen
 
 
@@ -46,6 +47,9 @@ def unbork_juju(
 
     if dry_run:
         print("would run:", cmd)
+        return
+
+    check_destructive_commands_allowed("unbork-juju")
 
     proc = JPopen(cmd)
     proc.wait()
