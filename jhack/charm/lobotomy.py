@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union
 
 import typer
 from rich.console import Console
@@ -25,8 +25,12 @@ def _parse_disabled(out):
     return (out[len("DISABLED=") :]).strip()
 
 
-def _is_lobotomized(target: Target):
-    """Return False if not, return an optional list of events (for selective lobotomy)."""
+def _get_lobo_details(target: Target) -> Tuple[Union[bool, List[str]], str]:
+    """Return lobotomy details.
+
+    - False if lobotomy is not active, else a list of events (for selective lobotomy).
+    - Return code: "0" or "1"
+    """
     # if dispatch.ori is present; dispatch is lobo dispatch (or cleanup failed; either way)
     cmd = f"juju ssh {target.unit_name} cat {target.charm_root_path/'dispatch'} | grep -A1 DISABLED= "
     try:
@@ -38,7 +42,7 @@ def _is_lobotomized(target: Target):
 
 
 def _print_plan(targets: List[Target]):
-    table = {target: _is_lobotomized(target) for target in targets}
+    table = {target: _get_lobo_details(target) for target in targets}
     t = Table("unit", "lobotomy", "retry", "events", title="lobotomy plan")
     for target, (lobotomized, retry) in table.items():
 
@@ -72,11 +76,13 @@ def _lobotomy(
     plan: bool = False,
     retry: bool = False,
 ):
-    targets: List[Target] = []
-    if undo or plan:
-        # in the case of plan or undo, no targets = all targets
+    if plan:
+        _all = True
+    elif undo and not target:
+        # in the case of undo, no targets = all targets
         _all = True
 
+    targets: List[Target] = []
     if _all:
         if target:
             logger.warning(f"`all` flag overrules provided targets {target}.")
@@ -93,9 +99,9 @@ def _lobotomy(
         return
 
     if undo:
-        targets = [t for t in targets if _is_lobotomized(t)]
+        targets = [t for t in targets if _get_lobo_details(t)[0]]
     else:
-        targets = [t for t in targets if not _is_lobotomized(t)]
+        targets = [t for t in targets if not _get_lobo_details(t)[0]]
 
     if not targets:
         exit("no changes to apply.")
