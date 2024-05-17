@@ -135,8 +135,8 @@ def check_destructive_commands_allowed(
             "This is *for your own good*. "
         )
         closure = (
-            "Or, if you want to allow destructive mode just this once, set the "
-            "`JHACK_PROFILE=devmode` envvar."
+            "Or, if you want to allow destructive mode just this once, run "
+            f"`JHACK_PROFILE=devmode {' '.join(sys.orig_argv)}`"
         )
 
         if CONFIG.is_default:
