@@ -1,11 +1,15 @@
 import dataclasses
+import os
 from typing import List, Dict
 
+import matplotlib
 import typer
 
 from jhack.helpers import juju_status, get_current_model
 
 from jhack.logger import logger as jhack_logger
+import networkx as nx
+import matplotlib.pyplot as plt
 
 logger = jhack_logger.getChild("graph")
 
@@ -25,6 +29,10 @@ class _App:
     def __hash__(self):
         return hash((self.model, self.name))
 
+    @property
+    def charm_name(self):
+        return self.meta["charm-name"]
+
 
 @dataclasses.dataclass(frozen=True)
 class _Relation:
@@ -34,7 +42,7 @@ class _Relation:
     endpoint_to: str
 
     @property
-    def interface(self):
+    def interface(self) -> str:
         return self.meta["interface"]
 
 
@@ -43,6 +51,57 @@ class Graph:
 
     def __init__(self, graph: Dict[_App, List[_Relation]]):
         self._graph = graph
+
+    def plot_nx_graph(self, show_peers: bool = False):
+        # todo: if running from terminal, we need:
+        #   os.environ["QT_QPA_PLATFORM"] = "offscreen"
+
+        g = nx.Graph()
+        labels = {}
+
+        for origin, relations in self._graph.items():
+            for relation in relations:
+                a = origin.name
+                b = relation.remote_app.name
+                if a == b and not show_peers:
+                    continue
+
+                e = (a, b)
+                g.add_edge(*e)
+
+                labels[e] = relation.interface
+
+        has_multiple_models = len(set(x.model for x in self._graph)) > 1
+
+        if has_multiple_models:
+            return self._plot_model_graph(g, labels)
+
+        pos = nx.spring_layout(g, seed="41424142")
+        nx.draw(g, pos=pos, with_labels=True, font_weight="bold")
+        nx.draw_networkx_edge_labels(g, pos=pos, edge_labels=labels)
+        plt.draw()
+        plt.show()
+
+    def _plot_model_graph(self, g):
+        # Compute positions for the node clusters as if they were themselves nodes in a
+        # supergraph using a larger scale factor
+        supergraph = nx.cycle_graph(len(groups))
+        superpos = nx.spring_layout(g, scale=50, seed=429)
+
+        # Use the "supernode" positions as the center of each node cluster
+        centers = list(superpos.values())
+        pos = {}
+        for center, comm in zip(centers, groups):
+            pos.update(nx.spring_layout(nx.subgraph(g, comm), center=center, seed=1430))
+
+        # Nodes colored by cluster
+        for nodes, clr in zip(groups, ("tab:blue", "tab:orange", "tab:green")):
+            nx.draw_networkx_nodes(
+                g, pos=pos, nodelist=nodes, node_color=clr, node_size=100
+            )
+        nx.draw_networkx_edges(g, pos=pos)
+
+        plt.tight_layout()
 
     @staticmethod
     def bootstrap(app_name: str, model_name: str = None) -> "Graph":
@@ -113,16 +172,18 @@ class Graph:
 
     def plot(self):
         print("GRAPH:")
-        for origin, destination in self._graph.items():
-            print(f"\t{origin} --> {{")
-            for app in destination:
-                print(f"\t\t{app}")
+        for origin, relations in self._graph.items():
+            print(f"\t{origin.name} ({origin.charm_name}) --> {{")
+            for relation in relations:
+                print(
+                    f"\t\t{relation.endpoint} >> {relation.remote_app.name} ({relation.remote_app.charm_name})"
+                )
             print(f"\t}}")
 
 
 def _map(app_name: str, model_name: str):
     graph = Graph.bootstrap(app_name=app_name, model_name=model_name)
-    graph.plot()
+    graph.plot_nx_graph()
 
 
 def unravel(
@@ -130,6 +191,7 @@ def unravel(
         ..., help="""The starting point of the graph expansion."""
     ),
     model_name: str = typer.Option(
+        None,
         "-m",
         "--model",
         help="The model in which to find the app from which to start the unraveling.",
@@ -139,4 +201,4 @@ def unravel(
 
 
 if __name__ == "__main__":
-    Graph.bootstrap("loki").plot()
+    Graph.bootstrap("loki").plot_nx_graph()
