@@ -110,7 +110,7 @@ def walk(
 
 def _sync(
     targets: List[str] = None,
-    source_dirs: str = "./src;./lib",
+    source_dirs: List[str] = None,
     touch: List[Path] = None,
     remote_root: str = None,
     container_name: str = "charm",
@@ -177,6 +177,7 @@ def _sync(
     remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
 
     if touch:
+        print("Touching: ")
         coros = []
         for file in touch:
             for unit in units:
@@ -192,8 +193,8 @@ def _sync(
 
         loop = asyncio.events.get_event_loop()
         loop.run_until_complete(asyncio.gather(*coros))
-        print("done.")
-        return
+        print("Initial sync done.")
+        skip_initial_sync = True
 
     def on_change(changed_files):
         if not changed_files:
@@ -217,9 +218,8 @@ def _sync(
 
     print("Ready to sync to: \n\t%s" % "\n\t".join(units))
 
-    source_folders = source_dirs.split(";")
     watch(
-        source_folders,
+        source_dirs or ["./src", "./lib"],
         on_change,
         include_files,
         recursive,
@@ -237,9 +237,9 @@ def sync(
         "If you omit the target altogether, it will try to determine what app to sync to "
         "based on the CWD. If you pass ``*``, it will sync to ALL apps.",
     ),
-    source_dirs: str = typer.Option(
-        "./src;./lib",
-        "--source-dirs",
+    source_dirs: List[str] = typer.Option(
+        ["./src, ./lib"],
+        "--source",
         "-s",
         help="Local directories to watch for changes. "
         "Semicolon-separated list of directories.",
@@ -261,8 +261,7 @@ def sync(
     ),
     recursive: bool = typer.Option(
         True,
-        "--recursive",
-        is_flag=True,
+        "--non-recursive",
         help="Whether we should watch the directories recursively for changes.",
     ),
     dry_run: bool = typer.Option(
