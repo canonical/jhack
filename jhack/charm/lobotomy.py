@@ -17,6 +17,10 @@ from jhack.logger import logger
 logger = logger.getChild(__file__)
 
 
+def _parse_exit_code(out):
+    return (out[len("EXIT_CODE=") :]).strip() == "0"
+
+
 def _parse_disabled(out):
     return (out[len("DISABLED=") :]).strip()
 
@@ -24,23 +28,29 @@ def _parse_disabled(out):
 def _is_lobotomized(target: Target):
     """Return False if not, return an optional list of events (for selective lobotomy)."""
     # if dispatch.ori is present; dispatch is lobo dispatch (or cleanup failed; either way)
-    cmd = f"juju ssh {target.unit_name} cat {target.charm_root_path/'dispatch'} | grep DISABLED="
+    cmd = f"juju ssh {target.unit_name} cat {target.charm_root_path/'dispatch'} | grep -A1 DISABLED= "
     try:
-        out = check_output(shlex.split(cmd), stderr=subprocess.PIPE, text=True)
-        return _parse_disabled(out)
+        out = check_output(shlex.split(cmd), stderr=subprocess.PIPE, text=True).strip()
+        disabled, exitcode = out.split("\n") if out else (None, None)
+        return _parse_disabled(disabled), _parse_exit_code(exitcode)
     except CalledProcessError:
-        return False
+        return False, False
 
 
 def _print_plan(targets: List[Target]):
     table = {target: _is_lobotomized(target) for target in targets}
-    t = Table("unit", "lobotomy", "events", title="lobotomy plan")
-    for target, lobotomized in table.items():
+    t = Table("unit", "lobotomy", "retry", "events", title="lobotomy plan")
+    for target, (lobotomized, retry) in table.items():
+
         t.add_row(
             target.unit_name,
             Text(
                 "active" if lobotomized else "inactive",
                 style="bold red" if lobotomized else "green",
+            ),
+            Text(
+                "yes" if retry else "no",
+                style="bold cyan" if retry else "yellow",
             ),
             (
                 Text("n/a", style="light grey")
