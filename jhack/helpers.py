@@ -514,9 +514,11 @@ def _get_units(app, status, predicate: Optional[Callable] = None):
         for principal in principals:
             if predicate and not predicate(principal):
                 continue
+
+            # if the principal is still being set up, it could have no 'units' yet.
             machines = [
                 u["machine"]
-                for u in status["applications"][principal]["units"].values()
+                for u in status["applications"][principal].get("units", {}).values()
             ]
             units.extend(f"{app}/{machine}" for machine in machines)
 
