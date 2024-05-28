@@ -26,8 +26,8 @@ def watch(
     skip_initial_sync: bool = False,
 ):
     """Watches a directory for changes; on any, calls on_change back with them."""
-
     resolved = [Path(path).resolve() for path in paths]
+
     include_files = re.compile(include_files) if include_files else None
 
     def check_file(file: Path):
@@ -238,7 +238,7 @@ def sync(
         "based on the CWD. If you pass ``*``, it will sync to ALL apps.",
     ),
     source_dirs: List[str] = typer.Option(
-        ["./src, ./lib"],
+        ["./src", "./lib"],
         "--source",
         "-s",
         help="Local directories to watch for changes. "
