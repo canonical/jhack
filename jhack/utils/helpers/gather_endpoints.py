@@ -3,7 +3,7 @@ from typing import Dict, List, NamedTuple, TypedDict
 
 import yaml
 
-from jhack.helpers import fetch_file, juju_status
+from jhack.helpers import fetch_file, juju_status, get_units
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("gather_endpoints")
@@ -68,7 +68,9 @@ def gather_endpoints(
 
         is_subordinate = app.get("subordinate-to")
         if is_subordinate:
-            unit = f"{app_name}/0"
+            units = get_units(app_name, model=model)
+            # grab any unit. We don't do `app_name/0` because we could be on machine models.
+            unit = units[0].unit_name
         else:
             try:
                 unit = next(iter(app["units"]))
