@@ -59,6 +59,8 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.chaos.mancioppi import mancioppi
+    from jhack.chaos.flicker import flicker
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
@@ -146,6 +148,14 @@ def main():
     scenario.command(name="snapshot")(snapshot)
     scenario.command(name="state-apply")(devmode_only(state_apply))
 
+    chaos = typer.Typer(
+        name="chaos",
+        help="""Commands to spread the chaos.""",
+        no_args_is_help=True,
+    )
+    chaos.command(name="mancioppi")(devmode_only(mancioppi))
+    chaos.command(name="flicker")(devmode_only(flicker))
+
     # register all subcommands
     app.add_typer(conf, no_args_is_help=True)
     app.add_typer(charm, no_args_is_help=True)
@@ -153,6 +163,7 @@ def main():
     app.add_typer(replay, no_args_is_help=True)
     app.add_typer(integration_matrix, no_args_is_help=True)
     app.add_typer(scenario, no_args_is_help=True)
+    app.add_typer(chaos, no_args_is_help=True)
 
     @app.callback()
     def set_verbose(log: str = None, path: Path = None):
