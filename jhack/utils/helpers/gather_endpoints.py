@@ -19,7 +19,7 @@ class AppEndpoints(TypedDict):
 
 
 class PeerBinding(NamedTuple):
-    endpoint: str
+    provider_endpoint: str
     interface: str
 
 

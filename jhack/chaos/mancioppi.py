@@ -19,12 +19,14 @@ def _mancioppi(
     step: int = 2,
     reverse: bool = False,
     dry_run: bool = False,
-    wait_time: int = 0,
+    wait_user: bool = False,
 ):
     include = set(include) or set()
     exclude = set(exclude) or set()
     if include and exclude:
         exit("only pass one of --include and --exclude.")
+
+    print("Gathering status...")
 
     status = juju_status(json=True, model=model)
     _all = set(status["applications"])
@@ -49,7 +51,7 @@ def _mancioppi(
             n = remove_n[app]
             cmd = f"juju remove-unit {app} --num-units {n}"
             if dry_run:
-                print("\t" + cmd)
+                print(f"\t{cmd}")
             else:
                 print(f"Manciopping {app}...")
                 try:
@@ -87,16 +89,20 @@ def _mancioppi(
 
     random.shuffle(targets)
 
-    upped = one(targets)
+    modified = one(targets)
 
     if dry_run:
-        print(f"would wait for {wait_time}s...")
-    elif wait_time:
-        print(f"Waiting for {wait_time}s...")
-        sleep(wait_time)
+        if wait_user:
+            print(f"would wait for user to enter [y]...")
+    elif wait_user:
+        try:
+            typer.confirm("proceed?")
+        except typer.Abort:
+            print("Aborted by user.")
+            exit(0)
 
-    random.shuffle(upped)
-    two(upped)
+    random.shuffle(modified)
+    two(modified)
 
 
 def mancioppi(
@@ -108,7 +114,9 @@ def mancioppi(
         None, "--exclude", "-e", help="Do not Mancioppi this app."
     ),
     step: int = typer.Option(2, "--step", "-s", help="Mancioppi steppi."),
-    wait_time: int = typer.Option(0, help="Seconds to wait before Demanciopping."),
+    wait_user: bool = typer.Option(
+        True, is_flag=True, help="Wait for user input before Demanciopping."
+    ),
     reverse: bool = typer.Option(
         False, is_flag=True, help="First scale down, then up."
     ),
@@ -130,5 +138,5 @@ def mancioppi(
         step=step,
         reverse=reverse,
         dry_run=dry_run,
-        wait_time=wait_time,
+        wait_user=wait_user,
     )

@@ -60,12 +60,20 @@ class IntegrationMatrix:
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = (
-            self._build_matrix()
-        )
+        self.matrix: List[
+            List[Union[List[PeerBinding], List[RelationBinding]]]
+        ] = self._build_matrix()
 
     def refresh(self):
         self._endpoints = gather_endpoints(model=self._model, apps=self._apps)
+
+    def get_integrations(
+        self, provider_app: str, requirer_app: str
+    ) -> Union[List[PeerBinding], List[RelationBinding]]:
+        """Get the list of peer or regular relation bindings for these apps."""
+        return self.matrix[self._apps.index(provider_app)][
+            self._apps.index(requirer_app)
+        ]
 
     def _pairs(self):
         # returns provider, requirer pairs.
