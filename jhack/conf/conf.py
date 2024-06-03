@@ -134,9 +134,10 @@ def check_destructive_commands_allowed(
             "environments and should be disabled in production! "
             "This is *for your own good*. "
         )
+        argv = getattr(sys, "orig_argv", getattr(sys, "argv", "jhack <command>"))
         closure = (
             "Or, if you want to allow destructive mode just this once, run "
-            f"`JHACK_PROFILE=devmode {' '.join(sys.orig_argv)}`"
+            f"`JHACK_PROFILE=devmode {' '.join(argv)}`"
         )
 
         if CONFIG.is_default:

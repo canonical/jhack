@@ -362,6 +362,7 @@ def _simulate_event(
     parallel: bool = False,
 ):
     targets = [t.unit_name for t in parse_target(target, model=model)]
+
     if not targets:
         sys.exit(
             f"invalid target: {target!r} not found in {model or '<the current model>'}"
@@ -386,6 +387,9 @@ def _simulate_event(
     if dry_run:
         print(f"would run: \n\t {cmdlist}")
         return
+    else:
+        tgts = "\n\t".join(targets)
+        print(f"firing {event} on:\n\t{tgts}")
 
     check_destructive_commands_allowed("fire", cmdlist)
 

@@ -545,7 +545,11 @@ def get_leader_unit(app, model: str = None) -> Target:
 
 
 def parse_target(target: str, model: str = None) -> List[Target]:
+    if target == "*":
+        return list(get_units(model=model))
+
     unit_targets = []
+
     if "/" in target:
         prefix, _, suffix = target.rpartition("/")
         if suffix in {"*", "leader"}:
