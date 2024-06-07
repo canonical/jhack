@@ -14,14 +14,13 @@ More extensive documentation is provided in the cli itself. All commands can be 
 Clone the repo
 
 ```shell
-pip install -r requirements.txt
 pip install -e .
 ```
 
 ##### as package (requires setuptools 61 or later):
 
 ```shell
-pip install git+https://github.com/PietroPasotti/jhack
+pip install git+https://github.com/canonical/jhack
 ```
 
 ##### as snap:
