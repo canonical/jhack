@@ -1,8 +1,7 @@
 import random
 import shlex
-from subprocess import check_output, CalledProcessError
-from time import sleep
-from typing import List, Dict
+from subprocess import CalledProcessError, check_output
+from typing import List
 
 import typer
 
@@ -53,7 +52,6 @@ def _mancioppi(
     remove_n = {}
     for app in targets:
         scale = len(status["applications"][app].get("units", []))
-
         if reverse:
             # if we're first scaling up, we can always go all the way
             remove_n[app] = step
@@ -113,7 +111,7 @@ def _mancioppi(
 
     if dry_run:
         if wait_user:
-            print(f"would wait for user to enter [y]...")
+            print("would wait for user to enter [y]...")
     elif wait_user:
         try:
             confirmed = typer.confirm("continue")

@@ -26,6 +26,8 @@ def main():
         command.__doc__ = command.__doc__ + "\n\n **--this command is DEVMODE ONLY--**"
         return command
 
+    from jhack.chaos.flicker import flicker
+    from jhack.chaos.mancioppi import mancioppi
     from jhack.charm import functional
     from jhack.charm.init import init
     from jhack.charm.lobotomy import lobotomy
@@ -59,8 +61,6 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
-    from jhack.chaos.mancioppi import mancioppi
-    from jhack.chaos.flicker import flicker
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")

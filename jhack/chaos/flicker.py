@@ -1,13 +1,13 @@
 import itertools
 import random
 import shlex
-from subprocess import check_output, CalledProcessError
-from time import sleep
+from subprocess import CalledProcessError, check_output
 from typing import List
 
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status
 from jhack.logger import logger as jhack_logger
+from jhack.utils.helpers.gather_endpoints import RelationBinding
 from jhack.utils.integrate import IntegrationMatrix
 
 logger = jhack_logger.getChild("gather_endpoints")
@@ -56,14 +56,26 @@ def _flicker(
     imatrix = IntegrationMatrix(model=model)
     integrations = []
     for prov, req in itertools.product(targets, targets):
+        if prov == req:
+            continue  # skip peers
+
+        i: RelationBinding  # no peers expected
         for i in imatrix.get_integrations(prov, req):
-            integrations.append((prov, req, i))
+            # reverse = remove first, add last
+            # if we're looking to remove, we want to only select integrations that are active
+            if reverse != i.active:
+                # unless we're first integrating and then disintegrating, it
+                # doesn't make sense to kill relations that are dead alraedy.
+                integrations.append((prov, req, i))
+
+    if not integrations:
+        if not reverse:
+            exit(f"nothing to flicker: {targets} have no (active) integrations")
+        else:
+            exit(f"nothing to flicker: {targets} have no (missing) integrations")
 
     print(f"Will flicker: {list(targets)}")
-    print(f"Integrations:")
-    for _prov, _req, _integration in integrations:
-        _integration_repr = f"{_prov}:{_integration.provider_endpoint} {_req}"
-        print(f"\t{_integration_repr}")
+    print("Selected:")
 
     def disintegrate(integrations):
         done = []
@@ -127,7 +139,7 @@ def _flicker(
 
     if dry_run:
         if wait_user:
-            print(f"would wait for user to enter [y]...")
+            print("would wait for user to enter [y]...")
     elif wait_user:
         try:
             confirmed = typer.confirm("continue")
