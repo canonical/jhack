@@ -104,8 +104,10 @@ def _flicker(
             print(f"would wait for user to enter [y]...")
     elif wait_user:
         try:
-            typer.confirm("proceed?")
+            confirmed = typer.confirm("continue")
         except typer.Abort:
+            confirmed = False
+        if not confirmed:
             print("Aborted by user.")
             exit(0)
 
