@@ -3,7 +3,7 @@ from typing import Dict, List, NamedTuple, TypedDict
 
 import yaml
 
-from jhack.helpers import fetch_file, juju_status, get_units
+from jhack.helpers import fetch_file, get_units, juju_status
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("gather_endpoints")
@@ -19,7 +19,7 @@ class AppEndpoints(TypedDict):
 
 
 class PeerBinding(NamedTuple):
-    endpoint: str
+    provider_endpoint: str
     interface: str
 
 
