@@ -5,6 +5,7 @@ from subprocess import check_output, CalledProcessError
 from time import sleep
 from typing import List
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status
 from jhack.logger import logger as jhack_logger
 from jhack.utils.integrate import IntegrationMatrix
@@ -30,7 +31,27 @@ def _flicker(
     status = juju_status(json=True, model=model)
     _all = set(status["applications"])
 
-    targets = list(_all.intersection(include) or _all.difference(exclude))
+    if unknown_excl := exclude.difference(_all):
+        exit(
+            f"unknown excludes: apps {unknown_excl} not found in model {model or '<current>'}"
+        )
+    if unknown_incl := include.difference(_all):
+        exit(
+            f"unknown includes: apps {unknown_incl} not found in model {model or '<current>'}"
+        )
+
+    if include:
+        targets = list(include)
+    elif exclude:
+        targets = list(_all.difference(exclude))
+    else:
+        targets = list(_all)
+
+    if lntargets := len(targets) < 2:
+        exit(
+            f"not enough targets ({lntargets}, min 2): --include more or --exclude less"
+        )
+
     print("Gathering imatrix...")
     imatrix = IntegrationMatrix(model=model)
     integrations = []
@@ -89,6 +110,11 @@ def _flicker(
             done.append((prov, req, integration))
 
         return done
+
+    if not dry_run:
+        check_destructive_commands_allowed(
+            "mancioppi", "juju integrate | juju remove-relation"
+        )
 
     if reverse:
         one, two = integrate, disintegrate

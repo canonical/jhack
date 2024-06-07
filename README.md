@@ -891,3 +891,33 @@ To reverse a lobotomy, do `jhack charm lobotomy myapp/0 --undo`.
 `jhack charm lobotomy myapp myotherapp --undo`: removes the lobotomy from all units of `myapp` and `myotherapp`.
 
 `jhack charm lobotomy --undo` will delobotomize the whole model.
+
+
+# chaos mancioppi
+
+There used to be a product manager who, in order to test any charm, would take it and repeatedly scale it up by N, then scale it back down by N.
+In the meantime, he'd grab a pack of popcorns and enjoy watching the cluster burn up in a fiery nova. This activity is referred to as Manciopping.
+
+Those days are over, charms are more resilient, but still it's nice to have those little moments of relaxation from time to time.
+
+Run `jhack chaos mancioppi` and that will grab every single application in your model, scale it up by 2 and then, when you tell it to proceed, it will scale them all back down.
+
+Some interesting prameters (for the full list refer to the CLI `--help`):
+- `--reverse`: first scale down, then up
+- `--include <app>`: include this app
+- `--exclude <app>`: exclude this app
+- `--step`: amount by which to scale up or down
+
+# chaos flicker
+
+The second tool in the 'watch the cluster burn' category is `chaos flicker`. 
+Run `jhack chaos flicker` and that will grab every single relation in your model, remove it and add it back.
+Ideally this should give you back the model in its initial state, as opposed to `jhack imatrix clear;jhack imatrix fill` which would give you back a fully-cross-related model.
+
+Some interesting prameters (for the full list refer to the CLI `--help`):
+- `--reverse`: first add the relations, then remove them
+- `--include <app>`: include this app (you need to pass at least two of them for this to have any meaning)
+- `--exclude <app>`: exclude this app (you need to pass at least two of them for this to have any meaning)
+- `--step`: amount by which to scale up or down
+
+For example, `jhack chaos flicker --include tempo --include traefik` will flicker all relations between tempo and traefik, and leave the rest of the model untouched.

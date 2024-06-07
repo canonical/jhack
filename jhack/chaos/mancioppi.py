@@ -6,6 +6,7 @@ from typing import List, Dict
 
 import typer
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status
 from jhack.logger import logger as jhack_logger
 
@@ -31,7 +32,21 @@ def _mancioppi(
     status = juju_status(json=True, model=model)
     _all = set(status["applications"])
 
-    targets = list(_all.intersection(include) or _all.difference(exclude))
+    if unknown_excl := exclude.difference(_all):
+        exit(
+            f"unknown excludes: apps {unknown_excl} not found in model {model or '<current>'}"
+        )
+    if unknown_incl := include.difference(_all):
+        exit(
+            f"unknown includes: apps {unknown_incl} not found in model {model or '<current>'}"
+        )
+
+    if include:
+        targets = list(include)
+    elif exclude:
+        targets = list(_all.difference(exclude))
+    else:
+        targets = list(_all)
 
     print(f"Will Mancioppi: {list(targets)}")
 
@@ -81,6 +96,11 @@ def _mancioppi(
                     continue
             done.append(app)
         return done
+
+    if not dry_run:
+        check_destructive_commands_allowed(
+            "mancioppi", "juju add-unit | juju remove-unit"
+        )
 
     if reverse:
         one, two = down, up
