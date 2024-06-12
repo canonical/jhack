@@ -12,7 +12,7 @@ from functools import partial
 from importlib.util import module_from_spec, spec_from_file_location
 from multiprocessing import Pool
 from pathlib import Path
-from subprocess import run, getoutput
+from subprocess import run, getoutput, check_output
 from typing import List, Optional
 
 import typer
@@ -197,6 +197,7 @@ def charm_script(
         env_override=env_override,
         event=event,
         charm_name=charm_name,
+        print_output=True,
     )
 
 
@@ -247,6 +248,7 @@ def _charm_script(
     event: str,
     env_override: List[str],
     charm_name: Optional[str],
+    print_output: bool = False,
 ):
     """Execute local script on live charm.
 
@@ -304,6 +306,7 @@ def _charm_script(
                 event=event,
                 env_override=env_override,
                 charm_name=charm_name,
+                print_output=print_output,
             ),
             targets,
         )
@@ -387,13 +390,13 @@ def _read_output(target, model):
     logger.info("fetching charm output (if any)...")
     try:
         data = fetch_file(target.unit_name, OUTPUT_PATH_FILENAME, model=model)
-    except:
+    except RuntimeError:
         logger.info("no output file found.")
         return
 
     try:
         return json.loads(data)
-    except:
+    except json.JSONDecodeError:
         logger.error("output contains invalid json")
         return
 
@@ -422,6 +425,7 @@ def _exec_crpc_script(
     event: str,
     charm_name: Optional[str],
     env_override: List[str],
+    print_output: bool = False,
 ):
     logger.info(f"pushing crpc module {script}...")
     remote_rpc_module_path = f"src/{crpc_module_name}.py"
@@ -435,7 +439,7 @@ def _exec_crpc_script(
     env = " ".join(
         f"{key}={val}"
         for key, val in {
-            "CHARM_RPC_ENV": crpc_env,
+            "CHARM_RPC_ENV": _encode(crpc_env),
             "CHARM_RPC_MODULE_NAME": crpc_module_name,
             "CHARM_RPC_ENTRYPOINT": entrypoint,
             "CHARM_RPC_CHARM_NAME": charm_name,
@@ -445,7 +449,7 @@ def _exec_crpc_script(
         }.items()
     )
 
-    _run_crpc(target, env, crpc_dispatch_name, model=model)
+    stdout = _run_crpc(target, env, crpc_dispatch_name, model=model)
     output = _read_output(target, model)
 
     if cleanup:
@@ -456,9 +460,17 @@ def _exec_crpc_script(
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
 
-        with contextlib.suppress(RuntimeError):
-            # maybe it was never created in the first place
+        if output:
             rm_file(target.unit_name, OUTPUT_PATH_FILENAME, model=model)
+
+    if print_output:
+        if output:
+            print(f"output for {target.unit_name}:\n {json.dumps(output, indent=2)}")
+        if stdout:
+            print(f"stdout for {target.unit_name}:\n\t{stdout}")
+
+        if not output and not stdout:
+            print(f"no output for {target.unit_name}")
 
     return output
 
@@ -470,7 +482,10 @@ def _run_crpc(target, env, crpc_dispatch_name, model: str = None):
         f"juju exec --unit {target.unit_name}{_model} -- "
         f"{env} python3 ./src/{crpc_dispatch_name}.py"
     )
-    getoutput(exec_dispatch_cmd)
+
+    logger.debug(f"crpc script={exec_dispatch_cmd}")
+    out = getoutput(exec_dispatch_cmd)
+    return out
 
 
 def _exec_crpc_expr(
@@ -490,7 +505,7 @@ def _exec_crpc_expr(
     crpc_env = _prepare_crpc_env(target, event, env_override, model)
 
     env_dict = {
-        "CHARM_RPC_ENV": crpc_env,
+        "CHARM_RPC_ENV": _encode(crpc_env),
         "CHARM_RPC_EXPR": expr,
         "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
         "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
@@ -501,7 +516,7 @@ def _exec_crpc_expr(
 
     env = " ".join(f"{key}={val}" for key, val in env_dict.items())
 
-    _run_crpc(target, env, crpc_dispatch_name, model=model)
+    stdout = _run_crpc(target, env, crpc_dispatch_name, model=model)
     output = _read_output(target, model)
 
     if cleanup:
@@ -511,11 +526,17 @@ def _exec_crpc_expr(
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
 
-        with contextlib.suppress(RuntimeError):
+        if output:
             # maybe it was never created in the first place
             rm_file(target.unit_name, OUTPUT_PATH_FILENAME, model=model)
 
-    if output and print_output:
-        print(f"output for {target.unit_name}:\n" f"{json.dumps(output, indent=2)}")
+    if print_output:
+        if output:
+            print(f"output for {target.unit_name}:\n {json.dumps(output, indent=2)}")
+        if stdout:
+            print(f"stdout for {target.unit_name}:\n\t{stdout}")
+
+        if not output and not stdout:
+            print(f"no output for {target.unit_name}")
 
     return output

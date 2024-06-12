@@ -22,8 +22,12 @@ from ops.main import (
 )
 
 
+def _decode(expr: str) -> str:
+    return base64.b64decode(expr.encode("utf-8")).decode("ascii")
+
+
 def _deserialize_env(s: str) -> Dict[str, str]:
-    env = dict((pair.split("=") for pair in s.split(" ")))
+    env = dict((pair.split("=") for pair in _decode(s).split(" ")))
     return env
 
 
@@ -39,12 +43,8 @@ logger = logging.getLogger("charm-rpc")
 logger.setLevel(LOGLEVEL)
 
 
-def _decode(expr: str) -> str:
-    return base64.b64decode(expr.encode("utf-8")).decode("ascii")
-
-
 def output(obj: Any):
-    print(f"output: writing to {OUTPUT_PATH}")
+    logger.info(f"output: writing to {OUTPUT_PATH}")
 
     try:
         out = json.dumps(obj)
@@ -59,7 +59,7 @@ def output(obj: Any):
         logger.error(f"failed writing to output path {OUTPUT_PATH}")
         return
 
-    print(f"output: success")
+    logger.info(f"output: success")
 
 
 def rpc(charm):
