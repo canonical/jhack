@@ -155,7 +155,7 @@ def check_destructive_commands_allowed(
     msg: str, dry_run_cmd: str = "", _check_only=False
 ) -> Union[_Denied, _Allowed]:
     if os.getenv("JHACK_PROFILE") == "devmode":
-        logger.debug(f"operation {msg} allowed by devmode profile.")
+        logger.debug(f"operation {msg!r} allowed by devmode profile.")
         return _Allowed(_Reason.devmode_temp)
 
     if not CONFIG.get(
