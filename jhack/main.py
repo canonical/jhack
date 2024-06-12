@@ -64,6 +64,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.utils.sitrep import sitrep
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
@@ -89,6 +90,7 @@ def main():
     charm.command(name="sync-packed", no_args_is_help=True)(sync_packed_charm)
     charm.command(name="lobotomy", no_args_is_help=True)(devmode_only(lobotomy))
     charm.command(name="provision")(devmode_only(provision))
+    charm.command(name="sitrep", no_args_is_help=True)(sitrep)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")
     replay.command(name="install", no_args_is_help=True)(devmode_only(install))
