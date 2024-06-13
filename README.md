@@ -849,7 +849,23 @@ Similarly, if the charm has a method called `_foobar`, you could write:
 
 > `jhack eval myapp/0 self._foobar() + 42`
 
-and see the result in your standard output.
+and see the result in your standard output. Whatever the value of your expression is, 
+it will be printed to stdout before jhack eval exits.
+
+The globals available to the evaluated script are:
+- `self`: the charm instance
+- `ops`: the `ops` module, so you can use, say, `ops.ActiveStatus`.
+- `output`: a function that takes any json-dumpable object and gives it back to you.
+
+For example, you can do: `jhack eval myapp/0 "output([self._foobar() + 42, ops.ActiveStatus().name])`
+
+and this would print to stdout:
+```json
+[
+  44,
+  "active"
+]
+```
 
 Run the command with `--help` for additional options and configuration.
 
@@ -897,13 +913,14 @@ To reverse a lobotomy, do `jhack charm lobotomy myapp/0 --undo`.
 `jhack charm lobotomy --undo` will delobotomize the whole model.
 
 
-# chaos mancioppi
+# chaos 
 
 There used to be a product manager who, in order to test any charm, would take it and repeatedly scale it up by N, then scale it back down by N.
 In the meantime, he'd grab a pack of popcorns and enjoy watching the cluster burn up in a fiery nova. This activity is referred to as Manciopping.
 
 Those days are over, charms are more resilient, but still it's nice to have those little moments of relaxation from time to time.
 
+## `chaos mancioppi`
 Run `jhack chaos mancioppi` and that will grab every single application in your model, scale it up by 2 and then, when you tell it to proceed, it will scale them all back down.
 
 Some interesting prameters (for the full list refer to the CLI `--help`):
@@ -912,7 +929,7 @@ Some interesting prameters (for the full list refer to the CLI `--help`):
 - `--exclude <app>`: exclude this app
 - `--step`: amount by which to scale up or down
 
-# chaos flicker
+## `chaos flicker`
 
 The second tool in the 'watch the cluster burn' category is `chaos flicker`. 
 Run `jhack chaos flicker` and that will grab every single relation in your model, remove it and add it back.
@@ -925,3 +942,38 @@ Some interesting prameters (for the full list refer to the CLI `--help`):
 - `--step`: amount by which to scale up or down
 
 For example, `jhack chaos flicker --include tempo --include traefik` will flicker all relations between tempo and traefik, and leave the rest of the model untouched.
+
+
+# sitrep
+
+When any event executes on a charm, modern ops emits a `collect-unit-status` event to which the charm can attach any number of statuses. Ops will select the one worth of being surfaced to the user and become the final 'unit status', the others are discarded.
+But that's not very kind, is it?
+
+Sitrep is a tool to evaluate the status of the charm 'right now', collect all the separate individual statuses that have been attached to the `collect-unit-status` event, and output them in a colourful, structured manner. 
+
+If you label your statuses like so:
+
+```
+ActiveStatus("[foo.bar.baz] happy")
+ActiveStatus("[foo.bar] happy")
+BlockedStatus("[foo.bar.qux] sad")
+WaitingStatus("[bob] wait")
+ActiveStatus("[rob] hee")
+ActiveStatus()
+```
+
+You'll see a hierarchically organized sitrep output, something like:
+```
+. active ""
+  [bob] 
+    (wait) wait
+  [rob] 
+    (active) hee
+  [foo.bar] 
+    (active) happy
+    [.baz] 
+      (active) happy
+    [.qux] 
+      (block) sad
+```
+
