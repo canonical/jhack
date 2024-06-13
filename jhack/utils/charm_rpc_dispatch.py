@@ -7,7 +7,7 @@ import os
 import sys
 import traceback
 from pathlib import Path
-from typing import Dict, Optional, Type, Any
+from typing import Any, Dict, Optional, Type
 
 import ops
 import ops.storage
@@ -59,7 +59,7 @@ def output(obj: Any):
         logger.error(f"failed writing to output path {OUTPUT_PATH}")
         return
 
-    logger.info(f"output: success")
+    logger.info("output: success")
 
 
 def rpc(charm):

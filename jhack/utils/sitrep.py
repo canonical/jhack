@@ -1,16 +1,16 @@
 import enum
 import json
 from collections import defaultdict
-from typing import Optional, List, Iterable, TypedDict, Tuple
+from typing import Iterable, List, Optional, TypedDict
 
 import typer
 from rich.console import Console
 from rich.style import Style
 from rich.text import Text
 
-from jhack.helpers import Target, ColorOption, RichSupportedColorOptions
-from jhack.utils.charm_rpc import _exec_crpc_expr, _encode
+from jhack.helpers import ColorOption, RichSupportedColorOptions, Target
 from jhack.logger import logger as jhack_logger
+from jhack.utils.charm_rpc import _encode, _exec_crpc_expr
 
 logger = jhack_logger.getChild("sitrep")
 

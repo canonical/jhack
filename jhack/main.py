@@ -62,11 +62,11 @@ def main():
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event
+    from jhack.utils.sitrep import sitrep
     from jhack.utils.sync import sync as sync_deployed_charm
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
-    from jhack.utils.sitrep import sitrep
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")

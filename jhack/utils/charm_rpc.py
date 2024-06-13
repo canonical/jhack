@@ -1,24 +1,22 @@
 import base64
-import contextlib
 import inspect
 import json
 import multiprocessing
 import os
 import select
-import shlex
 import sys
 import tempfile
 from functools import partial
 from importlib.util import module_from_spec, spec_from_file_location
 from multiprocessing import Pool
 from pathlib import Path
-from subprocess import run, getoutput, check_output
+from subprocess import getoutput
 from typing import List, Optional
 
 import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import Target, get_units, push_file, rm_file, fetch_file
+from jhack.helpers import Target, fetch_file, get_units, push_file, rm_file
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
 
