@@ -1,8 +1,8 @@
 [nuke]
 # always ask for confirmation on jhack nuke
-ask_for_confirmation = true
+ask_for_confirmation = false
 # have the bomb be blinky
-blink = false
+blink = true
 # nuke without --force --no-wait
 gently = false
 
@@ -10,7 +10,7 @@ gently = false
 # pop empty columns from tail output
 remove_empty_columns = true
 # bump loglevel to unit=TRACE before tailing, and pop it back to whatever it was before when tail exits
-automatically_bump_loglevel = false
+automatically_bump_loglevel = true
 
 [general]
 # Setting this to True enables 'destructive mode'.
@@ -18,6 +18,4 @@ automatically_bump_loglevel = false
 # Only exception is nuke: to disable that one too, edit [nuke]ask_for_confirmation above.
 # This mode is intended for development environments and should be disabled in production!
 # This is *for your own good*.
-# If you want to enable destructive mode on a per-command basis, you can
-# set the envvar `JHACK_PROFILE=devmode` before running jhack.
-enable_destructive_commands_NO_PRODUCTION_zero_guarantees = false
+enable_destructive_commands_NO_PRODUCTION_zero_guarantees = true

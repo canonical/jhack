@@ -388,14 +388,12 @@ def fetch_file(
     model_arg = f" -m {model}" if model else ""
     cmd = (
         f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}"
-        f"/charm/{remote_path}"
+        f"/charm/{remote_path} || true"
     )
-    try:
-        raw = check_output(cmd.split())
-    except CalledProcessError as e:
-        raise RuntimeError(
-            f"Failed to fetch {remote_path} from {unit_sanitized}."
-        ) from e
+
+    raw = check_output(cmd.split())
+    if b"No such file or directory" in raw:
+        raise RuntimeError(f"Failed to fetch {remote_path} from {unit_sanitized}.")
 
     if not local_path:
         return raw.decode("utf-8")

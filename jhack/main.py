@@ -36,7 +36,12 @@ def main():
     from jhack.charm.sync import sync as sync_packed_charm
     from jhack.charm.update import update
     from jhack.charm.vinfo import vinfo
-    from jhack.conf.conf import print_current_config, print_defaults
+    from jhack.conf.conf import (
+        print_current_config,
+        print_defaults,
+        print_destructive,
+        print_yolo,
+    )
     from jhack.logger import LOGLEVEL, logger
     from jhack.scenario.snapshot import snapshot
     from jhack.scenario.state_apply import state_apply
@@ -57,6 +62,7 @@ def main():
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event
+    from jhack.utils.sitrep import sitrep
     from jhack.utils.sync import sync as sync_deployed_charm
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
@@ -86,6 +92,7 @@ def main():
     charm.command(name="sync-packed", no_args_is_help=True)(sync_packed_charm)
     charm.command(name="lobotomy", no_args_is_help=True)(devmode_only(lobotomy))
     charm.command(name="provision")(devmode_only(provision))
+    charm.command(name="sitrep", no_args_is_help=True)(sitrep)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")
     replay.command(name="install", no_args_is_help=True)(devmode_only(install))
@@ -121,6 +128,14 @@ def main():
     app.command(name="list-endpoints")(list_endpoints)
 
     # DEVMODE ONLY COMMANDS
+    def _test_devmode():
+        """Dummy devmode command to verify the destructive profile."""
+        from jhack.conf.conf import check_destructive_commands_allowed
+
+        check_destructive_commands_allowed("test-devmode")
+        print("BOOM!")
+
+    app.command(name="test-devmode")(devmode_only(_test_devmode))
     app.command(name="sync")(devmode_only(sync_deployed_charm))
     app.command(name="nuke")(devmode_only(nuke))
     app.command(name="deploy")(devmode_only(just_deploy_this))
@@ -131,13 +146,29 @@ def main():
     app.command(name="script", no_args_is_help=True)(devmode_only(charm_script))
 
     conf = typer.Typer(
+        # TODO md formatting is currently quite bork cfr. https://github.com/tiangolo/typer/pull/815
         name="conf",
-        help="""Jhack configuration. You can use the output of the `default`
-        subcommand as a template to write your own config file:
-        `jhack conf default |> ~/.config/jhack/config.toml`""",
+        help="""Jhack configuration.\n\n 
+        
+        You can run ``jhack conf [default | destructive | yolo]``\n\n
+        to view sample configuration profiles. \n\n
+        By default, the 'default' profile is used and copied into your ``~/.config/jhack/config.toml``.\n\n\n
+        
+        Reset to factory settings:\n
+         - `jhack conf default > ~/.config/jhack/config.toml`\n\n\n
+         
+         
+        Enable built-in destructive or yolo profiles:\n
+         - `jhack conf destructive > ~/.config/jhack/config.toml`\n
+         - `jhack conf yolo > ~/.config/jhack/config.toml`\n\n\n
+         
+         Otherwise, edit your ``~/.config/jhack/config.toml`` manually to suit your needs.
+         """,
         no_args_is_help=True,
     )
     conf.command(name="default")(print_defaults)
+    conf.command(name="yolo")(print_yolo)
+    conf.command(name="destructive")(print_destructive)
     conf.command(name="current")(print_current_config)
 
     scenario = typer.Typer(

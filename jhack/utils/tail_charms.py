@@ -973,16 +973,21 @@ class Processor:
             self.live.update("No events caught.", refresh=True)
             return
 
-        # load back history into current memory
-        history = self.history
+        if self.output:
+            # load back history into raw tables
+            self.live.update(
+                f"Processing history -- {self.evt_count} events -- (this may take some time)...",
+                refresh=True,
+            )
 
-        # prepend all things we popped during cropping
-        self._timestamps = history.timestamps + self._timestamps
-        for unit_name, rt in self._raw_tables.items():
-            rt.deferrals = history.raw_tables[unit_name].deferrals + rt.deferrals
-            rt.events = history.raw_tables[unit_name].events + rt.events
-            rt.ns = history.raw_tables[unit_name].ns + rt.ns
-        # the raw tables we have now should run up to the beginning of time
+            history = self.history
+            # prepend all things we popped during cropping
+            self._timestamps = history.timestamps + self._timestamps
+            for unit_name, rt in self._raw_tables.items():
+                rt.deferrals = history.raw_tables[unit_name].deferrals + rt.deferrals
+                rt.events = history.raw_tables[unit_name].events + rt.events
+                rt.ns = history.raw_tables[unit_name].ns + rt.ns
+            # the raw tables we have now should run up to the beginning of time
 
         table = cast(Table, self.render().renderable)
         table.rows[-1].end_section = True

@@ -15,26 +15,49 @@ logger = jhacklogger.getChild(__file__)
 
 class Config:
     _DEFAULTS = Path(__file__).parent / "jhack_config_defaults.toml"
+    _DESTRUCTIVE = Path(__file__).parent / "jhack_config_destructive.toml"
+    _YOLO = Path(__file__).parent / "jhack_config_yolo.toml"
 
     def __init__(self, path: Path = None):
         is_default = False
         if not path:
-            jconf = get_jhack_config_path()
-
-            try:
-                jconf_exists = jconf.exists()
-            except PermissionError:
-                logger.warning(
-                    f"trying to stat {jconf} gave PermissionError; bad config path. "
-                    f"All will be defaulted."
-                )
-                jconf_exists = False
-            path = jconf if jconf_exists else self._DEFAULTS
-            is_default = False if jconf_exists else True
-
+            path, is_default = self._get_config_path()
         self._path: Path = path
         self.is_default: bool = is_default
         self._data = None
+
+    def _get_config_path(self):
+        # get user config path
+        jconf = get_jhack_config_path()
+        try:
+            jconf_exists = jconf.exists()
+        except PermissionError:
+            logger.warning(
+                f"trying to stat {jconf} gave PermissionError; bad config path. "
+                f"All will be defaulted."
+            )
+            return self._DEFAULTS, True
+
+        # try creating the config if not found
+        if jconf_exists:
+            return jconf, False
+
+        try:
+            jconf.write_text(self._DEFAULTS.read_text())
+            logger.info(f"initialized default user config in {jconf}.")
+            return jconf, False
+
+        except Exception:
+            logger.debug(
+                "Error encountered while attempting to initialize user config",
+                exc_info=True,
+            )
+            logger.warning(
+                f"failed to create default user config in {jconf}. "
+                f"You'll have to do that manually."
+            )
+
+        return self._DEFAULTS, True
 
     def _load(self):
         try:
@@ -64,7 +87,7 @@ class Config:
             try:
                 data = data[item]
             except KeyError:
-                if self._path is self._DEFAULTS:
+                if self.is_default:
                     logger.error(f"{item} not found in default config; invalid path")
                     raise
 
@@ -80,8 +103,18 @@ class Config:
 
 
 def print_defaults():
-    """Print jhack's default config."""
+    """Print jhack's built-in `default` config profile."""
     Config(Config._DEFAULTS).pprint()
+
+
+def print_destructive():
+    """Print jhack's built-in `destructive` config profile."""
+    Config(Config._DESTRUCTIVE).pprint()
+
+
+def print_yolo():
+    """Print jhack's built-in `yolo` config profile."""
+    Config(Config._YOLO).pprint()
 
 
 def print_current_config():
@@ -129,31 +162,22 @@ def check_destructive_commands_allowed(
         "general", "enable_destructive_commands_NO_PRODUCTION_zero_guarantees"
     ):
         preamble = (
-            "in order to run this command without confirmation prompt, you must "
-            "enable destructive mode. This mode is intended for development "
-            "environments and should be disabled in production! "
-            "This is *for your own good*. "
-        )
-        argv = getattr(sys, "orig_argv", getattr(sys, "argv", "jhack <command>"))
-        closure = (
-            "Or, if you want to allow destructive mode just this once, run "
-            f"`JHACK_PROFILE=devmode {' '.join(argv)}`"
+            "\n ** Jhack is now 'safe'! **\n"
+            "All dangerous commands require manual confirmation."
         )
 
         if CONFIG.is_default:
             body = (
-                "If you know better, you can run `jhack conf default |> "
-                "~/.config/jhack/config.toml` and edit that file and set "
-                "`[general]enable_destructive_commands_NO_PRODUCTION_zero_guarantees` "
-                "to `true`. "
+                "If you know better, you can run: \n"
+                "> `jhack conf [default | destructive | yolo] > ~/.config/jhack/config.toml` \n"
+                "and edit the config to match your needs."
             )
         else:
-            body = (
-                "If you know better, you can edit your `~/.config/jhack/config.toml` and set "
-                "`[general]enable_destructive_commands_NO_PRODUCTION_zero_guarantees` "
-                "to `true`. "
-            )
-        logger.warning(preamble + body + closure)
+            body = "If you know better, you can tune `~/.config/jhack/config.toml` to your needs."
+
+        closure = "See https://github.com/canonical/jhack?tab=readme-ov-file#enabling-devmode for more."
+
+        logger.warning("\n\n".join([preamble, body, closure]))
 
         if dry_run_cmd:
             print(f"{msg!r} would run: \n\t {dry_run_cmd}")
@@ -161,7 +185,7 @@ def check_destructive_commands_allowed(
         confirmation_msg = (
             "confirm"
             if dry_run_cmd
-            else "this command is potentially very destructive; continue"
+            else "Proceed with this potentially world-ending command"
         )
         try:
             if not typer.confirm(confirmation_msg, default=False):
