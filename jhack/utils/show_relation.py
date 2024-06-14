@@ -439,7 +439,6 @@ def get_content(
 
     if relation.type is RelationType.peer:
         # in peer relations, show-unit luckily reports 'local-unit', so we're good.
-        obj.unit_id = units[0]
         units_data, app_data, r_id = get_databags(
             obj.with_unit_id(units[0]),  # any unit will do
             other_obj.with_unit_id(other_unit_id),  # any unit will do
@@ -457,8 +456,9 @@ def get_content(
         units_data = {}
         r_id = None
         for unit_id in units:
+            obj_with_uid = obj.with_unit_id(unit_id)
             unit_data, app_data, r_id_ = get_databags(
-                obj.with_unit_id(unit_id),
+                obj_with_uid,
                 other_obj.with_unit_id(other_unit_id),  # any unit will do
                 other_model=other_model,
                 relation=relation,
@@ -469,11 +469,10 @@ def get_content(
             r_id = r_id_
             if not include_default_juju_keys:
                 purge(unit_data)
-            units_data[unit_id] = unit_data
+            units_data[obj_with_uid.unit_name] = unit_data
 
     else:
         raise TypeError(relation.type)
-
     return AppRelationData(
         url=obj,
         meta=meta,
@@ -600,12 +599,8 @@ def get_relations(model: str = None) -> List[Relation]:
 
 
 def _render_unit(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
-    unit_id, unit_data = obj
-    if source.url.unit_id is not None:
-        unit_name = f"{source.url.unit_name}"
-    else:
-        unit_name = f"{source.url.app_name}/{unit_id}"
-
+    unit_name, unit_data = obj
+    unit_id = int(unit_name.split("/")[1])
     return _render_databag(
         unit_name, unit_data, leader=(unit_id == source.meta.leader_id)
     )
@@ -967,7 +962,6 @@ def _rich_format_table(
             unit_databags.append([])
         bucket = unit_databags[i]
         for _, (unit, data) in enumerate(units):
-            # if unit:
             bucket.append(_render_unit((unit, data), entity))
 
     if any(any(x) for x in unit_databags):
