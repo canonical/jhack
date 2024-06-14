@@ -601,7 +601,11 @@ def get_relations(model: str = None) -> List[Relation]:
 
 def _render_unit(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
     unit_id, unit_data = obj
-    unit_name = f"{source.url.unit_name}"
+    if source.url.unit_id is not None:
+        unit_name = f"{source.url.unit_name}"
+    else:
+        unit_name = f"{source.url.app_name}/{unit_id}"
+
     return _render_databag(
         unit_name, unit_data, leader=(unit_id == source.meta.leader_id)
     )
