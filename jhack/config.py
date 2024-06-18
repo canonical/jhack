@@ -27,11 +27,12 @@ def get_home_dir() -> Path:
 
     if usr == "root":
         home_dir = Path("/root")
+    elif (home := os.environ.get("HOME")):
+        home_dir = Path(home)
+    elif (user := os.environ.get("USER")):
+        home_dir = Path("/home") / user
     else:
-        if os.environ.get("USER"):
-            home_dir = Path("/home") / os.environ["USER"]
-        else:
-            home_dir = Path("~").expanduser().absolute()
+        home_dir = Path("~").expanduser().absolute()
     return home_dir
 
 
