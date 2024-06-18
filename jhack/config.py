@@ -27,8 +27,8 @@ def get_home_dir() -> Path:
 
     if usr == "root":
         home_dir = Path("/root")
-    elif (home_dir := os.environ.get("HOME")):
-        pass
+    elif (home := os.environ.get("HOME")):
+        home_dir = Path(home)
     elif (user := os.environ.get("USER")):
         home_dir = Path("/home") / user
     else:
