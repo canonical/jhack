@@ -129,7 +129,7 @@ def _render(
             row = (
                 [
                     Text("peers", style="bold yellow") if first else None,
-                    binding.endpoint,
+                    binding.provider_endpoint,
                     binding.interface,
                 ]
                 + (["n/a"] if libinfo else [])
