@@ -657,10 +657,10 @@ def _pull_cmrs(
 
         setup_scripts += [
             f"juju offer{controller} {requirer_model}.{req}:{requirer_ep}",
-            f"juju consume {controller_prefix}admin/{requirer_model}.{req}",
+            f"juju consume -m {provider_model} {controller_prefix}admin/{requirer_model}.{req}",
         ]
         relate_scripts += [
-            f"juju relate {req}:{requirer_ep} {prov}:{provider_ep}",
+            f"juju relate -m {provider_model} {req}:{requirer_ep} {prov}:{provider_ep}",
         ]
 
     if dry_run:

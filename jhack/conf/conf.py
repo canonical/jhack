@@ -43,6 +43,7 @@ class Config:
             return jconf, False
 
         try:
+            jconf.parent.mkdir(parents=True, exist_ok=True)
             jconf.write_text(self._DEFAULTS.read_text())
             logger.info(f"initialized default user config in {jconf}.")
             return jconf, False
