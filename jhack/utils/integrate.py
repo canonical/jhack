@@ -211,8 +211,8 @@ class IntegrationMatrix:
                 )
                 return t
 
-            for provider_endpoint, interface, requirer_endpoint, active in bindings:
-                if active:
+            for binding in bindings:
+                if binding.active:
                     symtail, symhead = ">-", "->"
                     color = self.active_cell_text_style
                 else:
@@ -220,8 +220,8 @@ class IntegrationMatrix:
                     color = self.inactive_cell_text_style
 
                 fmt_obj = (
-                    f"{provider_endpoint} {symtail}[{interface}]{symhead} "
-                    f"{requirer_endpoint}"
+                    f"{binding.provider_endpoint} {symtail}[{binding.interface}]{symhead} "
+                    f"{binding.requirer_endpoint}"
                 )
                 t.add_row(Text(fmt_obj, style=color))
             return t
@@ -316,21 +316,17 @@ class IntegrationMatrix:
         for (prov_idx, req_idx), bindings in self._cells(
             skip_diagonal=True, yield_indices=True
         ):
-            for (
-                provider_endpoint,
-                interface,
-                requirer_endpoint,
-                is_active,
-            ) in bindings:
+            binding: RelationBinding
+            for binding in bindings:
                 prov = self._apps[prov_idx]
                 req = self._apps[req_idx]
 
                 if active in {True, False}:
                     # only include if the interface is currently not at the desired state
-                    if is_active is not active:
+                    if binding.active is not active:
                         logger.debug(
-                            f"skipping {prov}:{provider_endpoint} --> [{interface}] --> "
-                            f"{req}:{requirer_endpoint} "
+                            f"skipping {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> "
+                            f"{req}:{binding.requirer_endpoint} "
                             f'interface is already {"in" if active else ""}active'
                         )
                         continue
@@ -341,9 +337,9 @@ class IntegrationMatrix:
 
                 target_bindings.append(
                     (
-                        f"{prov}:{provider_endpoint}",
-                        interface,
-                        f"{req}:{requirer_endpoint}",
+                        f"{prov}:{binding.provider_endpoint}",
+                        binding.interface,
+                        f"{req}:{binding.requirer_endpoint}",
                     )
                 )
 
@@ -678,10 +674,10 @@ def _pull_cmrs(
 
 
 if __name__ == "__main__":
-    # mtrx = IntegrationMatrix(include_peers=True)
-    # # mtrx.disconnect()
+    mtrx = IntegrationMatrix(include_peers=True)
+    mtrx.connect()
     # # mtrx.watch()
     # # mtrx.pprint()
     # mtrx.pprint()
 
-    cmr("localhost-localhost:gagent")
+    # cmr("localhost-localhost:gagent")
