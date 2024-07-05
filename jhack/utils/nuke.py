@@ -45,8 +45,7 @@ NUKE_ASCII_ART = """
                         (` ^'"`-' ")
 """
 
-NUKE_GENTLY_ASCII_ART = """
- _                       
+NUKE_GENTLY_ASCII_ART = """                       
                 \`*-.                   
                  )  _`-.                
                 .  : `. .               
