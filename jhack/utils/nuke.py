@@ -45,6 +45,21 @@ NUKE_ASCII_ART = """
                         (` ^'"`-' ")
 """
 
+NUKE_GENTLY_ASCII_ART = """
+
+                     __=,_        .--.
+                   _/_,---(      {    )
+               __ /        <    /   )  \___
+- ------===;;;'====---------=;=------===;;;===----- -  -
+                  \/  ~"~"~"~"~"~\~"~)~"/
+                  (_ (   \  (     >    \)
+                   \_( _ <         >_>'
+                      ~ `-i' ::>|--"
+                          I;|.|.|
+                         <|i::|i|`.
+                        (` ^'"`-' ")
+"""
+
 
 class TimeoutException(Exception):
     pass
@@ -398,7 +413,13 @@ def _nuke(
         else:
             logger.debug("hit and sunk")
 
-    print_centered(Text(NUKE_ASCII_ART, style=Style(dim=True, blink=BLINK, bold=True)))
+    ascii_art = NUKE_GENTLY_ASCII_ART if gently else NUKE_ASCII_ART
+    print_centered(
+        Text(
+            ascii_art,
+            style=Style(dim=True, blink=BLINK, bold=True),
+        )
+    )
 
     tp = ThreadPool()
     results = []
