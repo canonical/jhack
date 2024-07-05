@@ -46,18 +46,21 @@ NUKE_ASCII_ART = """
 """
 
 NUKE_GENTLY_ASCII_ART = """
-
-                     __=,_        .--.
-                   _/_,---(      {    )
-               __ /        <    /   )  \___
-- ------===;;;'====---------=;=------===;;;===----- -  -
-                  \/  ~"~"~"~"~"~\~"~)~"/
-                  (_ (   \  (     >    \)
-                   \_( _ <         >_>'
-                      ~ `-i' ::>|--"
-                          I;|.|.|
-                         <|i::|i|`.
-                        (` ^'"`-' ")
+ _                       
+                \`*-.                   
+                 )  _`-.                
+                .  : `. .               
+                : _   '  \              
+                ; *` _.   `*-._         
+                `-.-'          `-.      
+                  ;       `       `.    
+                  :.       .        \   
+                  . \  .   :   .-'   .  
+                  '  `+.;  ;  '      :  
+                  :  '  |    ;       ;-.
+       __         ; '   : :`-:     _.`* ;
+     (juju)    .*' /  .*' ; .*`- +'  `*'
+   ~~~~^^      `*-*   `*-*  `*-*'       
 """
 
 
@@ -509,6 +512,7 @@ def nuke(
 
     \n\n
     Nuke ascii art by [Bill March](https://www.asciiart.eu/weapons/explosives).
+    Nuke gently ascii art by [bug](https://user.xmission.com/~emailbox/ascii_cats.htm)
     """
     logger.info("starting jhack nuke")
 
