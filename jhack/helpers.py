@@ -574,6 +574,15 @@ def get_notices(unit: str, container_name: str, model: str = None):
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 
+def get_checks(unit: str, container_name: str, model: str = None):
+    _model = f"{model} " if model else ""
+    cmd = (
+        f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
+        f"/pebble.socket http://localhost/v1/checks"
+    )
+    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
+
+
 def get_secrets(model: str = None) -> dict:
     _model = f"{model} " if model else ""
     cmd = f"juju secrets {_model} --format=json"
