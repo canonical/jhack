@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jhack"
-version = "0.4.2.3"
+version = "0.4.2.4"
 authors = [
     { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" }
 ]
 description = "Chock-full of Juju hackery."
 license.text = "Apache 2.0"
 keywords = ["juju", "hacks", "cli", "charm", "charming"]
-urls.Source = "https://github.com/PietroPasotti/jhack"
+urls.Source = "https://github.com/canonical/jhack"
 dependencies = [
     "ops-scenario(==6.0)",
     "typer(==0.7.0)",
