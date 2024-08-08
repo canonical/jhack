@@ -121,6 +121,12 @@ def _sync(
     include_files: str = ".*\.py$",
 ):
     status = juju_status(json=True)
+    apps_status = status.get("applications")
+    if not apps_status:
+        exit(
+            "no applications found in `juju status`. "
+            "Is the model still being spun up?"
+        )
 
     if not targets:
         local_charm_meta = Path.cwd() / "charmcraft.yaml"
@@ -143,13 +149,11 @@ def _sync(
                 )
 
         targets = [
-            app
-            for app, appmeta in status["applications"].items()
-            if appmeta["charm-name"] == name
+            app for app, appmeta in apps_status.items() if appmeta["charm-name"] == name
         ]
 
     if "*" in targets:
-        targets = list(status["applications"])
+        targets = list(apps_status)
 
     units = set()
     for target in targets:
@@ -160,13 +164,12 @@ def _sync(
             if _app_name == "*":
                 units.update(
                     unit_name
-                    for app in status["applications"].values()
+                    for app in apps_status.values()
                     for unit_name in app.get("units", {})
                 )
             else:
                 units.update(
-                    unit_name
-                    for unit_name in status["applications"][_app_name].get("units", {})
+                    unit_name for unit_name in apps_status[_app_name].get("units", {})
                 )
         else:
             units.add(target)
