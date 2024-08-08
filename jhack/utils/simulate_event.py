@@ -9,6 +9,7 @@ import typer
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import (
     JPopen,
+    get_checks,
     get_current_model,
     get_notices,
     get_secrets,
@@ -36,6 +37,8 @@ _SECRET_EVENTS = {
 }
 _PEBBLE_READY_SUFFIX = "-pebble-ready"
 _PEBBLE_CUSTOM_NOTICE_SUFFIX = "-pebble-custom-notice"
+_PEBBLE_CHECK_FAILED_SUFFIX = "-pebble-check-failed"
+_PEBBLE_CHECK_RECOVERED_SUFFIX = "-pebble-check-recovered"
 OPS_DISPATCH = "OPERATOR_DISPATCH"
 juju_context_id = "JUJU_CONTEXT_ID"
 
@@ -96,6 +99,7 @@ def build_event_env(
     operator_dispatch: bool = False,
     model: str = None,
     glue: str = " ",
+    check_name: str = None,
 ):
     current_model = get_current_model()
     env = {
@@ -234,11 +238,57 @@ def build_event_env(
                 exit("aborted.")
             notice = existing_notices[i]
         else:
-            exit(f"unit {unit} has no noticed defined on {container_name}")
+            exit(f"unit {unit} has no notices defined on {container_name}")
 
         env["JUJU_NOTICE_ID"] = notice["id"]
         env["JUJU_NOTICE_TYPE"] = notice["type"]
         env["JUJU_NOTICE_KEY"] = notice["key"]
+
+    if event.endswith((_PEBBLE_CHECK_FAILED_SUFFIX, _PEBBLE_CHECK_RECOVERED_SUFFIX)):
+        if event.endswith(_PEBBLE_CHECK_FAILED_SUFFIX):
+            container_name = event[: -len(_PEBBLE_CHECK_FAILED_SUFFIX)]
+        else:
+            container_name = event[: -len(_PEBBLE_CHECK_RECOVERED_SUFFIX)]
+        env["JUJU_WORKLOAD_NAME"] = container_name
+
+        checks_list = get_checks(unit, container_name, model=model)
+        existing_checks = {c["name"]: c for c in checks_list}
+        if check_name:
+            check = existing_checks.get(check_name)
+            if not check:
+                if existing_checks:
+                    logger.error(
+                        f"check_name {check_name!r} not found. Try with: {list(existing_checks)}."
+                    )
+                else:
+                    logger.error(f"container {container_name} has no checks!")
+                exit(
+                    f"check on container {container_name} with name {check_name} not found on {unit}"
+                )
+
+        elif len(checks_list) == 1:
+            # if we only have one, we can skip the below
+            check = checks_list[0]
+
+        elif len(checks_list) > 0:
+            # check picker v0.1
+            print(f"existing checks for {unit}:{container_name}\nID: \t name")
+            for c_name, c_dict in existing_checks.items():
+                print(f"{c_name}: \t {c_dict['key']}")
+            print()
+
+            options = set(map(str, existing_checks)) | {
+                "abort",
+            }
+            prompt = "select a check name to fire (or enter 'abort' to exit): "
+            while (i := input(prompt)) not in options:
+                pass
+            if i == "abort":
+                exit("aborted.")
+            check = existing_checks[i]
+        else:
+            exit(f"unit {unit} has no checks defined on {container_name}")
+        env["JUJU_PEBBLE_CHECK_NAME"] = check["name"]
 
     if override:
         for opt in override:
@@ -286,6 +336,7 @@ def _build_command(
     relation_remote: str = None,
     relation_id: int = None,
     notice_id: str = None,
+    check_name: str = None,
     secret_id_or_label: str = None,
     operator_dispatch: bool = False,
     env_override: List[str] = None,
@@ -299,6 +350,7 @@ def _build_command(
         secret_id_or_label=secret_id_or_label,
         override=env_override,
         operator_dispatch=operator_dispatch,
+        check_name=check_name,
     )
 
     _model = f"-m {model} " if model else ""
@@ -351,6 +403,7 @@ def _simulate_event(
     relation_remote: str = None,
     relation_id: int = None,
     notice_id: str = None,
+    check_name: str = None,
     secret_id_or_label: str = None,
     operator_dispatch: bool = False,
     env_override: List[str] = None,
@@ -376,6 +429,7 @@ def _simulate_event(
             relation_remote=relation_remote,
             relation_id=relation_id,
             notice_id=notice_id,
+            check_name=check_name,
             secret_id_or_label=secret_id_or_label,
             operator_dispatch=operator_dispatch,
             env_override=env_override,
@@ -459,6 +513,14 @@ def simulate_event(
         "we might need to disambiguate between them. If you don't pass one, you will"
         "be interactively prompted to select one between the possible options.",
     ),
+    check_name: str = typer.Option(
+        None,
+        help="Name of the check that a `*-pebble-check-failed` event or "
+        "`*-pebble-check-recovered` event is about. "
+        "Given that a check event can represent one of multiple possible checks, "
+        "we might need to disambiguate between them. If you don't pass one, you will"
+        "be interactively prompted to select one between the possible options.",
+    ),
     relation_id: int = typer.Option(
         None,
         help="ID of the relation that a `*-relation-*` event is about."
@@ -509,6 +571,7 @@ def simulate_event(
         event,
         relation_remote=relation_remote,
         notice_id=notice_id,
+        check_name=check_name,
         relation_id=relation_id,
         secret_id_or_label=secret,
         env_override=env_override,
