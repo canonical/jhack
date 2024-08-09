@@ -628,6 +628,9 @@ def _pull_cmrs(
         requirer_ep = binding.requirer_endpoint
         provider_ep = binding.provider_endpoint
 
+        if flipped:
+            provider_ep, requirer_ep = requirer_ep, provider_ep
+
         requirer_model = binding.requirer_model
         provider_model = binding.provider_model
 

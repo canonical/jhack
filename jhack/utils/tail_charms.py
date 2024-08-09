@@ -1335,6 +1335,9 @@ def bump_loglevel() -> str:
     new_config = []
 
     for cfg in cfgs:
+        if "ERROR" in cfg:
+            exit(f"failed bumping loglevel to unit=TRACE: {cfg}")
+
         n, lvl = cfg.split("=")
         if n == "unit":
             logger.debug(f"existing unit-level logging config found: was {lvl}")
