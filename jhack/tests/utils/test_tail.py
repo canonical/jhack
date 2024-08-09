@@ -1,4 +1,5 @@
 import re
+import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -140,7 +141,7 @@ def silence_console_prints():
 @pytest.mark.parametrize("deferrals", (True, False))
 @pytest.mark.parametrize("length", (3, 10, 100))
 def test_tail(deferrals, length, mock_stdout):
-    _tail_events(targets="myapp/0", length=length, show_defer=deferrals, watch=False)
+    _tail_events(targets=["myapp/0"], length=length, show_defer=deferrals, watch=False)
 
 
 @pytest.mark.parametrize("deferrals", (True, False))
@@ -151,7 +152,7 @@ def test_with_real_trfk_log(deferrals, length, show_ns):
         "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
     ):
         _tail_events(
-            targets="trfk/0",
+            targets=["trfk/0"],
             length=length,
             show_ns=show_ns,
             show_defer=deferrals,
@@ -383,3 +384,19 @@ def test_trace_ids_no_relation_evt():
         p.process(line)
     evt = p._raw_tables["prom/1"].msgs[0]
     assert evt.trace_id == "12312321412412312321"
+
+
+def test_bench(benchmark):
+    with patch(
+        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
+    ):
+        tf = tempfile.NamedTemporaryFile()
+        benchmark(
+            _tail_events,
+            targets=["trfk/0"],
+            length=30,
+            # show_ns=True,
+            # show_defer=True,
+            watch=False,
+            output=tf.name,
+        )
