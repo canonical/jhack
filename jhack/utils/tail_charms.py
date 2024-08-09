@@ -473,7 +473,9 @@ class PoorPrinter(Printer):
     def __init__(
         self,
         live: bool = True,
+        output: Optional[Path] = None,
     ):
+        self._output = output
         self._live = live
         self._out_stream = sys.stdout if live else StringIO()
         self._targets_known = set()
@@ -533,11 +535,6 @@ class PoorPrinter(Printer):
             line += " < " if spill_over > 0 else " | "
 
         line += "\n"
-        #
-        # msg_idx = target_units.index(msg.unit)
-        # evts = [space] * len(targets)
-        # line = f"{msg.timestamp}  | {' | '.join(evts)} \n"
-
         self._out_stream.write(line)
 
     def quit(
@@ -552,7 +549,10 @@ class PoorPrinter(Printer):
             f"Jhack tail v0.4: {evt_count.total()} captured events in {len(targets)}."
         )
         if not self._live:
-            print(self._out_stream.read())
+            if self._output:
+                (self._out_stream.read())
+            else:
+                print(self._out_stream.read())
 
 
 class RichPrinter:
@@ -818,6 +818,7 @@ class Processor:
                 )
             self.printer = PoorPrinter(
                 live=True,
+                output=self.output,
             )
 
         elif printer == "rich":
