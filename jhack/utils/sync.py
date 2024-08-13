@@ -11,7 +11,7 @@ import typer
 import yaml
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import juju_status, push_file
+from jhack.helpers import juju_status, push_file, _get_units
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -53,7 +53,7 @@ def watch(
 
     print("watching: \n\t%s" % "\n\t".join(map(str, watch_list)))
     print(
-        "Kill the process (Ctrl+C) to interrupt. "
+        "\nKill the process (Ctrl+C) to interrupt. "
         "Any local changes will be pushed to the remote(s)."
     )
 
@@ -157,22 +157,10 @@ def _sync(
 
     units = set()
     for target in targets:
-        _app_name, _, unit_tgt = target.rpartition("/")
-
-        if not _app_name:
-            _app_name = unit_tgt
-            if _app_name == "*":
-                units.update(
-                    unit_name
-                    for app in apps_status.values()
-                    for unit_name in app.get("units", {})
-                )
-            else:
-                units.update(
-                    unit_name for unit_name in apps_status[_app_name].get("units", {})
-                )
-        else:
+        if "/" in target:  # unit name
             units.add(target)
+        else:  # app name
+            units.update(_get_units(target, status))
 
     if not units:
         exit("No targets found.")
@@ -353,5 +341,5 @@ async def push_to_remote_juju_unit(
 
 
 if __name__ == "__main__":
-    os.chdir("/home/pietro/canonical/tempo-k8s")
-    _sync(dry_run=True)
+    os.chdir("/home/pietro/canonical/grafana-agent-operator")
+    _sync(skip_initial_sync=True, dry_run=True)
