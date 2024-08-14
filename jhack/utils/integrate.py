@@ -558,7 +558,7 @@ def _collect_possible_cmrs(
     return cmrs
 
 
-def _cmr(remote, local=None, dry_run: bool = False):
+def _find_all_possible_cmrs(local, remote):
     local = local or get_current_model()
     if not local:
         exit("you need to switch to a model before you do this")
@@ -579,15 +579,23 @@ def _cmr(remote, local=None, dry_run: bool = False):
     cmrs.update(_collect_possible_cmrs(apps2, apps1, mtrx2, mtrx1, flipped=True))
 
     opts = {}
-    for i, ((prov, req, flipped), bindings) in enumerate(cmrs.items()):
+    for i, ((prov, req, local_model_is_requirer), bindings) in enumerate(
+        sorted(cmrs.items())
+    ):
         binding: RelationBinding
         for j, binding in enumerate(bindings):
-            arrow = "<--" if flipped else "-->"
+            arrow = "<--" if local_model_is_requirer else "-->"
             print(
                 f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} {arrow} [{binding.interface}] "
                 f"{arrow} {req}:{binding.requirer_endpoint} "
             )
-            opts[f"{i}.{j}"] = (prov, binding, req, flipped)
+            opts[f"{i}.{j}"] = (prov, binding, req, local_model_is_requirer)
+
+    return opts
+
+
+def _cmr(remote, local=None, dry_run: bool = False):
+    opts = _find_all_possible_cmrs(local, remote)
 
     if not opts:
         print(
@@ -604,40 +612,41 @@ def _cmr(remote, local=None, dry_run: bool = False):
         _pull_cmrs((opts[cmr],), dry_run)
 
 
-def _pull_cmrs(
+def fmt_endpoint(model: str, app: str, endpoint: str):
+    return (
+        Text(model or "<this model>", style="red")
+        + "."
+        + Text(app, style="purple")
+        + ":"
+        + Text(endpoint, style="cyan")
+    )
+
+
+def _generate_pull_cmr_scripts(
     specs: Iterable[
         Tuple[str, RelationBinding, str, bool]
-    ],  # provider, binding, requirer, flipped
-    dry_run: bool,
+    ],  # provider, binding, requirer, local_model_is_requirer
 ):
-    def fmt_endpoint(model, app, endpoint):
-        return (
-            Text(model or "<this model>", style="red")
-            + "."
-            + Text(app, style="purple")
-            + ":"
-            + Text(endpoint, style="cyan")
-        )
-
     c = Console()
 
     setup_scripts = []
     relate_scripts = []
 
-    for prov, binding, req, flipped in specs:
+    for prov, binding, req, local_model_is_requirer in specs:
         requirer_ep = binding.requirer_endpoint
         provider_ep = binding.provider_endpoint
-
-        if flipped:
-            provider_ep, requirer_ep = requirer_ep, provider_ep
-
         requirer_model = binding.requirer_model
         provider_model = binding.provider_model
+
+        if local_model_is_requirer:
+            provider_ep, requirer_ep = requirer_ep, provider_ep
+            prov, req = req, prov
+            provider_model, requirer_model = requirer_model, provider_model
 
         remote_ep_fmt = fmt_endpoint(provider_model, req, requirer_ep)
         local_ep_fmt = fmt_endpoint(requirer_model, prov, provider_ep)
         txt = (
-            Text("Pushing " if flipped else "Pulling ")
+            Text("Pulling " if local_model_is_requirer else "Pushing ")
             + remote_ep_fmt
             + " --> ["
             + Text(binding.interface, style="green")
@@ -662,6 +671,16 @@ def _pull_cmrs(
             f"juju relate -m {provider_model} {req}:{requirer_ep} {prov}:{provider_ep}",
         ]
 
+    return setup_scripts, relate_scripts
+
+
+def _pull_cmrs(
+    specs: Iterable[
+        Tuple[str, RelationBinding, str, bool]
+    ],  # provider, binding, requirer, local_model_is_requirer
+    dry_run: bool,
+):
+    setup_scripts, relate_scripts = _generate_pull_cmr_scripts(specs)
     if dry_run:
         print("would run:", "\n\t".join(setup_scripts))
         print("and then:", "\n\t".join(relate_scripts))

@@ -132,6 +132,7 @@ def juju_log(unit: str, msg: str, model: str = None, debug=True):
 
 
 def juju_status(app_name=None, model: str = None, json: bool = False):
+    logger.debug(f"gathering juju status for model={model!r} (app_name={app_name})")
     cmd = f'juju status{" " + app_name if app_name else ""} --relations'
     if model:
         cmd += f" -m {model}"
@@ -155,7 +156,6 @@ def cached_juju_status(app_name=None, model: str = None, json: bool = False):
 
 def is_k8s_model(status):
     """Determine if this is a k8s model from a juju status."""
-
     if status["applications"]:
         # no machines = k8s model
         if not status.get("machines"):
@@ -506,6 +506,10 @@ def get_all_units(model: str = None) -> Sequence[Target]:
 
 def _get_units(app, status, predicate: Optional[Callable] = None):
     units = []
+    if "applications" not in status:
+        logger.error("cannot get units: no applications in juju status.")
+        return []
+
     principals = status["applications"][app].get("subordinate-to", False)
     if principals:
         # sub charm = one unit per principal unit
