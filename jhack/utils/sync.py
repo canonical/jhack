@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+import sys
 import time
 import typing
 from itertools import product
@@ -9,6 +10,7 @@ from typing import List, Optional
 
 import typer
 import yaml
+from pygments.lexer import include
 
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status, push_file, _get_units
@@ -119,6 +121,7 @@ def _sync(
     dry_run: bool = False,
     skip_initial_sync: bool = False,
     include_files: str = ".*\.py$",
+    venv: Optional[Path] = None,
 ):
     status = juju_status(json=True)
     apps_status = status.get("applications")
@@ -165,7 +168,9 @@ def _sync(
     if not units:
         exit("No targets found.")
 
+    venv = venv.absolute() if venv else None
     remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
+    remote_venv_root = "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/venv/"
 
     if touch:
         print("Touching: ")
@@ -196,9 +201,11 @@ def _sync(
                 *(
                     push_to_remote_juju_unit(
                         changed,
-                        remote_root,
-                        unit,
-                        container_name,
+                        remote_root=remote_root,
+                        local_venv_root=str(venv),
+                        remote_venv_root=remote_venv_root,
+                        unit=unit,
+                        container_name=container_name,
                         dry_run=dry_run,
                     )
                     for unit, changed in product(units, changed_files)
@@ -209,8 +216,13 @@ def _sync(
 
     print("Ready to sync to: \n\t%s" % "\n\t".join(units))
 
+    watch_dirs = source_dirs or ["./src", "./lib"]
+
+    if venv:
+        watch_dirs.append(venv)
+
     watch(
-        source_dirs or ["./src", "./lib"],
+        watch_dirs,
         on_change,
         include_files,
         recursive,
@@ -275,6 +287,13 @@ def sync(
         help="Skip the initial sync. "
         "This means only the files you touch AFTER the process is started will be synced.",
     ),
+    venv: Optional[Path] = typer.Option(
+        None,
+        "--venv",
+        "-v",
+        help="Sync from this directory into the charm's venv. "
+        "This feature is experimental and may cause irreparable damage to your computer.",
+    ),
     touch: List[Path] = typer.Option(
         None,
         "--touch",
@@ -310,20 +329,34 @@ def sync(
         dry_run=dry_run,
         include_files=include_files,
         skip_initial_sync=skip_initial_sync,
+        venv=venv,
     )
 
 
 async def push_to_remote_juju_unit(
     file: Path,
     remote_root: str,
+    local_venv_root: str,
+    remote_venv_root: str,
     unit: str,
-    container_name,
+    container_name: str,
     dry_run: bool = False,
 ):
     app, _, unit_id = unit.rpartition("/")
-    remote_file_path = (
-        remote_root + str(file.absolute())[len(os.getcwd()) + 1 :]
-    ).format(unit_id=unit_id, app=app)
+
+    # if the file is in the venv:
+    print(str(file), local_venv_root)
+
+    if str(file).startswith(local_venv_root):
+        abspath = str(file.absolute())
+        pkg_path = abspath.split("/site-packages/")[1]
+        remote_file_path = (remote_venv_root + pkg_path).format(
+            unit_id=unit_id, app=app
+        )
+    else:
+        remote_file_path = (
+            remote_root + str(file.absolute())[len(os.getcwd()) + 1 :]
+        ).format(unit_id=unit_id, app=app)
 
     push_file(
         unit,
@@ -341,5 +374,9 @@ async def push_to_remote_juju_unit(
 
 
 if __name__ == "__main__":
-    os.chdir("/home/pietro/canonical/grafana-agent-operator")
-    _sync(skip_initial_sync=True, dry_run=True)
+    os.chdir("/home/pietro/canonical/tempo-worker-k8s-operator")
+    _sync(
+        skip_initial_sync=True,
+        dry_run=True,
+        venv=Path("/home/pietro/canonical/tempo-worker-k8s-operator/.venv"),
+    )
