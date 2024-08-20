@@ -70,6 +70,22 @@ class RelationEndpointURL(str):
         else:
             app_name, unit_id = u, None
 
+        status = _juju_status(json=True)
+        if app_name in status["applications"]:
+            alias = model = None
+
+        elif app_name in status["application-endpoints"]:
+            url = status["application-endpoints"][app_name]["url"]
+            _, endpoint_url = url.split("/")
+            model, real_app_name = endpoint_url.split(".")
+            alias = str(app_name)
+            app_name = real_app_name
+
+        else:
+            raise RuntimeError(f"unable to find app {app_name!r} in the current model.")
+
+        self.model = model
+        self.alias = alias
         self.app_name = app_name
         self.unit_id = unit_id
         self.endpoint = endpoint
@@ -302,6 +318,7 @@ def get_metadata_from_status(
     status = _juju_status(model=model, json=True)
     # machine status json output apparently has no 'scale'... -_-
     app_status = status["applications"][endpoint.app_name]
+
     if app_status.get("subordinate-to"):
         units = {}
         # todo: need to scavenge unit names from OTHER units' .subordinates field
@@ -572,8 +589,10 @@ def get_relation_data(
         requirer_endpoint,
         relation,
         include_default_juju_keys,
-        model=_find_model_if_CMR(provider_endpoint.app_name, current_model=model),
-        other_model=_find_model_if_CMR(requirer_endpoint.app_name, current_model=model),
+        model=provider_endpoint.model
+        or _find_model_if_CMR(provider_endpoint.app_name, current_model=model),
+        other_model=requirer_endpoint.model
+        or _find_model_if_CMR(requirer_endpoint.app_name, current_model=model),
     )
     requirer_data = get_content(
         requirer_endpoint,
@@ -588,7 +607,7 @@ def get_relation_data(
 
 def get_relations(model: str = None) -> List[Relation]:
     status = _juju_status(model=model)
-    # get the interface name from juju status.
+    # get the interface name from juju status (it's not present in json format :facepalm:)
     raw_relations = _RELATIONS_RE.findall(status)
 
     relations = []
@@ -636,7 +655,7 @@ def _render_databag(unit_name, dct, leader=False, hide_empty_databags: bool = Fa
 def _match_provider(rel: Relation, ep: Optional[RelationEndpointURL]):
     if not ep:
         return True
-    return rel.provider == ep.app_name and (
+    return rel.provider == (ep.alias or ep.app_name) and (
         (not ep.endpoint) or rel.provider_endpoint == ep.endpoint
     )
 
@@ -644,7 +663,7 @@ def _match_provider(rel: Relation, ep: Optional[RelationEndpointURL]):
 def _match_requirer(rel: Relation, ep: Optional[RelationEndpointURL]):
     if not ep:
         return True
-    return rel.requirer == ep.app_name and (
+    return rel.requirer == (ep.alias or ep.app_name) and (
         (not ep.endpoint) or rel.requirer_endpoint == ep.endpoint
     )
 
@@ -1075,16 +1094,17 @@ def _sync_show_relation(
             return
 
         if watch:
-            global _CACHING
-            _CACHING = False
-            logger.info("running in watch-mode: caching DISABLED")
-
             elapsed = time.time() - start
             if elapsed < 1:
                 time.sleep(1.5 - elapsed)
                 _JUJU_DATA_CACHE.clear()
             # we clear RIGHT BEFORE printing to prevent flickering
             console.clear()
+
+            # clear the caches so we'll not lose any changes
+            _cached_get_unit_info.clear_cache()
+            _cached_juju_status.clear_cache()
+
         console.print(table)
 
         if not watch:
@@ -1093,6 +1113,6 @@ def _sync_show_relation(
 
 if __name__ == "__main__":
     _sync_show_relation(
-        "loki",
-        "gagent",
+        "tempo-alias:tracing",
+        "grafana:tracing",
     )
