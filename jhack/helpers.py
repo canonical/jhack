@@ -137,6 +137,9 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
         cmd += f" -m {model}"
     if json:
         cmd += " --format json"
+
+    logger.debug(f"Fetching status with: {cmd!r}")
+
     proc = JPopen(cmd.split())
     raw = proc.stdout.read().decode("utf-8")
     if json:
