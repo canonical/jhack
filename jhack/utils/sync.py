@@ -10,6 +10,7 @@ from typing import List, Optional
 
 import typer
 import yaml
+from black.trans import Index
 from pygments.lexer import include
 
 from jhack.conf.conf import check_destructive_commands_allowed
@@ -20,16 +21,15 @@ logger = logger.getChild(__file__)
 
 
 def watch(
-    paths,
-    on_change: typing.Callable,
+    paths: List[str],
+    venv: Optional[Path],
+    on_change: typing.Callable[[typing.Iterable[typing.Union[str, Path]], bool], None],
     include_files: str = None,
     recursive: bool = True,
     refresh_rate: float = 1.0,
-    skip_initial_sync: bool = False,
+    initial_sync: bool = False,
 ):
     """Watches a directory for changes; on any, calls on_change back with them."""
-    resolved = [Path(path).resolve() for path in paths]
-
     include_files = re.compile(include_files) if include_files else None
 
     def check_file(file: Path):
@@ -37,49 +37,76 @@ def watch(
             return True
         return include_files.match(file.name)
 
-    watch_list = []
-    for path in resolved:
-        if not path.is_dir():
-            logger.warning(f"not a directory: cannot watch {path}. Skipping...")
-            continue
-        watch_list += walk(path, recursive, check_file)
+    def _walk(*path: typing.Union[str, Path]):
+        resolved = [Path(p).resolve() for p in path]
+        for p in resolved:
+            if not p.is_dir():
+                logger.warning(f"not a directory: cannot watch {p}. Skipping...")
+                continue
+            yield from walk(p, recursive, check_file)
 
-    if not watch_list:
-        logger.error("nothing to watch. Pass something to --source-dirs")
+    watch_list = list(_walk(*paths))
+    venv_list = list(_walk(venv))
+
+    if not (watch_list or venv_list):
+        logger.error("nothing to watch. Configure --source-dirs or --venv")
         return
 
-    if not skip_initial_sync:
-        print("initiating initial sync...")
-        on_change(watch_list)
+    if initial_sync:
+        # todo: should we allow syncing the venv as well?
+        print(f"beginning initial sync {' (venv *NOT* included)' if venv else ''}...")
+        on_change(watch_list, False)
         print("remote up to speed with local. Starting watcher...")
 
-    print("watching: \n\t%s" % "\n\t".join(map(str, watch_list)))
+    print("\nwatching: \n\t%s" % "\n\t".join(map(str, watch_list)))
+    if venv_list:
+        print(f"watching (venv): \n\t{venv}/**")
     print(
         "\nKill the process (Ctrl+C) to interrupt. "
-        "Any local changes will be pushed to the remote(s)."
+        "Any local changes will be pushed to the remote(s).\n"
     )
 
     hashes = {}
+
+    def _check_changed(file) -> bool:
+        logger.debug(f"checking {file}")
+        if old_tstamp := hashes.get(file, None):
+            new_tstamp = os.path.getmtime(file)
+            if new_tstamp == old_tstamp:
+                logger.debug(f"timestamp unchanged {old_tstamp}")
+                return False
+            logger.debug(f"changed: {file}")
+            hashes[file] = new_tstamp
+            return True
+        else:
+            hashes[file] = os.path.getmtime(file)
+        return False
+
+    has_logged_first_elapsed = False
+
     while True:
+        start_time = time.time()
+
         # determine which files have changed
-        changed_files = []
-        for file in watch_list:
-            logger.debug(f"checking {file}")
-            if old_tstamp := hashes.get(file, None):
-                new_tstamp = os.path.getmtime(file)
-                if new_tstamp == old_tstamp:
-                    logger.debug(f"timestamp unchanged {old_tstamp}")
-                    continue
-                logger.debug(f"changed: {file}")
-                hashes[file] = new_tstamp
-                changed_files.append(file)
-            else:
-                hashes[file] = os.path.getmtime(file)
-
+        changed_files = (file for file in watch_list if _check_changed(file))
         if changed_files:
-            on_change(changed_files)
+            on_change(changed_files, False)
 
-        time.sleep(refresh_rate)
+        if venv:
+            # determine which local python packages have changed
+            changed_python_packages = (
+                file for file in venv_list if _check_changed(file)
+            )
+            if changed_python_packages:
+                on_change(changed_python_packages, True)
+
+        elapsed = time.time() - start_time
+        if not has_logged_first_elapsed:
+            # only log this once, it's unlikely to change much
+            has_logged_first_elapsed = True
+            logger.debug("--- check done in %s seconds ---" % round(elapsed, 2))
+
+        time.sleep(max(0, int(refresh_rate - elapsed)))
 
 
 def ignore_hidden_dirs(file: Path):
@@ -119,7 +146,7 @@ def _sync(
     refresh_rate: float = 1,
     recursive: bool = True,
     dry_run: bool = False,
-    skip_initial_sync: bool = False,
+    initial_sync: bool = False,
     include_files: str = ".*\.py$",
     venv: Optional[Path] = None,
 ):
@@ -168,7 +195,7 @@ def _sync(
     if not units:
         exit("No targets found.")
 
-    venv = venv.absolute() if venv else None
+    venv = venv.expanduser().absolute() if venv else None
     remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
     remote_venv_root = "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/venv/"
 
@@ -190,11 +217,11 @@ def _sync(
         loop = asyncio.events.get_event_loop()
         loop.run_until_complete(asyncio.gather(*coros))
         print("Initial sync done.")
-        skip_initial_sync = True
+        initial_sync = True
 
-    def on_change(changed_files):
-        if not changed_files:
-            return
+    def on_change(
+        changed_files: typing.Iterable[typing.Union[str, Path]], is_venv: bool = False
+    ):
         loop = asyncio.events.get_event_loop()
         loop.run_until_complete(
             asyncio.gather(
@@ -202,7 +229,7 @@ def _sync(
                     push_to_remote_juju_unit(
                         changed,
                         remote_root=remote_root,
-                        local_venv_root=str(venv),
+                        is_venv=is_venv,
                         remote_venv_root=remote_venv_root,
                         unit=unit,
                         container_name=container_name,
@@ -218,16 +245,14 @@ def _sync(
 
     watch_dirs = source_dirs or ["./src", "./lib"]
 
-    if venv:
-        watch_dirs.append(venv)
-
     watch(
-        watch_dirs,
-        on_change,
-        include_files,
-        recursive,
-        refresh_rate,
-        skip_initial_sync=skip_initial_sync,
+        paths=watch_dirs,
+        venv=venv,
+        on_change=on_change,
+        include_files=include_files,
+        recursive=recursive,
+        refresh_rate=refresh_rate,
+        initial_sync=initial_sync,
     )
 
 
@@ -281,11 +306,18 @@ def sync(
         "files.",
     ),
     skip_initial_sync: bool = typer.Option(
-        False,
+        None,
         "--skip-initial-sync",
         "-S",
-        help="Skip the initial sync. "
-        "This means only the files you touch AFTER the process is started will be synced.",
+        help="DEPRECATED flag. Use initial_sync instead.",
+    ),
+    initial_sync: bool = typer.Option(
+        False,
+        "--initial-sync",
+        "-s",
+        help="Perform an initial sync by pushing all local files to the remote. This can take a while. "
+        "Without this flag, only the files you touch AFTER the process is started will be synced.",
+        is_flag=True,
     ),
     venv: Optional[Path] = typer.Option(
         None,
@@ -318,6 +350,14 @@ def sync(
     """
     check_destructive_commands_allowed("sync")
 
+    if skip_initial_sync:
+        logger.warning(
+            "the `skip_initial_sync` (default False) is deprecated in favour of `initial_sync` (default False). "
+            "That is, initial sync used to be opt-out, now it's opt-in, because I figured out it was a bad idea."
+            "That is, the default behaviour is flipped. This will work for now, but will be removed in a future version."
+        )
+        initial_sync = not skip_initial_sync
+
     return _sync(
         targets=target,
         source_dirs=source_dirs,
@@ -328,7 +368,7 @@ def sync(
         recursive=recursive,
         dry_run=dry_run,
         include_files=include_files,
-        skip_initial_sync=skip_initial_sync,
+        initial_sync=initial_sync,
         venv=venv,
     )
 
@@ -336,7 +376,7 @@ def sync(
 async def push_to_remote_juju_unit(
     file: Path,
     remote_root: str,
-    local_venv_root: str,
+    is_venv: bool,
     remote_venv_root: str,
     unit: str,
     container_name: str,
@@ -345,11 +385,18 @@ async def push_to_remote_juju_unit(
     app, _, unit_id = unit.rpartition("/")
 
     # if the file is in the venv:
-    print(str(file), local_venv_root)
-
-    if str(file).startswith(local_venv_root):
+    if is_venv:
         abspath = str(file.absolute())
-        pkg_path = abspath.split("/site-packages/")[1]
+        try:
+            pkg_path = abspath.split("/site-packages/")[1]
+        except IndexError:
+            # TODO: how robust is this heuristic?
+            logger.error(
+                f"venv file {file!r} doesn't have expected `site-packages` parent directory."
+                f" please report an issue."
+            )
+            return
+
         remote_file_path = (remote_venv_root + pkg_path).format(
             unit_id=unit_id, app=app
         )
@@ -376,7 +423,7 @@ async def push_to_remote_juju_unit(
 if __name__ == "__main__":
     os.chdir("/home/pietro/canonical/tempo-worker-k8s-operator")
     _sync(
-        skip_initial_sync=True,
+        initial_sync=True,
         dry_run=True,
         venv=Path("/home/pietro/canonical/tempo-worker-k8s-operator/.venv"),
     )
