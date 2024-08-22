@@ -11,7 +11,7 @@ import typer
 import yaml
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import juju_status, push_file, _get_units
+from jhack.helpers import _get_units, juju_status, push_file
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)

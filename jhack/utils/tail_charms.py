@@ -22,7 +22,6 @@ from typing import (
     cast,
 )
 
-import rich
 import typer
 from rich.align import Align
 from rich.color import Color
@@ -497,7 +496,7 @@ class PoorPrinter(Printer):
         new_cols = [0]
         for target in targets:
             col_titles.append(target.unit_name)
-            new_cols.append(1 if not target in self._targets_known else 0)
+            new_cols.append(1 if target not in self._targets_known else 0)
             self._targets_known.add(target)
 
         def _pad_header(h: str):
