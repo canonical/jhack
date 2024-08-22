@@ -1,7 +1,6 @@
 import asyncio
 import os
 import re
-import sys
 import time
 import typing
 from itertools import product
@@ -10,8 +9,6 @@ from typing import List, Optional
 
 import typer
 import yaml
-from black.trans import Index
-from pygments.lexer import include
 
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status, push_file, _get_units
