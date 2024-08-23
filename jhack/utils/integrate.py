@@ -65,9 +65,9 @@ class IntegrationMatrix:
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[
-            List[Union[List[PeerBinding], List[RelationBinding]]]
-        ] = self._build_matrix()
+        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = (
+            self._build_matrix()
+        )
 
     @property
     def model(self) -> str:
