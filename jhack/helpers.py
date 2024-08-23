@@ -470,6 +470,7 @@ class Target:
     app: str
     unit: int
     leader: bool = False
+    _machine_id: Optional[int] = None
 
     @staticmethod
     def from_name(name: str):
@@ -481,7 +482,7 @@ class Target:
         app, unit_ = name.split("/")
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
-        return Target(app, unit, leader=leader)
+        return Target(app, int(unit), leader=leader)
 
     @property
     def unit_name(self):
@@ -494,17 +495,29 @@ class Target:
     def __hash__(self):
         return hash((self.app, self.unit, self.leader))
 
+    @property
+    def machine_id(self) -> int:
+        if self._machine_id is None:
+            raise ValueError(
+                "machine-id not available. Either a k8s unit, or it wasn't obtained "
+                "at Target instantiation time."
+            )
+        return self._machine_id
+
 
 def get_all_units(model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
-    units = list(
+    return tuple(
         chain(*(_get_units(app, status) for app in status.get("applications", {})))
     )
-    return tuple(map(Target.from_name, units))
 
 
-def _get_units(app, status, predicate: Optional[Callable] = None):
+def _get_units(
+    app,
+    status,
+    predicate: Optional[Callable] = None,
+) -> Sequence[Target]:
     units = []
     principals = status["applications"][app].get("subordinate-to", False)
     if principals:
@@ -514,17 +527,32 @@ def _get_units(app, status, predicate: Optional[Callable] = None):
                 continue
 
             # if the principal is still being set up, it could have no 'units' yet.
-            machines = [
-                u["machine"]
-                for u in status["applications"][principal].get("units", {}).values()
-            ]
-            units.extend(f"{app}/{machine}" for machine in machines)
+            for unit_id, unit_meta in (
+                status["applications"][principal].get("units", {}).items()
+            ):
+                unit = int(unit_id.split("/")[1])
+                units.append(
+                    Target(
+                        app=app,
+                        unit=unit,
+                        _machine_id=unit_meta.get("machine"),
+                        leader=unit_meta.get("leader"),
+                    )
+                )
 
     else:
-        for k, meta in status["applications"][app]["units"].items():
-            if predicate and not predicate(meta):
+        for unit_id, unit_meta in status["applications"][app]["units"].items():
+            if predicate and not predicate(unit_meta):
                 continue
-            units.append(k)
+            unit = int(unit_id.split("/")[1])
+            units.append(
+                Target(
+                    app=app,
+                    unit=unit,
+                    _machine_id=unit_meta.get("machine"),
+                    leader=unit_meta.get("leader"),
+                )
+            )
     return units
 
 
@@ -532,14 +560,13 @@ def get_units(*apps, model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     if not apps:
         apps = status.get("applications", {}).keys()
-    units = list(chain(*(_get_units(app, status) for app in apps)))
-    return tuple(map(Target.from_name, units))
+    return list(chain(*(_get_units(app, status) for app in apps)))
 
 
-def get_leader_unit(app, model: str = None) -> Target:
+def get_leader_unit(app, model: str = None) -> Optional[Target]:
     status = juju_status(json=True, model=model)
     leaders = _get_units(app, status, predicate=lambda unit: unit.get("leader"))
-    return Target.from_name(leaders[0])
+    return leaders[0] if leaders else None
 
 
 def parse_target(target: str, model: str = None) -> List[Target]:

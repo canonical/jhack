@@ -1,3 +1,7 @@
+[propaganda]
+# shiny crowns
+blink = true
+
 [nuke]
 # always ask for confirmation on jhack nuke
 ask_for_confirmation = false
