@@ -43,7 +43,7 @@ def watch(
             yield from walk(p, recursive, check_file)
 
     watch_list = list(_walk(*paths))
-    venv_list = list(_walk(venv))
+    venv_list = list(_walk(venv)) if venv else []
 
     if not (watch_list or venv_list):
         logger.error("nothing to watch. Configure --source-dirs or --venv")
