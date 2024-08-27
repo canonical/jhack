@@ -105,11 +105,11 @@ def _wait_for_leader(unit, dry_run: bool = False):
                 sleep(0.5)
 
     except KeyboardInterrupt:
-        # FIXME: this might leave your units braindead.
         if dry_run:
             print("would abort.")
         else:
-            exit("aborted.")
+            # FIXME: this might leave your units braindead.
+            exit("aborted. Warning: your units might be somewhat confused.")
 
 
 class TimeoutException(Exception):
@@ -139,7 +139,7 @@ CHECKS_LAYER = """checks:
         level: alive
         period: 10s
         timeout: 3s
-        threshold: {}
+        threshold: {threshold}
         http:
             url: http://localhost:65301/liveness
     readiness:
@@ -147,7 +147,7 @@ CHECKS_LAYER = """checks:
         level: ready
         period: 10s
         timeout: 3s
-        threshold: 3
+        threshold: {threshold}
         http:
             url: http://localhost:65301/readiness
  """
@@ -162,7 +162,7 @@ def _set_checks_threshold(
     logger.debug(f"setting liveness check threshold to {threshold}")
     push_string(
         unit,
-        CHECKS_LAYER.format(threshold),
+        CHECKS_LAYER.format(threshold=threshold),
         remote_path=LAYER_REMOTE_PATH,
         is_full_path=True,
         model=model,
@@ -172,8 +172,10 @@ def _set_checks_threshold(
     logger.debug("applying layer...")
     JPopen(
         shlex.split(
-            f"juju ssh {unit} /charm/bin/pebble add jhacklayer " f"{LAYER_REMOTE_PATH}"
-        )
+            f"juju ssh {unit} /charm/bin/pebble add {'jhackdo' if threshold==THRESH_HIGH else 'jhackundo'} "
+            f"{LAYER_REMOTE_PATH}"
+        ),
+        wait=True,
     )
 
     logger.debug("cleaning up layer file...")
@@ -184,18 +186,6 @@ def _set_checks_threshold(
         model=model,
         dry_run=dry_run,
     )
-
-
-def _increase_liveness_check_threshold(
-    unit: str, model: Optional[str] = None, dry_run: bool = False
-):
-    _set_checks_threshold(unit, THRESH_HIGH, model=model, dry_run=dry_run)
-
-
-def _restore_liveness_check_threshold(
-    unit: str, model: Optional[str] = None, dry_run: bool = False
-):
-    _set_checks_threshold(unit, THRESH_LOW, model=model, dry_run=dry_run)
 
 
 def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = False):
@@ -228,8 +218,8 @@ def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = Fal
     # lobotomize all units except the prospective leader
     for unit in murderable_units:
         if substrate == "k8s":
-            _increase_liveness_check_threshold(
-                unit=unit.unit_name, model=model, dry_run=dry_run
+            _set_checks_threshold(
+                unit=unit.unit_name, threshold=THRESH_HIGH, model=model, dry_run=dry_run
             )
         _stop_jujud(unit=unit, model=model, substrate=substrate, dry_run=dry_run)
 
@@ -239,8 +229,8 @@ def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = Fal
     # then resurrect all units
     for unit in murderable_units:
         if substrate == "k8s":
-            _restore_liveness_check_threshold(
-                unit=unit.unit_name, model=model, dry_run=dry_run
+            _set_checks_threshold(
+                unit=unit.unit_name, threshold=THRESH_LOW, model=model, dry_run=dry_run
             )
         _start_jujud(unit=unit, model=model, substrate=substrate, dry_run=dry_run)
 
