@@ -33,10 +33,10 @@ from rich.text import Text
 
 from jhack.conf.conf import CONFIG
 from jhack.helpers import JPopen, Target, get_all_units
-from jhack.logger import logger as jhacklogger
+from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
-logger = jhacklogger.getChild(__file__)
+logger = jhack_logger.getChild(__file__)
 
 _TAIL_VERSION = "0.4"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))

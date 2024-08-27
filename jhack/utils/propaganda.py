@@ -15,7 +15,15 @@ from rich.style import Style
 from rich.text import Text
 
 from jhack.conf.conf import CONFIG, check_destructive_commands_allowed
-from jhack.helpers import JPopen, Target, get_leader_unit, get_substrate, get_units
+from jhack.helpers import (
+    JPopen,
+    Target,
+    get_leader_unit,
+    get_substrate,
+    get_units,
+    push_string,
+    rm_file,
+)
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("propaganda")
@@ -125,6 +133,71 @@ def timeout(seconds, raise_=False):
         signal.alarm(0)
 
 
+CHECKS_LAYER = """checks:
+    liveness:
+        override: replace
+        level: alive
+        period: 10s
+        timeout: 3s
+        threshold: {}
+        http:
+            url: http://localhost:65301/liveness
+    readiness:
+        override: replace
+        level: ready
+        period: 10s
+        timeout: 3s
+        threshold: 3
+        http:
+            url: http://localhost:65301/readiness
+ """
+THRESH_HIGH = 100501
+THRESH_LOW = 3
+LAYER_REMOTE_PATH = "/.jhack-layer-checks-tmp.yaml"
+
+
+def _set_checks_threshold(
+    unit: str, threshold: int, model: Optional[str] = None, dry_run: bool = False
+):
+    logger.debug(f"setting liveness check threshold to {threshold}")
+    push_string(
+        unit,
+        CHECKS_LAYER.format(threshold),
+        remote_path=LAYER_REMOTE_PATH,
+        is_full_path=True,
+        model=model,
+        dry_run=dry_run,
+    )
+
+    logger.debug("applying layer...")
+    JPopen(
+        shlex.split(
+            f"juju ssh {unit} /charm/bin/pebble add jhacklayer " f"{LAYER_REMOTE_PATH}"
+        )
+    )
+
+    logger.debug("cleaning up layer file...")
+    rm_file(
+        unit,
+        remote_path=LAYER_REMOTE_PATH,
+        is_path_relative=False,
+        model=model,
+        dry_run=dry_run,
+    )
+
+
+def _increase_liveness_check_threshold(
+    unit: str, model: Optional[str] = None, dry_run: bool = False
+):
+    _set_checks_threshold(unit, THRESH_HIGH, model=model, dry_run=dry_run)
+
+
+def _restore_liveness_check_threshold(
+    unit: str, model: Optional[str] = None, dry_run: bool = False
+):
+    _set_checks_threshold(unit, THRESH_LOW, model=model, dry_run=dry_run)
+
+
 def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = False):
     substrate = get_substrate(model)
     units = get_units(target.app, model=model)
@@ -154,6 +227,10 @@ def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = Fal
 
     # lobotomize all units except the prospective leader
     for unit in murderable_units:
+        if substrate == "k8s":
+            _increase_liveness_check_threshold(
+                unit=unit.unit_name, model=model, dry_run=dry_run
+            )
         _stop_jujud(unit=unit, model=model, substrate=substrate, dry_run=dry_run)
 
     # block until new leader is elected
@@ -161,6 +238,10 @@ def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = Fal
 
     # then resurrect all units
     for unit in murderable_units:
+        if substrate == "k8s":
+            _restore_liveness_check_threshold(
+                unit=unit.unit_name, model=model, dry_run=dry_run
+            )
         _start_jujud(unit=unit, model=model, substrate=substrate, dry_run=dry_run)
 
     console = Console()

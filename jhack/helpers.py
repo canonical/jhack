@@ -324,6 +324,31 @@ def _push_file_machine_cmd(
     return cmd
 
 
+def push_string(
+    unit: str,
+    text: str,
+    remote_path: str,
+    is_full_path: bool = False,
+    container: Optional[str] = None,
+    model: str = None,
+    dry_run: bool = False,
+    mkdir_remote: bool = False,
+):
+    with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
+        tf_path = Path(tf.name)
+        tf_path.write_text(text)
+        return push_file(
+            unit=unit,
+            local_path=tf_path,
+            remote_path=remote_path,
+            is_full_path=is_full_path,
+            container=container,
+            model=model,
+            dry_run=dry_run,
+            mkdir_remote=mkdir_remote,
+        )
+
+
 def push_file(
     unit: str,
     local_path: Path,
@@ -366,13 +391,25 @@ def push_file(
         raise RuntimeError(f"Failed to push {local_path} to {unit}.")
 
 
-def rm_file(unit: str, remote_path: str, model: str = None):
-    if remote_path.startswith("/"):
-        remote_path = remote_path[1:]
-    unit_sanitized = unit.replace("/", "-")
+def rm_file(
+    unit: str, remote_path: str, model: str = None, is_path_relative=True, dry_run=False
+):
+    if is_path_relative:
+        if remote_path.startswith("/"):
+            remote_path = remote_path[1:]
+        unit_sanitized = unit.replace("/", "-")
+        full_remote_path = (
+            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+        )
+
+    else:
+        full_remote_path = remote_path
+
     model_arg = f" -m {model}" if model else ""
-    full_remote_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
     cmd = f"juju ssh{model_arg} {unit} rm {full_remote_path}"
+    if dry_run:
+        print(f"would run: {cmd}")
+        return
     try:
         check_output(shlex.split(cmd))
     except CalledProcessError as e:
