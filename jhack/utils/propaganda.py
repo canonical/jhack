@@ -3,6 +3,7 @@
 import shlex
 import signal
 from contextlib import contextmanager
+from pathlib import Path
 from time import sleep
 from typing import Literal, Optional
 
@@ -23,6 +24,7 @@ from jhack.helpers import (
     get_units,
     push_string,
     rm_file,
+    push_file,
 )
 from jhack.logger import logger as jhack_logger
 
@@ -38,51 +40,21 @@ CROWN = r"""
 """
 
 
-def _stop_jujud(
+def _patch_machine(
+    apply: bool,
     unit: Target,
     model: Optional[str],
-    substrate: Literal["k8s", "machine"],
     dry_run: bool = False,
 ):
-    if substrate == "k8s":
-        kill_cmd = "/charm/bin/pebble stop container-agent"
-    elif substrate == "machine":
-        kill_cmd = f"sudo systemctl stop jujud-machine-{unit.machine_id}.service"
-    else:
-        raise ValueError(
-            f"unknown substrate: {substrate}; don't know how to dethronize units here."
-        )
+    systemctl_cmd = f"sudo systemctl {'start' if apply else 'stop'} jujud-machine-{unit.machine_id}.service"
     _model = f" {model}" if model else ""
-    cmd = f"juju ssh{_model} {unit.unit_name} {kill_cmd}"
+    cmd = f"juju ssh{_model} {unit.unit_name} {systemctl_cmd}"
     logger.debug(f"stopping {unit} with {cmd}")
 
     if dry_run:
         print(f"would run: {cmd}")
         return
-    JPopen(shlex.split(cmd))
 
-
-def _start_jujud(
-    unit: Target,
-    model: Optional[str],
-    substrate: Literal["k8s", "machine"],
-    dry_run: bool = False,
-):
-    if substrate == "k8s":
-        start_cmd = "/charm/bin/pebble start container-agent"
-    elif substrate == "machine":
-        start_cmd = f"sudo systemctl start jujud-machine-{unit.machine_id}.service"
-    else:
-        raise ValueError(
-            f"unknown substrate: {substrate}; don't know how to dethronize units here."
-        )
-    _model = f" {model}" if model else ""
-    cmd = f"juju ssh{_model} {unit.unit_name} {start_cmd}"
-    logger.debug(f"starting {unit} with {cmd}")
-
-    if dry_run:
-        print(f"would run: {cmd}")
-        return
     JPopen(shlex.split(cmd))
 
 
@@ -133,6 +105,21 @@ def timeout(seconds, raise_=False):
         signal.alarm(0)
 
 
+JHACK_MOCK_SERVER_LOCAL_PATH = (
+    Path(__file__).parent / "mock_health_server" / "server.py"
+)
+assert JHACK_MOCK_SERVER_LOCAL_PATH.exists(), JHACK_MOCK_SERVER_LOCAL_PATH
+
+JHACK_MOCK_SERVER_REMOTE_PATH = "/jhack_mock_liveness_server.py"
+MOCK_SERVER_SERVICE_NAME = "jhack-mock-server"
+MOCK_SERVER_LAYER = f"""services:                                             
+    {MOCK_SERVER_SERVICE_NAME}:                                  
+        summary: Jhack's drop-in juju-agent replacement                 
+        startup: disabled                              
+        override: replace                             
+        command: python3 {JHACK_MOCK_SERVER_REMOTE_PATH}
+"""
+
 CHECKS_LAYER = """checks:
     liveness:
         override: replace
@@ -156,39 +143,78 @@ THRESH_LOW = 3
 LAYER_REMOTE_PATH = "/.jhack-layer-checks-tmp.yaml"
 
 
-def _set_checks_threshold(
-    unit: str, threshold: int, model: Optional[str] = None, dry_run: bool = False
+def _patch_k8s(
+    apply: bool,
+    unit: str,
+    model: Optional[str] = None,
+    dry_run: bool = False,
+    cleanup: bool = False,
 ):
-    logger.debug(f"setting liveness check threshold to {threshold}")
+    logger.info(("applying" if apply else "lifting") + f" pebble patch on {unit}")
+    threshold = THRESH_HIGH if apply else THRESH_LOW
+    logger.debug(f"setting pebble liveness check threshold to {threshold}")
+
+    if apply:
+        layer = MOCK_SERVER_LAYER + CHECKS_LAYER
+    else:
+        layer = CHECKS_LAYER
+
     push_string(
         unit,
-        CHECKS_LAYER.format(threshold=threshold),
+        layer.format(threshold=threshold),
         remote_path=LAYER_REMOTE_PATH,
         is_full_path=True,
         model=model,
         dry_run=dry_run,
     )
 
-    logger.debug("applying layer...")
-    JPopen(
-        shlex.split(
-            f"juju ssh {unit} /charm/bin/pebble add {'jhackdo' if threshold==THRESH_HIGH else 'jhackundo'} "
-            f"{LAYER_REMOTE_PATH}"
-        ),
-        wait=True,
+    if apply:
+        logger.debug("pushing mock server source...")
+        push_file(
+            unit,
+            JHACK_MOCK_SERVER_LOCAL_PATH,
+            JHACK_MOCK_SERVER_REMOTE_PATH,
+            is_full_path=True,
+            model=model,
+            dry_run=dry_run,
+        )
+
+    logger.debug(
+        f"adding layer and {'starting' if apply else 'killing'} mock server..."
     )
 
-    logger.debug("cleaning up layer file...")
-    rm_file(
-        unit,
-        remote_path=LAYER_REMOTE_PATH,
-        is_path_relative=False,
-        model=model,
-        dry_run=dry_run,
-    )
+    add_layer = f" /charm/bin/pebble add {'jhackdo' if threshold==THRESH_HIGH else 'jhackundo'} --combine {LAYER_REMOTE_PATH}"
+    # if applying patch: stop container-agent, start server
+    # if lifting patch: other way 'round
+    containeragent_cmd = f"juju ssh {unit} /charm/bin/pebble {'stop' if apply else 'start'} container-agent"
+    server_cmd = f"juju ssh {unit} /charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME}"
+    cmd = f'juju ssh {unit} "{add_layer} && {containeragent_cmd} && {server_cmd}"'
+    JPopen(shlex.split(cmd), wait=True)
+
+    if cleanup:
+        logger.debug("cleaning up layer file...")
+        rm_file(
+            unit,
+            remote_path=LAYER_REMOTE_PATH,
+            is_path_relative=False,
+            model=model,
+            dry_run=dry_run,
+        )
+        # if lifting the patch, we can also remove the server
+        if not apply:
+            logger.debug("cleaning up server file...")
+            rm_file(
+                unit,
+                remote_path=JHACK_MOCK_SERVER_REMOTE_PATH,
+                is_path_relative=False,
+                model=model,
+                dry_run=dry_run,
+            )
 
 
-def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = False):
+def _leader_set(
+    target: Target, model: Optional[str] = None, cleanup=True, dry_run: bool = False
+):
     substrate = get_substrate(model)
     units = get_units(target.app, model=model)
     if not units:
@@ -218,10 +244,9 @@ def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = Fal
     # lobotomize all units except the prospective leader
     for unit in murderable_units:
         if substrate == "k8s":
-            _set_checks_threshold(
-                unit=unit.unit_name, threshold=THRESH_HIGH, model=model, dry_run=dry_run
-            )
-        _stop_jujud(unit=unit, model=model, substrate=substrate, dry_run=dry_run)
+            _patch_k8s(True, unit=unit.unit_name, model=model, dry_run=dry_run)
+        else:
+            _patch_machine(True, unit=unit, model=model, dry_run=dry_run)
 
     # block until new leader is elected
     _wait_for_leader(target, dry_run=dry_run)
@@ -229,10 +254,15 @@ def _leader_set(target: Target, model: Optional[str] = None, dry_run: bool = Fal
     # then resurrect all units
     for unit in murderable_units:
         if substrate == "k8s":
-            _set_checks_threshold(
-                unit=unit.unit_name, threshold=THRESH_LOW, model=model, dry_run=dry_run
+            _patch_k8s(
+                False,
+                unit=unit.unit_name,
+                model=model,
+                dry_run=dry_run,
+                cleanup=cleanup,
             )
-        _start_jujud(unit=unit, model=model, substrate=substrate, dry_run=dry_run)
+        else:
+            _patch_machine(False, unit=unit, model=model, dry_run=dry_run)
 
     console = Console()
     console.print(
@@ -274,9 +304,24 @@ def leader_set(
     dry_run: bool = typer.Option(
         None, "--dry-run", help="Do nothing, print out what would have happened."
     ),
+    skip_cleanup: bool = typer.Option(
+        False,
+        is_flag=True,
+        help="Skip cleaning up all temporary files on the units for debugging purposes.",
+    ),
 ):
-    """Force a given unit to become leader by hacking Juju."""
-    _leader_set(target=Target.from_name(target), model=model, dry_run=dry_run)
+    """Force a given unit to become leader by hacking Juju.
+
+    Note that this will trigger a restart on every unit except the newly-elected one.
+    TODO: patch the k8s liveness probes to prevent this from happening
+      cfr https://github.com/kubernetes/kubernetes/pull/126844
+    """
+    _leader_set(
+        target=Target.from_name(target),
+        model=model,
+        dry_run=dry_run,
+        cleanup=not skip_cleanup,
+    )
 
 
 if __name__ == "__main__":
