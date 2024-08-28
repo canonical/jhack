@@ -5,7 +5,7 @@ import signal
 from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
-from typing import Literal, Optional
+from typing import Optional
 
 import typer
 from rich.align import Align
@@ -22,9 +22,9 @@ from jhack.helpers import (
     get_leader_unit,
     get_substrate,
     get_units,
+    push_file,
     push_string,
     rm_file,
-    push_file,
 )
 from jhack.logger import logger as jhack_logger
 

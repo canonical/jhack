@@ -1,6 +1,6 @@
 import os
 import time
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 PROBE = os.getenv("SERVER_PROBE")
 
