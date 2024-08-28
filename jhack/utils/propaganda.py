@@ -111,13 +111,25 @@ JHACK_MOCK_SERVER_LOCAL_PATH = (
 assert JHACK_MOCK_SERVER_LOCAL_PATH.exists(), JHACK_MOCK_SERVER_LOCAL_PATH
 
 JHACK_MOCK_SERVER_REMOTE_PATH = "/jhack_mock_liveness_server.py"
-MOCK_SERVER_SERVICE_NAME = "jhack-mock-server"
+MOCK_SERVER_SERVICE_NAME_PEBBLE = "jhack-mock-server-pebble"
+MOCK_SERVER_SERVICE_NAME_K8S = "jhack-mock-server-k8s"
 MOCK_SERVER_LAYER = f"""services:                                             
-    {MOCK_SERVER_SERVICE_NAME}:                                  
+    {MOCK_SERVER_SERVICE_NAME_PEBBLE}:                                  
         summary: Jhack's drop-in juju-agent replacement                 
         startup: disabled                              
         override: replace                             
         command: python3 {JHACK_MOCK_SERVER_REMOTE_PATH}
+        environment: 
+          SERVER_PROBE: "pebble"
+          SERVER_PORT: "65301"
+    {MOCK_SERVER_SERVICE_NAME_K8S}:                                  
+        summary: Jhack's drop-in juju-agent replacement                 
+        startup: disabled                              
+        override: replace                             
+        command: python3 {JHACK_MOCK_SERVER_REMOTE_PATH}
+        environment: 
+          SERVER_PROBE: "kubernetes"
+          SERVER_PORT: "38813"
 """
 
 CHECKS_LAYER = """checks:
@@ -183,13 +195,23 @@ def _patch_k8s(
         f"adding layer and {'starting' if apply else 'killing'} mock server..."
     )
 
-    add_layer = f" /charm/bin/pebble add {'jhackdo' if threshold==THRESH_HIGH else 'jhackundo'} --combine {LAYER_REMOTE_PATH}"
+    add_layer = f"/charm/bin/pebble add {'jhackdo' if threshold==THRESH_HIGH else 'jhackundo'} --combine {LAYER_REMOTE_PATH}"
     # if applying patch: stop container-agent, start server
     # if lifting patch: other way 'round
-    containeragent_cmd = f"juju ssh {unit} /charm/bin/pebble {'stop' if apply else 'start'} container-agent"
-    server_cmd = f"juju ssh {unit} /charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME}"
-    cmd = f'juju ssh {unit} "{add_layer} && {containeragent_cmd} && {server_cmd}"'
-    JPopen(shlex.split(cmd), wait=True)
+    containeragent_cmd = (
+        f"/charm/bin/pebble {'stop' if apply else 'start'} container-agent"
+    )
+    server_cmd_pebble = f"/charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME_PEBBLE}"
+    server_cmd_k8s = f"/charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME_K8S}"
+    cmd = [
+        "juju",
+        "ssh",
+        unit,
+        "bash",
+        "-c",
+        f'"{add_layer} && {containeragent_cmd} && {server_cmd_pebble} && {server_cmd_k8s}"',
+    ]
+    JPopen(cmd, wait=True)
 
     if cleanup:
         logger.debug("cleaning up layer file...")
