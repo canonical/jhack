@@ -164,6 +164,7 @@ def _patch_k8s(
 ):
     logger.info(("applying" if apply else "lifting") + f" pebble patch on {unit}")
     threshold = THRESH_HIGH if apply else THRESH_LOW
+    # todo: do we even need to set the liveness check threshold, now that we mock the servers?
     logger.debug(f"setting pebble liveness check threshold to {threshold}")
 
     if apply:
