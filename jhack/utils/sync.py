@@ -182,12 +182,13 @@ def _sync(
     if "*" in targets:
         targets = list(apps_status)
 
-    units = set()
+    units: typing.Set[str] = set()
     for target in targets:
         if "/" in target:  # unit name
             units.add(target)
         else:  # app name
-            units.update(_get_units(target, status))
+            unit_tgts = _get_units(target, status)
+            units.update(t.unit_name for t in unit_tgts)
 
     if not units:
         exit("No targets found.")
@@ -204,9 +205,11 @@ def _sync(
                 coros.append(
                     push_to_remote_juju_unit(
                         file,
-                        remote_root,
-                        unit,
-                        container_name,
+                        remote_root=remote_root,
+                        is_venv=False,
+                        remote_venv_root=remote_venv_root,
+                        unit=unit,
+                        container_name=container_name,
                         dry_run=dry_run,
                     )
                 )

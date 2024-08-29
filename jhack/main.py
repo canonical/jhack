@@ -59,6 +59,7 @@ def main():
     from jhack.utils.list_endpoints import list_endpoints
     from jhack.utils.nuke import nuke
     from jhack.utils.print_env import jhack_version, print_env
+    from jhack.utils.propaganda import leader_set
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event
@@ -84,6 +85,7 @@ def main():
     utils.command(name="unbork-juju")(devmode_only(unbork_juju))
     utils.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
     utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
+    utils.command(name="elect", no_args_is_help=True)(devmode_only(leader_set))
 
     charm = typer.Typer(name="charm", help="Charmcrafting utilities.")
     charm.command(name="update", no_args_is_help=True)(update)

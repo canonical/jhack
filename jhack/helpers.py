@@ -324,6 +324,31 @@ def _push_file_machine_cmd(
     return cmd
 
 
+def push_string(
+    unit: str,
+    text: str,
+    remote_path: str,
+    is_full_path: bool = False,
+    container: Optional[str] = None,
+    model: str = None,
+    dry_run: bool = False,
+    mkdir_remote: bool = False,
+):
+    with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
+        tf_path = Path(tf.name)
+        tf_path.write_text(text)
+        return push_file(
+            unit=unit,
+            local_path=tf_path,
+            remote_path=remote_path,
+            is_full_path=is_full_path,
+            container=container,
+            model=model,
+            dry_run=dry_run,
+            mkdir_remote=mkdir_remote,
+        )
+
+
 def push_file(
     unit: str,
     local_path: Path,
@@ -366,13 +391,25 @@ def push_file(
         raise RuntimeError(f"Failed to push {local_path} to {unit}.")
 
 
-def rm_file(unit: str, remote_path: str, model: str = None):
-    if remote_path.startswith("/"):
-        remote_path = remote_path[1:]
-    unit_sanitized = unit.replace("/", "-")
+def rm_file(
+    unit: str, remote_path: str, model: str = None, is_path_relative=True, dry_run=False
+):
+    if is_path_relative:
+        if remote_path.startswith("/"):
+            remote_path = remote_path[1:]
+        unit_sanitized = unit.replace("/", "-")
+        full_remote_path = (
+            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
+        )
+
+    else:
+        full_remote_path = remote_path
+
     model_arg = f" -m {model}" if model else ""
-    full_remote_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
     cmd = f"juju ssh{model_arg} {unit} rm {full_remote_path}"
+    if dry_run:
+        print(f"would run: {cmd}")
+        return
     try:
         check_output(shlex.split(cmd))
     except CalledProcessError as e:
@@ -470,6 +507,7 @@ class Target:
     app: str
     unit: int
     leader: bool = False
+    _machine_id: Optional[int] = None
 
     @staticmethod
     def from_name(name: str):
@@ -481,7 +519,7 @@ class Target:
         app, unit_ = name.split("/")
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
-        return Target(app, unit, leader=leader)
+        return Target(app, int(unit), leader=leader)
 
     @property
     def unit_name(self):
@@ -494,17 +532,29 @@ class Target:
     def __hash__(self):
         return hash((self.app, self.unit, self.leader))
 
+    @property
+    def machine_id(self) -> int:
+        if self._machine_id is None:
+            raise ValueError(
+                "machine-id not available. Either a k8s unit, or it wasn't obtained "
+                "at Target instantiation time."
+            )
+        return self._machine_id
+
 
 def get_all_units(model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
-    units = list(
+    return tuple(
         chain(*(_get_units(app, status) for app in status.get("applications", {})))
     )
-    return tuple(map(Target.from_name, units))
 
 
-def _get_units(app, status, predicate: Optional[Callable] = None):
+def _get_units(
+    app,
+    status,
+    predicate: Optional[Callable] = None,
+) -> Sequence[Target]:
     units = []
     principals = status["applications"][app].get("subordinate-to", False)
     if principals:
@@ -514,17 +564,32 @@ def _get_units(app, status, predicate: Optional[Callable] = None):
                 continue
 
             # if the principal is still being set up, it could have no 'units' yet.
-            machines = [
-                u["machine"]
-                for u in status["applications"][principal].get("units", {}).values()
-            ]
-            units.extend(f"{app}/{machine}" for machine in machines)
+            for unit_id, unit_meta in (
+                status["applications"][principal].get("units", {}).items()
+            ):
+                unit = int(unit_id.split("/")[1])
+                units.append(
+                    Target(
+                        app=app,
+                        unit=unit,
+                        _machine_id=unit_meta.get("machine"),
+                        leader=unit_meta.get("leader"),
+                    )
+                )
 
     else:
-        for k, meta in status["applications"][app]["units"].items():
-            if predicate and not predicate(meta):
+        for unit_id, unit_meta in status["applications"][app]["units"].items():
+            if predicate and not predicate(unit_meta):
                 continue
-            units.append(k)
+            unit = int(unit_id.split("/")[1])
+            units.append(
+                Target(
+                    app=app,
+                    unit=unit,
+                    _machine_id=unit_meta.get("machine"),
+                    leader=unit_meta.get("leader"),
+                )
+            )
     return units
 
 
@@ -532,14 +597,13 @@ def get_units(*apps, model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     if not apps:
         apps = status.get("applications", {}).keys()
-    units = list(chain(*(_get_units(app, status) for app in apps)))
-    return tuple(map(Target.from_name, units))
+    return list(chain(*(_get_units(app, status) for app in apps)))
 
 
-def get_leader_unit(app, model: str = None) -> Target:
+def get_leader_unit(app, model: str = None) -> Optional[Target]:
     status = juju_status(json=True, model=model)
     leaders = _get_units(app, status, predicate=lambda unit: unit.get("leader"))
-    return Target.from_name(leaders[0])
+    return leaders[0] if leaders else None
 
 
 def parse_target(target: str, model: str = None) -> List[Target]:
