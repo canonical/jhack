@@ -335,9 +335,14 @@ def leader_set(
 ):
     """Force a given unit to become leader by hacking Juju.
 
-    Note that this will trigger a restart on every unit except the newly-elected one.
-    TODO: patch the k8s liveness probes to prevent this from happening
-      cfr https://github.com/kubernetes/kubernetes/pull/126844
+    Note that this will emit a `stop` and a `start` event on every unit except the newly-elected one,
+    although the pod/container is **not actually being restarted**!!
+    To ignore these events, consider applying a partial ``jhack lobotomy``.
+    Might be related to: https://bugs.launchpad.net/juju/+bug/2075139
+
+    If you encounter a situation where the units come back up again without leadership change occurring,
+    please open an issue and ask Pietro to implement logic to keep killing the agents until
+    reelection occurs.
     """
     _leader_set(
         target=Target.from_name(target),
