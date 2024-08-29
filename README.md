@@ -977,3 +977,33 @@ You'll see a hierarchically organized sitrep output, something like:
       (block) sad
 ```
 
+# `elect`
+
+If you are writing an integration test, or working with your development cloud and Juju has somewhat decided that `myapp/7`
+should be the leader of your deployment, but you really, really disagree and want `myapp/2` to be in charge instead, 
+worry no longer! You now wield the power of advanced hackery and election manipulation: type
+
+> `jhack elect myapp/2`
+ 
+...and in no time (about a minute, to be precise), `myapp/7` shall be deposed and `myapp/2` elected in its place.
+What's going on is, Jhack is killing the container agents on all units except the one you want to elect, 
+waiting for reelection to occur, then restarting everything up. It's also patching the pebble plans on those units 
+to inject a tiny python server that happily replies "oh I'm so healthy!" to any pebble/kubernetes probe that comes 
+along, so nobody will  realize that the agent is down.
+
+## Known issues
+
+### Stopped units come back to life before reelection has occurred
+
+The solution to this might be to add logic to keep watching the units and keep them dead until reelection occurs. 
+Come talk to me if you witness this, I've seen it happen but have been unable to reproduce.
+
+### Units receive `stop` and `start` events
+
+First of all, don't worry too much: the pod/container should not be churning. Jhack is tricking both pebble and kubernetes 
+to think that everything is fine with the unit. However, we still have to find a way to trick the Juju controller. 
+Know how to do that? Get in touch! 
+
+Fact is, you can safely ignore those events as they are in fact spurious. Your unit isn't *really* being restarted. 
+Telling the charm to ignore those events though can be tricky: consider using a 
+partial `jhack lobotomy` (see above) for that!
