@@ -270,7 +270,7 @@ def sync(
         "--source",
         "-s",
         help="Local directories to watch for changes. "
-        "Semicolon-separated list of directories.",
+        "Repeat for each directory (e.g --source ./src --source .lib).",
     ),
     remote_root: str = typer.Option(
         None,
