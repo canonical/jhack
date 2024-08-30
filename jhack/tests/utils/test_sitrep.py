@@ -1,4 +1,4 @@
-from jhack.utils.get_status import _Status, _StatusTree
+from jhack.utils.sitrep import _Status, _StatusTree
 
 
 def test_tree_gen():

@@ -139,6 +139,21 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
         cmd += " --format json"
     proc = JPopen(cmd.split())
     raw = proc.stdout.read().decode("utf-8")
+
+    if not raw:
+        logger.error(f"{cmd} produced no output.")
+        if model:
+            logger.error(
+                f"This usually means that the model {model!r} you passed does not exist"
+            )
+        else:
+            logger.error(f"This usually means that the juju client isn't reachable")
+
+        if IS_SNAPPED:
+            logger.warning(f"double-check that the jhack:dot-local-share-juju plug is connected to snapd.")
+
+        exit("unable to fetch juju status")
+
     if json:
         return jsn.loads(raw)
     return raw
