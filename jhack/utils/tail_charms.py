@@ -78,7 +78,7 @@ def model_loglevel(model: str = None):
     return "WARNING"  # the default
 
 
-def parse_targets(targets: List[str] = None, model: str = None) -> Sequence[Target]:
+def parse_targets(targets: List[str] = None, model: str = None) -> Tuple[Target, ...]:
     if not targets:
         return get_all_units(model=model)
 
@@ -1392,12 +1392,12 @@ def _tail_events(
         add_new_targets = False
 
     # if we pass files, we don't grab targets from juju, we simply read them from the file
-    targets = (
+    parsed_targets: Tuple[Target, ...] = (
         parse_targets(targets, model=model)
         if not files
-        else [Target.from_name(n) for n in targets]
+        else tuple(Target.from_name(n) for n in targets)
     )
-    if not targets and not add_new_targets:
+    if not parsed_targets and not add_new_targets:
         sys.exit(
             "no targets passed and `add_new_targets`=False: you will not see much."
         )
@@ -1429,7 +1429,7 @@ def _tail_events(
 
     event_filter_pattern = re.compile(event_filter) if event_filter else None
     processor = Processor(
-        targets,
+        parsed_targets,
         add_new_targets,
         history_length=length,
         show_ns=show_ns,
