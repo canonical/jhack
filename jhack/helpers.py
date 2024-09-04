@@ -559,7 +559,7 @@ class Target:
         return self._machine_id
 
 
-def get_all_units(model: str = None) -> Sequence[Target]:
+def get_all_units(model: str = None) -> Tuple[Target, ...]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
     return tuple(
