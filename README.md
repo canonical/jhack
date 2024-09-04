@@ -633,11 +633,11 @@ application name to target with the refresh.
 
 `jhack charm repack --root /where/my/charm/root/is --name juju-app-name`
 
-## vinfo
-`vinfo` is a command to show in tabular format the full version fingerprint of a charmed unit
+## `charm-info` (previously called `vinfo`)
+`charm-info` is a command to show in tabular format the full version fingerprint of a charmed unit
 or application.
 
-`jhack vinfo my-app` will show (for example):
+`jhack charm-info my-app` will show (for example):
 
 ```commandline
                                vinfo v0.1
@@ -659,7 +659,7 @@ or application.
 
 
 To also check the charm lib versions against the latest available upstream:
-`jhack charm vinfo -o my-app`
+`jhack charm-info -o my-app`
 
 ```commandline
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓

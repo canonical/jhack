@@ -417,7 +417,7 @@ async def push_to_remote_juju_unit(
     if dry_run:
         return
 
-    print(f"synced {file} -> {unit}")
+    print(f"synced {file} -> {unit}:{remote_file_path}")
 
 
 if __name__ == "__main__":

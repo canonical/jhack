@@ -150,9 +150,11 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
             logger.error(f"This usually means that the juju client isn't reachable")
 
         if IS_SNAPPED:
-            logger.warning(f"double-check that the jhack:dot-local-share-juju plug is connected to snapd.")
+            logger.warning(
+                f"double-check that the jhack:dot-local-share-juju plug is connected to snapd."
+            )
 
-        exit("unable to fetch juju status")
+        exit("unable to fetch juju status (see logs)")
 
     if json:
         return jsn.loads(raw)

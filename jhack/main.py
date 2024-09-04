@@ -144,6 +144,7 @@ def main():
     app.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     app.command(name="charm-info", no_args_is_help=True)(vinfo)
+    app.command(name="vinfo", deprecated=True, no_args_is_help=True)(vinfo)
     app.command(name="eval", no_args_is_help=True)(devmode_only(charm_eval))
     app.command(name="script", no_args_is_help=True)(devmode_only(charm_script))
 
