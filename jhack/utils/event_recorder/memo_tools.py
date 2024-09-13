@@ -2,6 +2,7 @@
 import ast
 import typing
 from dataclasses import dataclass
+from operator import itemgetter
 from pathlib import Path
 from textwrap import dedent
 from typing import Dict, Literal, Optional, Tuple, Union
@@ -99,8 +100,7 @@ DECORATE_PEBBLE = {
 
 
 memo_import_block = dedent(
-    """# ==== block added by jhack.replay -- memotools ===
-try:
+    """try:
     from recorder import memo
 except ModuleNotFoundError as e:
     msg = "recorder not installed. " \
@@ -110,7 +110,6 @@ except ModuleNotFoundError as e:
           "recorder.py before loading this module. " \
           "Tread carefully."
     raise RuntimeError(msg) from e
-# ==== end block ===
 """
 )
 
@@ -129,6 +128,16 @@ def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpe
     """
 
     atok = asttokens.ASTTokens(source_file.read_text(), parse=True).tree
+    last_import_idx = 0
+    for last_import_idx, item in enumerate(atok.body):
+        if not isinstance(item, ast.ImportFrom):
+            # first non-import block
+            break
+
+    # insert the memo import after any other import statement
+    memo_atok = asttokens.ASTTokens(memo_import_block, parse=True).tree
+    while memo_atok.body:
+        atok.body.insert(last_import_idx + 1, memo_atok.body.pop())
 
     def _should_decorate_class(token: ast.AST):
         return isinstance(token, ast.ClassDef) and token.name in decorate
@@ -151,9 +160,7 @@ def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpe
                 )
                 method.decorator_list.append(spec_token)
 
-    unparsed_source = unparse(atok)
-    if "from recorder import memo" not in unparsed_source:
-        # only add the import if necessary:
-        unparsed_source = memo_import_block + unparsed_source
-
+    # horrible solution for a very weird issue nobody seems to care about
+    # https://github.com/simonpercivall/astunparse/issues/58
+    unparsed_source = unparse(atok).replace('""""', '" """')
     source_file.write_text(unparsed_source)

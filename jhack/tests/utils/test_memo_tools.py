@@ -2,10 +2,12 @@ import json
 import os
 import random
 import tempfile
+from ast import parse
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from astunparse import unparse
 
 from jhack.utils.event_recorder.memo_tools import (
     DecorateSpec,
@@ -49,9 +51,8 @@ class Foo:
         return str(random.random())
 """
 
-expected_decorated_source = f"""{memo_import_block}
-import random
-
+expected_decorated_source = f"""
+import random{unparse(parse(memo_import_block))}
 class _ModelBackend():
 
     def _private_method(self):
@@ -431,3 +432,33 @@ def test_memo_pebble_pull():
         os.environ[MEMO_MODE_KEY] = "replay"
 
         assert Foo().getfile(foo="helloworld") == "helloworld"
+
+
+raw_source_escaped_str = r"""
+boundary = b"foo"
+content_type = f"multipart/form-data; boundary=\"{boundary.decode('utf-8')}\""
+"""
+
+
+def test_escaped_str_rewrite():
+    # in ops.pebble.py we have:
+    with tempfile.NamedTemporaryFile() as source_file:
+        path = Path(source_file.name)
+        path.write_text(raw_source_escaped_str)
+        inject_memoizer(path, decorate={})
+        exec(path.read_text())
+
+
+raw_source_future_imports = r"""
+from __future__ import annotations
+a = 1
+"""
+
+
+def test_future_import_rewrite():
+    # in ops.pebble.py we have:
+    with tempfile.NamedTemporaryFile() as source_file:
+        path = Path(source_file.name)
+        path.write_text(raw_source_future_imports)
+        inject_memoizer(path, decorate={})
+        exec(path.read_text())
