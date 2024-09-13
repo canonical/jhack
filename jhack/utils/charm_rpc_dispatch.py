@@ -24,8 +24,9 @@ try:
     from ops.main import _get_charm_dir
 except ImportError:
     # ops >= 2.16
-    from ops.jujucontext import _JujuContext
     from functools import partial
+
+    from ops.jujucontext import _JujuContext
 
     ctx = _JujuContext.from_dict(os.environ)
     _Dispatcher = partial(_Dispatcher, juju_context=ctx)

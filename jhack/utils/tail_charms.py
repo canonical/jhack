@@ -1,5 +1,4 @@
 import enum
-import json
 import random
 import re
 import shlex
@@ -17,7 +16,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    Sequence,
     Tuple,
     Union,
     cast,
@@ -290,7 +288,7 @@ def _print_color_codes():
 
     id_color = _random_color()
     for deferral_status, explanation in (
-        ("deferred", "the event #13 has been deferred"),
+        ("deferred", "the 'some_event' event has been deferred and assigned number 13"),
         ("reemitted", "the event #13 has been reemitted"),
         ("bounced", "the event #13 has been reemitted and immediately re-deferred"),
     ):
@@ -1365,7 +1363,10 @@ def tail_events(
         False,
         "-n",
         "--show-defer-id",
-        help="Prefix deferred events with their deferral ID. "
+        help="Prefix deferred events with their deferral ID. This is an ID assigned to an event by the operator "
+        "framework when it is first deferred, so that, when it is reemitted (and possibly redeferred), "
+        "we can follow it and see whether the event being processed is 'the same event' that was originally "
+        "deferred or an identical one."
         "Only applicable if show_defer=True.",
     ),
     watch: bool = typer.Option(True, help="Keep listening.", is_flag=True),

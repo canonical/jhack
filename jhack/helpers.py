@@ -147,11 +147,11 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
                 f"This usually means that the model {model!r} you passed does not exist"
             )
         else:
-            logger.error(f"This usually means that the juju client isn't reachable")
+            logger.error("This usually means that the juju client isn't reachable")
 
         if IS_SNAPPED:
             logger.warning(
-                f"double-check that the jhack:dot-local-share-juju plug is connected to snapd."
+                "double-check that the jhack:dot-local-share-juju plug is connected to snapd."
             )
 
         exit("unable to fetch juju status (see logs)")
