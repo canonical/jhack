@@ -175,25 +175,45 @@ class RawTable:
         self.deferrals.insert(0, None)
 
 
-_event_colors = {
-    "update_status": Color.from_rgb(150, 150, 50),
-    "collect_metrics": Color.from_rgb(50, 50, 50),
-    "leader_elected": Color.from_rgb(26, 184, 68),
-    "leader_settings_changed": Color.from_rgb(26, 184, 68),
-    "_relation_created": Color.from_rgb(184, 26, 250),
-    "_relation_joined": Color.from_rgb(184, 26, 200),
-    "_relation_changed": Color.from_rgb(184, 26, 150),
-    "_relation_departed": Color.from_rgb(184, 70, 100),
-    "_relation_broken": Color.from_rgb(184, 80, 50),
-    "_storage_attached": Color.from_rgb(184, 139, 26),
-    "_storage_detaching": Color.from_rgb(184, 139, 26),
-    "_action": Color.from_rgb(200, 200, 50),
-    "stop": Color.from_rgb(184, 26, 71),
-    "remove": Color.from_rgb(171, 81, 21),
-    "start": Color.from_rgb(20, 147, 186),
-    "install": Color.from_rgb(49, 183, 224),
-    "_pebble_ready": Color.from_rgb(212, 224, 40),
+_event_colors_by_category = {
+    "lifecycle": {
+        "_action": Color.from_rgb(200, 200, 50),
+        "stop": Color.from_rgb(184, 26, 71),
+        "remove": Color.from_rgb(171, 81, 21),
+        "start": Color.from_rgb(20, 147, 186),
+        "install": Color.from_rgb(49, 183, 224),
+        "update_status": Color.from_rgb(150, 150, 50),
+        "collect_metrics": Color.from_rgb(50, 50, 50),
+        "leader_elected": Color.from_rgb(26, 184, 68),
+        "leader_settings_changed": Color.from_rgb(26, 184, 68),
+    },
+    "relation": {
+        "_relation_created": Color.from_rgb(184, 26, 250),
+        "_relation_joined": Color.from_rgb(184, 26, 230),
+        "_relation_changed": Color.from_rgb(184, 26, 210),
+        "_relation_departed": Color.from_rgb(184, 70, 190),
+        "_relation_broken": Color.from_rgb(184, 80, 170),
+    },
+    "secrets": {
+        "secret_changed": Color.from_rgb(10, 80, 240),
+        "secret_expired": Color.from_rgb(10, 100, 250),
+        "secret_remove": Color.from_rgb(10, 120, 230),
+        "secret_rotate": Color.from_rgb(10, 140, 220),
+    },
+    "storage": {
+        "_storage_attached": Color.from_rgb(184, 139, 26),
+        "_storage_detaching": Color.from_rgb(184, 139, 26),
+    },
+    "workload": {
+        "_pebble_ready": Color.from_rgb(212, 224, 40),
+        "_pebble_custom_notice": Color.from_rgb(212, 210, 40),
+        "_pebble_check_failed": Color.from_rgb(212, 200, 40),
+        "_pebble_check_recovered": Color.from_rgb(212, 190, 40),
+    },
 }
+_event_colors = {}
+for sublist in _event_colors_by_category.values():
+    _event_colors.update(sublist)
 
 _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
@@ -210,6 +230,64 @@ _deferral_colors = {
     "bounced": Color.from_rgb(252, 115, 3),
 }
 _trace_id_color = Color.from_rgb(100, 100, 210)
+
+
+def _print_color_codes():
+    console = Console(color_system="truecolor")
+    table = Table("category", "color", "description", expand=True)
+    for cat, example, color, desc in (
+        (
+            "origin",
+            "some_event",
+            _operator_event_color,
+            "operator event (cfr. the elusive [`OPERATOR_DISPATCH`](https://github.com/canonical/operator/blob/main/ops/_main.py#L319))",
+        ),
+        (
+            "",
+            "custom_event",
+            _custom_event_color,
+            "custom event emitted by the charm on itself",
+        ),
+        (
+            "",
+            f"foo-pebble-ready {_fire_symbol}",
+            _jhack_fire_event_color,
+            "event emitted by `jhack fire`",
+        ),
+        (
+            "",
+            f"install {_lobotomy_symbol}",
+            _jhack_lobotomy_event_color,
+            "event intercepted by `jhack lobotomy` (therefore, NOT emitted on the charm)",
+        ),
+        (
+            "",
+            f"foo-relation-broken {_replay_symbol}",
+            _jhack_replay_event_color,
+            "event emitted by `jhack replay`",
+        ),
+    ):
+        table.add_row(cat, Text(example, style=Style(color=color)), desc)
+    table.add_section()
+
+    for cat, evt_to_color in _event_colors_by_category.items():
+        for evt, color in evt_to_color.items():
+            event_name = "*" + evt if evt.startswith("_") else evt
+            table.add_row(
+                cat,
+                Text(event_name, style=Style(color=color)),
+                f"the '{event_name}' juju event",
+            )
+            cat = ""
+
+    table.add_section()
+    table.add_row(
+        "uncategorized",
+        Text("foo_bar_baz", style=Style(color=_default_event_color)),
+        "uncategorized event (unknown origin and type)",
+    )
+
+    console.print(table)
 
 
 def _random_color():
@@ -1321,11 +1399,23 @@ def tail_events(
         "previously was. Allows for more accurate event traces. You can enabled it by default in "
         "jhack conf.",
     ),
+    print_color_codes: bool = typer.Option(
+        False,
+        "--print-color-codes",
+        is_flag=True,
+        help="Print the color codes used by jhack tail and exit.",
+    ),
 ):
     """Pretty-print a table with the events that are being fired on juju units
     in the current model.
-    Examples: jhack tail mongo-k8s/2  ||  jhack tail -d
+    Examples: jhack tail -d mongo-k8s/2
+
+    To display an explanation of the color codes used by jhack, run with the --print-color-codes flag.
     """
+    if print_color_codes:
+        _print_color_codes()
+        return
+
     return _tail_events(
         targets=target,
         add_new_targets=add_new_targets,
@@ -1567,5 +1657,6 @@ def debump_loglevel(previous: str):
 
 
 if __name__ == "__main__":
-    logger.setLevel("DEBUG")
-    _tail_events(length=30, replay=True)
+    # logger.setLevel("DEBUG")
+    # _tail_events(length=30, replay=True)
+    _print_color_codes()
