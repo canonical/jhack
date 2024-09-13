@@ -201,11 +201,11 @@ And did I mention that there's **colors**?
 ### Event color coding
 Events will be color-coded using a two-tier criterion:
 - **origin**: framework events, custom events, jhack-fire-emitted events, skipped-by-jhack-lobotomy events, and in general all **non-juju** events will receive a color based on their origin (and sometimes a fancy icon too)
-  - $\color{rgb(252, 115, 3)}{operator event} (cfr. the elusive [`OPERATOR_DISPATCH`](https://github.com/canonical/operator/blob/main/ops/_main.py#L319))
-  - $\color{rgb(120, 150, 240)}{custom event emitted by the charm on itself}
-  - $\color{rgb(250, 200, 50)}{event emitted by `jhack fire`}
-  - $\color{rgb(150, 210, 110)}{event intercepted by `jhack lobotomy`} (therefore, NOT emitted on the charm)
-  - $\color{rgb(100, 100, 150)}{event emitted by `jhack replay`}
+  - <span style="color: rgb(252, 115, 3)>operator event</span> (cfr. the elusive [`OPERATOR_DISPATCH`](https://github.com/canonical/operator/blob/main/ops/_main.py#L319))
+  - <span style="color: rgb(120, 150, 240)>custom event emitted by the charm on itself</span>
+  - <span style="color: rgb(250, 200, 50)>event emitted by `jhack fire`</span>
+  - <span style="color: rgb(150, 210, 110)>event intercepted by `jhack lobotomy`</span> (therefore, NOT emitted on the charm)
+  - <span style="color: rgb(100, 100, 150)>event emitted by `jhack replay`</span>
   
 - **category**: all 'regular' juju events will receive a color based on their category: a (rather arbitrary) classification system based on [the official one](https://juju.is/docs/sdk/list-of-events).
 
