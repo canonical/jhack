@@ -286,6 +286,25 @@ def _print_color_codes():
         Text("foo_bar_baz", style=Style(color=_default_event_color)),
         "uncategorized event (unknown origin and type)",
     )
+    table.add_section()
+
+    id_color = _random_color()
+    for deferral_status, explanation in (
+        ("deferred", "the event #13 has been deferred"),
+        ("reemitted", "the event #13 has been reemitted"),
+        ("bounced", "the event #13 has been reemitted and immediately re-deferred"),
+    ):
+        table.add_row(
+            deferral_status,
+            Text("13 ", style=Style(color=id_color))
+            + Text("some_event", style=Style(color=_jhack_fire_event_color))
+            + "  "
+            + Text(
+                _deferral_status_to_symbol[deferral_status],
+                style=Style(color=_deferral_colors[deferral_status]),
+            ),
+            explanation,
+        )
 
     console.print(table)
 
