@@ -11,15 +11,25 @@ from typing import Any, Dict, Optional, Type
 
 import ops
 import ops.storage
+from ops.jujuversion import JujuVersion
 from ops.main import (
     CHARM_STATE_FILE,
     CharmMeta,
-    JujuVersion,
     _Dispatcher,
-    _get_charm_dir,
     _should_use_controller_storage,
     setup_root_logging,
 )
+
+try:
+    from ops.main import _get_charm_dir
+except ImportError:
+    # ops >= 2.16
+    from ops.jujucontext import _JujuContext
+    from functools import partial
+
+    ctx = _JujuContext.from_dict(os.environ)
+    _Dispatcher = partial(_Dispatcher, juju_context=ctx)
+    _get_charm_dir = lambda: ctx.charm_dir
 
 
 def _decode(expr: str) -> str:

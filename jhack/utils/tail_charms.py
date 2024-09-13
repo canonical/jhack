@@ -192,7 +192,7 @@ _event_colors = {
     "remove": Color.from_rgb(171, 81, 21),
     "start": Color.from_rgb(20, 147, 186),
     "install": Color.from_rgb(49, 183, 224),
-    "-pebble-ready": Color.from_rgb(212, 224, 40),
+    "_pebble_ready": Color.from_rgb(212, 224, 40),
 }
 
 _default_event_color = Color.from_rgb(255, 255, 255)
@@ -399,6 +399,8 @@ _deferral_status_to_symbol = {
 
 
 def _get_event_color(event: str, msg: Optional[EventLogMsg]) -> Color:
+    """Color-code the events as they are displayed to make reading them easier."""
+    # If we have a log message to start from, use any relevant tags to determine what type of event it is
     if msg:
         event = msg.event
         if "custom" in msg.tags:
@@ -414,6 +416,8 @@ def _get_event_color(event: str, msg: Optional[EventLogMsg]) -> Color:
                 return _jhack_lobotomy_event_color
             return _jhack_event_color
 
+    # if we are coloring an event without tags,
+    # use the event-specific color coding.
     if event in _event_colors:
         return _event_colors.get(event, _default_event_color)
     else:
