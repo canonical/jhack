@@ -79,6 +79,45 @@ class SvcLogTable(Table):
         return super().__rich_console__(console, options)
 
 
+class JujuLogTable(Table):
+    def __init__(self, target: Target, *args, **kwargs) -> None:
+        super().__init__(
+            *args,
+            **kwargs,
+            show_header=False,
+            title=_jdl_pane_name(target, styled=True),
+        )
+        self.target = target
+
+    def clear(self):
+        # reinitialize
+        self.rows = []
+        self.columns = []
+
+    def update(self, max_height: int):
+        # 1 for the title, 2 for the frame edges
+        available_lines = max_height
+        cmd = rf"juju debug-log --include {self.target.unit_name} | tail -n {available_lines}"
+
+        try:
+            out = subprocess.getoutput(cmd)
+        except CalledProcessError:
+            logger.exception()
+            exit(f"error executing {cmd}")
+
+        self.clear()
+
+        if not out:
+            self.add_row("<no logs>")
+
+        for line in out.splitlines():
+            self.add_row(line)
+
+    def __rich_console__(self, console: "Console", options: "ConsoleOptions"):
+        self.update(options.max_height)
+        return super().__rich_console__(console, options)
+
+
 def _pebble(target: Target, *, command: str, container: str = "charm"):
     """Run a pebble command on a unit."""
     container_var = (
@@ -154,9 +193,17 @@ def get_services(target: Target, container: str) -> Tuple[_Service, ...]:
 
 
 def _pane_name(container: str, service: Union[str, _Service], styled=False):
+    sname = getattr(service, "name", service)
     if styled:
-        return f"[b red]{container}[/][dim]::[/][b cyan]{getattr(service,'name', service)}[/]"
-    return f"{container}::{getattr(service,'name', service)}"
+        return f"[b red]{container}[/][dim]::[/][b cyan]{sname}[/]"
+    return f"{container}::{sname}"
+
+
+def _jdl_pane_name(target: Union[str, Target], styled=False):
+    tname = getattr(target, "unit_name", target)
+    if styled:
+        return f"[b red]juju-logs[/][dim]::[/][b cyan]{tname}[/]"
+    return f"juju-logs::{tname}"
 
 
 class Header:
@@ -204,8 +251,9 @@ class Footer:
         return Panel(tree)
 
 
-def make_pebble_layout(target: Target, include_containers: Optional[List[str]]):
-    main = Layout(name="main")
+def make_pebble_layout(
+    target: Target, include_containers: Optional[List[str]], show_tree: bool = True
+):
     containers_to_services = {
         container: get_services(target, container)
         for container in get_container_names(target)
@@ -235,70 +283,79 @@ def make_pebble_layout(target: Target, include_containers: Optional[List[str]]):
             container_layout.split_column(*service_layouts)
             container_layouts.append(container_layout)
 
-    main.split_column(*container_layouts)
+    if not show_tree:
+        main = Layout(name="pebble-main")
+        main.split_column(*container_layouts)
+        return main
+
+    services = Layout(name="services")
+    services.split_column(*container_layouts)
 
     footer = Footer(containers_to_services)
     footer_layout = Layout(footer, size=footer.size + 3, name="footer")
-    return main, footer_layout
+    main = Layout(name="pebble-main")
+    main.split_column(services, footer_layout)
+    return main
 
 
 def make_juju_log_layout(target: Target):
-    svc_pane = SvcLogTable(
+    svc_pane = JujuLogTable(
         target=target,
         border_style="blue",
         expand=True,
     )
-    main = Layout(svc_pane, name="main")
+    main = Layout(svc_pane, name="jdl-main")
     return main
 
 
 def make_layout(
     target: Target,
-    show_tree: bool = True,
-    juju_logs: bool = True,
-    pebble_logs: bool = True,
+    include: str,
     include_containers: Optional[List[str]] = None,
 ) -> Layout:
     """Define the layout."""
 
-    layout = Layout(name="root")
+    show_tree = "t" in include
+    juju_logs = "j" in include
+    pebble_logs = "p" in include
 
-    pebble_layout, pebble_footer = None, None
-    if pebble_logs:
-        pebble_layout, pebble_footer = make_pebble_layout(target, include_containers)
-
-    layout.split(
+    root = Layout(name="root")
+    header = Layout(Header(target), name="header", size=3)
+    body = Layout(name="body")
+    body.split_row(
         *filter(
             None,
-            (
-                Layout(Header(target), name="header", size=3),
-                pebble_layout,
-                pebble_footer
-                # root node, and top and bottom panel edges
-            ),
+            [
+                (make_juju_log_layout(target) if juju_logs else None),
+                (
+                    make_pebble_layout(target, include_containers, show_tree=show_tree)
+                    if pebble_logs
+                    else None
+                ),
+            ],
         )
     )
-
-    return layout
+    root.split_column(header, body)
+    return root
 
 
 def _tail_logs(
     target: str,
     refresh_rate: float = DEFAULT_REFRESH_RATE,
-    show_tree: bool = True,
-    juju_logs: bool = True,
-    pebble_logs: bool = True,
     include_containers: Optional[List[str]] = None,
+    include: str = "jpt",
 ):
+
     layout = make_layout(
-        Target.from_name(target),
-        pebble_logs=pebble_logs,
-        include_containers=include_containers,
-        juju_logs=juju_logs,
-        show_tree=show_tree,
+        Target.from_name(target), include_containers=include_containers, include=include
     )
 
-    with Live(layout, refresh_per_second=refresh_rate, screen=True) as live:
+    with Live(
+        layout,
+        refresh_per_second=refresh_rate,
+        screen=True,
+        vertical_overflow="visible",
+    ) as live:
         try:
             while True:
                 time.sleep(100)
@@ -313,14 +370,14 @@ def tail_logs(
     refresh_rate: float = typer.Option(
         DEFAULT_REFRESH_RATE, help="Refreshes per second (goal)."
     ),
-    juju_logs: bool = typer.Option(
-        True,
-        "-j",
-        "--include-juju-logs",
-        help="Include the juju debug-log output for the target.",
-    ),
-    pebble_logs: bool = typer.Option(
-        True, "-p", "--include-pebble-logs", help="Include the pebble service logs."
+    include: str = typer.Option(
+        "jpt",
+        "-i",
+        "--include",
+        help="Log streams to include."
+        "``j``: Include the juju debug-log output for the target. \n"
+        "``t``: Print a summary of the pebble services status for all containers. \n"
+        "``p``: Include the pebble service logs from all containers. \n",
     ),
     include_container: List[str] = typer.Option(
         None,
@@ -328,18 +385,11 @@ def tail_logs(
         help="Only tail from this container "
         "(only works in conjunction with pebble_logs).",
     ),
-    hide_tree=typer.Option(
-        False,
-        is_flag=True,
-        help="Hide the container/services overview tree shown in the footer.",
-    ),
 ):
     return _tail_logs(
         target=target,
         refresh_rate=refresh_rate,
-        show_tree=not hide_tree,
-        juju_logs=juju_logs,
-        pebble_logs=pebble_logs,
+        include=include,
         include_containers=include_container,
     )
 
