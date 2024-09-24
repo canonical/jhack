@@ -1024,3 +1024,18 @@ Know how to do that? Get in touch!
 Fact is, you can safely ignore those events as they are in fact spurious. Your unit isn't *really* being restarted. 
 Telling the charm to ignore those events though can be tricky: consider using a 
 partial `jhack lobotomy` (see above) for that!
+
+# `debug-log`
+
+`jhack debug-log` is a command meant to unify hard-to-get log streams in a handy overview.
+Run `jhack debug-log myapp/0` and you will see a split view containing:
+- a pre-filtered `juju debug-log` only containing logs pertaining to the target unit
+- for each sidecar container:
+  - for each pebble service defined in the container:
+    - the logs for that service.
+- a handy tree-like overview of all the containers/services and their status
+
+You can change the panels shown by default to only keep those that you want using the `-i`/`--include` flag.
+
+You can enter **focus mode** (only show logs for specified containers or pebble services) by running:
+`jhack debug-log myapp/0 -f mycontainer:myservice.

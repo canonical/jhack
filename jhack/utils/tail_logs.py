@@ -428,8 +428,14 @@ def _tail_logs(
     focus: Optional[List[str]] = None,
     include: str = "jpt",
 ):
+    target_unit = Target.from_name(target)
+    if target_unit.unit is None:
+        exit(
+            "this command only works on units (for now), "
+            "please pass a full unit name such as `myapp/1`."
+        )
 
-    layout = make_layout(Target.from_name(target), focus=focus, include=include)
+    layout = make_layout(target_unit, focus=focus, include=include)
 
     with Live(
         layout,
