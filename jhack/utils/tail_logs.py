@@ -272,7 +272,7 @@ def _parse_sources(sources: Optional[Sequence[str]]):
                 f"overlapping constraints ({val})"
             )
             _sources[key] = [None]
-    return _sources
+    return dict(_sources)
 
 
 def _collect_log_sources(target: Target, focus: Dict[str, List[str]]):
@@ -322,9 +322,9 @@ def _collect_log_sources(target: Target, focus: Dict[str, List[str]]):
                 keep[container] = tuple(new_sources)
 
     if not keep:
-        exit(
-            f"no containers found on {target.unit_name} given focus constraints ({focus!r})"
-        )
+        focus_repr = ", ".join(f"{k}:{v}" for k, v in focus.items())
+        with_focus = f" given focus constraints ({focus_repr!r})" if focus else ""
+        exit(f"no containers found on {target.unit_name}{with_focus}")
 
     return keep
 
@@ -336,7 +336,6 @@ def make_pebble_layout(
 
     container_layouts = []
     for container, services in containers_to_services.items():
-
         container_layout = Layout(name=container)
         service_layouts = (
             Layout(
