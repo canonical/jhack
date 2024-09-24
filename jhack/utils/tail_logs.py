@@ -336,22 +336,22 @@ def make_pebble_layout(
 
     container_layouts = []
     for container, services in containers_to_services.items():
-        service_layouts = []
-        for service in services:
-            svc_pane = SvcLogTable(
-                service=service.name,
-                container=container,
-                target=target,
-                border_style="green",
-                expand=True,
-            )
-            service_layouts.append(
-                *(
-                    Layout(svc_pane, name=_pane_name(container, service), ratio=1)
-                    for service in services
-                )
-            )
+
         container_layout = Layout(name=container)
+        service_layouts = (
+            Layout(
+                SvcLogTable(
+                    service=service.name,
+                    container=container,
+                    target=target,
+                    border_style="green",
+                    expand=True,
+                ),
+                name=_pane_name(container, service),
+                ratio=1,
+            )
+            for service in services
+        )
         container_layout.split_column(*service_layouts)
         container_layouts.append(container_layout)
 
