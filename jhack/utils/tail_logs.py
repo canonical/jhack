@@ -3,23 +3,19 @@ import shlex
 import subprocess
 import time
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from subprocess import CalledProcessError
 from tempfile import NamedTemporaryFile
-from time import sleep
-from typing import Tuple, Iterable, Dict, Union, List, Sequence, Optional
+from typing import Tuple, Dict, Union, List, Sequence, Optional
 from xml.etree.ElementInclude import include
 
 import typer
 import yaml
-from rich.abc import RichRenderable
+from black.trans import defaultdict
 from rich.console import ConsoleOptions, Console
-from rich.layout import Layout, RenderMap
+from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
-from rich.pretty import Pretty
-from rich.style import Style
 from rich.table import Table
 
 from jhack.helpers import Target, fetch_file
@@ -188,7 +184,6 @@ class _Service:
 
 def get_services(target: Target, container: str) -> Tuple[_Service, ...]:
     out = _pebble(target, container=container, command="services")
-
     return tuple(_Service.from_pebble_output(line) for line in out.splitlines()[1:])
 
 
@@ -207,18 +202,26 @@ def _jdl_pane_name(target: Union[str, Target], styled=False):
 
 
 class Header:
-    def __init__(self, target: Target):
+    def __init__(self, target: Target, focus: Optional[List[str]] = False):
         self.target = target
+        self.focus = focus
 
     def __rich__(self) -> Panel:
         grid = Table.grid(expand=True)
         grid.add_column(justify="center", ratio=1)
         grid.add_column(justify="right")
+        mode, focus_spec = "", ""
+        if self.focus:
+            mode = " (focus mode)"
+            # escape bracket or rich will take it as a tag
+            focus_spec = "\[{}]".format("|".join(self.focus))
+
         grid.add_row(
-            "[b]jhack [purple]debug-log[/purple][/b] v0.1",
-            f"[bold orange]{self.target.unit_name}[/]",
+            "[b]jhack [purple]debug-log[/purple][/b] v0.1" + mode,
+            f"[bold]{self.target.unit_name}[/][dim]{focus_spec}[/]",
         )
-        return Panel(grid, style="white on blue")
+        grid.style = "white on blue"
+        return grid
 
 
 class Footer:
@@ -251,37 +254,106 @@ class Footer:
         return Panel(tree)
 
 
-def make_pebble_layout(
-    target: Target, include_containers: Optional[List[str]], show_tree: bool = True
-):
-    containers_to_services = {
+def _parse_sources(sources: Optional[Sequence[str]]):
+    # parse the user-defined sources
+
+    _sources = defaultdict(list)
+    for source in sources or ():
+        if ":" in source:
+            container, service = source.split(":")
+            _sources[container].append(service)
+        else:
+            _sources[source].append(None)
+
+    for key, val in _sources.items():
+        if len(val) > 1 and None in val:
+            logger.error(
+                f"inconsistent focus definition: {key} has multiple "
+                f"overlapping constraints ({val})"
+            )
+            _sources[key] = [None]
+    return _sources
+
+
+def _collect_log_sources(target: Target, focus: Dict[str, List[str]]):
+    found = {
         container: get_services(target, container)
         for container in get_container_names(target)
     }
-    if not containers_to_services:
-        exit(f"no containers found on {target.unit_name}")
+
+    if not focus:
+        # keep them all
+        keep = found
+    else:
+        keep = {}
+
+        for container, services in focus.items():
+            if container not in found:
+                logger.error(
+                    f"focused container {container!r} not found in {target.unit_name!r}"
+                )
+                continue
+
+            if None in services:
+                keep[container] = found[container]
+                continue  # keep them all
+
+            else:
+                found_services = {s.name: s for s in found.get(container, ())}
+                if not found_services:
+                    continue
+
+                new_sources = []
+                for service_name in focus[container]:
+                    if service_name not in found_services:
+                        logger.error(
+                            f"focused service name {service_name!r} not found in container {container!r}"
+                        )
+                    else:
+                        new_sources.append(found_services[service_name])
+
+                if not new_sources:
+                    logger.error(
+                        f"no valid services identified for container {container!r}; "
+                        f"requested services {focus[container]!r} could not be found."
+                    )
+                    continue
+
+                keep[container] = tuple(new_sources)
+
+    if not keep:
+        exit(
+            f"no containers found on {target.unit_name} given focus constraints ({focus!r})"
+        )
+
+    return keep
+
+
+def make_pebble_layout(
+    target: Target, focus: Optional[List[str]], show_tree: bool = True
+):
+    containers_to_services = _collect_log_sources(target, focus=_parse_sources(focus))
 
     container_layouts = []
     for container, services in containers_to_services.items():
-        if (not include_containers) or (container in include_containers):
-            service_layouts = []
-            for service in services:
-                svc_pane = SvcLogTable(
-                    service=service.name,
-                    container=container,
-                    target=target,
-                    border_style="green",
-                    expand=True,
+        service_layouts = []
+        for service in services:
+            svc_pane = SvcLogTable(
+                service=service.name,
+                container=container,
+                target=target,
+                border_style="green",
+                expand=True,
+            )
+            service_layouts.append(
+                *(
+                    Layout(svc_pane, name=_pane_name(container, service), ratio=1)
+                    for service in services
                 )
-                service_layouts.append(
-                    *(
-                        Layout(svc_pane, name=_pane_name(container, service), ratio=1)
-                        for service in services
-                    )
-                )
-            container_layout = Layout(name=container)
-            container_layout.split_column(*service_layouts)
-            container_layouts.append(container_layout)
+            )
+        container_layout = Layout(name=container)
+        container_layout.split_column(*service_layouts)
+        container_layouts.append(container_layout)
 
     if not show_tree:
         main = Layout(name="pebble-main")
@@ -311,30 +383,41 @@ def make_juju_log_layout(target: Target):
 def make_layout(
     target: Target,
     include: str,
-    include_containers: Optional[List[str]] = None,
+    focus: Optional[List[str]] = None,
 ) -> Layout:
     """Define the layout."""
 
-    show_tree = "t" in include
-    juju_logs = "j" in include
-    pebble_logs = "p" in include
+    includes = {letter: True for letter in include}
+
+    show_tree = includes.pop("t", False)
+    juju_logs = includes.pop("j", False)
+    pebble_logs = includes.pop("p", False)
+    if includes:
+        logger.error(f"unknown `include` directive: {''.join(includes)}")
+
+    if not any((show_tree, juju_logs, pebble_logs)):
+        exit("nothing to show")
 
     root = Layout(name="root")
-    header = Layout(Header(target), name="header", size=3)
+    header = Layout(Header(target, focus=focus), name="header", size=3)
     body = Layout(name="body")
-    body.split_row(
-        *filter(
-            None,
-            [
-                (make_juju_log_layout(target) if juju_logs else None),
-                (
-                    make_pebble_layout(target, include_containers, show_tree=show_tree)
-                    if pebble_logs
-                    else None
-                ),
-            ],
+    if focus:
+        body.update(make_pebble_layout(target, focus, show_tree=show_tree))
+
+    else:
+        body.split_row(
+            *filter(
+                None,
+                [
+                    (make_juju_log_layout(target) if juju_logs else None),
+                    (
+                        make_pebble_layout(target, focus, show_tree=show_tree)
+                        if (pebble_logs or focus or show_tree)
+                        else None
+                    ),
+                ],
+            )
         )
-    )
     root.split_column(header, body)
     return root
 
@@ -342,13 +425,11 @@ def make_layout(
 def _tail_logs(
     target: str,
     refresh_rate: float = DEFAULT_REFRESH_RATE,
-    include_containers: Optional[List[str]] = None,
+    focus: Optional[List[str]] = None,
     include: str = "jpt",
 ):
 
-    layout = make_layout(
-        Target.from_name(target), include_containers=include_containers, include=include
-    )
+    layout = make_layout(Target.from_name(target), focus=focus, include=include)
 
     with Live(
         layout,
@@ -379,18 +460,20 @@ def tail_logs(
         "``t``: Print a summary of the pebble services status for all containers. \n"
         "``p``: Include the pebble service logs from all containers. \n",
     ),
-    include_container: List[str] = typer.Option(
+    focus: List[str] = typer.Option(
         None,
-        "--include-container",
-        help="Only tail from this container "
-        "(only works in conjunction with pebble_logs).",
+        "-f",
+        "--focus",
+        help="Only tail from this source(s). Overrules the `include` directive. "
+        "Accepts either a container name (logs from all services in that container) or a "
+        "`container:service` argument.",
     ),
 ):
     return _tail_logs(
         target=target,
         refresh_rate=refresh_rate,
         include=include,
-        include_containers=include_container,
+        focus=focus,
     )
 
 
