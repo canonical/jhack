@@ -7,6 +7,7 @@ from pathlib import Path
 
 import typer
 
+
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
 sys.path.append(str(Path(os.path.realpath(__file__)).parent.parent))
@@ -57,6 +58,7 @@ def main():
     from jhack.utils.ffwd import fast_forward
     from jhack.utils.just_deploy_this import just_deploy_this
     from jhack.utils.list_endpoints import list_endpoints
+    from jhack.utils.tail_logs import tail_logs
     from jhack.utils.nuke import nuke
     from jhack.utils.print_env import jhack_version, print_env
     from jhack.utils.propaganda import leader_set
@@ -146,6 +148,7 @@ def main():
     app.command(name="charm-info", no_args_is_help=True)(vinfo)
     app.command(name="vinfo", deprecated=True, no_args_is_help=True)(vinfo)
     app.command(name="eval", no_args_is_help=True)(devmode_only(charm_eval))
+    app.command(name="debug-log", no_args_is_help=True)(tail_logs)
     app.command(name="script", no_args_is_help=True)(devmode_only(charm_script))
 
     conf = typer.Typer(
