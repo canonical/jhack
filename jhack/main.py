@@ -70,6 +70,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.utils.remote_debug import remote_debug
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
@@ -83,6 +84,7 @@ def main():
     utils.command(name="record", no_args_is_help=True)(record)
     utils.command(name="ffwd")(fast_forward)
     utils.command(name="print-env")(print_env)
+    utils.command(name="remote-debug", no_args_is_help=True)(remote_debug)
 
     utils.command(name="unbork-juju")(devmode_only(unbork_juju))
     utils.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
