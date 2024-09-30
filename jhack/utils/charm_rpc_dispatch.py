@@ -11,14 +11,23 @@ from typing import Any, Dict, Optional, Type
 
 import ops
 import ops.storage
-from ops.jujuversion import JujuVersion
-from ops.main import (
-    CHARM_STATE_FILE,
-    CharmMeta,
-    _Dispatcher,
-    _should_use_controller_storage,
-    setup_root_logging,
-)
+
+try:
+    from ops.jujuversion import JujuVersion
+    from ops.main import (
+        CHARM_STATE_FILE,
+        CharmMeta,
+        _Dispatcher,
+        _should_use_controller_storage,
+        setup_root_logging,
+    )
+except (ImportError, ModuleNotFoundError):
+    # ops >= 2.17
+    from ops.charm import CharmMeta
+    from ops._main import _should_use_controller_storage
+    from ops.jujuversion import JujuVersion
+    from ops.log import setup_root_logging
+    from ops.main import CHARM_STATE_FILE, _Dispatcher
 
 try:
     from ops.main import _get_charm_dir

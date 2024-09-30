@@ -405,7 +405,14 @@ def push_file(
     retcode = proc.returncode
     if retcode != 0:
         logger.error(f"{cmd} errored with code {retcode}: ")
-        raise RuntimeError(f"Failed to push {local_path} to {unit}.")
+        raise RuntimeError(
+            f"Failed to push {local_path} to {unit} with {cmd!r}."
+            + (
+                " (verify that the path is readable by the jhack snap)"
+                if IS_SNAPPED
+                else ""
+            )
+        )
 
 
 def rm_file(
