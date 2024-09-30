@@ -19,7 +19,7 @@ def fast_forward(
         "when ffwd terminates. Examples: 5m, 10m, 2h, 20s.",
     ),
 ):
-    """Utility to speed up update-status hook intervals."""
+    """Temporarily speed up update-status hook interval."""
     cmd = JPopen(
         f"juju model-config update-status-hook-interval={fast_interval}s".split(" ")
     )

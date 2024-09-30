@@ -68,7 +68,13 @@ def watch(
     def _check_changed(file) -> bool:
         logger.debug(f"checking {file}")
         if old_tstamp := hashes.get(file, None):
-            new_tstamp = os.path.getmtime(file)
+            try:
+                new_tstamp = os.path.getmtime(file)
+            except FileNotFoundError:
+                logger.error(
+                    f"skipping sync for {file}: cannot stat (file does not exist)"
+                )
+                return False
             if new_tstamp == old_tstamp:
                 logger.debug(f"timestamp unchanged {old_tstamp}")
                 return False

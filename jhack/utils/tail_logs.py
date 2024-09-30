@@ -474,6 +474,7 @@ def tail_logs(
         "`container:service` argument.",
     ),
 ):
+    """Unify several log streams in a unified dashboard."""
     return _tail_logs(
         target=target,
         refresh_rate=refresh_rate,

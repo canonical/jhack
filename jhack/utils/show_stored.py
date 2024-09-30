@@ -68,13 +68,16 @@ class Store(ABC):
         self._path = path
 
     @abstractmethod
-    def list_snapshots(self) -> Iterable[str]: ...
+    def list_snapshots(self) -> Iterable[str]:
+        ...
 
     @abstractmethod
-    def load_snapshot(self, handle: str) -> Any: ...
+    def load_snapshot(self, handle: str) -> Any:
+        ...
 
     @abstractmethod
-    def close(self) -> None: ...
+    def close(self) -> None:
+        ...
 
 
 class SQLiteStore(Store):
@@ -477,6 +480,7 @@ def show_stored(
         None, "-m", "--model", help="Which model to apply the command to."
     ),
 ):
+    """Visualize the stored state attached to a Juju unit."""
     return _show_stored(
         target=target,
         filter_re=filter_,
