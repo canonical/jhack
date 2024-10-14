@@ -70,6 +70,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity
+    from jhack.utils.kill import kill
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
@@ -142,6 +143,7 @@ def main():
     app.command(name="test-devmode")(devmode_only(_test_devmode))
     app.command(name="sync")(devmode_only(sync_deployed_charm))
     app.command(name="nuke")(devmode_only(nuke))
+    app.command(name="kill")(devmode_only(kill))
     app.command(name="deploy")(devmode_only(just_deploy_this))
     app.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
