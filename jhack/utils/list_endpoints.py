@@ -1,12 +1,21 @@
 from functools import partial
-from typing import Optional, Sequence
+from typing import Dict, Optional, Sequence
 
 import typer
+from rich.color import Color
 from rich.console import Console
+from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import ColorOption, LibInfo, get_libinfo, juju_version
+from jhack.helpers import (
+    ColorOption,
+    EndpointInfo,
+    LibInfo,
+    get_epinfo,
+    get_libinfo,
+    juju_version,
+)
 from jhack.logger import logger as jhack_logger
 from jhack.utils.helpers.gather_endpoints import (
     AppEndpoints,
@@ -46,10 +55,26 @@ def _normalize(name: str):
     return name.lower().replace("-", "_")
 
 
+def _description(
+    epinfo: Dict[str, Dict[str, EndpointInfo]], role: str, endpoint_name: str
+):
+    endpoint_info = epinfo.get(role, {}).get(endpoint_name, None)
+    if endpoint_info:
+        return endpoint_info.description
+    return "<none given>"
+
+
 def _render(
-    endpoints: AppEndpoints, libinfo: Optional[Sequence[LibInfo]], app: str
+    endpoints: AppEndpoints,
+    libinfo: Optional[Sequence[LibInfo]],
+    epinfo: Optional[Dict[str, Dict[str, EndpointInfo]]],
+    app: str,
 ) -> Table:
-    table = Table(title="endpoints v0.1", expand=True)
+    table = Table(
+        title="endpoints v0.1",
+        expand=True,
+        row_styles=[Style(bgcolor=Color.from_rgb(*[40] * 3)), ""],
+    )
     table.add_column(header="role")
     table.add_column(header="endpoint")
 
@@ -66,6 +91,9 @@ def _render(
     support_bound_to = True
     if support_bound_to:
         table.add_column(header="bound to")
+
+    if epinfo:
+        table.add_column(header="description")
 
     for role, color in zip(("requires", "provides"), ("green", "blue")):
         first = True
@@ -118,10 +146,15 @@ def _render(
                     [endpoint_name, owner_tag + Text(interface_name, style="default")]
                     + ([_supported_versions(implementations)] if libinfo else [])
                     + remote_info
+                    + ([_description(epinfo, role, endpoint_name)] if epinfo else [])
                 ),
             )
             first = False
 
+        if not first:
+            table.add_section()
+
+    table.add_section()
     if endpoints["peers"]:
         binding: PeerBinding
         first = True
@@ -132,8 +165,8 @@ def _render(
                     binding.provider_endpoint,
                     binding.interface,
                 ]
-                + (["n/a"] if libinfo else [])
-                + (["<itself>"] if support_bound_to else [])
+                + ([Text("n/a", style="orange")] if libinfo else [])
+                + ([Text("<itself>", style="yellow")] if support_bound_to else [])
             )
             table.add_row(*row)
 
@@ -147,7 +180,14 @@ def _list_endpoints(
     model: Optional[str] = None,
     color: str = "auto",
     show_versions: bool = False,
+    show_descriptions: bool = False,
 ):
+    if "/" in app:
+        logger.warning(
+            f"list-endpoints only works on applications. Pass an app name instead of {app}."
+        )
+        app = app.split("/")[0]
+
     all_endpoints = gather_endpoints(model, (app,), include_peers=True)
     endpoints = all_endpoints.get(app)
     if not endpoints:
@@ -155,9 +195,10 @@ def _list_endpoints(
         exit(1)
 
     libinfo = get_libinfo(app, model) if show_versions else ()
+    epinfo = get_epinfo(app, model) if show_descriptions else ()
 
     c = Console(color_system=color)
-    c.print(_render(endpoints, libinfo, app))
+    c.print(_render(endpoints, libinfo, epinfo, app))
 
 
 def list_endpoints(
@@ -169,14 +210,27 @@ def list_endpoints(
         is_flag=True,
         help="Show supported interface versions.",
     ),
+    show_descriptions: bool = typer.Option(
+        False,
+        "-d",
+        "--show-descriptions",
+        is_flag=True,
+        help="Show endpoint descriptions as defined in the charmcraft yaml.",
+    ),
     model: str = typer.Option(
         None, "--model", "-m", help="Model in which to apply this command."
     ),
     color: Optional[str] = ColorOption,
 ):
     """Display the available integration endpoints."""
-    _list_endpoints(app=app, model=model, show_versions=show_versions, color=color)
+    _list_endpoints(
+        app=app,
+        model=model,
+        show_versions=show_versions,
+        show_descriptions=show_descriptions,
+        color=color,
+    )
 
 
 if __name__ == "__main__":
-    _list_endpoints("kafka", show_versions=True)
+    _list_endpoints("tempo", show_versions=True, show_descriptions=True)

@@ -1,18 +1,16 @@
 import shlex
-import shlex
 import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import CalledProcessError
 from tempfile import NamedTemporaryFile
-from typing import Tuple, Dict, Union, List, Sequence, Optional
-from xml.etree.ElementInclude import include
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import typer
 import yaml
 from black.trans import defaultdict
-from rich.console import ConsoleOptions, Console
+from rich.console import Console, ConsoleOptions
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel

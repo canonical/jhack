@@ -9,17 +9,7 @@ from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 from subprocess import getoutput, run
-from typing import (
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
 import typer
 from rich.align import Align
