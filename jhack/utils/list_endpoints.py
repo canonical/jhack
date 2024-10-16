@@ -1,5 +1,7 @@
+import sys
+from calendar import TextCalendar
 from functools import partial
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, List
 
 import typer
 from rich.color import Color
@@ -37,8 +39,11 @@ def _implements(interface_name, lib: LibInfo):
 
 def _supported_versions(implementations: Sequence[LibInfo]):
     if not implementations:
-        return "<library not found>"
-    return "|".join(f"{lib.version}.{lib.revision}" for lib in implementations)
+        return Text("<library not found>", style="dim red")
+    return Text("|").join(
+        Text(f"{lib.version}.{lib.revision}", style="bold cyan")
+        for lib in implementations
+    )
 
 
 def _implementations(
@@ -55,13 +60,33 @@ def _normalize(name: str):
     return name.lower().replace("-", "_")
 
 
-def _description(
-    epinfo: Dict[str, Dict[str, EndpointInfo]], role: str, endpoint_name: str
-):
-    endpoint_info = epinfo.get(role, {}).get(endpoint_name, None)
+def _description(endpoint_info: Optional[EndpointInfo], role: str, endpoint_name: str):
     if endpoint_info:
         return endpoint_info.description
     return "<none given>"
+
+
+_required_and_bound = Text("yes", style="bold green")
+_required_and_unbound = Text("yes", style="bold red")
+_not_required = Text("no", style="dim")
+_unknown = Text("<unknown>", style="orange")
+
+_UNSUPPORTED_JUJU_BOUND = "<unsupported>"
+# marker for a situation where due to a juju bug we can't fetch the remotes
+
+
+def _check_bound_required(epinfo: EndpointInfo, remotes: List[str]):
+    if not epinfo:
+        return _unknown
+    if epinfo.required:
+        if remotes == [_UNSUPPORTED_JUJU_BOUND]:
+            return _unknown
+        if remotes:
+            return _required_and_bound
+        else:
+            return _required_and_unbound
+    else:
+        return _not_required
 
 
 def _render(
@@ -69,6 +94,7 @@ def _render(
     libinfo: Optional[Sequence[LibInfo]],
     epinfo: Optional[Dict[str, Dict[str, EndpointInfo]]],
     app: str,
+    extra_fields: List[str],
 ) -> Table:
     table = Table(
         title="endpoints v0.1",
@@ -78,50 +104,39 @@ def _render(
     table.add_column(header="role")
     table.add_column(header="endpoint")
 
-    table.add_column(header="owner:interface" if libinfo else "interface")
-
-    if libinfo:
+    if "r" in extra_fields:
+        table.add_column(header="required")
+    if "i" in extra_fields:
+        table.add_column(header="owner:interface" if libinfo else "interface")
+    if "v" in extra_fields:
         table.add_column(header="version")
 
-    jujuversion = juju_version()
-
-    # FIXME: regression in juju 3.2
-    #   https://bugs.launchpad.net/juju/+bug/2029113
+    # Possible regression in juju 3.2 https://bugs.launchpad.net/juju/+bug/2029113
     # support_bound_to = jujuversion.version[:2] != (3, 2)
     support_bound_to = True
-    if support_bound_to:
+    if support_bound_to and "b" in extra_fields:
         table.add_column(header="bound to")
 
-    if epinfo:
+    if "d" in extra_fields:
         table.add_column(header="description")
 
     for role, color in zip(("requires", "provides"), ("green", "blue")):
         first = True
         for endpoint_name, (interface_name, remotes) in endpoints[role].items():
-            if support_bound_to:
-                if remotes:
-                    try:
-                        remote_info = [
-                            ", ".join(
-                                remote["related-application"] for remote in remotes
-                            )
-                        ]
-                    except Exception:
-                        logger.error(
-                            f"unable to get related-applications from remotes: {remotes}."
-                            f"This should be possible in juju {jujuversion.version}."
-                        )
-                        remote_info = ["<data unavailable>"]
-                        support_bound_to = False
-
-                else:
-                    remote_info = ["-"]
+            if remotes:
+                try:
+                    remote_info = [
+                        ", ".join(remote["related-application"] for remote in remotes)
+                    ]
+                except Exception:
+                    logger.error(
+                        f"unable to get related-applications from remotes: {remotes}."
+                        f"This should be possible in juju {juju_version().version}."
+                    )
+                    remote_info = [_UNSUPPORTED_JUJU_BOUND]
 
             else:
                 remote_info = []
-
-            if remotes:
-                logger.info("remotes not supported in this juju version")
 
             implementations = _implementations(libinfo, interface_name)
 
@@ -140,13 +155,35 @@ def _render(
             else:
                 owner_tag = Text("")
 
+            endpoint_info = (
+                epinfo.get(role, {}).get(endpoint_name, None) if epinfo else None
+            )
+
             table.add_row(
                 Text(role, style="bold " + color) if first else None,
                 *(
-                    [endpoint_name, owner_tag + Text(interface_name, style="default")]
-                    + ([_supported_versions(implementations)] if libinfo else [])
-                    + remote_info
-                    + ([_description(epinfo, role, endpoint_name)] if epinfo else [])
+                    [endpoint_name]
+                    + (
+                        [_check_bound_required(endpoint_info, remote_info)]
+                        if "r" in extra_fields
+                        else []
+                    )
+                    + (
+                        [owner_tag + Text(interface_name, style="default")]
+                        if "i" in extra_fields
+                        else []
+                    )
+                    + (
+                        [_supported_versions(implementations)]
+                        if "v" in extra_fields
+                        else []
+                    )
+                    + (remote_info or ["-"] if "b" in extra_fields else [])
+                    + (
+                        [_description(endpoint_info, role, endpoint_name)]
+                        if "d" in extra_fields
+                        else []
+                    )
                 ),
             )
             first = False
@@ -159,14 +196,25 @@ def _render(
         binding: PeerBinding
         first = True
         for binding in endpoints["peers"]:
+            endpoint_info = (
+                epinfo.get("peers", {}).get(binding.provider_endpoint, None)
+                if epinfo
+                else None
+            )
+
             row = (
                 [
                     Text("peers", style="bold yellow") if first else None,
                     binding.provider_endpoint,
-                    binding.interface,
                 ]
+                + ([Text("n/a", style="dim")] if "r" in extra_fields else [])
+                + ([binding.interface] if "i" in extra_fields else [])
                 + ([Text("n/a", style="orange")] if libinfo else [])
-                + ([Text("<itself>", style="yellow")] if support_bound_to else [])
+                + (
+                    [Text("<itself>", style="yellow")]
+                    if (support_bound_to and "b" in extra_fields)
+                    else []
+                )
             )
             table.add_row(*row)
 
@@ -179,8 +227,7 @@ def _list_endpoints(
     app: str,
     model: Optional[str] = None,
     color: str = "auto",
-    show_versions: bool = False,
-    show_descriptions: bool = False,
+    extra_fields: List[str] = None,
 ):
     if "/" in app:
         logger.warning(
@@ -194,11 +241,14 @@ def _list_endpoints(
         logger.error(f"app {app!r} not found in model {model or '<the current model>'}")
         exit(1)
 
-    libinfo = get_libinfo(app, model) if show_versions else ()
-    epinfo = get_epinfo(app, model) if show_descriptions else ()
+    extra_fields = extra_fields or []
+    libinfo = get_libinfo(app, model) if "v" in extra_fields else ()
+    epinfo = (
+        get_epinfo(app, model) if ("d" in extra_fields or "r" in extra_fields) else ()
+    )
 
     c = Console(color_system=color)
-    c.print(_render(endpoints, libinfo, epinfo, app))
+    c.print(_render(endpoints, libinfo, epinfo, app, extra_fields))
 
 
 def list_endpoints(
@@ -209,6 +259,27 @@ def list_endpoints(
         "--show-versions",
         is_flag=True,
         help="Show supported interface versions.",
+    ),
+    show_bindings: bool = typer.Option(
+        False,
+        "-b",
+        "--show-bindings",
+        is_flag=True,
+        help="Show active remote binds (names of remote apps that this endpoint has active relations to).",
+    ),
+    show_interfaces: bool = typer.Option(
+        False,
+        "-i",
+        "--show-interfaces",
+        is_flag=True,
+        help="Show the interface advertised by each endpoint.",
+    ),
+    show_required: bool = typer.Option(
+        False,
+        "-r",
+        "--show-required",
+        is_flag=True,
+        help="Show the whether the relation is required.",
     ),
     show_descriptions: bool = typer.Option(
         False,
@@ -223,14 +294,26 @@ def list_endpoints(
     color: Optional[str] = ColorOption,
 ):
     """Display the available integration endpoints."""
+
+    extra_fields = []
+    if show_versions:
+        extra_fields.append("v")
+    if show_bindings:
+        extra_fields.append("b")
+    if show_interfaces:
+        extra_fields.append("i")
+    if show_required:
+        extra_fields.append("r")
+    if show_descriptions:
+        extra_fields.append("d")
+
     _list_endpoints(
         app=app,
         model=model,
-        show_versions=show_versions,
-        show_descriptions=show_descriptions,
+        extra_fields=extra_fields,
         color=color,
     )
 
 
 if __name__ == "__main__":
-    _list_endpoints("tempo", show_versions=True, show_descriptions=True)
+    _list_endpoints("tempo", extra_fields=list("vbird"))

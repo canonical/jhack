@@ -453,7 +453,7 @@ def fetch_file(
 
 
 LibInfo = namedtuple("LibInfo", "owner, version, lib_name, revision")
-EndpointInfo = namedtuple("Endpoint", "description")
+EndpointInfo = namedtuple("Endpoint", ("description", "required"))
 
 JujuVersion = namedtuple("JujuVersion", ("version", "build"))
 
@@ -517,7 +517,10 @@ def get_epinfo(app_or_unit: str, model: str) -> Dict[str, Dict[str, EndpointInfo
     out = {}
     for role in ("provides", "requires", "peers"):
         out[role] = {
-            ep_name: EndpointInfo(ep_meta.get("description", ""))
+            ep_name: EndpointInfo(
+                ep_meta.get("description", ""),
+                ep_meta.get("required", not ep_meta.get("optional", True)),
+            )
             for ep_name, ep_meta in meta.get(role, {}).items()
         }
     return out
@@ -534,13 +537,8 @@ def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
         logger.error(f"app {app} has no units: cannot fetch endpoint info")
         return []
 
-    if get_substrate(model) == "k8s":
-        cwd = "."
-    else:
-        cwd = "/var/lib/juju"
-
     cmd = (
-        f"juju ssh {unit} find {cwd}{charm_root_path(unit)}/lib "
+        f"juju ssh {unit} find {charm_root_path(unit)}/lib "
         "-type f "
         '-iname "*.py" '
         r'-exec grep "LIBPATCH" {} \+'
