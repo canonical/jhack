@@ -23,8 +23,8 @@ try:
     )
 except (ImportError, ModuleNotFoundError):
     # ops >= 2.17
-    from ops.charm import CharmMeta
     from ops._main import _should_use_controller_storage
+    from ops.charm import CharmMeta
     from ops.jujuversion import JujuVersion
     from ops.log import setup_root_logging
     from ops.main import CHARM_STATE_FILE, _Dispatcher

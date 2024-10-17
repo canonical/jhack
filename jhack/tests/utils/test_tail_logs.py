@@ -1,9 +1,9 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from jhack.helpers import Target
-from jhack.utils.tail_logs import _collect_log_sources, _Service, _parse_sources
+from jhack.utils.tail_logs import _collect_log_sources, _parse_sources, _Service
 
 
 @pytest.mark.parametrize(

@@ -2,7 +2,6 @@
 import ast
 import typing
 from dataclasses import dataclass
-from operator import itemgetter
 from pathlib import Path
 from textwrap import dedent
 from typing import Dict, Literal, Optional, Tuple, Union

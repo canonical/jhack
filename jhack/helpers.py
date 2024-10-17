@@ -12,9 +12,10 @@ from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
-from typing import Callable, List, Literal, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import typer
+import yaml
 
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
@@ -289,10 +290,7 @@ def _push_file_k8s_cmd(
         # todo: should we strip the initial / in some cases?
         full_remote_path = remote_path
     else:
-        unit_sanitized = unit.replace("/", "-")
-        full_remote_path = (
-            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
-        )
+        full_remote_path = charm_root_path(unit) / remote_path
 
     cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
     if mkdir_remote:
@@ -316,12 +314,10 @@ def _push_file_machine_cmd(
     model_arg = f" -m {model}" if model else ""
 
     if is_full_path:
+        # todo: should we strip the initial / in some cases?
         full_remote_path = remote_path
     else:
-        unit_sanitized = unit.replace("/", "-")
-        full_remote_path = (
-            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
-        )
+        full_remote_path = charm_root_path(unit) / remote_path
 
     # FIXME:
     #  run this before, and `juju scp` will work.
@@ -421,11 +417,7 @@ def rm_file(
     if is_path_relative:
         if remote_path.startswith("/"):
             remote_path = remote_path[1:]
-        unit_sanitized = unit.replace("/", "-")
-        full_remote_path = (
-            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
-        )
-
+        full_remote_path = charm_root_path(unit) / remote_path
     else:
         full_remote_path = remote_path
 
@@ -437,32 +429,31 @@ def rm_file(
     try:
         check_output(shlex.split(cmd))
     except CalledProcessError as e:
-        raise RuntimeError(
-            f"Failed to remove {full_remote_path} from {unit_sanitized}."
-        ) from e
+        raise RuntimeError(f"Failed to remove {full_remote_path} from {unit}.") from e
 
 
 def fetch_file(
-    unit: str, remote_path: str, local_path: Path = None, model: str = None
+    unit: str,
+    remote_path: Union[Path, str],
+    local_path: Optional[Union[Path, str]] = None,
+    model: str = None,
 ) -> Optional[str]:
-    unit_sanitized = unit.replace("/", "-")
     model_arg = f" -m {model}" if model else ""
-    cmd = (
-        f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}"
-        f"/charm/{remote_path} || true"
-    )
+    charm_path = charm_root_path(unit) / remote_path
+    cmd = f"juju ssh{model_arg} {unit} cat {charm_path} || true"
 
     raw = check_output(cmd.split())
     if b"No such file or directory" in raw:
-        raise RuntimeError(f"Failed to fetch {remote_path} from {unit_sanitized}.")
+        raise RuntimeError(f"Failed to fetch {charm_path} from {unit}.")
 
     if not local_path:
         return raw.decode("utf-8")
 
-    local_path.write_bytes(raw)
+    Path(local_path).write_bytes(raw)
 
 
 LibInfo = namedtuple("LibInfo", "owner, version, lib_name, revision")
+EndpointInfo = namedtuple("Endpoint", ("description", "required"))
 
 JujuVersion = namedtuple("JujuVersion", ("version", "build"))
 
@@ -477,6 +468,11 @@ def juju_version() -> JujuVersion:
     return JujuVersion(tuple(map(int, v.split("."))), tag)
 
 
+def charm_root_path(unit_name: str) -> Path:
+    """Get the root path of the charm in a juju unit."""
+    return Path(f"/var/lib/juju/agents/unit-{unit_name.replace('/', '-')}/charm/")
+
+
 def get_local_libinfo(path: Path) -> List[LibInfo]:
     """Get libinfo from local charm project."""
 
@@ -484,20 +480,65 @@ def get_local_libinfo(path: Path) -> List[LibInfo]:
     return _exec_and_parse_libinfo(cmd)
 
 
+def pull_metadata(unit: str, model: str):
+    """Get metadata.yaml from this target."""
+    logger.info("fetching metadata...")
+
+    meta_path = "metadata.yaml"
+    charmcraft_path = "charmcraft.yaml"
+    with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
+        try:
+            fetch_file(unit, meta_path, tf.name, model=model)
+        except RuntimeError:
+            try:
+                fetch_file(unit, charmcraft_path, tf.name, model=model)
+            except RuntimeError as e:
+                raise RuntimeError(
+                    f"cannot find charmcraft nor metadata in {unit}"
+                ) from e
+
+        return yaml.safe_load(Path(tf.name).read_text())
+
+
+def get_epinfo(app_or_unit: str, model: str) -> Dict[str, Dict[str, EndpointInfo]]:
+    # returns a mapping from role to endpoint name to endpoint info
+    if "/" in app_or_unit:
+        unit = app_or_unit
+    else:
+        app = app_or_unit
+        status = cached_juju_status(app, model=model, json=True)
+        try:
+            unit = next(iter(status["applications"][app]["units"]))
+        except StopIteration:
+            logger.error(f"app {app} has no units: cannot fetch endpoint info")
+            return {}
+
+    meta = pull_metadata(unit, model)
+    out = {}
+    for role in ("provides", "requires", "peers"):
+        out[role] = {
+            ep_name: EndpointInfo(
+                ep_meta.get("description", ""),
+                ep_meta.get("required", not ep_meta.get("optional", True)),
+            )
+            for ep_name, ep_meta in meta.get(role, {}).items()
+        }
+    return out
+
+
 def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
     if machine:
         raise NotImplementedError("machine libinfo not implemented yet.")
 
     status = cached_juju_status(app, model=model, json=True)
-    unit_name = status["applications"][app.split("/")[0]]["units"].popitem()[0]
-
-    if get_substrate(model) == "k8s":
-        cwd = "."
-    else:
-        cwd = "/var/lib/juju"
+    try:
+        unit = next(iter(status["applications"][app]["units"]))
+    except StopIteration:
+        logger.error(f"app {app} has no units: cannot fetch endpoint info")
+        return []
 
     cmd = (
-        f"juju ssh {unit_name} find {cwd}/agents/unit-{unit_name.replace('/', '-')}/charm/lib "
+        f"juju ssh {unit} find {charm_root_path(unit)}/lib "
         "-type f "
         '-iname "*.py" '
         r'-exec grep "LIBPATCH" {} \+'
@@ -551,7 +592,7 @@ class Target:
 
     @property
     def charm_root_path(self):
-        return Path(f"/var/lib/juju/agents/unit-{self.app}-{self.unit}/charm")
+        return charm_root_path(self.unit_name)
 
     def __hash__(self):
         return hash((self.app, self.unit, self.leader))
