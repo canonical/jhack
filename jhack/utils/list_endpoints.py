@@ -97,7 +97,7 @@ def _render(
     extra_fields: List[str],
 ) -> Table:
     table = Table(
-        title="endpoints v0.1",
+        title="endpoints v0.2",
         expand=True,
         row_styles=[Style(bgcolor=Color.from_rgb(*[40] * 3)), ""],
     )
