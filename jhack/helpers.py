@@ -526,6 +526,10 @@ def _exec_and_parse_libinfo(cmd: str):
     return libinfo
 
 
+class InvalidUnitNameError(RuntimeError):
+    """Unit name is invalid."""
+
+
 @dataclass
 class Target:
     app: str
@@ -535,14 +539,21 @@ class Target:
 
     @staticmethod
     def from_name(name: str):
-        if "/" not in name:
-            logger.warning(
+        try:
+            app, unit_ = name.split("/")
+        except ValueError:
+            raise InvalidUnitNameError(
                 "invalid target name: expected `<app_name>/<unit_id>`; "
                 f"got {name!r}."
             )
-        app, unit_ = name.split("/")
+
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
+        if not unit or not unit.isdigit():
+            raise InvalidUnitNameError(
+                "invalid target name: expected `<app_name:str>/<unit_id:int>`; "
+                f"got {name!r}."
+            )
         return Target(app, int(unit), leader=leader)
 
     @property

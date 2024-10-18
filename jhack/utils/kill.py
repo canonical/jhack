@@ -2,6 +2,7 @@ import json
 import shlex
 import subprocess
 from collections import namedtuple
+from json import JSONDecodeError
 from subprocess import getoutput, check_call, CalledProcessError, check_output
 from typing import Optional, List, NamedTuple
 
@@ -15,6 +16,7 @@ from jhack.helpers import (
     RichSupportedColorOptions,
     JPopen,
     check_command_available,
+    InvalidUnitNameError,
 )
 from jhack.logger import logger as jhack_logger
 
@@ -31,15 +33,26 @@ def _get_running_hook(
     if dry_run:
         print("would attempt to get the currently running hook name with:", cmd)
         return "<some-event>"
+    try:
+        out = json.loads(getoutput(cmd))
+    except JSONDecodeError:
+        logger.debug(f"{cmd} didn't yield valid JSON, probably the unit doesn't exist.")
+        exit(
+            f"Failure retrieving running hook for {target.unit_name}; does the unit exist?"
+        )
 
-    out = json.loads(getoutput(cmd))
-    execs = [a for a in out if a["status"] == "executing"]
-    if not execs:
-        return None
-    last_exec = execs[-1]["message"]
-    parts = last_exec.split()
+    juju_unit_changes = [e for e in out if e["type"] == "juju-unit"]
+    # ignore workload-set statuses
+    last_change = juju_unit_changes[-1]
+    if not last_change["status"] == "executing":
+        logger.error(
+            "charm doesn't appear to be executing anything ATM; we'll try anyway."
+        )
+        return "<whatever>"
+
+    parts = last_change["message"].split()
     if not len(parts) == 3:
-        logger.debug(f"executing hook set an unexpected message: {last_exec!r}")
+        logger.debug(f"executing hook set an unexpected message: {last_change!r}")
         return None
     return parts[1]
 
@@ -111,9 +124,10 @@ class _ProcInfo(NamedTuple):
 def _get_running_process_info(
     target: Target,
     model: Optional[str] = None,
+    command_name: str = "./src/charm.py",
     dry_run: bool = False,
 ) -> List[_ProcInfo]:
-    cmd = _eval_cmd(target, model, "ps -aux | grep ./src/charm.py | grep -v grep")
+    cmd = _eval_cmd(target, model, f"ps -aux | grep {command_name} | grep -v grep")
     if dry_run:
         print("would run:", cmd)
         return [
@@ -129,6 +143,15 @@ def _get_running_process_info(
     except CalledProcessError:
         logger.exception(f"failed to run ps -aux on {target.unit_name}")
         exit(1)
+
+    if out.startswith("ERROR"):
+        ps_aux = getoutput(_eval_cmd(target, model, "ps -aux"))
+        logger.error(f"no charm process found in")
+        print(ps_aux)
+        exit(
+            f"cannot retrieve charm process on {target.unit_name}. Is the charm really executing?"
+        )
+
     return [_ProcInfo.parse(line) for line in out.splitlines()]
 
 
@@ -138,9 +161,11 @@ def _kill_running_process(
     model: Optional[str],
     dry_run: bool = False,
     host: bool = False,
-    exit_code: int = 0,
+    exit_code: int = 0,  # type: ignore
 ):
-    kill_cmd = f"gdb --batch --eval-command 'call exit({exit_code})' --pid {pid}"
+    # FIXME would be cool if this worked, but we get an odd error.
+    # kill_cmd = f"gdb --batch --eval-command 'call exit({exit_code})' --pid {pid}"
+    kill_cmd = f"kill -9 {pid}"
 
     if host:
         cmd = kill_cmd
@@ -149,7 +174,7 @@ def _kill_running_process(
         cmd = _eval_cmd(
             target,
             model,
-            f"gdb --batch --eval-command 'call exit({exit_code})' --pid {pid}",
+            kill_cmd,
         )
 
     if dry_run:
@@ -161,11 +186,16 @@ def _kill_running_process(
     else:
         print("Sniping charm process...")
 
-    try:
-        check_output(shlex.split(cmd))
-    except CalledProcessError:
-        logger.exception(f"failed to kill charm process with {cmd!r}")
-        exit("could not terminate charm process")
+    if host:
+        print("jhack doesn't have super cow powers (yet)")
+        print(f"run this as sudo to terminate the charm process: \nsudo {kill_cmd}")
+        exit(0)
+    else:
+        try:
+            check_output(shlex.split(cmd))
+        except CalledProcessError:
+            logger.exception(f"failed to kill charm process with {cmd!r}")
+            exit("could not terminate charm process")
 
 
 def _get_host_pid(container_proc_info: _ProcInfo, dry_run: bool = False) -> int:
@@ -202,12 +232,18 @@ def _kill(
     model: Optional[str] = None,
     dry_run: bool = False,
     host_kill: bool = False,
-    exit_code: int = 0,
+    exit_code: int = 1,
+    command_name: str = "./src/charm.py",
 ):
     if not dry_run:
         check_destructive_commands_allowed("kill", "juju ssh")
+    try:
+        target = Target.from_name(target)
+    except InvalidUnitNameError:
+        exit(
+            f"This command only works on units. Please pass a unit name, not {target!r}"
+        )
 
-    target = Target.from_name(target)
     running_hook = _get_running_hook(target, model=model, dry_run=dry_run)
     if not running_hook and not dry_run:
         logger.error(
@@ -221,7 +257,9 @@ def _kill(
         deps.append("gdb")
 
     _install_dependencies(deps, target, model, dry_run=dry_run)
-    pinfo = _get_running_process_info(target, model, dry_run=dry_run)
+    pinfo = _get_running_process_info(
+        target, model, command_name=command_name, dry_run=dry_run
+    )
 
     if not pinfo:
         exit(f"no charm process appears to be running on {target.unit_name}")
@@ -259,14 +297,20 @@ def kill(
     model: Optional[str] = typer.Option(
         None, "--model", "-m", help="Model in which to apply this command."
     ),
-    exit_code: Optional[int] = typer.Option(
-        0, "--exit-code", "-e", help="Exit code for the charm process."
-    ),
+    # exit_code: Optional[int] = typer.Option(
+    #     0, "--exit-code", "-e", help="Exit code for the charm process. Currently no"
+    # ),
     host_kill: bool = typer.Option(
         0,
         "--host-kill",
         "-H",
         help="Attempts to remap the charm process onto the host and kill it from the host.",
+    ),
+    command_name: str = typer.Option(
+        "./src/charm.py",
+        "--command-name",
+        "-c",
+        help="The command to match when searching for the charm process.",
     ),
     dry_run: bool = typer.Option(
         False,
@@ -280,9 +324,10 @@ def kill(
         model=model,
         host_kill=host_kill,
         dry_run=dry_run,
-        exit_code=exit_code,
+        # exit_code=exit_code,
+        command_name=command_name,
     )
 
 
 if __name__ == "__main__":
-    _kill("tempo-worker-k8s/0")
+    _kill("worker/0")
