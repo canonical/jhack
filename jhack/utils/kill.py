@@ -253,8 +253,8 @@ def _kill(
     print(f"Preparing to interrupt the {running_hook} hook.")
 
     deps = ["procps"]
-    if not host_kill:
-        deps.append("gdb")
+    # if not host_kill:
+    #     deps.append("gdb")
 
     _install_dependencies(deps, target, model, dry_run=dry_run)
     pinfo = _get_running_process_info(
