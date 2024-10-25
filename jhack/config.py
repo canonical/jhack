@@ -27,11 +27,11 @@ def get_home_dir() -> Path:
 
     if usr == "root":
         home_dir = Path("/root")
+    elif user := os.environ.get("USER"):
+        home_dir = Path("/home") / user
     else:
-        if os.environ.get("USER"):
-            home_dir = Path("/home") / os.environ["USER"]
-        else:
-            home_dir = Path("~").expanduser().absolute()
+        # this looks up the ~HOME envvar and tries more things if not set (see pathlib._PosixFlavour.gethomedir)
+        home_dir = Path("~").expanduser().absolute()
     return home_dir
 
 

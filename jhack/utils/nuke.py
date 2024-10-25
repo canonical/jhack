@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.style import Style
 from rich.text import Text
 
-from jhack.conf.conf import CONFIG
+from jhack.conf.conf import CONFIG, check_destructive_commands_allowed
 from jhack.helpers import JPopen, get_current_model, get_models, juju_status
 from jhack.logger import logger
 
@@ -43,6 +43,23 @@ NUKE_ASCII_ART = """
                           I;|.|.|
                          <|i::|i|`.
                         (` ^'"`-' ")
+"""
+
+NUKE_GENTLY_ASCII_ART = """                       
+                \`*-.                   
+                 )  _`-.                
+                .  : `. .               
+                : _   '  \              
+                ; *` _.   `*-._         
+                `-.-'          `-.      
+                  ;       `       `.    
+                  :.       .        \   
+                  . \  .   :   .-'   .  
+                  '  `+.;  ;  '      :  
+                  :  '  |    ;       ;-.
+       __         ; '   : :`-:     _.`* ;
+     (juju)    .*' /  .*' ; .*`- +'  `*'
+   ~~~~^^      `*-*   `*-*  `*-*'       
 """
 
 
@@ -355,6 +372,8 @@ def _nuke(
         except typer.Abort:
             print("\nAborted.")
             return
+    else:
+        check_destructive_commands_allowed("nuke", "\t\n".join(nukes))
 
     if color == "no":
         color = None
@@ -396,7 +415,13 @@ def _nuke(
         else:
             logger.debug("hit and sunk")
 
-    print_centered(Text(NUKE_ASCII_ART, style=Style(dim=True, blink=BLINK, bold=True)))
+    ascii_art = NUKE_GENTLY_ASCII_ART if gently else NUKE_ASCII_ART
+    print_centered(
+        Text(
+            ascii_art,
+            style=Style(dim=True, blink=BLINK, bold=True),
+        )
+    )
 
     tp = ThreadPool()
     results = []
@@ -486,6 +511,7 @@ def nuke(
 
     \n\n
     Nuke ascii art by [Bill March](https://www.asciiart.eu/weapons/explosives).
+    Nuke gently ascii art by [bug](https://user.xmission.com/~emailbox/ascii_cats.htm)
     """
     logger.info("starting jhack nuke")
 

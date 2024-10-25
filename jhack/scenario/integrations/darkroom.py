@@ -42,7 +42,6 @@ in `charm.py`:
 >>>     # use responsibly!
 """
 
-
 import logging
 import os
 from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Sequence, Tuple, Union
@@ -168,9 +167,9 @@ class Darkroom:
             charm_spec = _CharmSpec(
                 charm_type,
                 meta=yaml.safe_load(meta.read_text()),
-                actions=yaml.safe_load(actions.read_text())
-                if actions.exists()
-                else None,
+                actions=(
+                    yaml.safe_load(actions.read_text()) if actions.exists() else None
+                ),
                 config=yaml.safe_load(config.read_text()) if config.exists() else None,
             )
         except Exception as e:
@@ -373,7 +372,7 @@ class Darkroom:
         return Event(event.handle.kind)
 
     def attach(self, listener: Callable[[Event, State], None]):
-        """Every time an event is emitted, record the event and capture the state after execution."""
+        """Every time an event is emitted, record the event and capture the state."""
         from ops import Framework
 
         if not getattr(Framework, "__orig_emit__", None):
@@ -404,9 +403,10 @@ class Darkroom:
         capture_framework_events: bool = False,
         capture_custom_events: bool = True,
     ):
-        """Patch Harness so that every time a new instance is created, a Darkroom is attached to it.
+        """Patch Harness so that every time a new instance is created a Darkroom is attached to it.
 
-        Note that the trace will be initially empty and will be filled up as the harness emits events.
+        Note that the trace will be initially empty and will be filled up as the harness
+        emits events.
         So only access the traces when you're sure the harness is done emitting.
 
         Usage:
@@ -483,7 +483,8 @@ class Darkroom:
         if not getattr(Harness, _ORIG_INIT_PATCH_NAME, None):
             setattr(Harness, _ORIG_INIT_PATCH_NAME, Harness.__init__)
             # do not simply use Harness.__init__ because
-            # if we instantiate multiple harnesses we'll keep adding to the older harnesses' traces.
+            # if we instantiate multiple harnesses we'll keep adding to the older harnesses'
+            # traces.
 
         def patch(harness: Harness, *args, **kwargs):
             trace = []

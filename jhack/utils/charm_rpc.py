@@ -1,92 +1,27 @@
 import base64
 import inspect
+import json
 import multiprocessing
 import os
 import select
-import shlex
 import sys
 import tempfile
 from functools import partial
 from importlib.util import module_from_spec, spec_from_file_location
 from multiprocessing import Pool
 from pathlib import Path
-from subprocess import run
+from subprocess import getoutput
 from typing import List, Optional
 
 import typer
 
-from jhack.helpers import Target, get_units, push_file, rm_file
+from jhack.conf.conf import check_destructive_commands_allowed
+from jhack.helpers import Target, fetch_file, get_units, push_file, rm_file
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
 
 logger = jhack_logger.getChild("crpc")
-
-
-def charm_rpc(
-    target: str = typer.Argument(
-        ...,
-        help="Target unit or application name. "
-        "Using an application name will run the script on all units.",
-    ),
-    expr: str = typer.Argument(
-        ...,
-        help="Path to an object or callable starting from the charm instance. "
-        "Can start with ``self.``, or it can be omitted."
-        "Examples: \n"
-        "- .model.relations['foo']\n"
-        "- self.ingress.is_ready\n",
-    ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
-    cleanup: bool = typer.Option(
-        True,
-        help="Remove all files created onto the unit when you're done.",
-        is_flag=True,
-    ),
-    crpc_dispatch_name: str = typer.Option(
-        "crpc_dispatch",
-        help="Name of the (temporary) file containing the dispatch script.",
-    ),
-    charm_name: Optional[str] = typer.Option(
-        None,
-        "-c",
-        "--charm-name",
-        help="Name of the charm type to import from `charm.py`. Useful if your charm.py "
-        "contains more than one charm type (e.g. if you have a base class...).",
-    ),
-    env_override: List[str] = typer.Option(
-        None,
-        "--env",
-        help="Key-value mapping to override any ENV with. For whatever reason."
-        "E.g."
-        " --event foo-pebble-ready --env JUJU_DEPARTING_UNIT_NAME=remote/0 --env FOO=bar",
-    ),
-    event: str = typer.Option(
-        "charm-rpc",
-        "--event",
-        help="The name of an event whose context to simulate. "
-        "Needs to be a valid event name for the unit; e.g. \n"
-        " - 'start' \n"
-        " - 'config-changed' \n"
-        " - 'my-relation-name-relation-joined' # write it out in full",
-    ),
-):
-    """Evaluates an expression in the context of a live charm.
-
-    RENAMED to ``jhack eval``.
-    """
-    logger.warning("`jhack crpc` is being renamed; please use `jhack eval`.")
-    _charm_rpc(
-        target=target,
-        expr=expr,
-        model=model,
-        cleanup=cleanup,
-        crpc_dispatch_name=crpc_dispatch_name,
-        env_override=env_override,
-        event=event,
-        charm_name=charm_name,
-    )
+OUTPUT_PATH_FILENAME = ".crpc_output_file.json"
 
 
 def charm_eval(
@@ -157,6 +92,7 @@ def charm_eval(
     >>> $ jhack eval unit/0 self._some_relation.data[self.unit].__setitem__("foo", "bar")
     >>> None
     """
+    check_destructive_commands_allowed("eval")
     _charm_rpc(
         target=target,
         expr=expr,
@@ -246,7 +182,7 @@ def charm_script(
     If you want to execute the script in the context of a specific event, you can use the
     ``--event`` option.
     """
-
+    check_destructive_commands_allowed("script")
     _charm_script(
         target=target,
         script=script,
@@ -259,6 +195,7 @@ def charm_script(
         env_override=env_override,
         event=event,
         charm_name=charm_name,
+        print_output=True,
     )
 
 
@@ -309,6 +246,7 @@ def _charm_script(
     event: str,
     env_override: List[str],
     charm_name: Optional[str],
+    print_output: bool = False,
 ):
     """Execute local script on live charm.
 
@@ -366,6 +304,7 @@ def _charm_script(
                 event=event,
                 env_override=env_override,
                 charm_name=charm_name,
+                print_output=print_output,
             ),
             targets,
         )
@@ -381,7 +320,7 @@ def _get_targets(target, model):
     targets = []
     if "/" not in target:
         # app name received. run on all units.
-        targets.extend(get_units(target))
+        targets.extend(get_units(target, model=model))
 
     else:
         targets.append(Target.from_name(target))
@@ -396,17 +335,17 @@ def _encode(expr: str) -> str:
 def _charm_rpc(
     target: str,
     expr: str,
-    crpc_dispatch_name: str,
-    model: str,
-    cleanup: bool,
     event: str,
-    env_override: List[str],
-    charm_name: Optional[str],
+    model: Optional[str] = None,
+    cleanup: bool = True,
+    env_override: Optional[List[str]] = None,
+    charm_name: Optional[str] = None,
+    crpc_dispatch_name: str = "crpc_dispatch",
 ):
     """Rpc a live charm method.
 
-    Executes dispatch on a patched init script so the charm is set up and a specific method is called
-    instead of being passed to ops.main standard event loop.
+    Executes dispatch on a patched init script so the charm is set up and a specific
+    method is called instead of being passed to ops.main standard event loop.
     """
     expr = _build_rpc_expr(expr)
     logger.debug(f"rpc expression: {expr!r}")
@@ -420,7 +359,7 @@ def _charm_rpc(
         model=model,
         cleanup=cleanup,
         event=event,
-        env_override=env_override,
+        env_override=env_override or [],
         charm_name=charm_name,
     )
 
@@ -443,6 +382,21 @@ def _push_crpc_dispatch_script(target, model, crpc_dispatch_name):
     dispatch = Path(__file__).parent / "charm_rpc_dispatch.py"
     push_file(target.unit_name, dispatch, remote_rpc_dispatch_path, model=model)
     return remote_rpc_dispatch_path
+
+
+def _read_output(target, model):
+    logger.info("fetching charm output (if any)...")
+    try:
+        data = fetch_file(target.unit_name, OUTPUT_PATH_FILENAME, model=model)
+    except RuntimeError:
+        logger.info("no output file found.")
+        return
+
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError:
+        logger.error("output contains invalid json")
+        return
 
 
 def _prepare_crpc_env(target, event, env_override, model):
@@ -469,6 +423,7 @@ def _exec_crpc_script(
     event: str,
     charm_name: Optional[str],
     env_override: List[str],
+    print_output: bool = False,
 ):
     logger.info(f"pushing crpc module {script}...")
     remote_rpc_module_path = f"src/{crpc_module_name}.py"
@@ -482,16 +437,18 @@ def _exec_crpc_script(
     env = " ".join(
         f"{key}={val}"
         for key, val in {
-            "CHARM_RPC_ENV": crpc_env,
+            "CHARM_RPC_ENV": _encode(crpc_env),
             "CHARM_RPC_MODULE_NAME": crpc_module_name,
             "CHARM_RPC_ENTRYPOINT": entrypoint,
             "CHARM_RPC_CHARM_NAME": charm_name,
+            "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
             "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
             "PYTHONPATH": "lib:venv",
         }.items()
     )
 
-    _run_crpc(target, env, crpc_dispatch_name)
+    stdout = _run_crpc(target, env, crpc_dispatch_name, model=model)
+    output = _read_output(target, model)
 
     if cleanup:
         logger.info("cleaning up...")
@@ -501,22 +458,44 @@ def _exec_crpc_script(
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
 
+        if output:
+            rm_file(target.unit_name, OUTPUT_PATH_FILENAME, model=model)
 
-def _run_crpc(target, env, crpc_dispatch_name):
+    if print_output:
+        if output:
+            print(f"output for {target.unit_name}:\n {json.dumps(output, indent=2)}")
+        if stdout:
+            print(f"stdout for {target.unit_name}:\n\t{stdout}")
+
+        if not output and not stdout:
+            print(f"no output for {target.unit_name}")
+
+    return output
+
+
+def _run_crpc(target, env, crpc_dispatch_name, model: str = None):
     logger.info("executing crpc...")
-    exec_dispatch_cmd = f"juju exec --unit {target.unit_name} -- {env} python3 ./src/{crpc_dispatch_name}.py"
-    run(shlex.split(exec_dispatch_cmd))
+    _model = f" --model {model}" if model else ""
+    exec_dispatch_cmd = (
+        f"juju exec --unit {target.unit_name}{_model} -- "
+        f"{env} python3 ./src/{crpc_dispatch_name}.py"
+    )
+
+    logger.debug(f"crpc script={exec_dispatch_cmd}")
+    out = getoutput(exec_dispatch_cmd)
+    return out
 
 
 def _exec_crpc_expr(
     target: Target,
     expr: str,
-    crpc_dispatch_name: str,
-    model: str,
-    cleanup: bool,
     event: str,
-    env_override: List[str],
-    charm_name: Optional[str],
+    model: str,
+    crpc_dispatch_name: str = "crpc_dispatch",
+    cleanup: bool = True,
+    env_override: Optional[List[str]] = None,
+    charm_name: Optional[str] = None,
+    print_output: bool = True,
 ):
     remote_rpc_dispatch_path = _push_crpc_dispatch_script(
         target, model, crpc_dispatch_name
@@ -524,8 +503,9 @@ def _exec_crpc_expr(
     crpc_env = _prepare_crpc_env(target, event, env_override, model)
 
     env_dict = {
-        "CHARM_RPC_ENV": crpc_env,
+        "CHARM_RPC_ENV": _encode(crpc_env),
         "CHARM_RPC_EXPR": expr,
+        "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
         "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
         "PYTHONPATH": "lib:venv",
     }
@@ -534,7 +514,8 @@ def _exec_crpc_expr(
 
     env = " ".join(f"{key}={val}" for key, val in env_dict.items())
 
-    _run_crpc(target, env, crpc_dispatch_name)
+    stdout = _run_crpc(target, env, crpc_dispatch_name, model=model)
+    output = _read_output(target, model)
 
     if cleanup:
         logger.info("cleaning up...")
@@ -542,3 +523,18 @@ def _exec_crpc_expr(
             rm_file(target.unit_name, remote_rpc_dispatch_path, model=model)
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
+
+        if output:
+            # maybe it was never created in the first place
+            rm_file(target.unit_name, OUTPUT_PATH_FILENAME, model=model)
+
+    if print_output:
+        if output:
+            print(f"output for {target.unit_name}:\n {json.dumps(output, indent=2)}")
+        if stdout:
+            print(f"stdout for {target.unit_name}:\n\t{stdout}")
+
+        if not output and not stdout:
+            print(f"no output for {target.unit_name}")
+
+    return output

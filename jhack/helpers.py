@@ -12,9 +12,10 @@ from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
-from typing import Callable, List, Literal, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import typer
+import yaml
 
 from jhack.config import IS_SNAPPED
 from jhack.logger import logger
@@ -139,6 +140,23 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
         cmd += " --format json"
     proc = JPopen(cmd.split())
     raw = proc.stdout.read().decode("utf-8")
+
+    if not raw:
+        logger.error(f"{cmd} produced no output.")
+        if model:
+            logger.error(
+                f"This usually means that the model {model!r} you passed does not exist"
+            )
+        else:
+            logger.error("This usually means that the juju client isn't reachable")
+
+        if IS_SNAPPED:
+            logger.warning(
+                "double-check that the jhack:dot-local-share-juju plug is connected to snapd."
+            )
+
+        exit("unable to fetch juju status (see logs)")
+
     if json:
         return jsn.loads(raw)
     return raw
@@ -272,14 +290,14 @@ def _push_file_k8s_cmd(
         # todo: should we strip the initial / in some cases?
         full_remote_path = remote_path
     else:
-        unit_sanitized = unit.replace("/", "-")
-        full_remote_path = (
-            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
-        )
+        full_remote_path = charm_root_path(unit) / remote_path
 
     cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
     if mkdir_remote:
-        mkdir_cmd = f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        mkdir_cmd = (
+            f"juju ssh{model_arg}{container_arg} {unit} mkdir -p "
+            f"{Path(full_remote_path).parent}"
+        )
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -296,17 +314,19 @@ def _push_file_machine_cmd(
     model_arg = f" -m {model}" if model else ""
 
     if is_full_path:
+        # todo: should we strip the initial / in some cases?
         full_remote_path = remote_path
     else:
-        unit_sanitized = unit.replace("/", "-")
-        full_remote_path = (
-            f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
-        )
+        full_remote_path = charm_root_path(unit) / remote_path
 
     # FIXME:
     #  run this before, and `juju scp` will work.
-    #  juju ssh {unit} -- "sudo mkdir -p /root/.ssh; sudo cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys"
-    cmd = f"cat {local_path} | juju ssh {unit}{model_arg} sudo -i 'sudo tee {full_remote_path}' > /dev/null"
+    #  juju ssh {unit} -- "sudo mkdir -p /root/.ssh; sudo cp /home/ubuntu/.ssh/authorized_keys
+    #  /root/.ssh/authorized_keys"
+    cmd = (
+        f"cat {local_path} | juju ssh {unit}{model_arg} sudo -i 'sudo tee "
+        f"{full_remote_path}' > /dev/null"
+    )
 
     if mkdir_remote:
         mkdir_cmd = (
@@ -315,6 +335,31 @@ def _push_file_machine_cmd(
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
+
+
+def push_string(
+    unit: str,
+    text: str,
+    remote_path: str,
+    is_full_path: bool = False,
+    container: Optional[str] = None,
+    model: str = None,
+    dry_run: bool = False,
+    mkdir_remote: bool = False,
+):
+    with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
+        tf_path = Path(tf.name)
+        tf_path.write_text(text)
+        return push_file(
+            unit=unit,
+            local_path=tf_path,
+            remote_path=remote_path,
+            is_full_path=is_full_path,
+            container=container,
+            model=model,
+            dry_run=dry_run,
+            mkdir_remote=mkdir_remote,
+        )
 
 
 def push_file(
@@ -356,47 +401,59 @@ def push_file(
     retcode = proc.returncode
     if retcode != 0:
         logger.error(f"{cmd} errored with code {retcode}: ")
-        raise RuntimeError(f"Failed to push {local_path} to {unit}.")
+        raise RuntimeError(
+            f"Failed to push {local_path} to {unit} with {cmd!r}."
+            + (
+                " (verify that the path is readable by the jhack snap)"
+                if IS_SNAPPED
+                else ""
+            )
+        )
 
 
-def rm_file(unit: str, remote_path: str, model: str = None):
-    if remote_path.startswith("/"):
-        remote_path = remote_path[1:]
-    unit_sanitized = unit.replace("/", "-")
+def rm_file(
+    unit: str, remote_path: str, model: str = None, is_path_relative=True, dry_run=False
+):
+    if is_path_relative:
+        if remote_path.startswith("/"):
+            remote_path = remote_path[1:]
+        full_remote_path = charm_root_path(unit) / remote_path
+    else:
+        full_remote_path = remote_path
+
     model_arg = f" -m {model}" if model else ""
-    full_remote_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/{remote_path}"
     cmd = f"juju ssh{model_arg} {unit} rm {full_remote_path}"
+    if dry_run:
+        print(f"would run: {cmd}")
+        return
     try:
         check_output(shlex.split(cmd))
     except CalledProcessError as e:
-        raise RuntimeError(
-            f"Failed to remove {full_remote_path} from {unit_sanitized}."
-        ) from e
+        raise RuntimeError(f"Failed to remove {full_remote_path} from {unit}.") from e
 
 
 def fetch_file(
-    unit: str, remote_path: str, local_path: Path = None, model: str = None
+    unit: str,
+    remote_path: Union[Path, str],
+    local_path: Optional[Union[Path, str]] = None,
+    model: str = None,
 ) -> Optional[str]:
-    unit_sanitized = unit.replace("/", "-")
     model_arg = f" -m {model}" if model else ""
-    cmd = (
-        f"juju ssh{model_arg} {unit} cat /var/lib/juju/agents/unit-{unit_sanitized}"
-        f"/charm/{remote_path}"
-    )
-    try:
-        raw = check_output(cmd.split())
-    except CalledProcessError as e:
-        raise RuntimeError(
-            f"Failed to fetch {remote_path} from {unit_sanitized}."
-        ) from e
+    charm_path = charm_root_path(unit) / remote_path
+    cmd = f"juju ssh{model_arg} {unit} cat {charm_path} || true"
+
+    raw = check_output(cmd.split())
+    if b"No such file or directory" in raw:
+        raise RuntimeError(f"Failed to fetch {charm_path} from {unit}.")
 
     if not local_path:
         return raw.decode("utf-8")
 
-    local_path.write_bytes(raw)
+    Path(local_path).write_bytes(raw)
 
 
 LibInfo = namedtuple("LibInfo", "owner, version, lib_name, revision")
+EndpointInfo = namedtuple("Endpoint", ("description", "required"))
 
 JujuVersion = namedtuple("JujuVersion", ("version", "build"))
 
@@ -411,6 +468,11 @@ def juju_version() -> JujuVersion:
     return JujuVersion(tuple(map(int, v.split("."))), tag)
 
 
+def charm_root_path(unit_name: str) -> Path:
+    """Get the root path of the charm in a juju unit."""
+    return Path(f"/var/lib/juju/agents/unit-{unit_name.replace('/', '-')}/charm/")
+
+
 def get_local_libinfo(path: Path) -> List[LibInfo]:
     """Get libinfo from local charm project."""
 
@@ -418,20 +480,65 @@ def get_local_libinfo(path: Path) -> List[LibInfo]:
     return _exec_and_parse_libinfo(cmd)
 
 
+def pull_metadata(unit: str, model: str):
+    """Get metadata.yaml from this target."""
+    logger.info("fetching metadata...")
+
+    meta_path = "metadata.yaml"
+    charmcraft_path = "charmcraft.yaml"
+    with tempfile.NamedTemporaryFile(dir=Path("~").expanduser()) as tf:
+        try:
+            fetch_file(unit, meta_path, tf.name, model=model)
+        except RuntimeError:
+            try:
+                fetch_file(unit, charmcraft_path, tf.name, model=model)
+            except RuntimeError as e:
+                raise RuntimeError(
+                    f"cannot find charmcraft nor metadata in {unit}"
+                ) from e
+
+        return yaml.safe_load(Path(tf.name).read_text())
+
+
+def get_epinfo(app_or_unit: str, model: str) -> Dict[str, Dict[str, EndpointInfo]]:
+    # returns a mapping from role to endpoint name to endpoint info
+    if "/" in app_or_unit:
+        unit = app_or_unit
+    else:
+        app = app_or_unit
+        status = cached_juju_status(app, model=model, json=True)
+        try:
+            unit = next(iter(status["applications"][app]["units"]))
+        except StopIteration:
+            logger.error(f"app {app} has no units: cannot fetch endpoint info")
+            return {}
+
+    meta = pull_metadata(unit, model)
+    out = {}
+    for role in ("provides", "requires", "peers"):
+        out[role] = {
+            ep_name: EndpointInfo(
+                ep_meta.get("description", ""),
+                ep_meta.get("required", not ep_meta.get("optional", True)),
+            )
+            for ep_name, ep_meta in meta.get(role, {}).items()
+        }
+    return out
+
+
 def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
     if machine:
         raise NotImplementedError("machine libinfo not implemented yet.")
 
     status = cached_juju_status(app, model=model, json=True)
-    unit_name = status["applications"][app.split("/")[0]]["units"].popitem()[0]
-
-    if get_substrate(model) == "k8s":
-        cwd = "."
-    else:
-        cwd = "/var/lib/juju"
+    try:
+        unit = next(iter(status["applications"][app]["units"]))
+    except StopIteration:
+        logger.error(f"app {app} has no units: cannot fetch endpoint info")
+        return []
 
     cmd = (
-        f"juju ssh {unit_name} find {cwd}/agents/unit-{unit_name.replace('/', '-')}/charm/lib "
+        f"juju ssh {unit} find {charm_root_path(unit)}/lib "
         "-type f "
         '-iname "*.py" '
         r'-exec grep "LIBPATCH" {} \+'
@@ -465,6 +572,7 @@ class Target:
     app: str
     unit: int
     leader: bool = False
+    _machine_id: Optional[int] = None
 
     @staticmethod
     def from_name(name: str):
@@ -476,7 +584,7 @@ class Target:
         app, unit_ = name.split("/")
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
-        return Target(app, unit, leader=leader)
+        return Target(app, int(unit), leader=leader)
 
     @property
     def unit_name(self):
@@ -484,22 +592,34 @@ class Target:
 
     @property
     def charm_root_path(self):
-        return Path(f"/var/lib/juju/agents/unit-{self.app}-{self.unit}/charm")
+        return charm_root_path(self.unit_name)
 
     def __hash__(self):
         return hash((self.app, self.unit, self.leader))
 
+    @property
+    def machine_id(self) -> int:
+        if self._machine_id is None:
+            raise ValueError(
+                "machine-id not available. Either a k8s unit, or it wasn't obtained "
+                "at Target instantiation time."
+            )
+        return self._machine_id
 
-def get_all_units(model: str = None) -> Sequence[Target]:
+
+def get_all_units(model: str = None) -> Tuple[Target, ...]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
-    units = list(
+    return tuple(
         chain(*(_get_units(app, status) for app in status.get("applications", {})))
     )
-    return tuple(map(Target.from_name, units))
 
 
-def _get_units(app, status, predicate: Optional[Callable] = None):
+def _get_units(
+    app,
+    status,
+    predicate: Optional[Callable] = None,
+) -> Sequence[Target]:
     units = []
     principals = status["applications"][app].get("subordinate-to", False)
     if principals:
@@ -507,17 +627,34 @@ def _get_units(app, status, predicate: Optional[Callable] = None):
         for principal in principals:
             if predicate and not predicate(principal):
                 continue
-            machines = [
-                u["machine"]
-                for u in status["applications"][principal]["units"].values()
-            ]
-            units.extend(f"{app}/{machine}" for machine in machines)
+
+            # if the principal is still being set up, it could have no 'units' yet.
+            for unit_id, unit_meta in (
+                status["applications"][principal].get("units", {}).items()
+            ):
+                unit = int(unit_id.split("/")[1])
+                units.append(
+                    Target(
+                        app=app,
+                        unit=unit,
+                        _machine_id=unit_meta.get("machine"),
+                        leader=unit_meta.get("leader"),
+                    )
+                )
 
     else:
-        for k, meta in status["applications"][app]["units"].items():
-            if predicate and not predicate(meta):
+        for unit_id, unit_meta in status["applications"][app]["units"].items():
+            if predicate and not predicate(unit_meta):
                 continue
-            units.append(k)
+            unit = int(unit_id.split("/")[1])
+            units.append(
+                Target(
+                    app=app,
+                    unit=unit,
+                    _machine_id=unit_meta.get("machine"),
+                    leader=unit_meta.get("leader"),
+                )
+            )
     return units
 
 
@@ -525,18 +662,21 @@ def get_units(*apps, model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     if not apps:
         apps = status.get("applications", {}).keys()
-    units = list(chain(*(_get_units(app, status) for app in apps)))
-    return tuple(map(Target.from_name, units))
+    return list(chain(*(_get_units(app, status) for app in apps)))
 
 
-def get_leader_unit(app, model: str = None) -> Target:
+def get_leader_unit(app, model: str = None) -> Optional[Target]:
     status = juju_status(json=True, model=model)
     leaders = _get_units(app, status, predicate=lambda unit: unit.get("leader"))
-    return Target.from_name(leaders[0])
+    return leaders[0] if leaders else None
 
 
 def parse_target(target: str, model: str = None) -> List[Target]:
+    if target == "*":
+        return list(get_units(model=model))
+
     unit_targets = []
+
     if "/" in target:
         prefix, _, suffix = target.rpartition("/")
         if suffix in {"*", "leader"}:
@@ -548,14 +688,27 @@ def parse_target(target: str, model: str = None) -> List[Target]:
             unit_targets.extend(get_units(target, model=model))
         except KeyError:
             logger.error(
-                f"invalid target {target!r}: not an unit, nor an application in model {model or '<the current model>'!r}"
+                f"invalid target {target!r}: not an unit, nor an application in model "
+                f"{model or '<the current model>'!r}"
             )
     return unit_targets
 
 
 def get_notices(unit: str, container_name: str, model: str = None):
     _model = f"{model} " if model else ""
-    cmd = f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}/pebble.socket http://localhost/v1/notices"
+    cmd = (
+        f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
+        f"/pebble.socket http://localhost/v1/notices"
+    )
+    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
+
+
+def get_checks(unit: str, container_name: str, model: str = None):
+    _model = f"{model} " if model else ""
+    cmd = (
+        f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
+        f"/pebble.socket http://localhost/v1/checks"
+    )
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 

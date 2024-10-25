@@ -14,8 +14,7 @@ KeyValueMapping = Dict[str, str]
 
 
 class HasWrite(Protocol):
-    def write(self, text: str):
-        ...
+    def write(self, text: str): ...
 
 
 logger = logger.getChild(__file__)
@@ -43,7 +42,7 @@ class Recorder:
 
     def record(self):
         _tail_events(
-            self._unit, replay=False, add_new_targets=False, _on_event=self._on_event
+            [self._unit], replay=False, add_new_targets=False, _on_event=self._on_event
         )
         self._dump_json()
         return self._state_history

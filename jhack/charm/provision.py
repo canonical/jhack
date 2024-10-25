@@ -6,6 +6,7 @@ from typing import Iterable, Optional, Union
 
 import typer
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.config import get_jhack_data_path
 from jhack.helpers import JPopen, is_k8s_model, juju_status
 from jhack.logger import logger as jhack_logger
@@ -163,8 +164,13 @@ def _provision(
     status = juju_status(json=True)
     targets = tuple(_get_provisioner_targets(target, status))
 
+    if not dry_run:
+        check_destructive_commands_allowed(
+            "provision", f"would run {tf_script} on {targets}"
+        )
+
     if dry_run:
-        print(f"[dry run]: with script: {tf_script}")
+        print(f"would run: {tf_script}")
 
     try:
         if n_proc and len(targets) > 1:

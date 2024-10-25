@@ -14,14 +14,13 @@ More extensive documentation is provided in the cli itself. All commands can be 
 Clone the repo
 
 ```shell
-pip install -r requirements.txt
 pip install -e .
 ```
 
 ##### as package (requires setuptools 61 or later):
 
 ```shell
-pip install git+https://github.com/PietroPasotti/jhack
+pip install git+https://github.com/canonical/jhack
 ```
 
 ##### as snap:
@@ -55,6 +54,29 @@ jhack model rm
 `python -m build`
 
 Happy hacking!
+
+
+# Disclaimer
+
+Many of the commands jhack offers are pretty destructive or bring a high risk of catastrophic failure and random explosions.
+
+These commands will prompt the user for confirmation before proceeding, after, whenever possible, showing the low-level (Juju) commands it would run.
+
+## Enabling devmode
+In devmode, destructive commands will be run without requiring a confirmation prompt.
+
+You can permanently enable devmode by setting `~/.config/jhack/config.toml` (see `jhack conf`) and set `[general]enable_destructive_commands_NO_PRODUCTION_zero_guarantees` to `true`.
+
+To view example 'destructive' and 'yolo' profiles, you can run: 
+
+> `jhack conf destructive` 
+> `jhack conf yolo` 
+
+Otherwise, set the `JHACK_PROFILE=devmode` envvar to run a single command without the confirmation prompt. 
+
+As only exception, nuke has a double safeguard in that even if you enable devmode, you will still get a confirmation prompt.
+To disable that one, set `[nuke]ask_for_confirmation` to `false`.
+
 
 # utils
 ## sync
@@ -175,6 +197,23 @@ update_status ❯──┼┘
 ```
 
 And did I mention that there's **colors**?
+
+### Event color coding
+Events will be color-coded using a two-tier criterion:
+- **origin**: framework events, custom events, jhack-fire-emitted events, skipped-by-jhack-lobotomy events, and in general all **non-juju** events will receive a color based on their origin (and sometimes a fancy icon too) 
+- **category**: all 'regular' juju events will receive a color based on their category: a (rather arbitrary) classification system based on [the official one](https://juju.is/docs/sdk/list-of-events).
+
+If an event doesn't match either criterion (effectively we don't know what event it is), it will not be colored.
+
+You can view the current color coding schema in your console by running `jhack tail --print-color-codes`.
+
+![img.png](jhack/resources/tail-color-codes.png)
+
+An example of the colored output on a real deployment:
+![img.png](jhack/resources/tail-colors-img.png)
+
+
+
 
 ### You can also `tail` saved logs
 
@@ -417,7 +456,7 @@ By using this tool you acknowledge the possibility of it bricking your model or 
   So, for example, `jhack nuke -s M foo` will nuke all apps and relations it can find matching 'foo', equivalent to `jhack nuke -s ar foo`.
 
 ### YOLO mode
-- use `jhack conf` to create your very own `~/.jhack_config.toml` and set `nuke.ask_for_confirmation = false`.
+Even in devmode, `nuke` has a confirmation prompt. Look at `jhack conf` to find out how you can set `[nuke]ask_for_confirmation = false`.
 
 
 # fire
@@ -611,11 +650,11 @@ application name to target with the refresh.
 
 `jhack charm repack --root /where/my/charm/root/is --name juju-app-name`
 
-## vinfo
-`vinfo` is a command to show in tabular format the full version fingerprint of a charmed unit
+## `charm-info` (previously called `vinfo`)
+`charm-info` is a command to show in tabular format the full version fingerprint of a charmed unit
 or application.
 
-`jhack vinfo my-app` will show (for example):
+`jhack charm-info my-app` will show (for example):
 
 ```commandline
                                vinfo v0.1
@@ -637,7 +676,7 @@ or application.
 
 
 To also check the charm lib versions against the latest available upstream:
-`jhack charm vinfo -o my-app`
+`jhack charm-info -o my-app`
 
 ```commandline
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -706,22 +745,6 @@ relating <this model>.prom:self-metrics-endpoint <-[prometheus_scrape]-> cos.pro
 ```
 
 ![img.png](jhack/resources/noice-img.png)
-
-# jinx
-Used to play around with [jinx (YAMLess Charms)](https://github.com/PietroPasotti/jinx)
-
-## install
-
-`jhack jinx install`
-
-Downloads the jinx source.
-
-## init
-
-`jhack jinx init`
-
-Basically `jinxcraft init`.
-
 
 # imatrix
 
@@ -843,7 +866,23 @@ Similarly, if the charm has a method called `_foobar`, you could write:
 
 > `jhack eval myapp/0 self._foobar() + 42`
 
-and see the result in your standard output.
+and see the result in your standard output. Whatever the value of your expression is, 
+it will be printed to stdout before jhack eval exits.
+
+The globals available to the evaluated script are:
+- `self`: the charm instance
+- `ops`: the `ops` module, so you can use, say, `ops.ActiveStatus`.
+- `output`: a function that takes any json-dumpable object and gives it back to you.
+
+For example, you can do: `jhack eval myapp/0 "output([self._foobar() + 42, ops.ActiveStatus().name])`
+
+and this would print to stdout:
+```json
+[
+  44,
+  "active"
+]
+```
 
 Run the command with `--help` for additional options and configuration.
 
@@ -889,3 +928,114 @@ To reverse a lobotomy, do `jhack charm lobotomy myapp/0 --undo`.
 `jhack charm lobotomy myapp myotherapp --undo`: removes the lobotomy from all units of `myapp` and `myotherapp`.
 
 `jhack charm lobotomy --undo` will delobotomize the whole model.
+
+
+# chaos 
+
+There used to be a product manager who, in order to test any charm, would take it and repeatedly scale it up by N, then scale it back down by N.
+In the meantime, he'd grab a pack of popcorns and enjoy watching the cluster burn up in a fiery nova. This activity is referred to as Manciopping.
+
+Those days are over, charms are more resilient, but still it's nice to have those little moments of relaxation from time to time.
+
+## `chaos mancioppi`
+Run `jhack chaos mancioppi` and that will grab every single application in your model, scale it up by 2 and then, when you tell it to proceed, it will scale them all back down.
+
+Some interesting prameters (for the full list refer to the CLI `--help`):
+- `--reverse`: first scale down, then up
+- `--include <app>`: include this app
+- `--exclude <app>`: exclude this app
+- `--step`: amount by which to scale up or down
+
+## `chaos flicker`
+
+The second tool in the 'watch the cluster burn' category is `chaos flicker`. 
+Run `jhack chaos flicker` and that will grab every single relation in your model, remove it and add it back.
+Ideally this should give you back the model in its initial state, as opposed to `jhack imatrix clear;jhack imatrix fill` which would give you back a fully-cross-related model.
+
+Some interesting prameters (for the full list refer to the CLI `--help`):
+- `--reverse`: first add the relations, then remove them
+- `--include <app>`: include this app (you need to pass at least two of them for this to have any meaning)
+- `--exclude <app>`: exclude this app (you need to pass at least two of them for this to have any meaning)
+- `--step`: amount by which to scale up or down
+
+For example, `jhack chaos flicker --include tempo --include traefik` will flicker all relations between tempo and traefik, and leave the rest of the model untouched.
+
+
+# sitrep
+
+When any event executes on a charm, modern ops emits a `collect-unit-status` event to which the charm can attach any number of statuses. Ops will select the one worth of being surfaced to the user and become the final 'unit status', the others are discarded.
+But that's not very kind, is it?
+
+Sitrep is a tool to evaluate the status of the charm 'right now', collect all the separate individual statuses that have been attached to the `collect-unit-status` event, and output them in a colourful, structured manner. 
+
+If you label your statuses like so:
+
+```
+ActiveStatus("[foo.bar.baz] happy")
+ActiveStatus("[foo.bar] happy")
+BlockedStatus("[foo.bar.qux] sad")
+WaitingStatus("[bob] wait")
+ActiveStatus("[rob] hee")
+ActiveStatus()
+```
+
+You'll see a hierarchically organized sitrep output, something like:
+```
+. active ""
+  [bob] 
+    (wait) wait
+  [rob] 
+    (active) hee
+  [foo.bar] 
+    (active) happy
+    [.baz] 
+      (active) happy
+    [.qux] 
+      (block) sad
+```
+
+# `elect`
+
+If you are writing an integration test, or working with your development cloud and Juju has somewhat decided that `myapp/7`
+should be the leader of your deployment, but you really, really disagree and want `myapp/2` to be in charge instead, 
+worry no longer! You now wield the power of advanced hackery and election manipulation: type
+
+> `jhack elect myapp/2`
+ 
+...and in no time (about a minute, to be precise), `myapp/7` shall be deposed and `myapp/2` elected in its place.
+What's going on is, Jhack is killing the container agents on all units except the one you want to elect, 
+waiting for reelection to occur, then restarting everything up. It's also patching the pebble plans on those units 
+to inject a tiny python server that happily replies "oh I'm so healthy!" to any pebble/kubernetes probe that comes 
+along, so nobody will  realize that the agent is down.
+
+## Known issues
+
+### Stopped units come back to life before reelection has occurred
+
+The solution to this might be to add logic to keep watching the units and keep them dead until reelection occurs. 
+Come talk to me if you witness this, I've seen it happen but have been unable to reproduce.
+
+### Units receive `stop` and `start` events
+
+First of all, don't worry too much: the pod/container should not be churning. Jhack is tricking both pebble and kubernetes 
+to think that everything is fine with the unit. However, we still have to find a way to trick the Juju controller. 
+Know how to do that? Get in touch! 
+
+Fact is, you can safely ignore those events as they are in fact spurious. Your unit isn't *really* being restarted. 
+Telling the charm to ignore those events though can be tricky: consider using a 
+partial `jhack lobotomy` (see above) for that!
+
+# `debug-log`
+
+`jhack debug-log` is a command meant to unify hard-to-get log streams in a handy overview.
+Run `jhack debug-log myapp/0` and you will see a split view containing:
+- a pre-filtered `juju debug-log` only containing logs pertaining to the target unit
+- for each sidecar container:
+  - for each pebble service defined in the container:
+    - the logs for that service.
+- a handy tree-like overview of all the containers/services and their status
+
+You can change the panels shown by default to only keep those that you want using the `-i`/`--include` flag.
+
+You can enter **focus mode** (only show logs for specified containers or pebble services) by running:
+`jhack debug-log myapp/0 -f mycontainer:myservice.

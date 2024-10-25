@@ -15,7 +15,13 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import ColorOption, JPopen, RichSupportedColorOptions
+from jhack.conf.conf import check_destructive_commands_allowed
+from jhack.helpers import (
+    ColorOption,
+    JPopen,
+    RichSupportedColorOptions,
+    get_current_model,
+)
 from jhack.logger import logger as jhack_logger
 from jhack.utils.helpers.gather_endpoints import (
     AppName,
@@ -45,7 +51,7 @@ class IntegrationMatrix:
         include_peers: bool = False,
         color: RichSupportedColorOptions = "auto",
     ):
-        self._model = model
+        self._model: str = model or get_current_model()
         self._color = color
         self._endpoints = gather_endpoints(
             model, apps or (), include_peers=include_peers
@@ -59,12 +65,24 @@ class IntegrationMatrix:
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[
-            List[Union[List[PeerBinding], List[RelationBinding]]]
-        ] = self._build_matrix()
+        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = (
+            self._build_matrix()
+        )
+
+    @property
+    def model(self) -> str:
+        return self._model
 
     def refresh(self):
         self._endpoints = gather_endpoints(model=self._model, apps=self._apps)
+
+    def get_integrations(
+        self, provider_app: str, requirer_app: str
+    ) -> Union[List[PeerBinding], List[RelationBinding]]:
+        """Get the list of peer or regular relation bindings for these apps."""
+        return self.matrix[self._apps.index(provider_app)][
+            self._apps.index(requirer_app)
+        ]
 
     def _pairs(self):
         # returns provider, requirer pairs.
@@ -85,6 +103,7 @@ class IntegrationMatrix:
     ) -> List[List[Union[List[PeerBinding], List[RelationBinding]]]]:
         apps = self._apps
         mtrx = [[[] for _ in range(len(apps))] for _ in range(len(apps))]
+        model = self._model
 
         for provider, requirer in self._pairs():
             prov_idx = apps.index(provider)
@@ -134,7 +153,12 @@ class IntegrationMatrix:
                     )
                     shared.append(
                         RelationBinding(
-                            provider_endpoint, interface, requirer_endpoint, active
+                            provider_model=model,
+                            provider_endpoint=provider_endpoint,
+                            interface=interface,
+                            requirer_model=model,
+                            requirer_endpoint=requirer_endpoint,
+                            active=active,
                         )
                     )
 
@@ -154,9 +178,9 @@ class IntegrationMatrix:
         t = Table(
             show_header=False,
             expand=True,
-            border_style=self.peer_cell_border_style
-            if peer
-            else self.cell_border_style,
+            border_style=(
+                self.peer_cell_border_style if peer else self.cell_border_style
+            ),
         )
         t.add_column("")
 
@@ -187,8 +211,8 @@ class IntegrationMatrix:
                 )
                 return t
 
-            for provider_endpoint, interface, requirer_endpoint, active in bindings:
-                if active:
+            for binding in bindings:
+                if binding.active:
                     symtail, symhead = ">-", "->"
                     color = self.active_cell_text_style
                 else:
@@ -196,8 +220,8 @@ class IntegrationMatrix:
                     color = self.inactive_cell_text_style
 
                 fmt_obj = (
-                    f"{provider_endpoint} {symtail}[{interface}]{symhead} "
-                    f"{requirer_endpoint}"
+                    f"{binding.provider_endpoint} {symtail}[{binding.interface}]{symhead} "
+                    f"{binding.requirer_endpoint}"
                 )
                 t.add_row(Text(fmt_obj, style=color))
             return t
@@ -292,21 +316,17 @@ class IntegrationMatrix:
         for (prov_idx, req_idx), bindings in self._cells(
             skip_diagonal=True, yield_indices=True
         ):
-            for (
-                provider_endpoint,
-                interface,
-                requirer_endpoint,
-                is_active,
-            ) in bindings:
+            binding: RelationBinding
+            for binding in bindings:
                 prov = self._apps[prov_idx]
                 req = self._apps[req_idx]
 
                 if active in {True, False}:
                     # only include if the interface is currently not at the desired state
-                    if is_active is not active:
+                    if binding.active is not active:
                         logger.debug(
-                            f"skipping {prov}:{provider_endpoint} --> [{interface}] --> "
-                            f"{req}:{requirer_endpoint} "
+                            f"skipping {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> "
+                            f"{req}:{binding.requirer_endpoint} "
                             f'interface is already {"in" if active else ""}active'
                         )
                         continue
@@ -317,9 +337,9 @@ class IntegrationMatrix:
 
                 target_bindings.append(
                     (
-                        f"{prov}:{provider_endpoint}",
-                        interface,
-                        f"{req}:{requirer_endpoint}",
+                        f"{prov}:{binding.provider_endpoint}",
+                        binding.interface,
+                        f"{req}:{binding.requirer_endpoint}",
                     )
                 )
 
@@ -343,6 +363,8 @@ class IntegrationMatrix:
 
         if dry_run:
             return
+
+        check_destructive_commands_allowed(f"imatrix {verb}", "\n\t".join(cmd_list))
 
         console = Console()
         console.print(f"{verb.title()}ing relations...")
@@ -477,18 +499,13 @@ def cmr(remote, local=None, dry_run: bool = False):
     return _cmr(remote, local=local, dry_run=dry_run)
 
 
-def _cmr(remote, local=None, dry_run: bool = False):
-    print(f"gathering imatrix for model {local or '<the current model>'}")
-    mtrx1 = IntegrationMatrix(model=local)
-    print(f"gathering imatrix for model {remote}")
-    mtrx2 = IntegrationMatrix(model=remote)
-    apps1 = mtrx1._apps
-    apps2 = mtrx2._apps
-    print(f"{len(apps1)} and {len(apps2)} found respectively \n")
-
-    cmrs: Dict[Tuple[AppName, AppName], List[RelationBinding]] = {}
-
-    for provider, requirer in itertools.product(apps1, apps2):
+def _collect_possible_cmrs(
+    apps1, apps2, mtrx1, mtrx2, flipped: bool = False
+) -> Dict[Tuple[AppName, AppName, bool], List[RelationBinding]]:
+    cmrs: Dict[Tuple[AppName, AppName, bool], List[RelationBinding]] = {}
+    for provider, requirer in itertools.chain(
+        itertools.product(apps1, apps2),
+    ):
         print(f"checking {provider} <-> {requirer}")
 
         provides = mtrx1._endpoints[provider]["provides"]
@@ -527,22 +544,50 @@ def _cmr(remote, local=None, dry_run: bool = False):
                 )
                 shared.append(
                     RelationBinding(
-                        provider_endpoint, interface, requirer_endpoint, active
+                        provider_model=mtrx1.model,
+                        provider_endpoint=provider_endpoint,
+                        interface=interface,
+                        requirer_model=mtrx2.model,
+                        requirer_endpoint=requirer_endpoint,
+                        active=active,
                     )
                 )
 
         if shared:
-            cmrs[(provider, requirer)] = shared
+            cmrs[(provider, requirer, flipped)] = shared
+    return cmrs
+
+
+def _cmr(remote, local=None, dry_run: bool = False):
+    local = local or get_current_model()
+    if not local:
+        exit("you need to switch to a model before you do this")
+
+    print(f"gathering imatrix for model {local}")
+    mtrx1 = IntegrationMatrix(model=local)
+
+    print(f"gathering imatrix for model {remote}")
+    mtrx2 = IntegrationMatrix(model=remote)
+    apps1 = mtrx1._apps
+    apps2 = mtrx2._apps
+
+    print(f"{len(apps1)} and {len(apps2)} found respectively \n")
+
+    cmrs: Dict[Tuple[AppName, AppName, bool], List[RelationBinding]] = {}
+    cmrs.update(_collect_possible_cmrs(apps1, apps2, mtrx1, mtrx2))
+    # flip directionality
+    cmrs.update(_collect_possible_cmrs(apps2, apps1, mtrx2, mtrx1, flipped=True))
 
     opts = {}
-    for i, ((prov, req), bindings) in enumerate(cmrs.items()):
+    for i, ((prov, req, flipped), bindings) in enumerate(cmrs.items()):
         binding: RelationBinding
         for j, binding in enumerate(bindings):
+            arrow = "<--" if flipped else "-->"
             print(
-                f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} --> [{binding.interface}] "
-                f"--> {req}:{binding.requirer_endpoint} "
+                f"({i}.{j}) := \t {prov}:{binding.provider_endpoint} {arrow} [{binding.interface}] "
+                f"{arrow} {req}:{binding.requirer_endpoint} "
             )
-            opts[f"{i}.{j}"] = (prov, binding, req)
+            opts[f"{i}.{j}"] = (prov, binding, req, flipped)
 
     if not opts:
         print(
@@ -554,16 +599,15 @@ def _cmr(remote, local=None, dry_run: bool = False):
     cmr = Prompt.ask("Pick a CMR", choices=list(opts) + ["ALL"], default=list(opts)[0])
 
     if cmr == "ALL":
-        _pull_cmrs(opts.values(), remote, local, dry_run)
+        _pull_cmrs(opts.values(), dry_run)
     else:
-        prov, binding, req = opts[cmr]
-        _pull_cmrs(((prov, binding, req),), remote, local, dry_run)
+        _pull_cmrs((opts[cmr],), dry_run)
 
 
 def _pull_cmrs(
-    specs: Iterable[Tuple[str, RelationBinding, str]],  # provider, binding, requirer
-    remote: str,
-    local: Optional[str],
+    specs: Iterable[
+        Tuple[str, RelationBinding, str, bool]
+    ],  # provider, binding, requirer, flipped
     dry_run: bool,
 ):
     def fmt_endpoint(model, app, endpoint):
@@ -580,32 +624,42 @@ def _pull_cmrs(
     setup_scripts = []
     relate_scripts = []
 
-    for prov, binding, req in specs:
+    for prov, binding, req, flipped in specs:
+        requirer_ep = binding.requirer_endpoint
+        provider_ep = binding.provider_endpoint
+
+        if flipped:
+            provider_ep, requirer_ep = requirer_ep, provider_ep
+
+        requirer_model = binding.requirer_model
+        provider_model = binding.provider_model
+
+        remote_ep_fmt = fmt_endpoint(provider_model, req, requirer_ep)
+        local_ep_fmt = fmt_endpoint(requirer_model, prov, provider_ep)
         txt = (
-            Text("Pulling ")
-            + fmt_endpoint(remote, req, binding.requirer_endpoint)
+            Text("Pushing " if flipped else "Pulling ")
+            + remote_ep_fmt
             + " --> ["
             + Text(binding.interface, style="green")
             + "] --> "
-            + fmt_endpoint(local, prov, binding.provider_endpoint)
+            + local_ep_fmt
         )
         c.print(txt)
 
         controller_prefix = ""
         controller = ""
-        if ":" in remote:
-            controller_name, model = remote.split(":")
+
+        if ":" in requirer_model:
+            controller_name, requirer_model = requirer_model.split(":")
             controller_prefix = f"{controller_name}:"
             controller = f" -c {controller_name}"
-        else:
-            model = remote
 
         setup_scripts += [
-            f"juju offer{controller} {model}.{req}:{binding.requirer_endpoint}",
-            f"juju consume {controller_prefix}{model}.{req}",
+            f"juju offer{controller} {requirer_model}.{req}:{requirer_ep}",
+            f"juju consume -m {provider_model} {controller_prefix}admin/{requirer_model}.{req}",
         ]
         relate_scripts += [
-            f"juju relate {req}:{binding.requirer_endpoint} {prov}:{binding.provider_endpoint}",
+            f"juju relate -m {provider_model} {req}:{requirer_ep} {prov}:{provider_ep}",
         ]
 
     if dry_run:
@@ -623,10 +677,10 @@ def _pull_cmrs(
 
 
 if __name__ == "__main__":
-    # mtrx = IntegrationMatrix(include_peers=True)
-    # # mtrx.disconnect()
+    mtrx = IntegrationMatrix(include_peers=True)
+    mtrx.connect()
     # # mtrx.watch()
     # # mtrx.pprint()
     # mtrx.pprint()
 
-    cmr("lxd:influx")
+    # cmr("localhost-localhost:gagent")

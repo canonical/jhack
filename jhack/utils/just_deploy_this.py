@@ -6,6 +6,8 @@ import typer
 import yaml
 from click import Choice
 
+from jhack.conf.conf import check_destructive_commands_allowed
+
 suffixes = ["-k8s", "-operator"]
 
 
@@ -18,10 +20,10 @@ def _just_deploy_this(
         charms = list(path.glob("*.charm"))
 
     if not charms:
-        print(f"No charm found in {path}. Pack one first.")
+        print(f"No charm found in {path!r}. Pack one first.")
 
     if len(charms) > 1:
-        print(f"Multiple charms found in {path}.")
+        print(f"Multiple charms found in {path!r}")
         for i, c in enumerate(charms):
             print(f"{i}: {c}")
 
@@ -39,7 +41,7 @@ def _just_deploy_this(
     if not meta.exists():
         meta = path / "charmcraft.yaml"
     if not meta.exists():
-        exit(f"No metadata.yaml/charmcraft.yaml found at {path}; unable to comply.")
+        exit(f"No metadata.yaml/charmcraft.yaml found at {path!r}; unable to comply.")
 
     raw_meta = yaml.safe_load(meta.read_text())
     if not name:
@@ -72,13 +74,17 @@ def _just_deploy_this(
 
     extra_args = " " + " ".join(extra_args) if extra_args else ""
     if refresh:
-        cmd = f"juju refresh {name} --path {charm.absolute()} {' '.join(resources_args)}{extra_args}"
+        cmd = (
+            f"juju refresh {name} --path {charm.absolute()} "
+            f"{' '.join(resources_args)}{extra_args}"
+        )
     else:
         cmd = f"juju deploy {charm.absolute()} {' '.join(resources_args)} {name}{extra_args}"
 
     if dry_run:
         print(f"would run:\n\t{cmd}")
         return
+    check_destructive_commands_allowed("deploy", cmd)
 
     print(f"deploying {charm} as {name}")
     subprocess.run(shlex.split(cmd))

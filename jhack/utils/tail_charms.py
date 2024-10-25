@@ -6,26 +6,15 @@ import sys
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from io import StringIO
 from pathlib import Path
 from subprocess import getoutput, run
-from typing import (
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
-import rich
 import typer
 from rich.align import Align
 from rich.color import Color
-from rich.console import Console
+from rich.console import Console, RenderableType
 from rich.live import Live
 from rich.style import Style
 from rich.table import Column, Table
@@ -33,10 +22,10 @@ from rich.text import Text
 
 from jhack.conf.conf import CONFIG
 from jhack.helpers import JPopen, Target, get_all_units
-from jhack.logger import logger as jhacklogger
+from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
-logger = jhacklogger.getChild(__file__)
+logger = jhack_logger.getChild(__file__)
 
 _TAIL_VERSION = "0.4"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
@@ -77,7 +66,7 @@ def model_loglevel(model: str = None):
     return "WARNING"  # the default
 
 
-def parse_targets(targets: List[str] = None, model: str = None) -> Sequence[Target]:
+def parse_targets(targets: List[str] = None, model: str = None) -> Tuple[Target, ...]:
     if not targets:
         return get_all_units(model=model)
 
@@ -147,6 +136,8 @@ class EventReemittedLogMsg(EventDeferredLogMsg):
 @dataclass
 class RawTable:
     msgs: List[EventLogMsg] = field(default_factory=list)
+    # we store events and messages separately because some events are inserted here by the Processor
+    # even though no previously captured loggline corresponds to them.
     events: List[str] = field(default_factory=list)
     deferrals: List[Optional[str]] = field(default_factory=list)
     ns: List[str] = field(default_factory=list)
@@ -172,25 +163,45 @@ class RawTable:
         self.deferrals.insert(0, None)
 
 
-_event_colors = {
-    "update_status": Color.from_rgb(50, 50, 50),
-    "collect_metrics": Color.from_rgb(50, 50, 50),
-    "leader_elected": Color.from_rgb(26, 184, 68),
-    "leader_settings_changed": Color.from_rgb(26, 184, 68),
-    "_relation_created": Color.from_rgb(184, 26, 250),
-    "_relation_joined": Color.from_rgb(184, 26, 200),
-    "_relation_changed": Color.from_rgb(184, 26, 150),
-    "_relation_departed": Color.from_rgb(184, 70, 100),
-    "_relation_broken": Color.from_rgb(184, 80, 50),
-    "_storage_attached": Color.from_rgb(184, 139, 26),
-    "_storage_detaching": Color.from_rgb(184, 139, 26),
-    "_action": Color.from_rgb(200, 200, 50),
-    "stop": Color.from_rgb(184, 26, 71),
-    "remove": Color.from_rgb(171, 81, 21),
-    "start": Color.from_rgb(20, 147, 186),
-    "install": Color.from_rgb(49, 183, 224),
-    "-pebble-ready": Color.from_rgb(212, 224, 40),
+_event_colors_by_category = {
+    "lifecycle": {
+        "_action": Color.from_rgb(200, 200, 50),
+        "stop": Color.from_rgb(184, 26, 71),
+        "remove": Color.from_rgb(171, 81, 21),
+        "start": Color.from_rgb(20, 147, 186),
+        "install": Color.from_rgb(49, 183, 224),
+        "update_status": Color.from_rgb(150, 150, 50),
+        "collect_metrics": Color.from_rgb(50, 50, 50),
+        "leader_elected": Color.from_rgb(26, 184, 68),
+        "leader_settings_changed": Color.from_rgb(26, 184, 68),
+    },
+    "relation": {
+        "_relation_created": Color.from_rgb(184, 26, 250),
+        "_relation_joined": Color.from_rgb(184, 26, 230),
+        "_relation_changed": Color.from_rgb(184, 26, 210),
+        "_relation_departed": Color.from_rgb(184, 70, 190),
+        "_relation_broken": Color.from_rgb(184, 80, 170),
+    },
+    "secrets": {
+        "secret_changed": Color.from_rgb(10, 80, 240),
+        "secret_expired": Color.from_rgb(10, 100, 250),
+        "secret_remove": Color.from_rgb(10, 120, 230),
+        "secret_rotate": Color.from_rgb(10, 140, 220),
+    },
+    "storage": {
+        "_storage_attached": Color.from_rgb(184, 139, 26),
+        "_storage_detaching": Color.from_rgb(184, 139, 26),
+    },
+    "workload": {
+        "_pebble_ready": Color.from_rgb(212, 224, 40),
+        "_pebble_custom_notice": Color.from_rgb(212, 210, 40),
+        "_pebble_check_failed": Color.from_rgb(212, 200, 40),
+        "_pebble_check_recovered": Color.from_rgb(212, 190, 40),
+    },
 }
+_event_colors = {}
+for sublist in _event_colors_by_category.values():
+    _event_colors.update(sublist)
 
 _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
@@ -207,6 +218,83 @@ _deferral_colors = {
     "bounced": Color.from_rgb(252, 115, 3),
 }
 _trace_id_color = Color.from_rgb(100, 100, 210)
+
+
+def _print_color_codes():
+    console = Console(color_system="truecolor")
+    table = Table("category", "color", "description", expand=True)
+    for cat, example, color, desc in (
+        (
+            "origin",
+            "some_event",
+            _operator_event_color,
+            "operator event (cfr. the elusive [`OPERATOR_DISPATCH`](https://github.com/canonical/operator/blob/main/ops/_main.py#L319))",
+        ),
+        (
+            "",
+            "custom_event",
+            _custom_event_color,
+            "custom event emitted by the charm on itself",
+        ),
+        (
+            "",
+            f"foo-pebble-ready {_fire_symbol}",
+            _jhack_fire_event_color,
+            "event emitted by `jhack fire`",
+        ),
+        (
+            "",
+            f"install {_lobotomy_symbol}",
+            _jhack_lobotomy_event_color,
+            "event intercepted by `jhack lobotomy` (therefore, NOT emitted on the charm)",
+        ),
+        (
+            "",
+            f"foo-relation-broken {_replay_symbol}",
+            _jhack_replay_event_color,
+            "event emitted by `jhack replay`",
+        ),
+    ):
+        table.add_row(cat, Text(example, style=Style(color=color)), desc)
+    table.add_section()
+
+    for cat, evt_to_color in _event_colors_by_category.items():
+        for evt, color in evt_to_color.items():
+            event_name = "*" + evt if evt.startswith("_") else evt
+            table.add_row(
+                cat,
+                Text(event_name, style=Style(color=color)),
+                f"the '{event_name}' juju event",
+            )
+            cat = ""
+
+    table.add_section()
+    table.add_row(
+        "uncategorized",
+        Text("foo_bar_baz", style=Style(color=_default_event_color)),
+        "uncategorized event (unknown origin and type)",
+    )
+    table.add_section()
+
+    id_color = _random_color()
+    for deferral_status, explanation in (
+        ("deferred", "the 'some_event' event has been deferred and assigned number 13"),
+        ("reemitted", "the event #13 has been reemitted"),
+        ("bounced", "the event #13 has been reemitted and immediately re-deferred"),
+    ):
+        table.add_row(
+            deferral_status,
+            Text("13 ", style=Style(color=id_color))
+            + Text("some_event", style=Style(color=_jhack_fire_event_color))
+            + "  "
+            + Text(
+                _deferral_status_to_symbol[deferral_status],
+                style=Style(color=_deferral_colors[deferral_status]),
+            ),
+            explanation,
+        )
+
+    console.print(table)
 
 
 def _random_color():
@@ -381,6 +469,412 @@ class _History:
         self.raw_tables = defaultdict(_RawTableHistory)
 
 
+# todo: should we have a "console compatibility mode" using ascii here?
+_bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
+_close = "❮"
+_open = "❯"
+_null = ""
+
+_deferral_status_to_symbol = {
+    "null": _null,
+    "deferred": _open,
+    "reemitted": _close,
+    "bounced": _bounce,
+}
+
+
+def _get_event_color(event: str, msg: Optional[EventLogMsg]) -> Color:
+    """Color-code the events as they are displayed to make reading them easier."""
+    # If we have a log message to start from, use any relevant tags to determine what type of event it is
+    if msg:
+        event = msg.event
+        if "custom" in msg.tags:
+            return _custom_event_color
+        if "operator" in msg.tags:
+            return _operator_event_color
+        if "jhack" in msg.tags:
+            if "fire" in msg.tags:
+                return _jhack_fire_event_color
+            elif "replay" in msg.tags:
+                return _jhack_replay_event_color
+            elif "lobotomy" in msg.tags:
+                return _jhack_lobotomy_event_color
+            return _jhack_event_color
+
+    # if we are coloring an event without tags,
+    # use the event-specific color coding.
+    if event in _event_colors:
+        return _event_colors.get(event, _default_event_color)
+    else:
+        for _e in _event_colors:
+            if event.endswith(_e):
+                return _event_colors[_e]
+    return _default_event_color
+
+
+_fire_symbol = "🔥"
+_fire_symbol_ascii = "*"
+_lobotomy_symbol = "✂"
+_replay_symbol = "⟳"
+
+
+def _get_event_text(event: str, msg: Optional[EventLogMsg], ascii=False):
+    if not msg:
+        return event
+    event_text = event
+    if "jhack" in msg.tags:
+        if "lobotomy" in msg.tags:
+            event_text += f" {_lobotomy_symbol}"
+        if "fire" in msg.tags:
+            event_text += f" {_fire_symbol_ascii if ascii else _fire_symbol}"
+        if "replay" in msg.tags:
+            if "source" in msg.tags:
+                event_text += " (↑)"
+            elif "replayed" in msg.tags:
+                event_text += (
+                    f" ({_replay_symbol}:{msg.jhack_replayed_evt_timestamp} ↓)"
+                )
+    return event_text
+
+
+class Printer:
+    def render(
+        self,
+        msg: Optional[EventLogMsg],
+        targets: List[Target],
+        raw_tables: Dict[str, RawTable],
+        timestamps: List[str],
+    ):
+        pass
+
+    def quit(
+        self,
+        evt_count: Counter,
+        targets: List[Target],
+        raw_tables: Dict[str, RawTable],
+        timestamps: List[str],
+        history: _History,
+    ):
+        pass
+
+
+class PoorPrinter(Printer):
+    def __init__(
+        self,
+        live: bool = True,
+        output: Optional[Path] = None,
+    ):
+        self._output = output
+        self._live = live
+        self._out_stream = sys.stdout if live else StringIO()
+        self._targets_known = set()
+
+    def render(
+        self,
+        msg: Optional[EventLogMsg],
+        targets: List[Target],
+        raw_tables: Dict[str, RawTable],
+        timestamps: List[str],
+    ):
+        if not targets:
+            self._out_stream.write("Listening for events... \n")
+            return
+
+        colwidth = 20
+
+        col_titles = ["timestamp"]
+        new_cols = [0]
+        for target in targets:
+            col_titles.append(target.unit_name)
+            new_cols.append(1 if target not in self._targets_known else 0)
+            self._targets_known.add(target)
+
+        def _pad_header(h: str):
+            h = f" {h} "
+            hlen = len(h)
+            extra = colwidth - hlen
+            pre = "=" * (extra // 2)
+            post = "=" * ((extra // 2) + (0 if (hlen / 2).is_integer() else 1))
+            return f"{pre}{h.upper()}{post}"
+
+        if any(new_cols):
+            # print header
+            header = (
+                "TIMESTAMP | " + " | ".join(map(_pad_header, col_titles[1:])) + "\n"
+            )
+            self._out_stream.write(header)
+
+        _pad = lambda x: " " * ((colwidth // 2)) + x + " " * ((colwidth // 2) - len(x))
+        space = _pad(".")
+
+        line = f"{msg.timestamp}  | "
+        spill_over = 0
+        for target in targets:
+            if target.unit_name == msg.unit:
+                evt = _get_event_text(msg.event, msg, ascii=True).ljust(colwidth)
+                line += evt
+                spill_over = len(evt) - colwidth
+            else:
+                if spill_over > 0:
+                    line += space[spill_over:]
+                    spill_over -= colwidth
+
+                else:
+                    line += space
+            line += " < " if spill_over > 0 else " | "
+
+        line += "\n"
+        self._out_stream.write(line)
+
+    def quit(
+        self,
+        evt_count: Counter,
+        targets: List[Target],
+        raw_tables: Dict[str, RawTable],
+        timestamps: List[str],
+        history: _History,
+    ):
+        print(
+            f"Jhack tail v0.4: {evt_count.total()} captured events in {len(targets)}."
+        )
+        if not self._live:
+            if self._output:
+                (self._out_stream.read())
+            else:
+                print(self._out_stream.read())
+
+
+class RichPrinter:
+    def __init__(
+        self,
+        color: _Color = "auto",
+        flip: bool = False,
+        show_ns: bool = True,
+        show_trace_ids: bool = False,
+        show_defer: bool = False,
+        output: Optional[Path] = None,
+    ):
+        self._color = color
+        self._flip = flip
+        self._show_defer = show_defer
+        self._show_trace_ids = show_trace_ids
+        self._show_ns = show_ns
+        self._rendered = False
+        self._output = output
+
+        if color == "no":
+            color = None
+
+        self.console = console = Console(color_system=color)
+        self.live = live = Live(console=console)
+        live.update("Listening for events...", refresh=True)
+        live.start()
+
+    def render(
+        self,
+        msg: Optional[EventLogMsg],
+        targets: List[Target],
+        raw_tables: Dict[str, RawTable],
+        timestamps: List[str],
+        _debug=False,
+        final: bool = False,
+    ) -> RenderableType:
+        # we're rendering the table and flipping it every time. more efficient
+        # to add new rows to the top and keep old ones, but how do we know if
+        # deferral lines have changed?
+        self._rendered = True
+        table = Table(
+            show_footer=False, expand=True, title=f"Jhack tail v{_TAIL_VERSION}"
+        )
+        table.add_column(header="timestamp", style="")
+        unit_grids = []
+        n_cols = 1
+
+        ns_shown = self._show_ns
+        deferrals_shown = self._show_defer
+        traces_shown = self._show_trace_ids
+        if ns_shown:
+            n_cols += 1
+        if deferrals_shown:
+            n_cols += 1
+        if traces_shown:
+            n_cols += 1
+
+        targets = targets
+        raw_tables = raw_tables
+        for target in targets:
+            tgt_rows = []
+            raw_table = raw_tables[target.unit_name]
+
+            if not final and REMOVE_EMPTY_COLUMNS:
+                if not any(raw_table.events):
+                    logger.debug(
+                        f"skipping column for {target.unit_name} because it is empty"
+                    )
+                    continue
+
+            msg: Optional[EventLogMsg]
+            for i, (msg, event, n) in enumerate(
+                zip(raw_table.msgs, raw_table.events, raw_table.ns)
+            ):
+                rndr = (
+                    Text(
+                        _get_event_text(event, msg),
+                        style=Style(color=_get_event_color(event, msg)),
+                    )
+                    if event
+                    else ""
+                )
+                row = [rndr]
+
+                if deferrals_shown:
+                    deferral_status = raw_table.deferrals[i] or "null"
+                    deferral_symbol = _deferral_status_to_symbol[deferral_status]
+                    style = (
+                        Style(color=_deferral_colors[deferral_status])
+                        if deferral_status != "null"
+                        else ""
+                    )
+                    deferral_rndr = Text(deferral_symbol, style=style)
+                    row.append(deferral_rndr)
+
+                if ns_shown:
+                    n_rndr = (
+                        Text(n, style=Style(color=raw_table.get_color(n))) if n else ""
+                    )
+                    row.insert(0, n_rndr)
+
+                if traces_shown:
+                    trace_id = msg.trace_id if msg else None
+                    trace_rndr = (
+                        Text(trace_id, style=Style(color=_trace_id_color))
+                        if trace_id
+                        else "-"
+                    )
+                    row.append(trace_rndr)
+
+                tgt_rows.append(row)
+
+            tgt_grid = Table.grid(
+                *(Column("", no_wrap=True) for _ in range(n_cols)),
+                expand=True,
+                padding=(0, 1, 0, 1),
+            )
+            n_tgt_rows = len(tgt_rows) - 1
+            for i, row in enumerate(reversed(tgt_rows) if self._flip else tgt_rows):
+                if row[0]:
+                    row[0].style += Style(
+                        underline=i == (n_tgt_rows if self._flip else 0)
+                    )
+                tgt_grid.add_row(*row)
+
+            table.add_column(header=target.unit_name, style="")
+            unit_grids.append(tgt_grid)
+
+        _timestamps_grid = Table.grid("", expand=True)
+
+        timestamps = timestamps
+        n_evt_timestamps = len(timestamps) - 1
+        evt_timestamps = reversed(timestamps) if self._flip else timestamps
+        for i, tstamp in enumerate(evt_timestamps):
+            _timestamps_grid.add_row(
+                tstamp,
+                style=Style(
+                    color=_tstamp_color,
+                    underline=i == (n_evt_timestamps if self._flip else 0),
+                ),
+            )
+
+        table.add_row(_timestamps_grid, *unit_grids)
+        if _debug:
+            self.console.print(table)
+            return table
+
+        table_centered = Align.center(table)
+        self.live.update(table_centered)
+
+        if not self.live.is_started:
+            logger.info("live started by render")
+            self.live.start()
+
+        return table_centered
+
+    def quit(
+        self,
+        evt_count: Counter,
+        targets: List[Target],
+        raw_tables: Dict[str, RawTable],
+        timestamps: List[str],
+        history: _History,
+    ):
+        """Print a goodbye message and output a summary to file if requested."""
+        if not self._rendered:
+            self.live.update("No events caught.", refresh=True)
+            return
+
+        output = self._output
+        if output:
+            # load back history into raw tables
+            history = history
+            # prepend all things we popped during cropping
+            timestamps = history.timestamps + timestamps
+            for unit_name, rt in raw_tables.items():
+                rt.deferrals = history.raw_tables[unit_name].deferrals + rt.deferrals
+                rt.events = history.raw_tables[unit_name].events + rt.events
+                rt.ns = history.raw_tables[unit_name].ns + rt.ns
+            # the raw tables we have now should run up to the beginning of time
+
+        rendered = self.render(
+            None,
+            targets=targets,
+            raw_tables=raw_tables,
+            timestamps=timestamps,
+            final=True,
+        )
+        table = cast(Table, rendered.renderable)
+        table.rows[-1].end_section = True
+        evt_count = evt_count
+
+        nevents = []
+        tgt_names = []
+        for tgt in targets:
+            nevents.append(str(evt_count[tgt.unit_name]))
+            text = Text(tgt.unit_name, style="bold")
+            tgt_names.append(text)
+        table.add_row(Text("The end.", style="bold blue"), *tgt_names, end_section=True)
+
+        table.add_row(Text("events emitted", style="green"), *nevents)
+
+        if self._show_defer:
+            cdefevents = []
+            for tgt in targets:
+                raw_table = raw_tables[tgt.unit_name]
+                cdefevents.append(str(len(raw_table.currently_deferred)))
+            table.add_row(Text("currently deferred events", style="green"), *cdefevents)
+
+        table_centered = Align.center(table)
+
+        self.live.update(table_centered)
+        self.live.refresh()
+        self.live.stop()
+
+        if not output:
+            return
+        if not output.parent.exists():
+            logger.warning("output directory does not exist")
+            return
+
+        try:
+            with open(output, "w") as o_file:
+                table.expand = False
+                table.padding = 1
+                console = Console(file=o_file, width=10 ^ 10000, height=10 ^ 10000)
+                console.print(table)
+
+        except Exception:
+            logger.exception(f"failed to write to {output}")
+
+
 class Processor:
     # FIXME: why does sometime event/relation_event work, and sometimes
     #  uniter_event does? OF Version?
@@ -392,25 +886,46 @@ class Processor:
         history_length: int = 10,
         show_ns: bool = True,
         show_trace_ids: bool = False,
-        color: _Color = "auto",
         show_defer: bool = False,
         event_filter_re: re.Pattern = None,
         model: str = None,
-        flip: bool = False,
         output: str = None,
+        printer: Literal["rich", "raw"] = "rich",
+        # only available in rich printing mode
+        color: _Color = "auto",
+        flip: bool = False,
     ):
         self.targets = list(targets)
         self.output = Path(output) if output else None
         self.add_new_targets = add_new_targets
         self.history_length = history_length
+
+        if printer == "raw":
+            if flip or (color != "auto"):
+                logger.warning(
+                    "'flip' and 'color' args unavailable in this printer mode."
+                )
+            self.printer = PoorPrinter(
+                live=True,
+                output=self.output,
+            )
+
+        elif printer == "rich":
+            self.printer = RichPrinter(
+                color=color,
+                flip=flip,
+                show_defer=show_defer,
+                show_ns=show_ns,
+                show_trace_ids=show_trace_ids,
+                output=self.output,
+            )
+        else:
+            exit(f"unknown printer type: {printer}")
+
         # collects items that get popped from the list because we're exceeding the length
         # in case on exit we want to output the whole log to file.
         self.history = _History()
 
-        if color == "no":
-            color = None
-
-        self.console = console = Console(color_system=color)
         self.event_filter_re = event_filter_re
         self._raw_tables: Dict[str, RawTable] = {
             target.unit_name: RawTable() for target in targets
@@ -432,13 +947,10 @@ class Processor:
         self._duplicate_cache = set()
 
         self._has_just_emitted = False
-        self.live = live = Live(console=console)
-        live.start()
 
         self._warned_about_orphans = False
 
         self.parser = LogLineParser(model=model)
-        self._rendered = False
 
     def _warn_about_orphaned_event(self, evt):
         if self._warned_about_orphans:
@@ -699,11 +1211,16 @@ class Processor:
             self._extend_other_tables(msg)
             self._crop()
 
-        if mode != "jhack-mod" and self._show_defer and self._is_tracking(msg):
+        if mode != "jhack-mod" and self._show_defer:
             logger.info(f"updating defer for {msg.event}")
             self.update_defers(msg)
 
-        self.render()
+        self.printer.render(
+            msg=msg,
+            targets=self.targets,
+            raw_tables=self._raw_tables,
+            timestamps=self._timestamps,
+        )
         return msg
 
     def _extend_other_tables(self, msg: EventLogMsg):
@@ -715,187 +1232,8 @@ class Processor:
 
             raw_table.add_blank_row()
 
-    def _get_event_color(self, event: str, msg: Optional[EventLogMsg]) -> Color:
-        if msg:
-            event = msg.event
-            if "custom" in msg.tags:
-                return _custom_event_color
-            if "operator" in msg.tags:
-                return _operator_event_color
-            if "jhack" in msg.tags:
-                if "fire" in msg.tags:
-                    return _jhack_fire_event_color
-                elif "replay" in msg.tags:
-                    return _jhack_replay_event_color
-                elif "lobotomy" in msg.tags:
-                    return _jhack_lobotomy_event_color
-                return _jhack_event_color
-
-        if event in _event_colors:
-            return _event_colors.get(event, _default_event_color)
-        else:
-            for _e in _event_colors:
-                if event.endswith(_e):
-                    return _event_colors[_e]
-        return _default_event_color
-
-    _fire_symbol = "🔥"
-    _lobotomy_symbol = "✂"
-    _replay_symbol = "⟳"
-
-    @classmethod
-    def _get_event_text(cls, event: str, msg: Optional[EventLogMsg]):
-        if not msg:
-            return event
-        event_text = event
-        if "jhack" in msg.tags:
-            if "lobotomy" in msg.tags:
-                event_text += f" {cls._lobotomy_symbol}"
-            if "fire" in msg.tags:
-                event_text += f" {cls._fire_symbol}"
-            if "replay" in msg.tags:
-                if "source" in msg.tags:
-                    event_text += " (↑)"
-                elif "replayed" in msg.tags:
-                    event_text += (
-                        f" ({cls._replay_symbol}:{msg.jhack_replayed_evt_timestamp} ↓)"
-                    )
-        return event_text
-
-    def render(self, _debug=False) -> Align:
-        # we're rendering the table and flipping it every time. more efficient
-        # to add new rows to the top and keep old ones, but how do we know if
-        # deferral lines have changed?
-        self._rendered = True
-        table = Table(
-            show_footer=False, expand=True, title=f"Jhack tail v{_TAIL_VERSION}"
-        )
-        table.add_column(header="timestamp", style="")
-        unit_grids = []
-        n_cols = 1
-
-        ns_shown = self._show_ns
-        deferrals_shown = self._show_defer
-        traces_shown = self._show_trace_ids
-        if ns_shown:
-            n_cols += 1
-        if deferrals_shown:
-            n_cols += 1
-        if traces_shown:
-            n_cols += 1
-
-        targets = self.targets
-        raw_tables = self._raw_tables
-        for target in targets:
-            tgt_rows = []
-            raw_table = raw_tables[target.unit_name]
-
-            if REMOVE_EMPTY_COLUMNS:
-                if not any(raw_table.events):
-                    logger.debug(
-                        f"skipping column for {target.unit_name} because it is empty"
-                    )
-                    continue
-
-            for i, (msg, event, n) in enumerate(
-                zip(raw_table.msgs, raw_table.events, raw_table.ns)
-            ):
-                rndr = (
-                    Text(
-                        self._get_event_text(event, msg),
-                        style=Style(color=self._get_event_color(event, msg)),
-                    )
-                    if event
-                    else ""
-                )
-                row = [rndr]
-
-                if deferrals_shown:
-                    deferral_status = raw_table.deferrals[i] or "null"
-                    deferral_symbol = self._deferral_status_to_symbol[deferral_status]
-                    style = (
-                        Style(color=_deferral_colors[deferral_status])
-                        if deferral_status != "null"
-                        else ""
-                    )
-                    deferral_rndr = Text(deferral_symbol, style=style)
-                    row.append(deferral_rndr)
-
-                if ns_shown:
-                    n_rndr = (
-                        Text(n, style=Style(color=raw_table.get_color(n))) if n else ""
-                    )
-                    row.insert(0, n_rndr)
-
-                if traces_shown:
-                    trace_rndr = (
-                        Text(msg.trace_id, style=Style(color=_trace_id_color))
-                        if msg.trace_id
-                        else ""
-                    )
-                    row.append(trace_rndr)
-
-                tgt_rows.append(row)
-
-            tgt_grid = Table.grid(
-                *(Column("", no_wrap=True) for _ in range(n_cols)),
-                expand=True,
-                padding=(0, 1, 0, 1),
-            )
-            n_tgt_rows = len(tgt_rows) - 1
-            for i, row in enumerate(reversed(tgt_rows) if self._flip else tgt_rows):
-                if row[0]:
-                    row[0].style += Style(
-                        underline=i == (n_tgt_rows if self._flip else 0)
-                    )
-                tgt_grid.add_row(*row)
-
-            table.add_column(header=target.unit_name, style="")
-            unit_grids.append(tgt_grid)
-
-        _timestamps_grid = Table.grid("", expand=True)
-
-        timestamps = self._timestamps
-        n_evt_timestamps = len(timestamps) - 1
-        evt_timestamps = reversed(timestamps) if self._flip else timestamps
-        for i, tstamp in enumerate(evt_timestamps):
-            _timestamps_grid.add_row(
-                tstamp,
-                style=Style(
-                    color=_tstamp_color,
-                    underline=i == (n_evt_timestamps if self._flip else 0),
-                ),
-            )
-
-        table.add_row(_timestamps_grid, *unit_grids)
-        if _debug:
-            self.console.print(table)
-            return table
-
-        table_centered = Align.center(table)
-        self.live.update(table_centered)
-
-        if not self.live.is_started:
-            logger.info("live started by render")
-            self.live.start()
-
-        return table_centered
-
     def _is_tracking(self, msg):
         return msg.unit in self.tracking
-
-    # todo: should we have a "console compatibility mode" using ascii here?
-    _bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
-    _close = "❮"
-    _open = "❯"
-    _null = ""
-
-    _deferral_status_to_symbol = {
-        "null": _null,
-        "deferred": _open,
-        "reemitted": _close,
-        "bounced": _bounce,
-    }
 
     def update_defers(self, msg: EventLogMsg):
         # all the events we presently know to be deferred
@@ -948,8 +1286,6 @@ class Processor:
             return
 
         logger.info("cropping table")
-        lst: List
-
         while len(self._timestamps) > self.history_length:
             self.history.timestamps.append(self._timestamps.pop())  # pop first
 
@@ -968,64 +1304,18 @@ class Processor:
                 )  # pop first
 
     def quit(self):
-        """Print a goodbye message and output a summary to file if requested."""
-        if not self._rendered:
-            self.live.update("No events caught.", refresh=True)
-            return
+        self.printer.quit(
+            self.evt_count,
+            self.targets,
+            self._raw_tables,
+            self._timestamps,
+            self.history,
+        )
 
-        # load back history into current memory
-        history = self.history
 
-        # prepend all things we popped during cropping
-        self._timestamps = history.timestamps + self._timestamps
-        for unit_name, rt in self._raw_tables.items():
-            rt.deferrals = history.raw_tables[unit_name].deferrals + rt.deferrals
-            rt.events = history.raw_tables[unit_name].events + rt.events
-            rt.ns = history.raw_tables[unit_name].ns + rt.ns
-        # the raw tables we have now should run up to the beginning of time
-
-        table = cast(Table, self.render().renderable)
-        table.rows[-1].end_section = True
-        evt_count = self.evt_count
-
-        nevents = []
-        tgt_names = []
-        for tgt in self.targets:
-            nevents.append(str(evt_count[tgt.unit_name]))
-            text = Text(tgt.unit_name, style="bold")
-            tgt_names.append(text)
-        table.add_row(Text("The end.", style="bold blue"), *tgt_names, end_section=True)
-
-        table.add_row(Text("events emitted", style="green"), *nevents)
-
-        if self._show_defer:
-            cdefevents = []
-            for tgt in self.targets:
-                raw_table = self._raw_tables[tgt.unit_name]
-                cdefevents.append(str(len(raw_table.currently_deferred)))
-            table.add_row(Text("currently deferred events", style="green"), *cdefevents)
-
-        table_centered = Align.center(table)
-        self.live.update(table_centered)
-        self.live.refresh()
-
-        output = self.output
-        if not output:
-            return
-        if not output.parent.exists():
-            logger.warning("output directory does not exist")
-            return
-
-        try:
-            with open(output, "w") as o_file:
-                rich.print(table, file=o_file)
-        except:
-            logger.exception(f"failed to write to {output}")
-
-    def update_if_empty(self):
-        if self._rendered:
-            return
-        self.live.update("Listening for events...", refresh=True)
+class _Printer(str, enum.Enum):
+    rich = "rich"
+    raw = "raw"
 
 
 def tail_events(
@@ -1063,11 +1353,20 @@ def tail_events(
         False,
         "-n",
         "--show-defer-id",
-        help="Prefix deferred events with their deferral ID. "
+        help="Prefix deferred events with their deferral ID. This is an ID assigned to an event by the operator "
+        "framework when it is first deferred, so that, when it is reemitted (and possibly redeferred), "
+        "we can follow it and see whether the event being processed is 'the same event' that was originally "
+        "deferred or an identical one."
         "Only applicable if show_defer=True.",
     ),
     watch: bool = typer.Option(True, help="Keep listening.", is_flag=True),
     flip: bool = typer.Option(False, help="Last events last.", is_flag=True),
+    printer: _Printer = typer.Option(
+        "rich",
+        help="Printer mode. "
+        "Supported printers are 'rich' and 'raw'. "
+        "Rich is prettier and has way more features, but is also slower.",
+    ),
     color: str = typer.Option(
         "auto",
         "-c",
@@ -1099,7 +1398,7 @@ def tail_events(
         None,
         "-o",
         "--output",
-        help="Print the whole captured event history to a file on exit.",
+        help="Replay the whole event history log and output it to a file. Overrides --watch.",
     ),
     auto_bump_loglevel: bool = typer.Option(
         AUTO_BUMP_LOGLEVEL_DEFAULT,
@@ -1110,16 +1409,29 @@ def tail_events(
         "previously was. Allows for more accurate event traces. You can enabled it by default in "
         "jhack conf.",
     ),
+    print_color_codes: bool = typer.Option(
+        False,
+        "--print-color-codes",
+        is_flag=True,
+        help="Print the color codes used by jhack tail and exit.",
+    ),
 ):
     """Pretty-print a table with the events that are being fired on juju units
     in the current model.
-    Examples: jhack tail mongo-k8s/2  ||  jhack tail -d
+    Examples: jhack tail -d mongo-k8s/2
+
+    To display an explanation of the color codes used by jhack, run with the --print-color-codes flag.
     """
+    if print_color_codes:
+        _print_color_codes()
+        return
+
     return _tail_events(
         targets=target,
         add_new_targets=add_new_targets,
         level=level,
         replay=replay,
+        printer=printer,
         dry_run=dry_run,
         framerate=framerate,
         length=length,
@@ -1162,8 +1474,14 @@ def _tail_events(
     _on_event: Callable[[EventLogMsg], None] = None,
     model: str = None,
     output: str = None,
+    printer: Literal["rich", "raw"] = "rich",
     auto_bump_loglevel: bool = False,
 ):
+    if output:
+        logger.debug("output mode. Overriding watch.")
+        watch = False
+        auto_bump_loglevel = False  # it's too late for that, we're replaying the history and transforming it.
+
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
 
@@ -1177,13 +1495,16 @@ def _tail_events(
         logger.debug("targets provided; overruling add_new_targets param.")
         add_new_targets = False
 
-    # if we pass files, we don't grab targets from the env, we simply read them from the file
-    targets = parse_targets(targets, model=model) if not files else (targets or [])
-    if not targets and not add_new_targets:
-        logger.warning(
+    # if we pass files, we don't grab targets from juju, we simply read them from the file
+    parsed_targets: Tuple[Target, ...] = (
+        parse_targets(targets, model=model)
+        if not files
+        else tuple(Target.from_name(n) for n in targets)
+    )
+    if not parsed_targets and not add_new_targets:
+        sys.exit(
             "no targets passed and `add_new_targets`=False: you will not see much."
         )
-        sys.exit(1)
 
     if files and replay:
         logger.debug("ignoring `replay` because files were provided")
@@ -1212,11 +1533,12 @@ def _tail_events(
 
     event_filter_pattern = re.compile(event_filter) if event_filter else None
     processor = Processor(
-        targets,
+        parsed_targets,
         add_new_targets,
         history_length=length,
         show_ns=show_ns,
         show_trace_ids=show_trace_ids,
+        printer=printer,
         color=color,
         show_defer=show_defer,
         event_filter_re=event_filter_pattern,
@@ -1273,6 +1595,11 @@ def _tail_events(
                     break
 
                 replay_mode = False
+                # we're done replaying.
+                # if we're in output mode, we've caught up with the juju log and we can exit
+                if output:
+                    exit()
+
                 continue
 
             if line:
@@ -1287,8 +1614,6 @@ def _tail_events(
                 logger.debug(f"sleeping {framerate - elapsed}")
                 time.sleep(framerate - elapsed)
 
-            processor.update_if_empty()
-
     except KeyboardInterrupt:
         pass  # quit
     finally:
@@ -1296,7 +1621,6 @@ def _tail_events(
             debump_loglevel(previous_loglevel)
 
         processor.quit()
-        processor.live.stop()
 
     return processor  # for testing
 
@@ -1321,6 +1645,9 @@ def bump_loglevel() -> str:
     new_config = []
 
     for cfg in cfgs:
+        if "ERROR" in cfg:
+            exit(f"failed bumping loglevel to unit=TRACE: {cfg}")
+
         n, lvl = cfg.split("=")
         if n == "unit":
             logger.debug(f"existing unit-level logging config found: was {lvl}")
@@ -1340,5 +1667,6 @@ def debump_loglevel(previous: str):
 
 
 if __name__ == "__main__":
-    logger.setLevel("DEBUG")
-    _tail_events(length=30, replay=True)
+    # logger.setLevel("DEBUG")
+    # _tail_events(length=30, replay=True)
+    _print_color_codes()

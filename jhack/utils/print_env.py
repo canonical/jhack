@@ -11,6 +11,7 @@ import toml
 from rich.console import Console
 from rich.table import Table
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.config import IS_SNAPPED, JHACK_PROJECT_ROOT
 from jhack.helpers import Format, FormatOption
 from jhack.logger import logger as jhack_logger
@@ -89,7 +90,8 @@ def get_multipass_version():
 
 def jhack_version():
     """Print the currently installed jhack version and exit."""
-    print(get_jhack_version())
+    is_devmode = check_destructive_commands_allowed("", _check_only=True)
+    print(f"jhack {get_jhack_version()}{' --DEVMODE--' if is_devmode else ''}")
 
 
 def get_jhack_version():

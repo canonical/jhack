@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import typer
 
+from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status
 from jhack.logger import logger as jhack_logger
 
@@ -18,6 +19,7 @@ def _this_is_fine(
     dry_run: bool = False,
     rate: float = 2,
 ):
+    check_destructive_commands_allowed("this-is-fine")
     print("starting whacker... (interrupt with Ctrl+C)")
 
     while True:

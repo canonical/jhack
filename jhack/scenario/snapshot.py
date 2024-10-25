@@ -47,7 +47,14 @@ logger = jhack_root_logger.getChild(__file__)
 JUJU_RELATION_KEYS = frozenset({"egress-subnets", "ingress-address", "private-address"})
 JUJU_CONFIG_KEYS = frozenset({})
 
-SNAPSHOT_OUTPUT_DIR = (Path(os.getcwd()).parent / "snapshot_storage").absolute()
+
+try:
+    getcwd = os.getcwd()
+except FileNotFoundError as e:
+    raise Exception("cannot run jhack from a deleted folder") from e
+
+
+SNAPSHOT_OUTPUT_DIR = (Path(getcwd).parent / "snapshot_storage").absolute()
 CHARM_SUBCLASS_REGEX = re.compile(r"class (\D+)\(CharmBase\):")
 
 

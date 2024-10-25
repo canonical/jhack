@@ -3,7 +3,7 @@ from typing import Dict, List, NamedTuple, TypedDict
 
 import yaml
 
-from jhack.helpers import fetch_file, juju_status
+from jhack.helpers import fetch_file, get_units, juju_status
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("gather_endpoints")
@@ -19,13 +19,15 @@ class AppEndpoints(TypedDict):
 
 
 class PeerBinding(NamedTuple):
-    endpoint: str
+    provider_endpoint: str
     interface: str
 
 
 class RelationBinding(NamedTuple):
+    provider_model: str
     provider_endpoint: str
     interface: str
+    requirer_model: str
     requirer_endpoint: str
     active: bool
 
@@ -68,15 +70,18 @@ def gather_endpoints(
 
         is_subordinate = app.get("subordinate-to")
         if is_subordinate:
-            unit = f"{app_name}/0"
+            units = get_units(app_name, model=model)
+            # grab any unit. We don't do `app_name/0` because we could be on machine models.
+            unit = units[0].unit_name
         else:
-            try:
-                unit = next(iter(app["units"]))
-            except KeyError as e:
-                raise RuntimeError(
-                    f"juju status for {app_name} has no 'units' field. "
-                    f"Is the app still bootstrapping?"
-                ) from e
+            units = app.get("units", None)
+            if units is None:
+                logger.error(
+                    f"juju status for {app_name!r} has no 'units' field. "
+                    f"Is the app still bootstrapping? Skipping for now..."
+                )
+                continue
+            unit = next(iter(units))
 
         try:
             metadata = fetch_file(unit, "metadata.yaml", model=model)

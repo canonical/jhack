@@ -1,28 +1,53 @@
 import base64
 import importlib
 import inspect
+import json
 import logging
 import os
 import sys
 import traceback
 from pathlib import Path
-from typing import Dict, Optional, Type
+from typing import Any, Dict, Optional, Type
 
 import ops
 import ops.storage
-from ops.main import (
-    CHARM_STATE_FILE,
-    CharmMeta,
-    JujuVersion,
-    _Dispatcher,
-    _get_charm_dir,
-    _should_use_controller_storage,
-    setup_root_logging,
-)
+
+try:
+    from ops.jujuversion import JujuVersion
+    from ops.main import (
+        CHARM_STATE_FILE,
+        CharmMeta,
+        _Dispatcher,
+        _should_use_controller_storage,
+        setup_root_logging,
+    )
+except (ImportError, ModuleNotFoundError):
+    # ops >= 2.17
+    from ops._main import _should_use_controller_storage
+    from ops.charm import CharmMeta
+    from ops.jujuversion import JujuVersion
+    from ops.log import setup_root_logging
+    from ops.main import CHARM_STATE_FILE, _Dispatcher
+
+try:
+    from ops.main import _get_charm_dir
+except ImportError:
+    # ops >= 2.16
+    from functools import partial
+
+    from ops.jujucontext import _JujuContext
+
+    ctx = _JujuContext.from_dict(os.environ)
+    _Dispatcher = partial(_Dispatcher, juju_context=ctx)
+    _get_charm_dir = lambda: ctx.charm_dir
+
+
+def _decode(expr: str) -> str:
+    return base64.b64decode(expr.encode("utf-8")).decode("ascii")
 
 
 def _deserialize_env(s: str) -> Dict[str, str]:
-    env = dict((pair.split("=") for pair in s.split(" ")))
+    env = dict((pair.split("=") for pair in _decode(s).split(" ")))
     return env
 
 
@@ -32,13 +57,29 @@ ENTRYPOINT = os.getenv("CHARM_RPC_ENTRYPOINT")  # string
 LOGLEVEL = os.getenv("CHARM_RPC_LOGLEVEL")  # string
 EVAL_EXPR = os.getenv("CHARM_RPC_EXPR")  # string
 CHARM_NAME = os.getenv("CHARM_RPC_CHARM_NAME")  # string
+OUTPUT_PATH = os.getenv("CHARM_RPC_OUTPUT_PATH")  # string
 
 logger = logging.getLogger("charm-rpc")
 logger.setLevel(LOGLEVEL)
 
 
-def _decode(expr: str) -> str:
-    return base64.b64decode(expr.encode("utf-8")).decode("ascii")
+def output(obj: Any):
+    logger.info(f"output: writing to {OUTPUT_PATH}")
+
+    try:
+        out = json.dumps(obj)
+    except:
+        logger.error(f"failed serializing {obj} to json.")
+        return
+
+    try:
+        of = Path(OUTPUT_PATH)
+        of.write_text(out)
+    except:
+        logger.error(f"failed writing to output path {OUTPUT_PATH}")
+        return
+
+    logger.info("output: success")
 
 
 def rpc(charm):
@@ -64,7 +105,7 @@ def rpc(charm):
         expr = _decode(EVAL_EXPR)
         logger.debug(f"running rpc in eval-expr mode: \n\texpr={expr!r}")
         try:
-            return eval(expr, {"self": charm, "ops": ops})
+            return eval(expr, {"self": charm, "ops": ops, "output": output})
         except Exception as e:  # noqa
             print(
                 f"CHARM RPC ERROR: failed executing {expr!r} in with self={charm}: \n"
