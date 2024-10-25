@@ -1,15 +1,18 @@
 import dataclasses
-import os
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 
-import matplotlib
 import typer
 
-from jhack.helpers import juju_status, get_current_model
+from jhack.helpers import juju_status, get_current_model, cached_juju_status
 
 from jhack.logger import logger as jhack_logger
-import networkx as nx
-import matplotlib.pyplot as plt
+
+from jhack.utils.show_relation import (
+    RelationEndpointURL,
+    Relation,
+    gather_relation_databags,
+    AppRelationData,
+)
 
 logger = jhack_logger.getChild("graph")
 
@@ -34,89 +37,50 @@ class _App:
         return self.meta["charm-name"]
 
 
-@dataclasses.dataclass(frozen=True)
-class _Relation:
-    remote_app: _App
-    endpoint: str
-    meta: Dict
-    endpoint_to: str
-
-    @property
-    def interface(self) -> str:
-        return self.meta["interface"]
-
-
 class Graph:
     """Graph type."""
 
-    def __init__(self, graph: Dict[_App, List[_Relation]]):
+    def __init__(self, graph: Dict[_App, List[Relation]], model: str):
+        self._include_default_juju_keys = True
         self._graph = graph
+        self._model = model
+        self._relation_data: Dict[Relation, Tuple[AppRelationData, ...]] = {}
 
-    def plot_nx_graph(self, show_peers: bool = False):
-        # todo: if running from terminal, we need:
-        #   os.environ["QT_QPA_PLATFORM"] = "offscreen"
+    def get_relation_data(self, relation: Relation):
+        if relation.id is None:
+            raise ValueError(relation)
 
-        g = nx.Graph()
-        labels = {}
-
-        for origin, relations in self._graph.items():
-            for relation in relations:
-                a = origin.name
-                b = relation.remote_app.name
-                if a == b and not show_peers:
-                    continue
-
-                e = (a, b)
-                g.add_edge(*e)
-
-                labels[e] = relation.interface
-
-        has_multiple_models = len(set(x.model for x in self._graph)) > 1
-
-        if has_multiple_models:
-            return self._plot_model_graph(g, labels)
-
-        pos = nx.spring_layout(g, seed="41424142")
-        nx.draw(g, pos=pos, with_labels=True, font_weight="bold")
-        nx.draw_networkx_edge_labels(g, pos=pos, edge_labels=labels)
-        plt.draw()
-        plt.show()
-
-    def _plot_model_graph(self, g):
-        # Compute positions for the node clusters as if they were themselves nodes in a
-        # supergraph using a larger scale factor
-        supergraph = nx.cycle_graph(len(groups))
-        superpos = nx.spring_layout(g, scale=50, seed=429)
-
-        # Use the "supernode" positions as the center of each node cluster
-        centers = list(superpos.values())
-        pos = {}
-        for center, comm in zip(centers, groups):
-            pos.update(nx.spring_layout(nx.subgraph(g, comm), center=center, seed=1430))
-
-        # Nodes colored by cluster
-        for nodes, clr in zip(groups, ("tab:blue", "tab:orange", "tab:green")):
-            nx.draw_networkx_nodes(
-                g, pos=pos, nodelist=nodes, node_color=clr, node_size=100
+        if not self._relation_data.get(relation):
+            self._relation_data[relation] = gather_relation_databags(
+                RelationEndpointURL(relation.requirer_endpoint),
+                RelationEndpointURL(relation.provider_endpoint),
+                relation,
+                model=self._model,
+                include_default_juju_keys=self._include_default_juju_keys,
             )
-        nx.draw_networkx_edges(g, pos=pos)
 
-        plt.tight_layout()
+        return self._relation_data[relation]
 
     @staticmethod
-    def bootstrap(app_name: str, model_name: str = None) -> "Graph":
-        """Bootstrap a graph from a single starting app url.
+    def bootstrap(app_name: Optional[str] = None, model_name: str = None) -> "Graph":
+        """Bootstrap a graph.
+
+        From a single starting app url, or all of them otherwise.
 
         Example:
-            >>> Graph.bootstrap("microk8s-localhost:clite.alertmanager/0")
+            >>> Graph.bootstrap("alertmanager/0", "microk8s-localhost:clite")
+            >>> Graph.bootstrap(model_name="microk8s-localhost:clite")
         """
-        if "/" in app_name:
-            logger.warning(
-                f"stripping unit ID suffix from {app_name}. Pass an app name instead."
-            )
-            app_name = app_name.split("/")[0]
+        if app_name:
+            if "/" in app_name:
+                logger.warning(
+                    f"stripping unit ID suffix from {app_name}. Pass an app name instead."
+                )
+                app_name = app_name.split("/")[0]
 
-        print(f"Bootstrapping graph from root: {model_name}.{app_name}")
+            print(f"Bootstrapping graph from root: {model_name}.{app_name}")
+        else:
+            print(f"Bootstrapping graph in model {model_name}")
 
         model_status_cache = {}
 
@@ -132,11 +96,29 @@ class Graph:
             app_meta = status["applications"][app_name_]
             return _App(name=app_name_, model=model_name_, meta=app_meta)
 
+        visited: List[str] = []
+
         def walk(model_name_: str, app_name_: str, graph_=None):
+            if app_name_ in visited:
+                return
+            visited.append(app_name_)
+
             status = get_status(model_name_)
             app = get_app(app_name_, model_name_)
-            relations: List[_Relation] = []
+            relations: List[Relation] = []
             graph_[app] = relations
+
+            def _find_remote_endpoint(meta: dict, local_app_name: str, interface: str):
+                for endpoint, relations_meta in meta["relations"].items():
+                    for relation in relations_meta:
+                        if (
+                            relation["interface"] == interface
+                            and relation["related-application"] == local_app_name
+                        ):
+                            return endpoint
+                raise RuntimeError(
+                    f"could not find a remote endpoint bound to {local_app_name} over {interface}"
+                )
 
             offers_meta = status.get("application-endpoints", ())
 
@@ -153,22 +135,40 @@ class Graph:
                     else:
                         remote_model_name = model_name_
                         remote_app = get_app(remote_app_name, model_name_)
+                        remote_app_meta = remote_app.meta
 
                     if remote_app not in graph_:
                         walk(remote_model_name, remote_app_name, graph_)
 
-                    rel = _Relation(
-                        remote_app=remote_app,
-                        endpoint=endpoint,
-                        meta=binding,
-                        endpoint_to="",  # todo
+                    remote_endpoint = _find_remote_endpoint(
+                        remote_app_meta, binding["interface"], app_name_
+                    )
+                    rel = Relation(
+                        provider=app_name_,
+                        provider_endpoint=endpoint,
+                        requirer=remote_app_name,
+                        requirer_endpoint=remote_endpoint,  # todo
+                        interface=binding["interface"],
+                        raw_type="regular",
+                        id=_find_relation_id(
+                            app_name_, remote_app_name, endpoint, remote_endpoint
+                        ),  # TODO,
                     )
                     relations.append(rel)
 
             return graph_
 
-        graph = walk(model_name or get_current_model(), app_name, {})
-        return Graph(graph)
+        model_ = model_name or get_current_model()
+
+        if not app_name:
+            graph = {}
+            for app_name in cached_juju_status(model=model_)["applications"]:
+                graph = walk(model_, app_name, graph)
+
+        else:
+            graph = walk(model_, app_name, {})
+
+        return Graph(graph, model=model_)
 
     def plot(self):
         print("GRAPH:")
@@ -176,14 +176,22 @@ class Graph:
             print(f"\t{origin.name} ({origin.charm_name}) --> {{")
             for relation in relations:
                 print(
-                    f"\t\t{relation.endpoint} >> {relation.remote_app.name} ({relation.remote_app.charm_name})"
+                    f"\t\t({relation.provider}) {relation.provider_endpoint} >> "
+                    f"{relation.requirer_endpoint} ({relation.requirer})"
                 )
+                if reldata := self.get_relation_data(relation):
+                    print(
+                        f"\t\tRelation found: "
+                        f"{reldata[0].url} --> "
+                        f"{reldata[1].url if len(reldata) == 2 else '<itself>'} "
+                        f"({relation.id})"
+                    )
             print(f"\t}}")
 
 
 def _map(app_name: str, model_name: str):
     graph = Graph.bootstrap(app_name=app_name, model_name=model_name)
-    graph.plot_nx_graph()
+    graph.plot()
 
 
 def unravel(
@@ -201,4 +209,4 @@ def unravel(
 
 
 if __name__ == "__main__":
-    Graph.bootstrap("loki").plot_nx_graph()
+    Graph.bootstrap("traefik").plot()

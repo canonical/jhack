@@ -7,6 +7,7 @@ from pathlib import Path
 
 import typer
 
+
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
 sys.path.append(str(Path(os.path.realpath(__file__)).parent.parent))
@@ -48,6 +49,7 @@ def main():
         list_events,
         purge_db,
     )
+    from jhack.utils.this_is_fine import this_is_fine
     from jhack.utils.ffwd import fast_forward
     from jhack.utils.just_deploy_this import just_deploy_this
     from jhack.utils.list_endpoints import list_endpoints
@@ -83,6 +85,7 @@ def main():
     utils.command(name="eval", no_args_is_help=True)(charm_eval)
     utils.command(name="script", no_args_is_help=True)(charm_script)
     utils.command(name="unravel", no_args_is_help=True)(unravel)
+    utils.command(name="this-is-fine", no_args_is_help=True)(this_is_fine)
 
     jinx = typer.Typer(
         name="jinx",
@@ -144,6 +147,7 @@ def main():
     app.command(name="crpc", no_args_is_help=True)(charm_rpc)
     app.command(name="eval", no_args_is_help=True)(charm_eval)
     app.command(name="script", no_args_is_help=True)(charm_script)
+    app.command(name="unravel", no_args_is_help=True)(unravel)
 
     conf = typer.Typer(
         name="conf",

@@ -51,10 +51,24 @@ class Relation:
     requirer_endpoint: str
     interface: str
     raw_type: str
+    id: Optional[int] = None
 
     @property
     def type(self) -> RelationType:
         return RelationType(self.raw_type)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.id or 0,
+                self.raw_type,
+                self.interface,
+                self.provider,
+                self.provider_endpoint,
+                self.requirer,
+                self.requirer_endpoint,
+            )
+        )
 
 
 class RelationEndpointURL(str):
@@ -754,7 +768,7 @@ def _coalesce_endpoint_and_n(
     return ep_url_1, ep_url_2, relation
 
 
-def _gather_entities(
+def gather_relation_databags(
     endpoint1: RelationEndpointURL,
     endpoint2: Optional[RelationEndpointURL],
     relation: Relation,
@@ -812,7 +826,7 @@ async def render_relation(
         if endpoint1.app_name in saas or (endpoint2 and endpoint2.app_name in saas):
             relation.raw_type = "cross_model"
 
-    entities = _gather_entities(
+    entities = gather_relation_databags(
         endpoint1,
         endpoint2,
         relation,
