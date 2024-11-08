@@ -15,11 +15,11 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
+    Set,
     Tuple,
     Union,
     cast,
-    Set,
-    Sequence,
 )
 
 import typer
@@ -28,7 +28,7 @@ from rich.color import Color
 from rich.console import Console
 from rich.live import Live
 from rich.style import Style
-from rich.table import Column, Table
+from rich.table import Table
 from rich.text import Text
 
 from jhack.conf.conf import CONFIG

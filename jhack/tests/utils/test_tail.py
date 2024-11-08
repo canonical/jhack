@@ -1,5 +1,4 @@
 import re
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -7,7 +6,7 @@ import pytest
 
 import jhack.utils.tail_charms
 from jhack.helpers import Target
-from jhack.utils.tail_charms import Processor, _tail_events, DeferralStatus
+from jhack.utils.tail_charms import DeferralStatus, Processor, _tail_events
 
 
 def _mock_emit(
