@@ -4,24 +4,35 @@ import re
 import shlex
 import sys
 import time
-from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from collections import Counter
+from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 from subprocess import getoutput, run
-from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+    Set,
+    Sequence,
+)
 
 import typer
 from rich.align import Align
 from rich.color import Color
-from rich.console import Console, RenderableType
+from rich.console import Console
 from rich.live import Live
 from rich.style import Style
 from rich.table import Column, Table
 from rich.text import Text
 
 from jhack.conf.conf import CONFIG
-from jhack.helpers import JPopen, Target, get_all_units
+from jhack.helpers import JPopen
 from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 
@@ -30,7 +41,6 @@ logger = jhack_logger.getChild(__file__)
 _TAIL_VERSION = "0.4"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
-REMOVE_EMPTY_COLUMNS = CONFIG.get("tail", "remove_empty_columns")
 AUTO_BUMP_LOGLEVEL_DEFAULT = CONFIG.get("tail", "automatically_bump_loglevel")
 
 
@@ -66,29 +76,18 @@ def model_loglevel(model: str = None):
     return "WARNING"  # the default
 
 
-def parse_targets(targets: List[str] = None, model: str = None) -> Tuple[Target, ...]:
-    if not targets:
-        return get_all_units(model=model)
-
-    all_units = None  # cache of all units according to juju status
-
-    out = set()
-    for target in targets:
-        if "/" in target:
-            out.add(Target.from_name(target))
-        else:
-            if not all_units:
-                all_units = get_all_units(model=model)
-            # target is an app name: we need to gather all units of that app
-            out.update((u for u in all_units if u.app == target))
-    return tuple(out)
-
-
 class LEVELS(enum.Enum):
     DEBUG = "DEBUG"
     TRACE = "TRACE"
     INFO = "INFO"
     ERROR = "ERROR"
+
+
+class DeferralStatus(str, enum.Enum):
+    null = "null"
+    deferred = "deferred"
+    reemitted = "reemitted"
+    bounced = "bounced"
 
 
 @dataclass
@@ -101,6 +100,7 @@ class EventLogMsg:
     unit: str
     event: str
     mocked: bool
+    deferred: DeferralStatus = DeferralStatus.null
 
     event_cls: str = None
     charm_name: str = None
@@ -127,40 +127,13 @@ class EventDeferredLogMsg(EventLogMsg):
     charm_name: str = ""
     n: str = ""
 
+    def __hash__(self):
+        return hash((self.type, self.charm_name, self.n, self.event))
+
 
 @dataclass
 class EventReemittedLogMsg(EventDeferredLogMsg):
     type = "reemitted"
-
-
-@dataclass
-class RawTable:
-    msgs: List[EventLogMsg] = field(default_factory=list)
-    # we store events and messages separately because some events are inserted here by the Processor
-    # even though no previously captured loggline corresponds to them.
-    events: List[str] = field(default_factory=list)
-    deferrals: List[Optional[str]] = field(default_factory=list)
-    ns: List[str] = field(default_factory=list)
-    n_colors: Dict[str, str] = field(default_factory=dict)
-    currently_deferred: List[EventDeferredLogMsg] = field(default_factory=list)
-
-    def get_color(self, n: str) -> str:
-        return self.n_colors.get(n, _default_n_color)
-
-    def add(self, msg: Union[EventLogMsg]):
-        self.msgs.insert(0, msg)
-        self.events.insert(0, msg.event)
-        self.deferrals.insert(0, None)
-        n = getattr(msg, "n", None)
-        self.ns.insert(0, n)
-        if n and n not in self.n_colors:
-            self.n_colors[n] = _random_color()
-
-    def add_blank_row(self):
-        self.msgs.insert(0, None)
-        self.ns.insert(0, None)
-        self.events.insert(0, None)
-        self.deferrals.insert(0, None)
 
 
 _event_colors_by_category = {
@@ -203,6 +176,7 @@ _event_colors = {}
 for sublist in _event_colors_by_category.values():
     _event_colors.update(sublist)
 
+_last_event_bgcolor = Color.from_rgb(50, 50, 50)
 _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
@@ -213,10 +187,26 @@ _jhack_fire_event_color = Color.from_rgb(250, 200, 50)
 _jhack_lobotomy_event_color = Color.from_rgb(150, 210, 110)
 _jhack_replay_event_color = Color.from_rgb(100, 100, 150)
 _deferral_colors = {
-    "deferred": "red",
-    "reemitted": "green",
-    "bounced": Color.from_rgb(252, 115, 3),
+    DeferralStatus.null: "",
+    DeferralStatus.deferred: "red",
+    DeferralStatus.reemitted: "green",
+    DeferralStatus.bounced: Color.from_rgb(252, 115, 3),
 }
+
+
+# todo: should we have a "console compatibility mode" using ascii here?
+_bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
+_close = "❮"
+_open = "❯"
+_null = ""
+
+_deferral_status_to_symbol = {
+    DeferralStatus.null: _null,
+    DeferralStatus.deferred: _open,
+    DeferralStatus.reemitted: _close,
+    DeferralStatus.bounced: _bounce,
+}
+
 _trace_id_color = Color.from_rgb(100, 100, 210)
 
 
@@ -456,58 +446,29 @@ class LogLineParser:
         )
 
 
-class _RawTableHistory:
-    def __init__(self):
-        self.events = []
-        self.ns = []
-        self.deferrals = []
-
-
-class _History:
-    def __init__(self):
-        self.timestamps = []
-        self.raw_tables = defaultdict(_RawTableHistory)
-
-
-# todo: should we have a "console compatibility mode" using ascii here?
-_bounce = "●"  # "●•⭘" not all alternatives supported on all consoles
-_close = "❮"
-_open = "❯"
-_null = ""
-
-_deferral_status_to_symbol = {
-    "null": _null,
-    "deferred": _open,
-    "reemitted": _close,
-    "bounced": _bounce,
-}
-
-
-def _get_event_color(event: str, msg: Optional[EventLogMsg]) -> Color:
+def _get_event_color(event: EventLogMsg) -> Color:
     """Color-code the events as they are displayed to make reading them easier."""
     # If we have a log message to start from, use any relevant tags to determine what type of event it is
-    if msg:
-        event = msg.event
-        if "custom" in msg.tags:
-            return _custom_event_color
-        if "operator" in msg.tags:
-            return _operator_event_color
-        if "jhack" in msg.tags:
-            if "fire" in msg.tags:
-                return _jhack_fire_event_color
-            elif "replay" in msg.tags:
-                return _jhack_replay_event_color
-            elif "lobotomy" in msg.tags:
-                return _jhack_lobotomy_event_color
-            return _jhack_event_color
+    if "custom" in event.tags:
+        return _custom_event_color
+    if "operator" in event.tags:
+        return _operator_event_color
+    if "jhack" in event.tags:
+        if "fire" in event.tags:
+            return _jhack_fire_event_color
+        elif "replay" in event.tags:
+            return _jhack_replay_event_color
+        elif "lobotomy" in event.tags:
+            return _jhack_lobotomy_event_color
+        return _jhack_event_color
 
     # if we are coloring an event without tags,
     # use the event-specific color coding.
-    if event in _event_colors:
-        return _event_colors.get(event, _default_event_color)
+    if event.event in _event_colors:
+        return _event_colors.get(event.event, _default_event_color)
     else:
         for _e in _event_colors:
-            if event.endswith(_e):
+            if event.event.endswith(_e):
                 return _event_colors[_e]
     return _default_event_color
 
@@ -518,42 +479,37 @@ _lobotomy_symbol = "✂"
 _replay_symbol = "⟳"
 
 
-def _get_event_text(event: str, msg: Optional[EventLogMsg], ascii=False):
-    if not msg:
-        return event
-    event_text = event
-    if "jhack" in msg.tags:
-        if "lobotomy" in msg.tags:
+def _get_event_text(event: EventLogMsg, ascii=False):
+    event_text = event.event
+    if "jhack" in event.tags:
+        if "lobotomy" in event.tags:
             event_text += f" {_lobotomy_symbol}"
-        if "fire" in msg.tags:
+        if "fire" in event.tags:
             event_text += f" {_fire_symbol_ascii if ascii else _fire_symbol}"
-        if "replay" in msg.tags:
-            if "source" in msg.tags:
+        if "replay" in event.tags:
+            if "source" in event.tags:
                 event_text += " (↑)"
-            elif "replayed" in msg.tags:
+            elif "replayed" in event.tags:
                 event_text += (
-                    f" ({_replay_symbol}:{msg.jhack_replayed_evt_timestamp} ↓)"
+                    f" ({_replay_symbol}:{event.jhack_replayed_evt_timestamp} ↓)"
                 )
     return event_text
 
 
 class Printer:
+    def _count_events(self, events: List[EventLogMsg]):
+        return Counter((e.unit for e in events))
+
     def render(
         self,
-        msg: Optional[EventLogMsg],
-        targets: List[Target],
-        raw_tables: Dict[str, RawTable],
-        timestamps: List[str],
+        events: List[EventLogMsg],
+        currently_deferred: Set[EventLogMsg] = None,
     ):
         pass
 
     def quit(
         self,
-        evt_count: Counter,
-        targets: List[Target],
-        raw_tables: Dict[str, RawTable],
-        timestamps: List[str],
-        history: _History,
+        events: List[EventLogMsg],
     ):
         pass
 
@@ -571,11 +527,10 @@ class PoorPrinter(Printer):
 
     def render(
         self,
-        msg: Optional[EventLogMsg],
-        targets: List[Target],
-        raw_tables: Dict[str, RawTable],
-        timestamps: List[str],
+        events: List[EventLogMsg],
+        currently_deferred: Set[EventLogMsg] = None,
     ):
+        targets = sorted(set(e.unit for e in events))
         if not targets:
             self._out_stream.write("Listening for events... \n")
             return
@@ -585,7 +540,7 @@ class PoorPrinter(Printer):
         col_titles = ["timestamp"]
         new_cols = [0]
         for target in targets:
-            col_titles.append(target.unit_name)
+            col_titles.append(target)
             new_cols.append(1 if target not in self._targets_known else 0)
             self._targets_known.add(target)
 
@@ -607,11 +562,12 @@ class PoorPrinter(Printer):
         _pad = lambda x: " " * ((colwidth // 2)) + x + " " * ((colwidth // 2) - len(x))
         space = _pad(".")
 
+        msg = events[-1]
         line = f"{msg.timestamp}  | "
         spill_over = 0
         for target in targets:
-            if target.unit_name == msg.unit:
-                evt = _get_event_text(msg.event, msg, ascii=True).ljust(colwidth)
+            if target == msg.unit:
+                evt = _get_event_text(msg, ascii=True).ljust(colwidth)
                 line += evt
                 spill_over = len(evt) - colwidth
             else:
@@ -628,14 +584,11 @@ class PoorPrinter(Printer):
 
     def quit(
         self,
-        evt_count: Counter,
-        targets: List[Target],
-        raw_tables: Dict[str, RawTable],
-        timestamps: List[str],
-        history: _History,
+        events: List[EventLogMsg],
     ):
+        count = self._count_events(events)
         print(
-            f"Jhack tail v0.4: {evt_count.total()} captured events in {len(targets)}."
+            f"Jhack tail v0.4:  captured {count.total()} events in {len(count.keys())} units."
         )
         if not self._live:
             if self._output:
@@ -644,7 +597,7 @@ class PoorPrinter(Printer):
                 print(self._out_stream.read())
 
 
-class RichPrinter:
+class RichPrinter(Printer):
     def __init__(
         self,
         color: _Color = "auto",
@@ -653,14 +606,18 @@ class RichPrinter:
         show_trace_ids: bool = False,
         show_defer: bool = False,
         output: Optional[Path] = None,
+        max_length: int = 10,
     ):
         self._color = color
+        self._max_length = max_length
         self._flip = flip
         self._show_defer = show_defer
         self._show_trace_ids = show_trace_ids
         self._show_ns = show_ns
         self._rendered = False
         self._output = output
+
+        self._n_colors = {}
 
         if color == "no":
             color = None
@@ -670,122 +627,107 @@ class RichPrinter:
         live.update("Listening for events...", refresh=True)
         live.start()
 
+    def _n_color(self, n: int):
+        if n not in self._n_colors:
+            self._n_colors[n] = _random_color()
+        return self._n_colors[n]
+
     def render(
         self,
-        msg: Optional[EventLogMsg],
-        targets: List[Target],
-        raw_tables: Dict[str, RawTable],
-        timestamps: List[str],
+        events: List[EventLogMsg],
+        currently_deferred: Set[EventLogMsg] = None,
         _debug=False,
         final: bool = False,
-    ) -> RenderableType:
-        # we're rendering the table and flipping it every time. more efficient
-        # to add new rows to the top and keep old ones, but how do we know if
-        # deferral lines have changed?
+    ) -> Union[Table, Align]:
+        if not events:
+            print("Listening for events...")
+
         self._rendered = True
         table = Table(
             show_footer=False, expand=True, title=f"Jhack tail v{_TAIL_VERSION}"
         )
-        table.add_column(header="timestamp", style="")
-        unit_grids = []
-        n_cols = 1
-
+        _pad = " "
         ns_shown = self._show_ns
         deferrals_shown = self._show_defer
         traces_shown = self._show_trace_ids
-        if ns_shown:
-            n_cols += 1
-        if deferrals_shown:
-            n_cols += 1
-        if traces_shown:
-            n_cols += 1
 
-        targets = targets
-        raw_tables = raw_tables
-        for target in targets:
-            tgt_rows = []
-            raw_table = raw_tables[target.unit_name]
+        # grab the most recent N events
+        cropped = events[-self._max_length :]
+        targets = sorted(set(e.unit for e in cropped))
+        n_columns = len(targets) + 1  # for the timestamps
 
-            if not final and REMOVE_EMPTY_COLUMNS:
-                if not any(raw_table.events):
-                    logger.debug(
-                        f"skipping column for {target.unit_name} because it is empty"
-                    )
-                    continue
+        matrix = [[None] * n_columns for _ in range(len(cropped))]
 
-            msg: Optional[EventLogMsg]
-            for i, (msg, event, n) in enumerate(
-                zip(raw_table.msgs, raw_table.events, raw_table.ns)
-            ):
-                rndr = (
+        for i, event in enumerate(cropped):
+            matrix[i][0] = Text(event.timestamp, style=Style(color=_tstamp_color))
+            event_row = [
+                (
                     Text(
-                        _get_event_text(event, msg),
-                        style=Style(color=_get_event_color(event, msg)),
+                        _get_event_text(event),
+                        style=Style(color=_get_event_color(event)),
                     )
                     if event
-                    else ""
+                    else Text()
                 )
-                row = [rndr]
+            ]
 
-                if deferrals_shown:
-                    deferral_status = raw_table.deferrals[i] or "null"
-                    deferral_symbol = _deferral_status_to_symbol[deferral_status]
-                    style = (
-                        Style(color=_deferral_colors[deferral_status])
-                        if deferral_status != "null"
-                        else ""
+            if deferrals_shown:
+                deferral_status = event.deferred
+                deferral_symbol = _deferral_status_to_symbol[deferral_status]
+                style = (
+                    Style(color=_deferral_colors[deferral_status])
+                    if deferral_status != DeferralStatus.null
+                    else Text()
+                )
+                deferral_rndr = Text(deferral_symbol, style=style)
+                event_row.append(deferral_rndr)
+
+            if ns_shown:
+                n_rndr = (
+                    Text(str(event.n), style=Style(color=self._n_color(event.n)))
+                    if event.n
+                    else Text()
+                )
+                event_row.insert(0, n_rndr)
+
+            if traces_shown:
+                trace_id = event.trace_id
+                trace_rndr = (
+                    Text(trace_id, style=Style(color=_trace_id_color))
+                    if trace_id
+                    else Text("-")
+                )
+                event_row.append(trace_rndr)
+
+            matrix[i][targets.index(event.unit) + 1] = Text(_pad).join(event_row)
+
+        headers = ["timestamp", *targets]
+        for header in headers:
+            table.add_column(header, style=Style(bold=True))
+        for row in matrix if self._flip else reversed(matrix):
+            table.add_row(*row)
+
+        if table.rows:
+            if self._flip:
+                table.rows[-1].style = Style(bgcolor=_last_event_bgcolor)
+            else:
+                table.rows[0].style = Style(bgcolor=_last_event_bgcolor)
+
+        if currently_deferred:
+            table.rows[-1].end_section = True
+
+            table.add_row(
+                "Currently deferred:",
+                *(
+                    "\n".join(
+                        f"{e.n}:{e.event}"
+                        for e in currently_deferred
+                        if e.unit == target
                     )
-                    deferral_rndr = Text(deferral_symbol, style=style)
-                    row.append(deferral_rndr)
-
-                if ns_shown:
-                    n_rndr = (
-                        Text(n, style=Style(color=raw_table.get_color(n))) if n else ""
-                    )
-                    row.insert(0, n_rndr)
-
-                if traces_shown:
-                    trace_id = msg.trace_id if msg else None
-                    trace_rndr = (
-                        Text(trace_id, style=Style(color=_trace_id_color))
-                        if trace_id
-                        else "-"
-                    )
-                    row.append(trace_rndr)
-
-                tgt_rows.append(row)
-
-            tgt_grid = Table.grid(
-                *(Column("", no_wrap=True) for _ in range(n_cols)),
-                expand=True,
-                padding=(0, 1, 0, 1),
-            )
-            n_tgt_rows = len(tgt_rows) - 1
-            for i, row in enumerate(reversed(tgt_rows) if self._flip else tgt_rows):
-                if row[0]:
-                    row[0].style += Style(
-                        underline=i == (n_tgt_rows if self._flip else 0)
-                    )
-                tgt_grid.add_row(*row)
-
-            table.add_column(header=target.unit_name, style="")
-            unit_grids.append(tgt_grid)
-
-        _timestamps_grid = Table.grid("", expand=True)
-
-        timestamps = timestamps
-        n_evt_timestamps = len(timestamps) - 1
-        evt_timestamps = reversed(timestamps) if self._flip else timestamps
-        for i, tstamp in enumerate(evt_timestamps):
-            _timestamps_grid.add_row(
-                tstamp,
-                style=Style(
-                    color=_tstamp_color,
-                    underline=i == (n_evt_timestamps if self._flip else 0),
+                    for target in targets
                 ),
             )
 
-        table.add_row(_timestamps_grid, *unit_grids)
         if _debug:
             self.console.print(table)
             return table
@@ -801,11 +743,7 @@ class RichPrinter:
 
     def quit(
         self,
-        evt_count: Counter,
-        targets: List[Target],
-        raw_tables: Dict[str, RawTable],
-        timestamps: List[str],
-        history: _History,
+        events: List[EventLogMsg],
     ):
         """Print a goodbye message and output a summary to file if requested."""
         if not self._rendered:
@@ -814,49 +752,32 @@ class RichPrinter:
 
         output = self._output
         if output:
-            # load back history into raw tables
-            history = history
-            # prepend all things we popped during cropping
-            timestamps = history.timestamps + timestamps
-            for unit_name, rt in raw_tables.items():
-                rt.deferrals = history.raw_tables[unit_name].deferrals + rt.deferrals
-                rt.events = history.raw_tables[unit_name].events + rt.events
-                rt.ns = history.raw_tables[unit_name].ns + rt.ns
-            # the raw tables we have now should run up to the beginning of time
+            self._max_length = float("inf")
 
         rendered = self.render(
-            None,
-            targets=targets,
-            raw_tables=raw_tables,
-            timestamps=timestamps,
+            events,
             final=True,
         )
         table = cast(Table, rendered.renderable)
         table.rows[-1].end_section = True
-        evt_count = evt_count
+        evt_count = self._count_events(events)
 
         nevents = []
         tgt_names = []
-        for tgt in targets:
-            nevents.append(str(evt_count[tgt.unit_name]))
-            text = Text(tgt.unit_name, style="bold")
+        count = self._count_events(events)
+        for tgt in count:
+            nevents.append(str(evt_count[tgt]))
+            text = Text(tgt, style="bold")
             tgt_names.append(text)
-        table.add_row(Text("The end.", style="bold blue"), *tgt_names, end_section=True)
 
-        table.add_row(Text("events emitted", style="green"), *nevents)
-
-        if self._show_defer:
-            cdefevents = []
-            for tgt in targets:
-                raw_table = raw_tables[tgt.unit_name]
-                cdefevents.append(str(len(raw_table.currently_deferred)))
-            table.add_row(Text("currently deferred events", style="green"), *cdefevents)
+        table.add_row(Text("Captured:", style="bold blue"), *nevents, end_section=True)
 
         table_centered = Align.center(table)
 
         self.live.update(table_centered)
         self.live.refresh()
         self.live.stop()
+        print("The end.")
 
         if not output:
             return
@@ -876,14 +797,11 @@ class RichPrinter:
 
 
 class Processor:
-    # FIXME: why does sometime event/relation_event work, and sometimes
-    #  uniter_event does? OF Version?
-
     def __init__(
         self,
-        targets: Iterable[Target],
+        targets: Sequence[str],
         add_new_targets: bool = True,
-        history_length: int = 10,
+        max_length: int = 10,
         show_ns: bool = True,
         show_trace_ids: bool = False,
         show_defer: bool = False,
@@ -895,10 +813,9 @@ class Processor:
         color: _Color = "auto",
         flip: bool = False,
     ):
-        self.targets = list(targets)
+        self.targets = targets
         self.output = Path(output) if output else None
         self.add_new_targets = add_new_targets
-        self.history_length = history_length
 
         if printer == "raw":
             if flip or (color != "auto"):
@@ -918,19 +835,14 @@ class Processor:
                 show_ns=show_ns,
                 show_trace_ids=show_trace_ids,
                 output=self.output,
+                max_length=max_length,
             )
         else:
             exit(f"unknown printer type: {printer}")
 
-        # collects items that get popped from the list because we're exceeding the length
-        # in case on exit we want to output the whole log to file.
-        self.history = _History()
-
         self.event_filter_re = event_filter_re
-        self._raw_tables: Dict[str, RawTable] = {
-            target.unit_name: RawTable() for target in targets
-        }
-        self._timestamps = []
+        self._captured_logs: List[EventLogMsg] = []
+        self._currently_deferred: Set[EventLogMsg] = set()
 
         self._show_ns = show_ns and show_defer
         self._show_defer = show_defer
@@ -938,18 +850,8 @@ class Processor:
         self._show_trace_ids = show_trace_ids
         self._next_msg_trace_id: Optional[str] = None
 
-        self.evt_count = Counter()
-        self.tracking: Dict[str, List[EventLogMsg]] = {
-            tgt.unit_name: [] for tgt in targets
-        }
-
-        # used to check for duplicate log messages (juju bug?)
-        self._duplicate_cache = set()
-
         self._has_just_emitted = False
-
         self._warned_about_orphans = False
-
         self.parser = LogLineParser(model=model)
 
     def _warn_about_orphaned_event(self, evt):
@@ -965,55 +867,53 @@ class Processor:
         )
         self._warned_about_orphans = True
 
-    def _emit(self, evt: EventLogMsg):
-        if self.add_new_targets and evt.unit not in self.tracking:
-            self._add_new_target(evt)
-
-        if evt.unit in self.tracking:  # target tracked
-            self.evt_count[evt.unit] += 1
-            self.tracking[evt.unit].insert(0, evt)
-            self._raw_tables[evt.unit].add(evt)
-            logger.debug(f"tracking {evt.event}")
-
     def _defer(self, deferred: EventDeferredLogMsg):
         # find the original message we're deferring
-        raw_table = self._raw_tables[deferred.unit]
+        found = None
+        for captured in filter(
+            lambda e: e.unit == deferred.unit, self._captured_logs[::-1]
+        ):
+            if captured.event == deferred.event:
+                found = captured
+                break
 
-        if deferred.event not in raw_table.events:
+        if not found:
             # we're deferring an event we've not seen before: logging just started.
             # so we pretend we've seen it, to be safe.
-            mock_event = EventLogMsg(
+            found = EventLogMsg(
                 pod_name=deferred.pod_name,
                 timestamp="",
                 loglevel=deferred.loglevel,
                 unit=deferred.unit,
                 event=deferred.event,
                 mocked=True,
+                deferred=DeferralStatus.deferred,
             )
-            self._emit(mock_event)
+            self._captured_logs.append(found)
             logger.debug(
-                f"Mocking {mock_event}: we're deferring it but "
-                f"we've not seen it before."
+                f"Mocking {found}: we're deferring it but " f"we've not seen it before."
             )
 
-        currently_deferred_ns = {d.n for d in raw_table.currently_deferred}
+        currently_deferred_ns = {d.n for d in self._currently_deferred}
         is_already_deferred = deferred.n in currently_deferred_ns
+        found.n = deferred.n
+        if found.deferred == DeferralStatus.reemitted:
+            # the event we found
+            found.deferred = DeferralStatus.bounced
+        else:
+            found.deferred = DeferralStatus.deferred
 
         if not is_already_deferred:
             logger.debug(f"deferring {deferred}")
-            raw_table.currently_deferred.append(deferred)
-
+            self._currently_deferred.add(deferred)
         else:
             # not the first time we defer this boy
-            logger.debug(f"re-deferring {deferred.event}")
+            logger.debug(f"bouncing {deferred.event}")
 
     def _reemit(self, reemitted: EventReemittedLogMsg):
         # search deferred queue first to last
-        unit = reemitted.unit
-        raw_table = self._raw_tables[unit]
-
         deferred = None
-        for _deferred in list(raw_table.currently_deferred):
+        for _deferred in list(self._currently_deferred):
             if _deferred.n == reemitted.n:
                 deferred = _deferred
 
@@ -1031,25 +931,18 @@ class Processor:
                 n=reemitted.n,
                 mocked=True,
             )
-            # this is a reemittal log, so we've _emitted it once, which has stored this n into
-            # raw_table.ns. this will make update_defers believe that we've already deferred
-            # this event, which we haven't.
-            self._timestamps.insert(0, deferred.timestamp + "*")
 
             self._defer(deferred)
             logger.debug(
                 f"mocking {deferred}: we're reemitting it but "
                 f"we've not seen it before."
             )
-
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
-            # so we need to _emit it once more.
-            self._emit(reemitted)
+            # so we need to _emit it once more to pretend we've seen it.
 
-        raw_table.currently_deferred.remove(deferred)
+        reemitted.deferred = DeferralStatus.reemitted
+        self._currently_deferred.remove(deferred)
 
-        # start tracking the reemitted event.
-        self.tracking[unit].append(reemitted)
         logger.debug(f"reemitted {reemitted.event}")
 
     def _match_filter(self, event_name: str) -> bool:
@@ -1091,42 +984,32 @@ class Processor:
                 return
             return EventLogMsg(**match, mocked=False)
 
-    def _add_new_target(self, msg: EventLogMsg):
-        logger.info(f"adding new unit {msg.unit}")
-        new_target = Target.from_name(msg.unit)
-
-        self.tracking[msg.unit] = []
-        self.targets.append(new_target)
-        self._raw_tables[new_target.unit_name] = RawTable()
-
-    def _check_duplicate(self, msg: EventLogMsg):
-        hsh = hash((msg.unit, msg.timestamp, msg.event))
-        if hsh in self._duplicate_cache:
-            return True
-        self._duplicate_cache.add(hsh)
-
     def _apply_jhack_mod(self, msg: EventLogMsg):
-        def _get_referenced_msg(unit: str) -> Optional[EventLogMsg]:
+        def _get_referenced_msg(
+            event: Optional[str], unit: str
+        ) -> Optional[EventLogMsg]:
             # this is the message we're referring to, the one we're modifying
-            raw_table = self._raw_tables[msg.unit]
-            if not msg.event:
-                if not raw_table.msgs:
+            logs = self._captured_logs
+            if not event:
+                if not logs:
                     logger.error("cannot reference the previous event: no messages.")
                     return
-                return raw_table.msgs[0]
+                return logs[-1]
+            # try to find last event of this type emitted on the same unit:
+            # that is the one we're referring to
             try:
-                idx = raw_table.events.index(msg.event)
-            except ValueError:
-                logger.error(
-                    f"{msg.event} not found in raw_table. Ignoring tags {msg.tags}..."
+                referenced_log = next(
+                    filter(lambda e: e.event == event and e.unit == unit, logs[::-1])
                 )
+            except StopIteration:
+                logger.error(f"{unit}:{event} not found in history...")
                 return
-            return raw_table.msgs[idx]
+            return referenced_log
 
         if "fire" in msg.tags:
             # the previous event of this type was fired by jhack.
             # copy over the tags
-            referenced_msg = _get_referenced_msg(msg.unit)
+            referenced_msg = _get_referenced_msg(msg.event, msg.unit)
             if referenced_msg:
                 referenced_msg.tags = msg.tags
 
@@ -1138,28 +1021,23 @@ class Processor:
         elif "replay" in msg.tags:
             # the previous event of this type was replayed by jhack.
             # we log as if we emitted one.
-            self._emit(msg)
+            self._captured_logs.append(msg)
 
             original_evt_timestamp = msg.jhack_replayed_evt_timestamp
-            raw_table = self._raw_tables[msg.unit]
-            original_evt_idx = None
-            for i, msg in enumerate(raw_table.msgs):
-                if msg and msg.timestamp == original_evt_timestamp:
-                    original_evt_idx = i
+            original_event = None
+            for msg in self._captured_logs:
+                if msg.timestamp == original_evt_timestamp:
+                    original_event = msg
                     break
-
-            if original_evt_idx:
-                ori_event = raw_table.msgs[original_evt_idx]
+            if original_event:
                 # add tags: if the original event was jhack-fired, we don't want to lose that info.
-                ori_event.tags += ("jhack", "replay", "source")
+                original_event.tags += ("jhack", "replay", "source")
             else:
                 logger.debug(
                     f"original event out of scope: {original_evt_timestamp} is "
                     f"too far in the past."
                 )
-
-            newly_emitted_evt = raw_table.msgs[0]
-            newly_emitted_evt.tags = ("jhack", "replay", "replayed")
+            msg.tags = ("jhack", "replay", "replayed")
 
         else:
             raise ValueError(f"unsupported jhack modifier tags: {msg.tags}")
@@ -1180,12 +1058,8 @@ class Processor:
         else:
             return
 
-        if mode != "jhack-mod" and self._check_duplicate(msg):
-            logger.debug(f"{msg.timestamp}: {msg.event} is a duplicate. skipping...")
-            return
-
         if mode in {"emit", "reemit"}:
-            self._emit(msg)
+            self._captured_logs.append(msg)
 
         if not self._is_tracking(msg):
             return
@@ -1204,113 +1078,74 @@ class Processor:
                 # so we have to store it and pop it when the emission event logline comes in.
                 msg.trace_id = self._next_msg_trace_id
                 self._next_msg_trace_id = None
-
-            self._timestamps.insert(0, msg.timestamp)
-            # we need to update all *other* tables as well, to insert a
-            # blank line where this event would appear
-            self._extend_other_tables(msg)
-            self._crop()
-
-        if mode != "jhack-mod" and self._show_defer:
-            logger.info(f"updating defer for {msg.event}")
-            self.update_defers(msg)
+        #
+        # if mode != "jhack-mod" and self._show_defer:
+        #     logger.info(f"updating defer for {msg.event}")
+        # self.update_defers(msg)
 
         self.printer.render(
-            msg=msg,
-            targets=self.targets,
-            raw_tables=self._raw_tables,
-            timestamps=self._timestamps,
+            events=self._captured_logs, currently_deferred=self._currently_deferred
         )
         return msg
 
-    def _extend_other_tables(self, msg: EventLogMsg):
-        raw_tables = self._raw_tables
-        for unit, raw_table in raw_tables.items():
-            if unit == msg.unit:
-                # this raw_table: skip
-                continue
-
-            raw_table.add_blank_row()
-
-    def _is_tracking(self, msg):
-        return msg.unit in self.tracking
-
-    def update_defers(self, msg: EventLogMsg):
-        # all the events we presently know to be deferred
-        unit = msg.unit
-        raw_table = self._raw_tables[unit]
-
-        if msg.type == "deferred":
-            # if we're deferring, we're not adding a new logline, so we can
-            # start searching at 0
-            try:
-                previous_msg_idx = raw_table.ns.index(msg.n)
-            except ValueError:
-                # are we deferring the last event?
-                previous_msg = raw_table.msgs[0]
-                if (
-                    previous_msg
-                    and previous_msg.event == msg.event
-                    and previous_msg.unit == msg.unit
-                ):
-                    previous_msg_idx = 0
-                else:
-                    logger.debug(f"Deferring event {msg.n} which is out of scope.")
-                    return
-
-            new_state = "deferred"
-            if raw_table.deferrals[previous_msg_idx] == "deferred":
-                new_state = "bounced"
-            raw_table.deferrals[previous_msg_idx] = new_state
-            raw_table.ns[previous_msg_idx] = msg.n
-
-        elif msg.type == "reemitted":
-            last = None
-            for i, n in enumerate(raw_table.ns):
-                if n == msg.n:
-                    raw_table.deferrals[i] = "bounced"
-                    last = i
-
-            if last is not None:
-                raw_table.deferrals[last] = "deferred"
-
-            raw_table.deferrals[0] = "reemitted"  # this event!
-
-        else:
-            return
-
-    def _crop(self):
-        # crop all:
-        if len(self._timestamps) <= self.history_length:
-            # nothing to do.
-            return
-
-        logger.info("cropping table")
-        while len(self._timestamps) > self.history_length:
-            self.history.timestamps.append(self._timestamps.pop())  # pop first
-
-        for unit_name, raw_table in self._raw_tables.items():
-            while len(raw_table.events) > self.history_length:
-                self.history.raw_tables[unit_name].events.append(
-                    raw_table.events.pop()
-                )  # pop first
-            while len(raw_table.deferrals) > self.history_length:
-                self.history.raw_tables[unit_name].deferrals.append(
-                    raw_table.deferrals.pop()
-                )  # pop first
-            while len(raw_table.ns) > self.history_length:
-                self.history.raw_tables[unit_name].ns.append(
-                    raw_table.ns.pop()
-                )  # pop first
+    # def update_defers(self, msg: EventLogMsg):
+    #     # all the events we presently know to be deferred
+    #     unit = msg.unit
+    #     raw_table = self._raw_tables[unit]
+    #
+    #     if msg.type == "deferred":
+    #         # if we're deferring, we're not adding a new logline, so we can
+    #         # start searching at 0
+    #         try:
+    #             previous_msg_idx = raw_table.ns.index(msg.n)
+    #         except ValueError:
+    #             # are we deferring the last event?
+    #             previous_msg = raw_table.msgs[0]
+    #             if (
+    #                 previous_msg
+    #                 and previous_msg.event == msg.event
+    #                 and previous_msg.unit == msg.unit
+    #             ):
+    #                 previous_msg_idx = 0
+    #             else:
+    #                 logger.debug(f"Deferring event {msg.n} which is out of scope.")
+    #                 return
+    #
+    #         new_state = "deferred"
+    #         if raw_table.deferrals[previous_msg_idx] == "deferred":
+    #             new_state = "bounced"
+    #         raw_table.deferrals[previous_msg_idx] = new_state
+    #         raw_table.ns[previous_msg_idx] = msg.n
+    #
+    #     elif msg.type == "reemitted":
+    #         last = None
+    #         for i, n in enumerate(raw_table.ns):
+    #             if n == msg.n:
+    #                 raw_table.deferrals[i] = "bounced"
+    #                 last = i
+    #
+    #         if last is not None:
+    #             raw_table.deferrals[last] = "deferred"
+    #
+    #         raw_table.deferrals[0] = "reemitted"  # this event!
+    #
+    #     else:
+    #         return
 
     def quit(self):
-        self.printer.quit(
-            self.evt_count,
-            self.targets,
-            self._raw_tables,
-            self._timestamps,
-            self.history,
-        )
+        self.printer.quit(self._captured_logs)
+
+    def _is_tracking(self, msg: EventLogMsg):
+        if not self.add_new_targets and self.targets:
+            for target in self.targets:
+                # target is a unit name
+                if target == msg.unit:
+                    return True
+                # target is an app name
+                elif "/" not in target and target == msg.unit.split("/")[0]:
+                    return True
+
+        return True
 
 
 class _Printer(str, enum.Enum):
@@ -1495,17 +1330,6 @@ def _tail_events(
         logger.debug("targets provided; overruling add_new_targets param.")
         add_new_targets = False
 
-    # if we pass files, we don't grab targets from juju, we simply read them from the file
-    parsed_targets: Tuple[Target, ...] = (
-        parse_targets(targets, model=model)
-        if not files
-        else tuple(Target.from_name(n) for n in targets)
-    )
-    if not parsed_targets and not add_new_targets:
-        sys.exit(
-            "no targets passed and `add_new_targets`=False: you will not see much."
-        )
-
     if files and replay:
         logger.debug("ignoring `replay` because files were provided")
         replay = False
@@ -1533,9 +1357,9 @@ def _tail_events(
 
     event_filter_pattern = re.compile(event_filter) if event_filter else None
     processor = Processor(
-        parsed_targets,
+        targets,
         add_new_targets,
-        history_length=length,
+        max_length=length,
         show_ns=show_ns,
         show_trace_ids=show_trace_ids,
         printer=printer,
@@ -1668,5 +1492,5 @@ def debump_loglevel(previous: str):
 
 if __name__ == "__main__":
     # logger.setLevel("DEBUG")
-    # _tail_events(length=30, replay=True)
-    _print_color_codes()
+    _tail_events(length=30, replay=True)
+    # _print_color_codes()

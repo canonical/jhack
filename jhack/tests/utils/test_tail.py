@@ -7,7 +7,7 @@ import pytest
 
 import jhack.utils.tail_charms
 from jhack.helpers import Target
-from jhack.utils.tail_charms import Processor, _tail_events
+from jhack.utils.tail_charms import Processor, _tail_events, DeferralStatus
 
 
 def _mock_emit(
@@ -90,6 +90,7 @@ MOCK_JDL = {
         """,
 }
 
+
 MOCK_JDL_UNITER_EVTS_ONLY = {
     1: b"""unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
         unit-myapp-0: 12:04:18 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
@@ -170,88 +171,83 @@ def test_with_cropped_trfk_log(deferrals, length):
         _tail_events(targets="trfk/0", length=length, show_defer=deferrals, watch=False)
 
 
-def test_tracking():
-    mock_uniter_events_only(False)
-    p = Processor([Target("myapp", 0)], show_defer=True)
-    l1, l2, l3, l4 = [
-        line.decode("utf-8").strip() for line in MOCK_JDL[1].split(b"\n")[:-1]
+def test_jhack_fire_log():
+    # scenario 5: jhack fire
+    lines = [
+        "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.",
+        "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.",
+        "unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log The previous update-status was fired by jhack.",
     ]
-    raw_table = p._raw_tables["myapp/0"]
+    proc = Processor([])
+    for line in lines:
+        proc.process(line)
+    captured = proc._captured_logs
+    assert len(captured) == 2
+    assert captured[1].tags == ("jhack", "fire")
 
-    p.process(l1)
-    assert raw_table.deferrals == [None]
-    assert raw_table.ns == [None]
-    assert raw_table.events == ["start"]
-    assert raw_table.currently_deferred == []
+    out = proc.printer.render(proc._captured_logs, _debug=True)
+    out.columns[1].cells
 
-    p.process(l2)
-    assert raw_table.deferrals == [None, None]
-    assert raw_table.ns == [None, None]
-    assert raw_table.events == ["update_status", "start"]
-    assert raw_table.currently_deferred == []
 
-    p.process(l3)
-    assert raw_table.deferrals == ["deferred", None]
-    assert raw_table.ns == ["0", None]
-    assert raw_table.events == ["update_status", "start"]
-    assert len(raw_table.currently_deferred) == 1
-
-    p.process(l4)
-    assert raw_table.deferrals == [
-        "reemitted",
-        "deferred",
-        None,
+def test_defer_log():
+    # scenario 5: jhack fire
+    lines = [
+        # we re-re-emit it and consume it when processing install
+        "unit-traefik-0: 12:04:20 DEBUG unit.traefik/0.juju-log Re-emitting deferred event <UpdateStatusEvent via TraefikIngressCharm/on/update_status[318]>.",
+        "unit-traefik-0: 12:04:20 INFO unit.traefik/0.juju-log Emitting Juju event install.",
     ]
-    assert raw_table.ns == ["0", "0", None]
-    assert raw_table.events == ["update_status", "update_status", "start"]
-    assert len(raw_table.currently_deferred) == 0
 
+    proc = Processor([], show_defer=True)
 
-def test_tracking_uniter_logs():
-    mock_uniter_events_only()
-    p = Processor([Target("myapp", 0)], show_defer=True)
-    l1, l2, l3 = [
-        line.decode("utf-8").strip()
-        for line in MOCK_JDL_UNITER_EVTS_ONLY[1].split(b"\n")[:-1]
-    ]
-    raw_table = p._raw_tables["myapp/0"]
+    # we emit update status
+    proc.process(
+        "unit-traefik-0: 12:04:18 INFO unit.traefik/0.juju-log Emitting Juju event update_status."
+    )
+    e0 = proc._captured_logs[0]
+    assert not proc._currently_deferred
+    assert e0.event == "update_status"
+    assert e0.deferred == DeferralStatus.null
+    assert not e0.tags
 
-    p.process(l1)
-    assert raw_table.deferrals == [None]
-    assert raw_table.ns == [None]
-    assert raw_table.events == ["start"]
-    assert raw_table.currently_deferred == []
+    proc.process(
+        "unit-traefik-0: 12:04:18 DEBUG unit.traefik/0.juju-log Deferring <UpdateStatusEvent via TraefikIngressCharm/on/update_status[318]>."
+    )
+    assert proc._currently_deferred
+    assert e0.deferred == DeferralStatus.deferred
+    assert not e0.tags
 
-    p.process(l2)
-    assert raw_table.deferrals == [None, None]
-    assert raw_table.ns == [None, None]
-    assert raw_table.events == ["install", "start"]
-    assert raw_table.currently_deferred == []
+    proc.process(
+        "unit-traefik-0: 12:04:18 DEBUG unit.traefik/0.juju-log The previous update-status was fired by jhack."
+    )
+    assert e0.deferred == DeferralStatus.deferred
+    assert e0.tags == ("jhack", "fire")
+    # the initial update_status has been marked as deferred and tagged with jhack+fire
 
-    p.process(l3)
-    assert raw_table.deferrals == [None, None, None]
-    assert raw_table.ns == [None, None, None]
-    assert raw_table.events == ["update_status", "install", "start"]
-    assert raw_table.currently_deferred == []
+    # we re-emit it and re-defer it when running start
+    proc.process(
+        "unit-traefik-0: 12:04:19 DEBUG unit.traefik/0.juju-log Re-emitting deferred event <UpdateStatusEvent via TraefikIngressCharm/on/update_status[318]>."
+    )
 
+    e1 = proc._captured_logs[1]
+    assert e1.event == "update_status"
+    # at this point we think it's consumed, as it's not been re-deferred yet
+    assert not proc._currently_deferred
+    assert e1.deferred == DeferralStatus.reemitted
+    assert not e1.tags
 
-def test_tracking_reemit_only():
-    mock_uniter_events_only(False)
+    # now we see the re-deferral
+    proc.process(
+        "unit-traefik-0: 12:04:19 DEBUG unit.traefik/0.juju-log Deferring <UpdateStatusEvent via TraefikIngressCharm/on/update_status[318]>."
+    )
+    assert e1.deferred == DeferralStatus.bounced
+    assert not e1.tags
 
-    # we only process a `Re-emitting` log, this should cause Processor to mock a defer,
-    # and mock an emit before that.
-    p = Processor([Target("myapp", 0)], show_defer=True)
-    reemittal = MOCK_JDL[1].split(b"\n")[-2].decode("utf-8").strip()
-    raw_table = p._raw_tables["myapp/0"]
-
-    p.process(reemittal)
-    assert raw_table.deferrals == [
-        "reemitted",
-        "deferred",
-    ]
-    assert raw_table.ns == ["0", "0"]
-    assert raw_table.events == ["update_status", "update_status"]
-    assert len(raw_table.currently_deferred) == 0
+    # and now we see what event we've been processing now
+    proc.process(
+        "unit-traefik-0: 12:04:19 INFO unit.traefik/0.juju-log Emitting Juju event start."
+    )
+    e1 = proc._captured_logs[2]
+    assert e1.event == "start"
 
 
 def test_tail_with_file_input():
@@ -290,39 +286,32 @@ def test_machine_log_with_subordinates():
     proc = _tail_events(
         length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
     )
-    assert len(proc.targets) == 4
+    units = {l.unit for l in proc._captured_logs}
+    assert len(units) == 4
 
-    assert proc._raw_tables["mongodb/0"].events == [
-        None,
+    assert [l.event for l in proc._captured_logs if l.unit == "mongodb/0"] == [
         "testing_mock",
     ]  # mock event we added
-    assert proc._raw_tables["ceil/0"].events == ["testing_mock"]  # mock event we added
-    assert proc._raw_tables["prometheus-node-exporter/0"].events == [
-        None,
-        None,
-        "juju_info_relation_changed",
-        "juju_info_relation_joined",
-        "start",
-        "config_changed",
-        "leader_elected",
+    assert [l.event for l in proc._captured_logs if l.unit == "ceil/0"] == [
+        "testing_mock"
+    ]  # mock event we added
+    assert [
+        l.event for l in proc._captured_logs if l.unit == "prometheus-node-exporter/0"
+    ] == [
+        "install",
         "juju_info_relation_created",
-        "install",
-    ]
-    assert proc._raw_tables["ubuntu/0"].events == [
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "update_status",
-        "start",
-        "config_changed",
         "leader_elected",
+        "config_changed",
+        "start",
+        "juju_info_relation_joined",
+        "juju_info_relation_changed",
+    ]
+    assert [l.event for l in proc._captured_logs if l.unit == "ubuntu/0"] == [
         "install",
+        "leader_elected",
+        "config_changed",
+        "start",
+        "update_status",
     ]
 
 
@@ -346,7 +335,7 @@ def test_machine_log_with_subordinates():
 def test_custom_event(line, expected_event):
     p = Processor([Target("prom", 1)])
     p.process(line)
-    assert p._raw_tables["prom/1"].events
+    assert [l for l in p._captured_logs if l.unit == "prom/1"]
 
 
 def test_borky_trfk_log_defer():
@@ -368,13 +357,13 @@ def test_trace_ids_relation_evt():
         "/on/ready_for_unit[14]>.",
     ):
         p.process(line)
-    evt = p._raw_tables["prom/1"].msgs[0]
+    evt = [l for l in p._captured_logs if l.unit == "prom/1"][0]
     assert evt.trace_id == "12312321412412312321"
 
 
 def test_trace_ids_no_relation_evt():
     mock_uniter_events_only(False)
-    p = Processor([Target("prom", 1)], show_trace_ids=True)
+    p = Processor(["prom/1"], show_trace_ids=True)
     for line in (
         "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Starting root trace with id='12312321412412312321'.",
         "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Emitting custom event "
@@ -382,21 +371,5 @@ def test_trace_ids_no_relation_evt():
         "/on/ready_for_unit[14]>.",
     ):
         p.process(line)
-    evt = p._raw_tables["prom/1"].msgs[0]
+    evt = [l for l in p._captured_logs if l.unit == "prom/1"][0]
     assert evt.trace_id == "12312321412412312321"
-
-
-def test_bench(benchmark):
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
-    ):
-        tf = tempfile.NamedTemporaryFile()
-        benchmark(
-            _tail_events,
-            targets=["trfk/0"],
-            length=30,
-            # show_ns=True,
-            # show_defer=True,
-            watch=False,
-            output=tf.name,
-        )
