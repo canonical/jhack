@@ -70,7 +70,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.tail_logs import tail_logs
     from jhack.utils.unbork_juju import unbork_juju
-    from jhack.utils.unleash import vanity
+    from jhack.utils.unleash import vanity, vanity_2
     from jhack.utils.deployment_graph import unravel
 
     if "--" in sys.argv:
@@ -85,7 +85,6 @@ def main():
     utils.command(name="record", no_args_is_help=True)(record)
     utils.command(name="ffwd")(fast_forward)
     utils.command(name="print-env")(print_env)
-    utils.command(name="unravel", no_args_is_help=True)(unravel)
     utils.command(name="this-is-fine", no_args_is_help=True)(devmode_only(this_is_fine))
 
     utils.command(name="unbork-juju")(devmode_only(unbork_juju))
@@ -132,8 +131,10 @@ def main():
     app.command(name="tail")(tail_events)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unleash", hidden=True)(vanity)
+    app.command(name="is", hidden=True)(vanity_2)
     app.command(name="jenv")(print_env)
     app.command(name="list-endpoints")(list_endpoints)
+    app.command(name="unravel")(unravel)
 
     # DEVMODE ONLY COMMANDS
     def _test_devmode():
