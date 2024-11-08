@@ -12,6 +12,8 @@ from jhack.utils.show_relation import (
     Relation,
     gather_relation_databags,
     AppRelationData,
+    get_relation_by_endpoint,
+    get_unit_info,
 )
 
 logger = jhack_logger.getChild("graph")
@@ -100,13 +102,23 @@ class Graph:
 
         def walk(model_name_: str, app_name_: str, graph_=None):
             if app_name_ in visited:
-                return
+                return graph_
             visited.append(app_name_)
 
             status = get_status(model_name_)
             app = get_app(app_name_, model_name_)
             relations: List[Relation] = []
             graph_[app] = relations
+
+            def _find_relation_id(
+                app_name__: str,
+                model_name__: str,
+                endpoint_: str,
+                remote_endpoint_: str,
+                remote_app_name_: str,
+            ):
+                # FIXME: show-unit does not give the data, how do we get it?
+                return 0
 
             def _find_remote_endpoint(meta: dict, local_app_name: str, interface: str):
                 for endpoint, relations_meta in meta["relations"].items():
@@ -141,7 +153,7 @@ class Graph:
                         walk(remote_model_name, remote_app_name, graph_)
 
                     remote_endpoint = _find_remote_endpoint(
-                        remote_app_meta, binding["interface"], app_name_
+                        remote_app_meta, app_name_, binding["interface"]
                     )
                     rel = Relation(
                         provider=app_name_,
@@ -151,8 +163,12 @@ class Graph:
                         interface=binding["interface"],
                         raw_type="regular",
                         id=_find_relation_id(
-                            app_name_, remote_app_name, endpoint, remote_endpoint
-                        ),  # TODO,
+                            app_name_,
+                            model_name_,
+                            endpoint,
+                            remote_endpoint,
+                            remote_app_name,
+                        ),
                     )
                     relations.append(rel)
 
@@ -162,7 +178,8 @@ class Graph:
 
         if not app_name:
             graph = {}
-            for app_name in cached_juju_status(model=model_)["applications"]:
+            cached_status = cached_juju_status(model=model_, json=True)
+            for app_name in cached_status["applications"]:
                 graph = walk(model_, app_name, graph)
 
         else:
@@ -173,7 +190,7 @@ class Graph:
     def plot(self):
         print("GRAPH:")
         for origin, relations in self._graph.items():
-            print(f"\t{origin.name} ({origin.charm_name}) --> {{")
+            print(f"\t{origin.name} ({origin.charm_name}) :: {{")
             for relation in relations:
                 print(
                     f"\t\t({relation.provider}) {relation.provider_endpoint} >> "
@@ -195,8 +212,8 @@ def _map(app_name: str, model_name: str):
 
 
 def unravel(
-    app_name: str = typer.Argument(
-        ..., help="""The starting point of the graph expansion."""
+    app_name: Optional[str] = typer.Argument(
+        None, help="""The starting point of the graph expansion."""
     ),
     model_name: str = typer.Option(
         None,
@@ -209,4 +226,4 @@ def unravel(
 
 
 if __name__ == "__main__":
-    Graph.bootstrap("traefik").plot()
+    Graph.bootstrap().plot()
