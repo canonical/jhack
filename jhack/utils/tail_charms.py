@@ -1179,8 +1179,7 @@ def tail_events(
         True,
         "--add",
         "-a",
-        help="Keep adding new units as they appear. Can't be used "
-        "in combination with nonempty targets arg. ",
+        help="Track by app name instead of by unit name. Meaningless without targets.",
     ),
     level: LEVELS = "DEBUG",
     replay: bool = typer.Option(
@@ -1341,8 +1340,8 @@ def _tail_events(
     if level not in {LEVELS.DEBUG, LEVELS.TRACE}:
         logger.debug(f"we won't be able to track events with level={level}")
 
-    if targets and add_new_units:
-        logger.debug("targets provided; overruling add_new_units param.")
+    if not targets and add_new_units:
+        logger.debug("targets not provided; overruling add_new_units param.")
         add_new_units = False
 
     if files and replay:
@@ -1444,11 +1443,12 @@ def _tail_events(
                 msg = line.decode("utf-8").strip()
                 captured = processor.process(msg)
 
-                # notify listeners that an event has been processed.
+                # notify listeners that an event has been captured.
                 if _on_event and captured:
                     _on_event(captured)
 
             else:
+                logger.debug("no new line received; interrupting tail")
                 # if we didn't get a line, it is because there are no new logs.
                 if not watch or not files:
                     break
