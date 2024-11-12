@@ -61,7 +61,6 @@ def model_loglevel(model: str = None):
             if key == "unit":
                 val = val.strip()
                 if val not in BEST_LOGLEVELS:
-                    print(BEST_LOGLEVELS)
                     logger.warning(
                         f"unit loglevel is {val}, which means tail will not be able to "
                         f"track Operator Framework debug logs for deferrals, reemittals, etc. "
@@ -735,6 +734,7 @@ class RichPrinter(Printer):
 
         table_centered = Align.center(table)
         self.live.update(table_centered)
+        logger.debug("updated live")
 
         if not self.live.is_started:
             logger.info("live started by render")
@@ -766,7 +766,7 @@ class RichPrinter(Printer):
         nevents = []
         tgt_names = []
         count = self._count_events(events)
-        for tgt in count:
+        for tgt in sorted(count):
             nevents.append(str(evt_count[tgt]))
             text = Text(tgt, style="bold")
             tgt_names.append(text)
@@ -805,7 +805,7 @@ class Processor:
     def __init__(
         self,
         targets: Sequence[str],
-        add_new_targets: bool = True,
+        add_new_units: bool = True,
         max_length: int = 10,
         show_ns: bool = True,
         show_trace_ids: bool = False,
@@ -820,7 +820,7 @@ class Processor:
     ):
         self.targets = targets
         self.output = Path(output) if output else None
-        self.add_new_targets = add_new_targets
+        self.add_new_units = add_new_units
 
         if printer == "raw":
             if flip or (color != "auto"):
@@ -1141,14 +1141,24 @@ class Processor:
 
     @lru_cache()
     def _is_tracking(self, unit: str):
-        if not self.add_new_targets and self.targets:
-            for target in self.targets:
-                # target is a unit name
-                if target == unit:
-                    return True
-                # target is an app name
-                elif "/" not in target and target == unit.split("/")[0]:
-                    return True
+        if not self.targets:
+            return True
+
+        get_app = lambda u: u.split("/")[0]
+        match_app = self.add_new_units
+
+        for target in self.targets:
+            u_app = get_app(unit)
+            if match_app and get_app(target) == u_app:
+                return True
+
+            # target is a unit name
+            if target == unit:
+                return True
+
+            # target is an app name
+            elif "/" not in target and target == u_app:
+                return True
 
         return False
 
@@ -1165,7 +1175,7 @@ def tail_events(
         "By default, it will follow all "
         "available targets.",
     ),
-    add_new_targets: bool = typer.Option(
+    add_new_units: bool = typer.Option(
         True,
         "--add",
         "-a",
@@ -1268,7 +1278,7 @@ def tail_events(
 
     return _tail_events(
         targets=target,
-        add_new_targets=add_new_targets,
+        add_new_units=add_new_units,
         level=level,
         replay=replay,
         printer=printer,
@@ -1296,7 +1306,7 @@ def _get_debug_log(cmd):
 
 def _tail_events(
     targets: List[str] = None,
-    add_new_targets: bool = True,
+    add_new_units: bool = True,
     level: LEVELS = "DEBUG",
     replay: bool = True,  # listen from beginning of time?
     dry_run: bool = False,
@@ -1331,9 +1341,9 @@ def _tail_events(
     if level not in {LEVELS.DEBUG, LEVELS.TRACE}:
         logger.debug(f"we won't be able to track events with level={level}")
 
-    if targets and add_new_targets:
-        logger.debug("targets provided; overruling add_new_targets param.")
-        add_new_targets = False
+    if targets and add_new_units:
+        logger.debug("targets provided; overruling add_new_units param.")
+        add_new_units = False
 
     if files and replay:
         logger.debug("ignoring `replay` because files were provided")
@@ -1348,7 +1358,6 @@ def _tail_events(
         ["juju", "debug-log"]
         + (["-m", model] if model else [])
         + (["--tail"] if watch else [])
-        + (["--replay"] if replay else [])
         + ["--level", level.value]
     )
 
@@ -1363,7 +1372,7 @@ def _tail_events(
     event_filter_pattern = re.compile(event_filter) if event_filter else None
     processor = Processor(
         targets,
-        add_new_targets,
+        add_new_units,
         max_length=length,
         show_ns=show_ns,
         show_trace_ids=show_trace_ids,
@@ -1376,14 +1385,27 @@ def _tail_events(
         output=output,
     )
 
-    try:
-        # when we're in replay mode we're catching up with the replayed logs
-        # so we won't limit the framerate and just flush the output
-        replay_mode = True
+    if replay:
+        logger.debug("doing replay")
+        proc = _get_debug_log(
+            ["juju", "debug-log"]
+            + (["-m", model] if model else [])
+            + ["--level", level.value]
+            + ["--replay", "--no-tail"]
+        )
+        for line in iter(proc.stdout.readlines()):
+            processor.process(line.decode("utf-8").strip())
 
+        logger.debug("replay complete")
+        logger.debug(
+            f"captured: {processor.printer._count_events(processor._captured_logs)}"
+        )
+
+    try:
         if files:
             # handle input from files
             log_getter = DebugLogInterlacer(files)
+            logger.debug("setting up file-watcher next-line generator")
 
             def next_line():
                 try:
@@ -1397,15 +1419,16 @@ def _tail_events(
 
             if not watch:
                 stdout = iter(proc.stdout.readlines())
+                logger.debug("setting up no-watch next-line generator")
 
                 def next_line():
-                    nonlocal stdout
                     try:
                         return next(stdout)
                     except StopIteration:
                         return ""
 
             else:
+                logger.debug("setting up standard next-line generator")
 
                 def next_line():
                     line = proc.stdout.readline()
@@ -1413,8 +1436,9 @@ def _tail_events(
 
         while True:
             start = time.time()
-
+            logger.debug(".")
             line = next_line()
+            logger.debug("-")
 
             if line:
                 msg = line.decode("utf-8").strip()
@@ -1425,24 +1449,18 @@ def _tail_events(
                     _on_event(captured)
 
             else:
-                print(line)
-                if not watch:
+                # if we didn't get a line, it is because there are no new logs.
+                if not watch or not files:
                     break
 
-                if not files and proc.poll() is not None:
-                    # process terminated FIXME: this shouldn't happen
-                    # Checks only if we're watching a process
-                    break
-
-                replay_mode = False
-                # we're done replaying.
-                # if we're in output mode, we've caught up with the juju log and we can exit
+                # if we've been called with the --output flag,
+                # we write what we have replayed to file and exit
                 if output:
                     exit()
 
                 continue
 
-            if not replay_mode and (elapsed := time.time() - start) < framerate:
+            if (elapsed := time.time() - start) < framerate:
                 logger.debug(f"sleeping {framerate - elapsed}")
                 time.sleep(framerate - elapsed)
 
