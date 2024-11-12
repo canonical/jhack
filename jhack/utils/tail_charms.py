@@ -6,6 +6,7 @@ import sys
 import time
 from collections import Counter
 from dataclasses import dataclass
+from functools import lru_cache
 from io import StringIO
 from pathlib import Path
 from subprocess import getoutput, run
@@ -777,7 +778,11 @@ class RichPrinter(Printer):
         self.live.update(table_centered)
         self.live.refresh()
         self.live.stop()
-        print("The end.")
+        self.live.console.print(
+            Align.center(
+                Text("The end.", style=Style(color="red", bold=True, blink=True))
+            )
+        )
 
         if not output:
             return
@@ -1058,12 +1063,11 @@ class Processor:
         else:
             return
 
-        if mode in {"emit", "reemit"}:
-            self._captured_logs.append(msg)
-
-        if not self._is_tracking(msg):
+        if not self._is_tracking(msg.unit):
             return
 
+        if mode in {"emit", "reemit"}:
+            self._captured_logs.append(msg)
         if mode == "defer":
             self._defer(msg)
         elif mode == "reemit":
@@ -1135,17 +1139,18 @@ class Processor:
     def quit(self):
         self.printer.quit(self._captured_logs)
 
-    def _is_tracking(self, msg: EventLogMsg):
+    @lru_cache()
+    def _is_tracking(self, unit: str):
         if not self.add_new_targets and self.targets:
             for target in self.targets:
                 # target is a unit name
-                if target == msg.unit:
+                if target == unit:
                     return True
                 # target is an app name
-                elif "/" not in target and target == msg.unit.split("/")[0]:
+                elif "/" not in target and target == unit.split("/")[0]:
                     return True
 
-        return True
+        return False
 
 
 class _Printer(str, enum.Enum):
@@ -1394,6 +1399,7 @@ def _tail_events(
                 stdout = iter(proc.stdout.readlines())
 
                 def next_line():
+                    nonlocal stdout
                     try:
                         return next(stdout)
                     except StopIteration:
@@ -1409,7 +1415,17 @@ def _tail_events(
             start = time.time()
 
             line = next_line()
-            if not line:
+
+            if line:
+                msg = line.decode("utf-8").strip()
+                captured = processor.process(msg)
+
+                # notify listeners that an event has been processed.
+                if _on_event and captured:
+                    _on_event(captured)
+
+            else:
+                print(line)
                 if not watch:
                     break
 
@@ -1425,14 +1441,6 @@ def _tail_events(
                     exit()
 
                 continue
-
-            if line:
-                msg = line.decode("utf-8").strip()
-                captured = processor.process(msg)
-
-                # notify listeners that an event has been processed.
-                if _on_event and captured:
-                    _on_event(captured)
 
             if not replay_mode and (elapsed := time.time() - start) < framerate:
                 logger.debug(f"sleeping {framerate - elapsed}")
@@ -1491,6 +1499,5 @@ def debump_loglevel(previous: str):
 
 
 if __name__ == "__main__":
-    # logger.setLevel("DEBUG")
-    _tail_events(length=30, replay=True)
+    _tail_events(length=30, replay=True, targets=["minio"])
     # _print_color_codes()
