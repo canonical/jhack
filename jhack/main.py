@@ -68,7 +68,7 @@ def main():
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.tail_logs import tail_logs
     from jhack.utils.unbork_juju import unbork_juju
-    from jhack.utils.unleash import vanity
+    from jhack.utils.unleash import vanity, vanity_2
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
@@ -127,6 +127,7 @@ def main():
     app.command(name="tail")(tail_events)
     app.command(name="ffwd")(fast_forward)
     app.command(name="unleash", hidden=True)(vanity)
+    app.command(name="is", hidden=True)(vanity_2)
     app.command(name="jenv")(print_env)
     app.command(name="list-endpoints")(list_endpoints)
 
