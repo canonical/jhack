@@ -1,21 +1,15 @@
 import json
 import shlex
 import subprocess
-from collections import namedtuple
 from json import JSONDecodeError
 from subprocess import getoutput, check_call, CalledProcessError, check_output
 from typing import Optional, List, NamedTuple
 
 import typer
-from PIL.ImageOps import contain
 
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import (
-    ColorOption,
     Target,
-    RichSupportedColorOptions,
-    JPopen,
-    check_command_available,
     InvalidUnitNameError,
 )
 from jhack.logger import logger as jhack_logger
