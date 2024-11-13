@@ -14,11 +14,11 @@ from rich.text import Text
 
 from jhack.conf.conf import CONFIG, check_destructive_commands_allowed
 from jhack.helpers import (
+    GetStatusError,
     JPopen,
     get_current_model,
     get_models,
     juju_status,
-    GetStatusError,
 )
 from jhack.logger import logger
 

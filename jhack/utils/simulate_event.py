@@ -14,12 +14,12 @@ from jhack.helpers import (
     get_notices,
     get_secrets,
     get_substrate,
+    is_dispatch_aware,
     juju_agent_version,
     juju_log,
     parse_target,
     show_secret,
     show_unit,
-    is_dispatch_aware,
 )
 from jhack.logger import logger as jhack_logger
 

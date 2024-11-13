@@ -11,8 +11,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError, check_call, check_output, Popen
-from tabnanny import check
+from subprocess import PIPE, CalledProcessError, check_call, check_output
 from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import typer
