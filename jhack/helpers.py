@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError, check_call, check_output
+from subprocess import PIPE, CalledProcessError, check_call, check_output, Popen
+from tabnanny import check
 from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import typer
@@ -39,6 +40,10 @@ FormatOption = typer.Option(Format.auto, "-f", "--format", help="Output format."
 
 class FormatUnavailable(NotImplementedError):
     """Raised when a command cannot comply with a format parameter."""
+
+
+class GetStatusError(RuntimeError):
+    """Raised when juju_status fails."""
 
 
 RichSupportedColorOptions = Optional[
@@ -76,7 +81,10 @@ def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
     if not model:
         model = list(model_info)[0]
 
-    model_type = model_info[model]["model-type"]
+    # strip controller prefix
+    model_name = model.split(":")[1] if ":" in model else model
+
+    model_type = model_info[model_name]["model-type"]
     if model_type == "iaas":
         return "machine"
     elif model_type == "caas":
@@ -155,7 +163,7 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
                 "double-check that the jhack:dot-local-share-juju plug is connected to snapd."
             )
 
-        exit("unable to fetch juju status (see logs)")
+        raise GetStatusError("unable to fetch juju status (see logs)")
 
     if json:
         return jsn.loads(raw)
@@ -225,7 +233,9 @@ def get_models(include_controller=False):
 
 def show_unit(unit: str, model: str = None):
     _model = f"-m {model} " if model else ""
-    proc = JPopen(f"juju show-unit {_model}{unit} --format json".split())
+    cmd = f"juju show-unit {_model}{unit} --format json".split()
+    logger.debug(cmd)
+    proc = JPopen(cmd)
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[unit]
 
@@ -243,6 +253,20 @@ def get_current_model() -> Optional[str]:
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
     return data.get("current-model", None)
+
+
+def is_dispatch_aware(unit, model=None) -> bool:
+    _model = f" -m {model}" if model else ""
+    unit_sanitized = f"unit-{unit.replace('/', '-')}"
+    cmd = f"juju ssh{_model} {unit} cat /var/lib/juju/agents/{unit_sanitized}/charm/dispatch"
+    logger.debug(f"running {cmd}")
+    try:
+        check_call(shlex.split(cmd), stdout=PIPE, stderr=PIPE)
+        return True
+    except CalledProcessError as e:
+        if e.returncode == 1:
+            return False
+        raise e
 
 
 @contextlib.contextmanager
