@@ -176,7 +176,9 @@ _event_colors = {}
 for sublist in _event_colors_by_category.values():
     _event_colors.update(sublist)
 
+_header_bgcolor = Color.from_rgb(70, 70, 70)
 _last_event_bgcolor = Color.from_rgb(50, 50, 50)
+_alternate_row_bgcolor = Color.from_rgb(30, 30, 30)
 _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
@@ -644,7 +646,12 @@ class RichPrinter(Printer):
         **kwargs,
     ) -> Union[Table, Align]:
         self._rendered = True
-        table = Table(show_footer=False, expand=True)
+        table = Table(
+            show_footer=False,
+            expand=True,
+            header_style=Style(bgcolor=_header_bgcolor),
+            row_styles=[Style(bgcolor=_alternate_row_bgcolor), Style()],
+        )
         _pad = " "
         ns_shown = self._show_ns
         deferrals_shown = self._show_defer
@@ -702,7 +709,7 @@ class RichPrinter(Printer):
 
         if leaders:
             _mark_if_leader = (
-                lambda target: f"{target}*"
+                lambda target: Text(f"{target}*", style=Style(bold=True))
                 if leaders[target.split("/")[0]] == target
                 else target
             )
@@ -713,7 +720,7 @@ class RichPrinter(Printer):
         headers = [f"tail v{VERSION}", *target_headers]
 
         for header in headers:
-            table.add_column(header, style=Style(bold=True))
+            table.add_column(header)
         for row in matrix if self._flip else reversed(matrix):
             table.add_row(*row)
 
