@@ -2,16 +2,13 @@ import json
 import shlex
 import subprocess
 from json import JSONDecodeError
-from subprocess import getoutput, check_call, CalledProcessError, check_output
-from typing import Optional, List, NamedTuple
+from subprocess import CalledProcessError, check_call, check_output, getoutput
+from typing import List, NamedTuple, Optional
 
 import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import (
-    Target,
-    InvalidUnitNameError,
-)
+from jhack.helpers import InvalidUnitNameError, Target
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("kill")
@@ -140,7 +137,7 @@ def _get_running_process_info(
 
     if out.startswith("ERROR"):
         ps_aux = getoutput(_eval_cmd(target, model, "ps -aux"))
-        logger.error(f"no charm process found in")
+        logger.error("no charm process found in")
         print(ps_aux)
         exit(
             f"cannot retrieve charm process on {target.unit_name}. Is the charm really executing?"

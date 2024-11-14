@@ -708,8 +708,8 @@ class RichPrinter(Printer):
             matrix[i][targets.index(event.unit) + 1] = Text(_pad).join(event_row)
 
         if leaders:
-            _mark_if_leader = (
-                lambda target: Text(f"{target}*", style=Style(bold=True))
+            _mark_if_leader = lambda target: (
+                Text(f"{target}*", style=Style(bold=True))
                 if leaders[target.split("/")[0]] == target
                 else target
             )
@@ -1545,8 +1545,9 @@ def debump_loglevel(previous: str):
 
 if __name__ == "__main__":
     import cProfile
+    import io
+    import pstats
     from pstats import SortKey
-    import io, pstats
 
     pr = cProfile.Profile()
     pr.enable()
