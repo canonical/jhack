@@ -758,5 +758,24 @@ def show_secret(secret_id, model: str = None) -> dict:
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
 
 
+def find_leaders(targets: List[str] = None, model: Optional[str] = None):
+    """Find the leader units for these applications"""
+    status = juju_status(model=model, json=True)
+    apps = (
+        set(t.split("/")[0] for t in targets)
+        if targets
+        else list(status["applications"])
+    )
+    leaders = {}
+    for app in apps:
+        units = status["applications"][app]["units"]
+        leaders_found = [unit for unit, meta in units.items() if meta.get("leader")]
+        if not leaders_found:
+            logger.error(f"leader not found for {app!r} (not elected yet?)")
+            continue
+        leaders[app] = leaders_found[0]
+    return leaders
+
+
 if __name__ == "__main__":
-    print(get_notices("tempo/0", "tempo"))
+    print(find_leaders())

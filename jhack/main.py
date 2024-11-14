@@ -58,7 +58,8 @@ def main():
     from jhack.utils.just_deploy_this import just_deploy_this
     from jhack.utils.list_endpoints import list_endpoints
     from jhack.utils.nuke import nuke
-    from jhack.utils.print_env import jhack_version, print_env
+    from jhack.utils.print_env import print_env
+    from jhack.version import print_jhack_version
     from jhack.utils.propaganda import leader_set
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
@@ -122,7 +123,7 @@ def main():
         no_args_is_help=True,
         rich_markup_mode="markdown",
     )
-    app.command(name="version")(jhack_version)
+    app.command(name="version")(print_jhack_version)
     app.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
     app.command(name="show-stored", no_args_is_help=True)(show_stored)
     app.command(name="tail")(tail_events)
