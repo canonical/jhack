@@ -780,8 +780,7 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
 
     leaders = {}
     for app in apps:
-
-        units = status["applications"][app].get("units", [])
+        units: dict = status["applications"][app].get("units", {})
         leaders_found = [unit for unit, meta in units.items() if meta.get("leader")]
         if not leaders_found:
             logger.error(f"leader not found for {app!r} (not elected yet?)")

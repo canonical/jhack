@@ -212,7 +212,6 @@ def main():
 
     @app.callback()
     def logging_config(loglevel: str = None, log_to_file: Path = None):
-        print("logging config called", loglevel, log_to_file)
         if loglevel:
             valid_loglevels = {
                 "CRITICAL",
