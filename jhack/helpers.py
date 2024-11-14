@@ -762,7 +762,7 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
     """Find the leader units for these applications"""
     status = juju_status(model=model, json=True)
     if not status:
-        logger.error(f"juju status model={model} returned an empty response.")
+        logger.error(f"`juju status -m {model}` returned an empty response.")
         return {}
 
     if not status.get("applications"):

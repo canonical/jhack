@@ -710,7 +710,7 @@ class RichPrinter(Printer):
         if leaders:
             _mark_if_leader = lambda target: (
                 Text(f"{target}*", style=Style(bold=True))
-                if leaders[target.split("/")[0]] == target
+                if leaders.get(target.split("/")[0]) == target
                 else target
             )
             target_headers = (_mark_if_leader(target) for target in targets)
@@ -1188,7 +1188,7 @@ class Processor:
         return False
 
     def _update_leader(self, msg: EventLogMsg):
-        if msg.event == "leader-elected":
+        if msg.event == "leader_elected":
             unit = msg.unit
             self.leaders[unit.split("/")[0]] = unit
 
