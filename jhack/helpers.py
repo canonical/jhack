@@ -590,6 +590,10 @@ def _exec_and_parse_libinfo(cmd: str):
     return libinfo
 
 
+class InvalidUnitNameError(RuntimeError):
+    """Unit name is invalid."""
+
+
 @dataclass
 class Target:
     app: str
@@ -599,14 +603,21 @@ class Target:
 
     @staticmethod
     def from_name(name: str):
-        if "/" not in name:
-            logger.warning(
+        try:
+            app, unit_ = name.split("/")
+        except ValueError:
+            raise InvalidUnitNameError(
                 "invalid target name: expected `<app_name>/<unit_id>`; "
                 f"got {name!r}."
             )
-        app, unit_ = name.split("/")
+
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
+        if not unit or not unit.isdigit():
+            raise InvalidUnitNameError(
+                "invalid target name: expected `<app_name:str>/<unit_id:int>`; "
+                f"got {name!r}."
+            )
         return Target(app, int(unit), leader=leader)
 
     @property
@@ -747,5 +758,24 @@ def show_secret(secret_id, model: str = None) -> dict:
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
 
 
+def find_leaders(targets: List[str] = None, model: Optional[str] = None):
+    """Find the leader units for these applications"""
+    status = juju_status(model=model, json=True)
+    apps = (
+        set(t.split("/")[0] for t in targets)
+        if targets
+        else list(status["applications"])
+    )
+    leaders = {}
+    for app in apps:
+        units = status["applications"][app]["units"]
+        leaders_found = [unit for unit, meta in units.items() if meta.get("leader")]
+        if not leaders_found:
+            logger.error(f"leader not found for {app!r} (not elected yet?)")
+            continue
+        leaders[app] = leaders_found[0]
+    return leaders
+
+
 if __name__ == "__main__":
-    print(get_notices("tempo/0", "tempo"))
+    print(find_leaders())

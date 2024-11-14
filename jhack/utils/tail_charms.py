@@ -33,13 +33,13 @@ from rich.table import Table
 from rich.text import Text
 
 from jhack.conf.conf import CONFIG
-from jhack.helpers import JPopen
+from jhack.helpers import JPopen, find_leaders
 from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
+from jhack.version import VERSION
 
 logger = jhack_logger.getChild(__file__)
 
-_TAIL_VERSION = "0.4"
 BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 _Color = Optional[Literal["auto", "standard", "256", "truecolor", "windows", "no"]]
 AUTO_BUMP_LOGLEVEL_DEFAULT = CONFIG.get("tail", "automatically_bump_loglevel")
@@ -176,7 +176,9 @@ _event_colors = {}
 for sublist in _event_colors_by_category.values():
     _event_colors.update(sublist)
 
+_header_bgcolor = Color.from_rgb(70, 70, 70)
 _last_event_bgcolor = Color.from_rgb(50, 50, 50)
+_alternate_row_bgcolor = Color.from_rgb(30, 30, 30)
 _default_event_color = Color.from_rgb(255, 255, 255)
 _default_n_color = Color.from_rgb(255, 255, 255)
 _tstamp_color = Color.from_rgb(255, 160, 120)
@@ -504,6 +506,7 @@ class Printer:
         self,
         events: List[EventLogMsg],
         currently_deferred: Set[EventLogMsg] = None,
+        **kwargs,
     ):
         pass
 
@@ -529,6 +532,7 @@ class PoorPrinter(Printer):
         self,
         events: List[EventLogMsg],
         currently_deferred: Set[EventLogMsg] = None,
+        **kwargs,
     ):
         targets = sorted(set(e.unit for e in events))
         if not targets:
@@ -636,15 +640,17 @@ class RichPrinter(Printer):
         self,
         events: List[EventLogMsg],
         currently_deferred: Set[EventLogMsg] = None,
+        leaders: Dict[str, str] = None,
         _debug=False,
         final: bool = False,
+        **kwargs,
     ) -> Union[Table, Align]:
-        if not events:
-            print("Listening for events...")
-
         self._rendered = True
         table = Table(
-            show_footer=False, expand=True, title=f"Jhack tail v{_TAIL_VERSION}"
+            show_footer=False,
+            expand=True,
+            header_style=Style(bgcolor=_header_bgcolor),
+            row_styles=[Style(bgcolor=_alternate_row_bgcolor), Style()],
         )
         _pad = " "
         ns_shown = self._show_ns
@@ -701,9 +707,20 @@ class RichPrinter(Printer):
 
             matrix[i][targets.index(event.unit) + 1] = Text(_pad).join(event_row)
 
-        headers = ["timestamp", *targets]
+        if leaders:
+            _mark_if_leader = lambda target: (
+                Text(f"{target}*", style=Style(bold=True))
+                if leaders[target.split("/")[0]] == target
+                else target
+            )
+            target_headers = (_mark_if_leader(target) for target in targets)
+        else:
+            target_headers = targets
+
+        headers = [f"tail v{VERSION}", *target_headers]
+
         for header in headers:
-            table.add_column(header, style=Style(bold=True))
+            table.add_column(header)
         for row in matrix if self._flip else reversed(matrix):
             table.add_row(*row)
 
@@ -805,6 +822,7 @@ class Processor:
     def __init__(
         self,
         targets: Sequence[str],
+        leaders: Dict[str, str] = None,
         add_new_units: bool = True,
         max_length: int = 10,
         show_ns: bool = True,
@@ -819,6 +837,7 @@ class Processor:
         flip: bool = False,
     ):
         self.targets = targets
+        self.leaders = leaders or {}
         self.output = Path(output) if output else None
         self.add_new_units = add_new_units
 
@@ -1064,9 +1083,13 @@ class Processor:
             return
 
         if not self._is_tracking(msg.unit):
+            print("skipped as untracked")
             return
 
+        self._update_leader(msg)
+
         if mode in {"emit", "reemit"}:
+            logger.debug("captured event!")
             self._captured_logs.append(msg)
         if mode == "defer":
             self._defer(msg)
@@ -1088,7 +1111,9 @@ class Processor:
         # self.update_defers(msg)
 
         self.printer.render(
-            events=self._captured_logs, currently_deferred=self._currently_deferred
+            events=self._captured_logs,
+            currently_deferred=self._currently_deferred,
+            leaders=self.leaders,
         )
         return msg
 
@@ -1161,6 +1186,11 @@ class Processor:
                 return True
 
         return False
+
+    def _update_leader(self, msg: EventLogMsg):
+        if msg.event == "leader-elected":
+            unit = msg.unit
+            self.leaders[unit.split("/")[0]] = unit
 
 
 class _Printer(str, enum.Enum):
@@ -1369,9 +1399,11 @@ def _tail_events(
         previous_loglevel = bump_loglevel()
 
     event_filter_pattern = re.compile(event_filter) if event_filter else None
+    leaders = find_leaders(targets, model=model)
     processor = Processor(
         targets,
-        add_new_units,
+        leaders=leaders,
+        add_new_units=add_new_units,
         max_length=length,
         show_ns=show_ns,
         show_trace_ids=show_trace_ids,
@@ -1435,9 +1467,7 @@ def _tail_events(
 
         while True:
             start = time.time()
-            logger.debug(".")
             line = next_line()
-            logger.debug("-")
 
             if line:
                 msg = line.decode("utf-8").strip()
@@ -1460,14 +1490,10 @@ def _tail_events(
 
                 continue
 
-            if (elapsed := time.time() - start) < framerate:
-                logger.debug(f"sleeping {framerate - elapsed}")
-                time.sleep(framerate - elapsed)
-
     except KeyboardInterrupt:
         pass  # quit
     finally:
-        if auto_bump_loglevel:
+        if auto_bump_loglevel and previous_loglevel:
             debump_loglevel(previous_loglevel)
 
         processor.quit()
@@ -1488,7 +1514,7 @@ def _put(s: str, index: int, char: Union[str, Dict[str, str]], placeholder=" "):
     return "".join(charlist)
 
 
-def bump_loglevel() -> str:
+def bump_loglevel() -> Optional[str]:
     cmd = "juju model-config logging-config"
     old_config = getoutput(cmd).strip()
     cfgs = old_config.split(";")
@@ -1496,7 +1522,8 @@ def bump_loglevel() -> str:
 
     for cfg in cfgs:
         if "ERROR" in cfg:
-            exit(f"failed bumping loglevel to unit=TRACE: {cfg}")
+            logger.error(f"failed bumping loglevel to unit=TRACE: {cfg}")
+            return
 
         n, lvl = cfg.split("=")
         if n == "unit":
@@ -1517,5 +1544,19 @@ def debump_loglevel(previous: str):
 
 
 if __name__ == "__main__":
-    _tail_events(length=30, replay=True, targets=["minio"])
-    # _print_color_codes()
+    import cProfile
+    import io
+    import pstats
+    from pstats import SortKey
+
+    pr = cProfile.Profile()
+    pr.enable()
+    try:
+        _tail_events(length=30, replay=True)
+    finally:
+        pr.disable()
+        s = io.StringIO()
+        sortby = SortKey.CUMULATIVE
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
