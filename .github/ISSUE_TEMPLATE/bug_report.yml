@@ -1,0 +1,56 @@
+name: Bug Report
+description: File a bug report
+labels: ["Type: Bug", "Status: Triage"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Thanks for taking the time to fill out this bug report! Before submitting your issue, please make
+        sure you are using the latest revision from `edge`. If not, please refresh to that and retry to
+        make sure it's not already solved.
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: >
+        Describe what you're seeing that you don't like.
+        If applicable, add a screenshot to help explain your problem.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: To Reproduce
+      description: >
+        Please provide a step-by-step instruction of how to reproduce the behavior.
+      placeholder: |
+        1. `juju deploy ...`
+        2. `juju relate ...`
+        3. `jhack nuke --my-laptop`
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >
+        We need to know a bit more about the context in which you run jhack.
+        - The output of `jhack jenv`
+        - Juju, k8s, multipass, lxd versions, if relevant.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: >
+        Please copy and paste any relevant log output. 
+        More output can be obtained by running jhack with the `--loglevel=DEBUG` flag.
+        For example: `jhack --loglevel=DEBUG fire foo/0 myevent`.
+        If it's too long to put here, link to a pastebin. You can ask jhack to log to file by doing:
+        `jhack --loglevel=DEBUG fire --log-to-file=./jhack-logs.txt foo/0 myevent`
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
