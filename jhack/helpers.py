@@ -761,14 +761,27 @@ def show_secret(secret_id, model: str = None) -> dict:
 def find_leaders(targets: List[str] = None, model: Optional[str] = None):
     """Find the leader units for these applications"""
     status = juju_status(model=model, json=True)
+    if not status:
+        logger.error(f"juju status model={model} returned an empty response.")
+        return {}
+
+    if not status.get("applications"):
+        logger.error(
+            "no applications in the current model: cannot find leaders. "
+            "Is the model still bootstrapping?"
+        )
+        return {}
+
     apps = (
         set(t.split("/")[0] for t in targets)
         if targets
-        else list(status["applications"])
+        else list(status.get("applications", []))
     )
+
     leaders = {}
     for app in apps:
-        units = status["applications"][app]["units"]
+
+        units = status["applications"][app].get("units", [])
         leaders_found = [unit for unit, meta in units.items() if meta.get("leader")]
         if not leaders_found:
             logger.error(f"leader not found for {app!r} (not elected yet?)")

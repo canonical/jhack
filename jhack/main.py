@@ -211,14 +211,30 @@ def main():
     app.add_typer(chaos, no_args_is_help=True)
 
     @app.callback()
-    def set_verbose(log: str = None, path: Path = None):
-        if log:
-            typer.echo(f"::= Verbose mode ({log}). =::")
-            logger.setLevel(log)
+    def logging_config(loglevel: str = None, log_to_file: Path = None):
+        print("logging config called", loglevel, log_to_file)
+        if loglevel:
+            valid_loglevels = {
+                "CRITICAL",
+                "FATAL",
+                "ERROR",
+                "WARN",
+                "WARNING",
+                "INFO",
+                "DEBUG",
+                "NOTSET",
+            }
+
+            if loglevel not in valid_loglevels:
+                exit(f"invalid loglevel; must be one of {valid_loglevels}")
+
+            typer.echo(f"::= Verbose mode ({loglevel}). =::")
+            logger.setLevel(loglevel)
             logging.basicConfig(stream=sys.stdout)
-            if path:
-                hdlr = logging.FileHandler(path)
-                logger.addHandler(hdlr)
+
+        if log_to_file:
+            hdlr = logging.FileHandler(log_to_file)
+            logger.addHandler(hdlr)
 
     if LOGLEVEL != "WARNING":
         typer.echo(f"::= Verbose mode ({LOGLEVEL}). =::")
