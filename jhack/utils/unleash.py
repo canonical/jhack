@@ -37,5 +37,9 @@ def vanity():
     Console().print(Align(Text(PIETRO_APPROVES, style="red bold")))
 
 
+def vanity_2():
+    Console().print(Text("better than juju", style="blink cyan bold"))
+
+
 if __name__ == "__main__":
-    vanity()
+    vanity_2()

@@ -41,6 +41,10 @@ class FormatUnavailable(NotImplementedError):
     """Raised when a command cannot comply with a format parameter."""
 
 
+class GetStatusError(RuntimeError):
+    """Raised when juju_status fails."""
+
+
 RichSupportedColorOptions = Optional[
     Literal["auto", "standard", "256", "truecolor", "windows", "no"]
 ]
@@ -76,7 +80,10 @@ def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
     if not model:
         model = list(model_info)[0]
 
-    model_type = model_info[model]["model-type"]
+    # strip controller prefix
+    model_name = model.split(":")[1] if ":" in model else model
+
+    model_type = model_info[model_name]["model-type"]
     if model_type == "iaas":
         return "machine"
     elif model_type == "caas":
@@ -155,7 +162,7 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
                 "double-check that the jhack:dot-local-share-juju plug is connected to snapd."
             )
 
-        exit("unable to fetch juju status (see logs)")
+        raise GetStatusError("unable to fetch juju status (see logs)")
 
     if json:
         return jsn.loads(raw)
@@ -225,7 +232,9 @@ def get_models(include_controller=False):
 
 def show_unit(unit: str, model: str = None):
     _model = f"-m {model} " if model else ""
-    proc = JPopen(f"juju show-unit {_model}{unit} --format json".split())
+    cmd = f"juju show-unit {_model}{unit} --format json".split()
+    logger.debug(cmd)
+    proc = JPopen(cmd)
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[unit]
 
@@ -243,6 +252,20 @@ def get_current_model() -> Optional[str]:
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
     return data.get("current-model", None)
+
+
+def is_dispatch_aware(unit, model=None) -> bool:
+    _model = f" -m {model}" if model else ""
+    unit_sanitized = f"unit-{unit.replace('/', '-')}"
+    cmd = f"juju ssh{_model} {unit} cat /var/lib/juju/agents/{unit_sanitized}/charm/dispatch"
+    logger.debug(f"running {cmd}")
+    try:
+        check_call(shlex.split(cmd), stdout=PIPE, stderr=PIPE)
+        return True
+    except CalledProcessError as e:
+        if e.returncode == 1:
+            return False
+        raise e
 
 
 @contextlib.contextmanager
@@ -567,6 +590,10 @@ def _exec_and_parse_libinfo(cmd: str):
     return libinfo
 
 
+class InvalidUnitNameError(RuntimeError):
+    """Unit name is invalid."""
+
+
 @dataclass
 class Target:
     app: str
@@ -576,14 +603,21 @@ class Target:
 
     @staticmethod
     def from_name(name: str):
-        if "/" not in name:
-            logger.warning(
+        try:
+            app, unit_ = name.split("/")
+        except ValueError:
+            raise InvalidUnitNameError(
                 "invalid target name: expected `<app_name>/<unit_id>`; "
                 f"got {name!r}."
             )
-        app, unit_ = name.split("/")
+
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
+        if not unit or not unit.isdigit():
+            raise InvalidUnitNameError(
+                "invalid target name: expected `<app_name:str>/<unit_id:int>`; "
+                f"got {name!r}."
+            )
         return Target(app, int(unit), leader=leader)
 
     @property
@@ -724,5 +758,36 @@ def show_secret(secret_id, model: str = None) -> dict:
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
 
 
+def find_leaders(targets: List[str] = None, model: Optional[str] = None):
+    """Find the leader units for these applications"""
+    status = juju_status(model=model, json=True)
+    if not status:
+        logger.error(f"`juju status -m {model}` returned an empty response.")
+        return {}
+
+    if not status.get("applications"):
+        logger.error(
+            "no applications in the current model: cannot find leaders. "
+            "Is the model still bootstrapping?"
+        )
+        return {}
+
+    apps = (
+        set(t.split("/")[0] for t in targets)
+        if targets
+        else list(status.get("applications", []))
+    )
+
+    leaders = {}
+    for app in apps:
+        units: dict = status["applications"][app].get("units", {})
+        leaders_found = [unit for unit, meta in units.items() if meta.get("leader")]
+        if not leaders_found:
+            logger.error(f"leader not found for {app!r} (not elected yet?)")
+            continue
+        leaders[app] = leaders_found[0]
+    return leaders
+
+
 if __name__ == "__main__":
-    print(get_notices("tempo/0", "tempo"))
+    print(find_leaders())

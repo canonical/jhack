@@ -58,9 +58,10 @@ def main():
     from jhack.utils.this_is_fine import this_is_fine
     from jhack.utils.ffwd import fast_forward
     from jhack.utils.just_deploy_this import just_deploy_this
+    from jhack.utils.kill import kill
     from jhack.utils.list_endpoints import list_endpoints
     from jhack.utils.nuke import nuke
-    from jhack.utils.print_env import jhack_version, print_env
+    from jhack.utils.print_env import print_env
     from jhack.utils.propaganda import leader_set
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
@@ -71,6 +72,7 @@ def main():
     from jhack.utils.tail_logs import tail_logs
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity, vanity_2
+    from jhack.version import print_jhack_version
     from jhack.utils.deployment_graph import unravel
 
     if "--" in sys.argv:
@@ -125,7 +127,7 @@ def main():
         no_args_is_help=True,
         rich_markup_mode="markdown",
     )
-    app.command(name="version")(jhack_version)
+    app.command(name="version")(print_jhack_version)
     app.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
     app.command(name="show-stored", no_args_is_help=True)(show_stored)
     app.command(name="tail")(tail_events)
@@ -147,11 +149,17 @@ def main():
     app.command(name="test-devmode")(devmode_only(_test_devmode))
     app.command(name="sync")(devmode_only(sync_deployed_charm))
     app.command(name="nuke")(devmode_only(nuke))
+    app.command(name="kill")(devmode_only(kill))
     app.command(name="deploy")(devmode_only(just_deploy_this))
     app.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
     app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
     app.command(name="charm-info", no_args_is_help=True)(vinfo)
-    app.command(name="vinfo", deprecated=True, no_args_is_help=True)(vinfo)
+    app.command(
+        name="vinfo",
+        deprecated=True,
+        no_args_is_help=True,
+        help="deprecated in favour of charm-info",
+    )(vinfo)
     app.command(name="eval", no_args_is_help=True)(devmode_only(charm_eval))
     app.command(name="debug-log", no_args_is_help=True)(tail_logs)
     app.command(name="script", no_args_is_help=True)(devmode_only(charm_script))
@@ -208,14 +216,29 @@ def main():
     app.add_typer(chaos, no_args_is_help=True)
 
     @app.callback()
-    def set_verbose(log: str = None, path: Path = None):
-        if log:
-            typer.echo(f"::= Verbose mode ({log}). =::")
-            logger.setLevel(log)
+    def logging_config(loglevel: str = None, log_to_file: Path = None):
+        if loglevel:
+            valid_loglevels = {
+                "CRITICAL",
+                "FATAL",
+                "ERROR",
+                "WARN",
+                "WARNING",
+                "INFO",
+                "DEBUG",
+                "NOTSET",
+            }
+
+            if loglevel not in valid_loglevels:
+                exit(f"invalid loglevel; must be one of {valid_loglevels}")
+
+            typer.echo(f"::= Verbose mode ({loglevel}). =::")
+            logger.setLevel(loglevel)
             logging.basicConfig(stream=sys.stdout)
-            if path:
-                hdlr = logging.FileHandler(path)
-                logger.addHandler(hdlr)
+
+        if log_to_file:
+            hdlr = logging.FileHandler(log_to_file)
+            logger.addHandler(hdlr)
 
     if LOGLEVEL != "WARNING":
         typer.echo(f"::= Verbose mode ({LOGLEVEL}). =::")

@@ -1,7 +1,5 @@
-import sys
-from calendar import TextCalendar
 from functools import partial
-from typing import Dict, Optional, Sequence, List
+from typing import Dict, List, Optional, Sequence
 
 import typer
 from rich.color import Color

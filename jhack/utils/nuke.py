@@ -13,7 +13,13 @@ from rich.style import Style
 from rich.text import Text
 
 from jhack.conf.conf import CONFIG, check_destructive_commands_allowed
-from jhack.helpers import JPopen, get_current_model, get_models, juju_status
+from jhack.helpers import (
+    GetStatusError,
+    JPopen,
+    get_current_model,
+    get_models,
+    juju_status,
+)
 from jhack.logger import logger
 
 logger = logger.getChild("nuke")
@@ -119,7 +125,14 @@ def _get_apps_and_relations(
 ) -> List[Nukeable]:
     logger.info("gathering apps and relations")
 
-    status = juju_status("", model)
+    try:
+        status = juju_status("", model)
+    except GetStatusError:
+        logger.error(
+            f"nuke attempted to get the status of {model} but the model is probably dead already."
+        )
+        return []
+
     if not status:
         return []
 

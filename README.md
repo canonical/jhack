@@ -46,6 +46,18 @@ jhack utils tail
 jhack model rm
 ```
 
+#### Troubleshooting:
+
+If there are issues with jhack, some command is erroring out or doesn't give you the expected result, you can enable debug logging to get more verbose output.
+
+> `jhack --loglevel=DEBUG fire traefik/0 update-status` 
+
+Any of the regular python loglevels will work.
+
+If the logs are too many to copy/paste into a chat with someone, you can drop them to a file with:
+
+> `jhack --log-to-file=./jhack.log fire traefik/0 update-status`
+
 
 #### Building:
 
@@ -1038,4 +1050,4 @@ Run `jhack debug-log myapp/0` and you will see a split view containing:
 You can change the panels shown by default to only keep those that you want using the `-i`/`--include` flag.
 
 You can enter **focus mode** (only show logs for specified containers or pebble services) by running:
-`jhack debug-log myapp/0 -f mycontainer:myservice.
+`jhack debug-log myapp/0 -f mycontainer:myservice`.

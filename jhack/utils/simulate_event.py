@@ -14,6 +14,7 @@ from jhack.helpers import (
     get_notices,
     get_secrets,
     get_substrate,
+    is_dispatch_aware,
     juju_agent_version,
     juju_log,
     parse_target,
@@ -340,6 +341,7 @@ def _build_command(
     secret_id_or_label: str = None,
     operator_dispatch: bool = False,
     env_override: List[str] = None,
+    has_dispatch: bool = True,
 ):
     env = build_event_env(
         unit,
@@ -363,8 +365,13 @@ def _build_command(
     juju_exec_cmd = "/usr/bin/" + ("juju-exec" if version >= (3, 0) else "juju-run")
     if get_substrate(model) != "k8s":
         juju_exec_cmd = "sudo " + juju_exec_cmd
+    unit_sanitized = f"unit-{unit.replace('/', '-')}"
 
-    return f"juju ssh {_model}{unit} {juju_exec_cmd} -u {unit} {env} ./dispatch"
+    if not has_dispatch:
+        logger.info("not a dispatch-aware charm: using the hook dispatcher")
+        return f"juju ssh {_model}{unit} {juju_exec_cmd} -u {unit} {env} /var/lib/juju/agents/{unit_sanitized}/charm/hooks/{event}"
+
+    return f"juju ssh {_model}{unit} {juju_exec_cmd} -u {unit} {env} /var/lib/juju/agents/{unit_sanitized}/charm/dispatch"
 
 
 def _juju_exec_cmd(
@@ -423,7 +430,7 @@ def _simulate_event(
 
     cmds = tuple(
         _build_command(
-            unit=target,
+            unit=unit_name,
             event=event,
             model=model,
             relation_remote=relation_remote,
@@ -433,8 +440,9 @@ def _simulate_event(
             secret_id_or_label=secret_id_or_label,
             operator_dispatch=operator_dispatch,
             env_override=env_override,
+            has_dispatch=is_dispatch_aware(unit_name, model),
         )
-        for target in targets
+        for unit_name in targets
     )
 
     cmdlist = "\n\t".join(cmds)
