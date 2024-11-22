@@ -58,6 +58,7 @@ class Relation:
 
 
 class RelationEndpointURL(str):
+    # a string in the format APP_NAME:ENDPOINT_NAME
     def __init__(self, s):
         super().__init__()
         if ":" in s:

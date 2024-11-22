@@ -200,8 +200,11 @@ def _sync(
         exit("No targets found.")
 
     venv = venv.expanduser().absolute() if venv else None
+
     remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
     remote_venv_root = "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/venv/"
+    if remote_root == "__venv__":
+        remote_root = remote_venv_root
 
     if touch:
         print("Touching: ")
@@ -223,7 +226,6 @@ def _sync(
         loop = asyncio.events.get_event_loop()
         loop.run_until_complete(asyncio.gather(*coros))
         print("Initial sync done.")
-        initial_sync = True
 
     def on_change(
         changed_files: typing.Iterable[typing.Union[str, Path]], is_venv: bool = False
@@ -285,7 +287,9 @@ def sync(
         help="The remote path to be interpreted as root relative to which the local "
         "changes will be pushed. E.g. if the local `./src/charm.py` changes, and the "
         "remote-root is `/var/log/`, the file will be "
-        "pushed to {unit}:/var/log/src/charm.py`",
+        "pushed to {unit}:/var/log/src/charm.py`. "
+        "If remote-root is `__venv__`, "
+        "the remote path will be set to the charm's venv.",
     ),
     container_name: str = typer.Option(
         "charm", "--container", "-c", help="Container to scp to."
