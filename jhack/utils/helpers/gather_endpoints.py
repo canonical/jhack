@@ -1,5 +1,5 @@
 import sys
-from typing import Dict, List, NamedTuple, TypedDict
+from typing import Dict, List, NamedTuple, TypedDict, Tuple
 
 import yaml
 
@@ -13,6 +13,7 @@ RelationID = int
 
 
 class AppEndpoints(TypedDict):
+    # fixme: type hints incorrect
     requires: Dict[Endpoint, Dict[Interface, Dict[RelationID, RemoteAppName]]]
     provides: Dict[Endpoint, Dict[Interface, Dict[RelationID, RemoteAppName]]]
     peers: Dict[Endpoint, Dict[Interface, List[RelationID]]]

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="48"
+   viewBox="0 -960 960 960"
+   width="48"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="data_object_box_dash.svg"
+   inkscape:export-filename="/home/pietro/canonical/theatre/theatre/resources/icons/data_object_2.svg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     showgrid="false"
+     inkscape:zoom="14.979167"
+     inkscape:cx="46.93185"
+     inkscape:cy="24"
+     inkscape:window-width="2560"
+     inkscape:window-height="1344"
+     inkscape:window-x="1920"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <path
+     d="M570-160v-60h120q21 0 35.5-14.375T740-270v-100q0-37 22.5-66t57.5-40v-8q-35-10-57.5-39.5T740-590v-100q0-21.25-14.375-35.625T690-740H570v-60h120q46 0 78 32.083 32 32.084 32 77.917v100q0 21.25 14.375 35.625T850-540h30v120h-30q-21.25 0-35.625 14.375T800-370v100q0 45.833-32.083 77.917Q735.833-160 690-160H570Zm-300 0q-46 0-78-32.083-32-32.084-32-77.917v-100q0-21.25-14.375-35.625T110-420H80v-120h30q21.25 0 35.625-14.375T160-590v-100q0-45.833 32.083-77.917Q224.167-800 270-800h120v60H270q-21 0-35.5 14.375T220-690v100q0 37-22.5 66.5T140-484v8q35 11 57.5 40t22.5 66v100q0 21.25 14.375 35.625T270-220h120v60H270Z"
+     id="path2" />
+  <path
+     d="m 358.09701,-299.27092 c -16,0 -30,-6 -42,-18 -12,-12 -18,-26 -18,-42 h 60 z m -60,-120.36528 v -124 h 60 l 0,124 z m 0,-184 c 0,-16 6,-30 18,-42 12,-12 26,-18 42,-18 v 60 z m 120,0 v -60 h 125 v 60 z m 2.24435,304.36528 v -60 h 124 v 60 z m 184,0 v -60 h 60 c 0,16 -6,30 -18,42 -12,12 -26,18 -42,18 z m 0,-120.69704 v -124 h 60 v 124 z m 0,-184 v -60 c 16,0 30,6 42,18 12,12 18,26 18,42 z"
+     id="path891"
+     sodipodi:nodetypes="cscccccccccsccccccccccccccccsccccccccscc" />
+</svg>

@@ -56,37 +56,35 @@ class IntegrationMatrix:
         self._endpoints = gather_endpoints(
             model, apps or (), include_peers=include_peers
         )
-        self._apps = tuple(sorted(self._endpoints))
+        self.apps = tuple(sorted(self._endpoints))
         self._include_peers = include_peers
 
         if apps:
             apps_re = re.compile(apps)
-            self._apps = tuple(filter(lambda x: apps_re.match(x), self._apps))
+            self.apps = tuple(filter(lambda x: apps_re.match(x), self.apps))
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]] = (
-            self._build_matrix()
-        )
+        self.matrix: List[
+            List[Union[List[PeerBinding], List[RelationBinding]]]
+        ] = self._build_matrix()
 
     @property
     def model(self) -> str:
         return self._model
 
     def refresh(self):
-        self._endpoints = gather_endpoints(model=self._model, apps=self._apps)
+        self._endpoints = gather_endpoints(model=self._model, apps=self.apps)
 
     def get_integrations(
         self, provider_app: str, requirer_app: str
     ) -> Union[List[PeerBinding], List[RelationBinding]]:
         """Get the list of peer or regular relation bindings for these apps."""
-        return self.matrix[self._apps.index(provider_app)][
-            self._apps.index(requirer_app)
-        ]
+        return self.matrix[self.apps.index(provider_app)][self.apps.index(requirer_app)]
 
     def _pairs(self):
         # returns provider, requirer pairs.
-        return itertools.product(self._apps, repeat=2)
+        return itertools.product(self.apps, repeat=2)
 
     def _cells(self, skip_diagonal=True, yield_indices=False):
         for i, row in enumerate(self.matrix):
@@ -101,7 +99,9 @@ class IntegrationMatrix:
     def _build_matrix(
         self,
     ) -> List[List[Union[List[PeerBinding], List[RelationBinding]]]]:
-        apps = self._apps
+        logger.info(f"gathering imatrix for {self._model}...")
+
+        apps = self.apps
         mtrx = [[[] for _ in range(len(apps))] for _ in range(len(apps))]
         model = self._model
 
@@ -232,10 +232,10 @@ class IntegrationMatrix:
         table = Table(title="integration  v0.2", expand=True)
         table.add_column(r"providers\requirers")
 
-        for app in self._apps:
+        for app in self.apps:
             table.add_column(app)
 
-        apps = self._apps
+        apps = self.apps
 
         rendered_matrix = [
             [
@@ -298,7 +298,7 @@ class IntegrationMatrix:
         dry_run: bool = False,
         active: bool = None,
     ):
-        targets = self._apps
+        targets = self.apps
 
         if include:
             inc_f = re.compile(include)
@@ -318,8 +318,8 @@ class IntegrationMatrix:
         ):
             binding: RelationBinding
             for binding in bindings:
-                prov = self._apps[prov_idx]
-                req = self._apps[req_idx]
+                prov = self.apps[prov_idx]
+                req = self.apps[req_idx]
 
                 if active in {True, False}:
                     # only include if the interface is currently not at the desired state
@@ -568,8 +568,8 @@ def _cmr(remote, local=None, dry_run: bool = False):
 
     print(f"gathering imatrix for model {remote}")
     mtrx2 = IntegrationMatrix(model=remote)
-    apps1 = mtrx1._apps
-    apps2 = mtrx2._apps
+    apps1 = mtrx1.apps
+    apps2 = mtrx2.apps
 
     print(f"{len(apps1)} and {len(apps2)} found respectively \n")
 

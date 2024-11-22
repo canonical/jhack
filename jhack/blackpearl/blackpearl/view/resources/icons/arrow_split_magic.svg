@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="48"
+   viewBox="0 -960 960 960"
+   width="48"
+   version="1.1"
+   id="svg59"
+   sodipodi:docname="arrow_split_magic.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs63" />
+  <sodipodi:namedview
+     id="namedview61"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     showgrid="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:zoom="17.083333"
+     inkscape:cx="24"
+     inkscape:cy="24"
+     inkscape:window-width="1920"
+     inkscape:window-height="1071"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg59">
+    <sodipodi:guide
+       position="575,800"
+       orientation="0,-1"
+       id="guide225" />
+    <sodipodi:guide
+       position="160,508"
+       orientation="1,0"
+       id="guide227" />
+  </sodipodi:namedview>
+  <path
+     d="M575-160v-60h123L524-395l42-42 174 174v-122h60v225H575ZM160-448v-60h306l232-232H575v-60h225v225h-60v-122L491-448H160Z"
+     id="path57" />
+  <path
+     d="m 269,-582 -34,-75 -75,-34 75,-34 34,-75 34,75 75,34 -75,34 z"
+     id="path210"
+     style="stroke-width:20" />
+</svg>

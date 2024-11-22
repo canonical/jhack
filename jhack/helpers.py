@@ -240,8 +240,8 @@ def show_unit(unit: str, model: str = None):
 
 
 def show_application(application: str, model: str = None):
-    _model = f"-m {model} " if model else ""
-    proc = JPopen(f"juju show-application {application} --format json".split())
+    _model = f" -m {model}" if model else ""
+    proc = JPopen(f"juju show-application {application}{_model} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[application]
 
