@@ -95,6 +95,9 @@ class JujuModel:
 class JujuApp:
     """Juju app datastructure wrapper."""
 
+    def __hash__(self):
+        return hash((self.name, self.model.uuid))
+
     def __init__(self, name: str, meta: Dict[str, Any], model: JujuModel):
         # meta from juju show-application
         self.name = name

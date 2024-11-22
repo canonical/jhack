@@ -163,7 +163,6 @@ class BPView(NodeEditorWindow):
         center: QPointF = None,
         diameter_ratio: float = 1.1,
     ):
-        """"""
         center = center or QPointF()
         dist = len(nodes) * 10 * diameter_ratio + 200
         angle = 360 / len(nodes)

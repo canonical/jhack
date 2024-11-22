@@ -147,10 +147,14 @@ class PeerRelationEdge(Edge):
 
 
 class DirectPath:
-    def __init__(self, owner: "GraphicsEdge", start: "AppNode", end: "AppNode"):
+    def __init__(
+        self, owner: "GraphicsEdge", start: "AppNode", end: "AppNode", offset: int = 0
+    ):
         self.owner = owner
         self.start = start
         self.end = end
+        # offset to separate parallel edges in case of multiple relations
+        self.offset = offset
 
     def path(self) -> QPainterPath:
         """Calculate the Direct line connection
@@ -160,6 +164,11 @@ class DirectPath:
         """
         path = QPainterPath(QPointF(self.owner.source[0], self.owner.source[1]))
         path.lineTo(self.owner.destination[0], self.owner.destination[1])
+
+        angle = math.radians(180 + path.angleAtPercent(0))
+        dist = 10 * self.offset
+        vec = QPointF(math.sin(angle) * dist, math.cos(angle) * dist)
+        path.translate(vec.x(), vec.y())
         return path
 
 
@@ -377,4 +386,4 @@ class GraphicsEdge(QGraphicsPathItem):
         for label, relpos in zip(self.labels, self._label_positions):
             # label.setTransformOriginPoint()
             label.setPos(path.pointAtPercent(relpos))
-            label.setRotation(path.angleAtPercent(relpos))
+            label.setRotation(-path.angleAtPercent(relpos))

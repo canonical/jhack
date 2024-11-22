@@ -9,7 +9,7 @@ from nodeeditor.node_graphics_node import QDMGraphicsNode
 from nodeeditor.node_node import Node
 from nodeeditor.node_serializable import Serializable
 
-from jhack.blackpearl.blackpearl.view.edges import RelationEdge
+from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
 
 if typing.TYPE_CHECKING:
     from nodeeditor.node_scene import Scene
@@ -26,8 +26,20 @@ class AppNode(Node):
         super().__init__(scene, app.name, [], [])
         self.edges: typing.List[RelationEdge] = []
 
-    def add_edge(self, e):
-        self.edges.append(e)
+    def add_edge(self, edge: typing.Union[RelationEdge, PeerRelationEdge]):
+        # we want to know how many parallel edges there are,
+        # (i.e. between the same two nodes, direction doesn't matter)
+        nodes = {edge.start, edge.end}
+        n_parallel_edges = len(
+            tuple(e for e in self.edges if e.start in nodes and e.end in nodes)
+        )
+
+        offset = n_parallel_edges
+        if n_parallel_edges % 2:
+            offset = -(offset - 1)
+        edge.grEdge.pather.offset = offset
+
+        self.edges.append(edge)
 
     def initInnerClasses(self):
         """Sets up graphics Node (PyQt) and Content Widget"""
