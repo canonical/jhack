@@ -1,5 +1,7 @@
 import dataclasses
-from typing import List, Dict, Optional, Tuple
+import re
+from code import interact
+from typing import List, Dict, Optional, Tuple, Set
 
 import typer
 
@@ -17,6 +19,14 @@ from jhack.utils.show_relation import (
 )
 
 logger = jhack_logger.getChild("graph")
+
+identifier = "[a-zA-Z-_0-9]"
+RELATIONS_STATUS_RE = re.compile(
+    f"(?P<provider_name>{identifier}+):(?P<provider_endpoint>{identifier}+)\s+"
+    f"(?P<requirer_name>{identifier}+):(?P<requirer_endpoint>{identifier}+)\s+"
+    f"(?P<interface>{identifier}+)\s+(?P<type>{identifier}+)"
+    f"[\s+(?P<message>.+)]?"
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -54,8 +64,12 @@ class Graph:
 
         if not self._relation_data.get(relation):
             self._relation_data[relation] = gather_relation_databags(
-                RelationEndpointURL(relation.requirer_endpoint),
-                RelationEndpointURL(relation.provider_endpoint),
+                RelationEndpointURL(
+                    f"{relation.requirer}:{relation.requirer_endpoint}"
+                ),
+                RelationEndpointURL(
+                    f"{relation.provider}:{relation.provider_endpoint}"
+                ),
                 relation,
                 model=self._model,
                 include_default_juju_keys=self._include_default_juju_keys,
@@ -86,51 +100,33 @@ class Graph:
 
         model_status_cache = {}
 
-        def get_status(model_name_):
-            if model_name_ not in model_status_cache:
-                model_status_cache[model_name_] = juju_status(
-                    model=model_name_, json=True
+        def get_status(model_name_, json: bool):
+            if (model_name_, json) not in model_status_cache:
+                model_status_cache[(model_name_, json)] = juju_status(
+                    model=model_name_, json=json
                 )
-            return model_status_cache[model_name_]
+            return model_status_cache[(model_name_, json)]
 
         def get_app(app_name_, model_name_, status=None):
-            status = status or get_status(model_name_)
+            status = status or get_status(model_name_, json=True)
             app_meta = status["applications"][app_name_]
             return _App(name=app_name_, model=model_name_, meta=app_meta)
 
-        visited: List[str] = []
+        visited_applications: Set[str] = set()
+        visited_relations: Set[Relation] = set()
 
         def walk(model_name_: str, app_name_: str, graph_=None):
-            if app_name_ in visited:
+            if app_name_ in visited_applications:
                 return graph_
-            visited.append(app_name_)
 
-            status = get_status(model_name_)
+            visited_applications.add(app_name_)
+
+            model_status_raw = get_status(model_name_, json=False)
+            model_relations = RELATIONS_STATUS_RE.findall(model_status_raw)
+
             app = get_app(app_name_, model_name_)
             relations: List[Relation] = []
             graph_[app] = relations
-
-            def _find_relation_id(
-                app_name__: str,
-                model_name__: str,
-                endpoint_: str,
-                remote_endpoint_: str,
-                remote_app_name_: str,
-            ):
-                # FIXME: show-unit does not give the data, how do we get it?
-                return 0
-
-            def _find_remote_endpoint(meta: dict, local_app_name: str, interface: str):
-                for endpoint, relations_meta in meta["relations"].items():
-                    for relation in relations_meta:
-                        if (
-                            relation["interface"] == interface
-                            and relation["related-application"] == local_app_name
-                        ):
-                            return endpoint
-                raise RuntimeError(
-                    f"could not find a remote endpoint bound to {local_app_name} over {interface}"
-                )
 
             offers_meta = status.get("application-endpoints", ())
 
@@ -155,13 +151,35 @@ class Graph:
                     remote_endpoint = _find_remote_endpoint(
                         remote_app_meta, app_name_, binding["interface"]
                     )
+
+                    if remote_model_name == model_name_:
+                        # todo subordinate check
+                        if remote_app_name == app_name_:
+                            relation_type = "peer"
+                        else:
+                            relation_type = "regular"
+                    else:
+                        relation_type = "cross_model"
+
+                    # todo compare provider, provider-endpoint, requirer.... with the raw relation data
+
+                    rel_footprint = (
+                        app_name_,
+                        endpoint,
+                        remote_app_name,
+                        remote_endpoint,
+                        binding["interface"],
+                    )
+                    if rel_footprint not in model_relations:
+                        continue
+
                     rel = Relation(
                         provider=app_name_,
                         provider_endpoint=endpoint,
                         requirer=remote_app_name,
                         requirer_endpoint=remote_endpoint,  # todo
                         interface=binding["interface"],
-                        raw_type="regular",
+                        raw_type=relation_type,
                         id=_find_relation_id(
                             app_name_,
                             model_name_,
@@ -170,7 +188,12 @@ class Graph:
                             remote_app_name,
                         ),
                     )
+
+                    if rel in visited_relations:
+                        continue
+
                     relations.append(rel)
+                    visited_relations.add(rel)
 
             return graph_
 
@@ -198,7 +221,7 @@ class Graph:
                 )
                 if reldata := self.get_relation_data(relation):
                     print(
-                        f"\t\tRelation found: "
+                        f"\t\t\tRelation found: "
                         f"{reldata[0].url} --> "
                         f"{reldata[1].url if len(reldata) == 2 else '<itself>'} "
                         f"({relation.id})"
@@ -227,4 +250,4 @@ def unravel(
 
 if __name__ == "__main__":
     # jhack unravel traefik/0
-    Graph.bootstrap().plot()
+    Graph.bootstrap("tempo/0").plot()
