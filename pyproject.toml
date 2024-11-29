@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "jhack"
 version = "0.4.4.0.7"
+requires-python = ">=3.8"
 authors = [
     { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" }
 ]

@@ -591,8 +591,9 @@ class PoorPrinter(Printer):
         events: List[EventLogMsg],
     ):
         count = self._count_events(events)
+        # counter has a .total() method since python 3.10
         print(
-            f"Jhack tail v0.4:  captured {count.total()} events in {len(count.keys())} units."
+            f"Jhack tail v0.4:  captured {sum(count.values())} events in {len(count.keys())} units."
         )
         if not self._live:
             if self._output:
