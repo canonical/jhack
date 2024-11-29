@@ -7,7 +7,7 @@ from enum import Enum
 from nodeeditor.node_scene import Scene
 from nodeeditor.node_serializable import Serializable
 from qtpy.QtCore import Qt, QRectF, QPointF
-from qtpy.QtGui import QColor, QPen, QPainterPath
+from qtpy.QtGui import QColor, QPen, QPainterPath, QPolygonF
 from qtpy.QtWidgets import (
     QGraphicsPathItem,
     QWidget,
@@ -16,7 +16,7 @@ from qtpy.QtWidgets import (
 )
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
-from jhack.blackpearl.blackpearl.view.helpers import get_color
+from jhack.blackpearl.blackpearl.view.helpers import get_color, translated
 from jhack.utils.helpers.gather_endpoints import RelationBinding, PeerBinding
 
 if typing.TYPE_CHECKING:
@@ -155,21 +155,33 @@ class DirectPath:
         self.end = end
         # offset to separate parallel edges in case of multiple relations
         self.offset = offset
+        self.arrows = True
 
     def path(self) -> QPainterPath:
-        """Calculate the Direct line connection
-
-        :returns: ``QPainterPath`` of the direct line
-        :rtype: ``QPainterPath``
-        """
         path = QPainterPath(QPointF(self.owner.source[0], self.owner.source[1]))
         path.lineTo(self.owner.destination[0], self.owner.destination[1])
 
         angle = math.radians(180 + path.angleAtPercent(0))
         dist = 10 * self.offset
-        vec = QPointF(math.sin(angle) * dist, math.cos(angle) * dist)
-        path.translate(vec.x(), vec.y())
+        path.translate(math.sin(angle) * dist, math.cos(angle) * dist)
         return path
+
+
+class Arrow(QPolygonF):
+    def __init__(self, center: QPointF, direction: float, length: float, width: float):
+        super().__init__()
+        self.center = center
+        self.direction = direction
+        self.length = length
+
+        tip = translated(center, direction, length)
+        p1_l = translated(center, direction + 180, width / 2)
+        p2_r = translated(center, direction - 90, width / 2)
+
+        self.append(tip)
+        self.append(p1_l)
+        self.append(p2_r)
+        self.append(tip)
 
 
 class CenteredBezierPath:
@@ -235,6 +247,7 @@ class GraphicsEdge(QGraphicsPathItem):
         # init our flags
         self._last_selected_state = False
         self.hovered = False
+        self.show_direction = True
 
         # init our variables
         self.source = [0, 0]
@@ -264,7 +277,7 @@ class GraphicsEdge(QGraphicsPathItem):
             QGraphicsSimpleTextItem(binding.provider_endpoint),
             QGraphicsSimpleTextItem(binding.interface),
         ]
-        self._label_positions = (0, 0.5, 1)
+        self._label_positions = (0.1, 0.4, 0.7)
 
         if hasattr(binding, "requirer_endpoint"):
             # regular relation
@@ -341,8 +354,9 @@ class GraphicsEdge(QGraphicsPathItem):
     def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
         """Qt's overridden method to paint this Graphics Edge. Path calculated
         in :func:`~nodeeditor.node_graphics_edge.QDMGraphicsEdge.path` method"""
-        self.setPath(self.path())
+        path = self.path()
 
+        painter.setRenderHint(painter.Antialiasing)
         painter.setBrush(Qt.NoBrush)
 
         if self.hovered:
@@ -353,7 +367,39 @@ class GraphicsEdge(QGraphicsPathItem):
             pen = self._pen
 
         painter.setPen(pen)
-        painter.drawPath(self.path())
+        painter.drawPath(path)
+        self.setPath(path)
+        try:
+            arrows = self.get_arrow(path.pointAtPercent(0.5), path.pointAtPercent(0.51))
+            painter.drawPolyline(arrows)
+        except ZeroDivisionError:
+            pass
+
+    def get_arrow(self, start_point, end_point):
+        arrow_width = 4
+        arrow_height = 5
+        sx, sy = start_point.x(), start_point.y()
+        ex, ey = end_point.x(), end_point.y()
+
+        dx, dy = sx - ex, sy - ey
+
+        leng = math.sqrt(dx**2 + dy**2)
+        normX, normY = dx / leng, dy / leng  # normalize
+
+        # perpendicular vectors
+        perpX = -normY
+        perpY = normX
+
+        point2 = QPointF(
+            ex + arrow_height * normX + arrow_width * perpX,
+            ey + arrow_height * normY + arrow_width * perpY,
+        )
+        point3 = QPointF(
+            ex + arrow_height * normX - arrow_width * perpX,
+            ey + arrow_height * normY - arrow_width * perpY,
+        )
+
+        return QPolygonF([point2, end_point, point3])
 
     def intersectsWith(self, p1: QPointF, p2: QPointF) -> bool:
         """Does this Graphics Edge intersect with the line between point A and point B ?
@@ -371,13 +417,6 @@ class GraphicsEdge(QGraphicsPathItem):
         return cutpath.intersects(path)
 
     def path(self) -> QPainterPath:
-        """Will handle drawing QPainterPath from Point A to B. Internally there exist self.pather which
-        is an instance of derived :class:`~nodeeditor.node_graphics_edge_path.GraphicsEdgePathBase` class
-        containing the actual `path()` function - computing how the edge should look like.
-
-        :returns: ``QPainterPath`` of the edge connecting `source` and `destination`
-        :rtype: ``QPainterPath``
-        """
         return self.pather.path()
 
     def _update_label_positions(self):

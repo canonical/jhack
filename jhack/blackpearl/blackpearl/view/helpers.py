@@ -1,18 +1,16 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
-import importlib
-import sys
-import types
-import typing
-from pathlib import Path
-from typing import Optional
 from urllib import request
 
+import math
+import typing
 from PyQt6.QtGui import QImage
-from qtpy.QtCore import QObject
+from pathlib import Path
+from qtpy.QtCore import QPointF
 from qtpy.QtGui import QColor, QIcon, QPainter, QPalette, QPixmap
 from qtpy.QtSvg import QSvgRenderer
 from qtpy.QtWidgets import QMessageBox, QWidget
+from typing import Optional
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.view.resources.x11_colors import X11_COLORS
@@ -162,34 +160,6 @@ def get_event_icon(event_name: str):
     return get_icon(_EVENT_SUFFIX_TO_ICON_NAME.get(suffix, _DEFAULT_EVENT_ICON_NAME))
 
 
-def toggle_visible(obj: QObject):
-    obj.setVisible(not obj.isVisible())
-
-
-def load_module(path: Path, add_to_path: typing.List[Path] = None) -> types.ModuleType:
-    """Import the file at path as a python module."""
-
-    # so we can import without tricks
-    old_path = sys.path.copy()
-    extra_paths = list(map(str, add_to_path or []))
-    sys.path.extend([str(path.parent)] + extra_paths)
-
-    # strip .py
-    module_name = str(path.with_suffix("").name)
-
-    # if a previous call to load_module has loaded a
-    # module with the same name, this will conflict.
-    # besides, we don't really want this to be importable from anywhere else.
-    if module_name in sys.modules:
-        del sys.modules[module_name]
-
-    try:
-        module = importlib.import_module(module_name)
-    except ImportError:
-        logger.error(f"cannot import {path} as a python module")
-        raise
-    finally:
-        # cleanup
-        sys.path = old_path
-
-    return module
+def translated(pt: QPointF, angle: float, distance: float) -> QPointF:
+    radians = math.radians(angle)
+    return pt + QPointF(math.sin(radians) * distance, math.cos(radians) * distance)
