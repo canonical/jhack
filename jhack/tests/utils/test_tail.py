@@ -258,6 +258,16 @@ def test_tail_with_file_input():
     )
 
 
+def test_tail_with_file_input_and_output(tmp_path):
+    _tail_events(
+        files=[
+            mocks_dir / "real-prom-cropped-for-interlace.txt",
+            mocks_dir / "real-trfk-cropped-for-interlace.txt",
+        ],
+        output=str(tmp_path),
+    )
+
+
 @pytest.mark.parametrize(
     "pattern, log, match",
     (
