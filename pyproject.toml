@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jhack"
-version = "0.4.4.0.8"
+version = "0.4.4.0.9"
 requires-python = ">=3.10" # core24 supports up to 3.12 but data platform depends on 3.10
 authors = [
     { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" }
