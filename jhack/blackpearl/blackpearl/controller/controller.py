@@ -4,7 +4,12 @@ import typing
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.helpers import show_application
-from jhack.blackpearl.blackpearl.model.model import BPModel, JujuApp
+from jhack.blackpearl.blackpearl.model.model import (
+    BPModel,
+    JujuApp,
+    JujuModel,
+    JujuController,
+)
 
 from jhack.utils.helpers.gather_endpoints import RelationBinding, PeerBinding
 
@@ -22,39 +27,57 @@ class BPController:
 
     def update(self):
         logger.info("populating apps...")
+        view = self._view
+        for controller in self._model.controllers:
+            view.add_controller(controller)
 
-        for imatrix in self._model.imatrices:
-            nodes = []
-            model = self._model.get_juju_model(imatrix.model)
-            for app_name in imatrix.apps:
-                try:
-                    app = JujuApp(
-                        app_name,
-                        show_application(app_name, model=model.name),
-                        model,
+            for model in controller.models:
+                view.add_model(model)
+
+                imatrix = model.imatrix
+                if not imatrix:
+                    logger.warning(
+                        f"skipped model {model} as no imatrix could be collected"
                     )
-                except:
-                    logger.error(f"failed to create app {app_name}")
                     continue
 
-                node = self._view.add_app(app)
-                nodes.append(node)
-
-            self._view.spread(nodes)
-
-            logger.info("populating relations...")
-            edges = []
-
-            for prov, req in itertools.product(imatrix.apps, repeat=2):
-                for relation in imatrix.get_integrations(prov, req):
-                    if isinstance(relation, PeerBinding):
-                        # peer
-                        edges.append(
-                            self._view.add_peer_relation(model.name, prov, relation)
+                nodes = []
+                for app_name in imatrix.apps:
+                    try:
+                        app = JujuApp(
+                            app_name,
+                            show_application(app_name, model=model.name),
+                            model=model,
                         )
+                    except:
+                        logger.error(f"failed to create app {app_name}")
+                        continue
 
-                    elif isinstance(relation, RelationBinding):
-                        # regular
-                        edges.append(
-                            self._view.add_relation(model.name, prov, req, relation)
-                        )
+                    node = view.add_app(app)
+                    nodes.append(node)
+
+                logger.info("populating relations...")
+                edges = []
+
+                for prov, req in itertools.product(imatrix.apps, repeat=2):
+                    for relation in imatrix.get_integrations(prov, req):
+                        if isinstance(relation, PeerBinding):
+                            # peer
+                            edges.append(
+                                view.add_peer_relation(
+                                    view.find_app(model, prov), relation
+                                )
+                            )
+
+                        elif isinstance(relation, RelationBinding):
+                            # regular
+                            edges.append(
+                                view.add_relation(
+                                    view.find_app(model, prov),
+                                    view.find_app(model, req),
+                                    relation,
+                                )
+                            )
+
+        view.spread()
+        view.bind_all()

@@ -26,6 +26,7 @@ def main():
         command.__doc__ = command.__doc__ + "\n\n **--this command is DEVMODE ONLY--**"
         return command
 
+    from jhack.blackpearl.blackpearl.main import main_cli
     from jhack.chaos.flicker import flicker
     from jhack.chaos.mancioppi import mancioppi
     from jhack.charm import functional
@@ -158,6 +159,8 @@ def main():
     app.command(name="eval", no_args_is_help=True)(devmode_only(charm_eval))
     app.command(name="debug-log", no_args_is_help=True)(tail_logs)
     app.command(name="script", no_args_is_help=True)(devmode_only(charm_script))
+
+    app.command(name="blackpearl", no_args_is_help=True)(main_cli)
 
     conf = typer.Typer(
         # TODO md formatting is currently quite bork cfr. https://github.com/tiangolo/typer/pull/815

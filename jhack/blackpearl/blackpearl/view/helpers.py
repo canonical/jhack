@@ -21,20 +21,19 @@ logger = bp_logger.getChild("helpers")
 ColorType = typing.Union[str, typing.Tuple[int, int, int]]
 DEFAULT_ICON_PIXMAP_RESOLUTION = 100
 CUSTOM_COLORS = {
-    # state node icon
-    "invalid": (138, 0, 0),
-    "pastel green": (138, 255, 153),
-    "pastel orange": (255, 185, 64),
-    "pastel red": (245, 96, 86),
-    # event edge colors
-    "relation event": "#D474AF",
-    "secret event": "#A9FAC8",
-    "storage event": "#EABE8C",
-    "workload event": "#87F6D3",
-    "builtin event": "#96A1F6",
-    "leader event": "#C6D474",
-    "generic event": "#D6CA51",
-    "update-status": "#4a708b",  # x11's skyblue4
+    "controller_1": "#EABE8C",
+    "controller_2": "#4934eb",
+    "controller_3": "#34eba8",
+    "controller_4": "#eb34d9",
+    "controller_5": "#eb345f",
+    "model_1": "#D474AF",
+    "model_2": "#A9FAC8",
+    "model_3": "#EABE8C",
+    "model_4": "#87F6D3",
+    "model_5": "#96A1F6",
+    "model_6": "#C6D474",
+    "model_7": "#D6CA51",
+    "model_8": "#4a708b",
 }
 
 

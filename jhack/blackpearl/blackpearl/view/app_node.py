@@ -1,29 +1,32 @@
 from collections import OrderedDict
 
 import typing
-from qtpy.QtCore import QPointF
+from PyQt6.QtCore import QPointF
+from PyQt6.QtGui import QPen
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
 
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QLabel
+from jhack.blackpearl.blackpearl.model.model import JujuApp
+from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
+from jhack.blackpearl.blackpearl.view.helpers import get_color
+from jhack.blackpearl.blackpearl.view.node import NodeBase, GrNodeBase
 from nodeeditor.node_graphics_node import QDMGraphicsNode
-
-from nodeeditor.node_node import Node
+from nodeeditor.node_scene import Scene
 from nodeeditor.node_serializable import Serializable
 
-from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
 
 if typing.TYPE_CHECKING:
     from nodeeditor.node_scene import Scene
     from jhack.blackpearl.blackpearl.model.model import JujuApp
 
 
-class AppNode(Node):
+class AppNode(NodeBase):
     def __init__(
         self,
         scene: "Scene",
         app: "JujuApp",
     ):
         self.app = app
-        super().__init__(scene, app.name, [], [])
+        super().__init__(app, scene, app.name)
         self.edges: typing.List[RelationEdge] = []
 
     def add_edge(self, edge: typing.Union[RelationEdge, PeerRelationEdge]):
@@ -46,10 +49,6 @@ class AppNode(Node):
         self.content = AppNodeContentWidget(self)
         self.grNode = AppGraphicsNode(self)
 
-    @property
-    def center(self):
-        return self.grNode.center
-
     def setPos(self, x: float, y: float):
         self.grNode.setPos(x, y)
         for edge in self.edges:
@@ -61,8 +60,8 @@ class AppNode(Node):
             edge.update()
 
 
-class AppGraphicsNode(QDMGraphicsNode):
-    def __init__(self, node: "Node", parent: QWidget = None):
+class AppGraphicsNode(GrNodeBase):
+    def __init__(self, node: "AppNode", parent: QWidget = None):
         self.width = 180
         self.height = 90
         self.edge_roundness = 10.0
@@ -72,6 +71,9 @@ class AppGraphicsNode(QDMGraphicsNode):
         self.title_vertical_padding = 4.0
 
         super().__init__(node, parent)
+        # node inherits model color
+        self._color = get_color(node.app.model.ui_color)
+        self._pen_default = QPen(self._color)
 
     def initSizes(self):
         pass

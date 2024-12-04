@@ -20,7 +20,8 @@ from jhack.blackpearl.blackpearl.view.helpers import get_color, translated
 from jhack.utils.helpers.gather_endpoints import RelationBinding, PeerBinding
 
 if typing.TYPE_CHECKING:
-    from jhack.blackpearl.blackpearl.view.nodes import Node, AppNode
+    from jhack.blackpearl.blackpearl.view.nodes import Node
+    from jhack.blackpearl.blackpearl.view.app_node import AppNode
 
 logger = bp_logger.getChild(__file__)
 

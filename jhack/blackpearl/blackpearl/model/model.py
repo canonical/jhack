@@ -1,8 +1,12 @@
+from PyQt6.QtGui import QColor
+from itertools import cycle
+
 import subprocess
-from typing import List, Dict, Any, Optional, Literal, Generator, Sequence
+from typing import List, Dict, Any, Optional, Literal, Generator, Sequence, Set
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.model.jujucli import Juju, Status
+from jhack.blackpearl.blackpearl.view.helpers import get_color
 from jhack.utils.integrate import IntegrationMatrix
 
 logger = bp_logger.getChild(__file__)
@@ -22,11 +26,6 @@ class BPModel:
         for controller in self.controllers:
             controller.load_models(models)
 
-    @property
-    def imatrices(self) -> Generator[IntegrationMatrix, None, None]:
-        for controller in self.controllers:
-            yield from filter(None, controller.imatrices)
-
     def get_juju_model(self, model_name: str) -> "JujuModel":
         for controller in self.controllers:
             for model in controller.models:
@@ -38,19 +37,31 @@ class BPModel:
 class JujuController:
     """Juju controller datastructure wrapper."""
 
+    _CONTROLLER_COLOR_CYCLER = cycle(
+        ("controller_1", "controller_2", "controller_3", "controller_4", "controller_5")
+    )
+
+    _CONTROLLER_COLORS: Dict["JujuController", QColor] = {}
+
+    def _get_ui_color(self):
+        if color := self._CONTROLLER_COLORS.get(self):
+            return color
+        self._CONTROLLER_COLORS[self] = get_color(next(self._CONTROLLER_COLOR_CYCLER))
+        return self._CONTROLLER_COLORS.get(self)
+
+    def __hash__(self):
+        return hash(self.uuid)
+
     def __init__(self, name: str, meta: Dict[str, Any]):
         self.name = name
         self._meta = meta
+        self.uuid = meta["uuid"]
         self.current: Optional[str] = meta.get("current-model", None)
         self.models: List[JujuModel] = []
+        self.ui_color = self._get_ui_color()
 
     def load_models(self, models: Optional[Sequence[str]]):
-        self.models = get_models(self.name, models)
-
-    @property
-    def imatrices(self) -> Generator[IntegrationMatrix, None, None]:
-        for model in self.models:
-            yield model.imatrix
+        self.models = get_models(self, models)
 
     def update(self):
         pass
@@ -59,7 +70,34 @@ class JujuController:
 class JujuModel:
     """Juju model datastructure wrapper."""
 
-    def __init__(self, meta: Dict[str, Any]):
+    _MODEL_COLOR_CYCLER = cycle(
+        (
+            "model_1",
+            "model_2",
+            "model_3",
+            "model_4",
+            "model_5",
+            "model_6",
+            "model_7",
+            "model_8",
+        )
+    )
+    _MODEL_COLORS: Dict["JujuModel", QColor] = {}
+
+    def _get_ui_color(self):
+        if color := self._MODEL_COLORS.get(self):
+            return color
+        self._MODEL_COLORS[self] = get_color(next(self._MODEL_COLOR_CYCLER))
+        return self._MODEL_COLORS.get(self)
+
+    def __hash__(self):
+        return hash((self.controller, self.name))
+
+    def __init__(self, meta: Dict[str, Any], controller: JujuController):
+        self.controller = controller
+        self._meta = meta
+        self.apps: Set[JujuApp] = set()
+
         self.name: str = meta["short-name"]
         self.full_name: str = meta["name"]
         self.type: Literal["lxd", "k8s"] = meta["type"]
@@ -68,10 +106,10 @@ class JujuModel:
         self.cloud: str = meta["cloud"]
         self.region: str = meta["region"]
         self.owner: str = meta["owner"]
-        self._meta = meta
 
         self.cli = Juju(self.name)
         self._status: Optional[Status] = None
+        self.ui_color = self._get_ui_color()
 
     def status(self, refresh=False) -> Status:
         """Get juju status"""
@@ -86,7 +124,11 @@ class JujuModel:
         if self.life == "dying":
             logger.info(f"skipping model {self.name} as it is dying")
             return
-        return IntegrationMatrix(model=self.name, include_peers=True)
+        try:
+            return IntegrationMatrix(model=self.name, include_peers=True)
+        except:
+            logger.exception(f"failed to collect imatrix for model {self.name}")
+            return
 
     def update(self):
         pass
@@ -102,6 +144,7 @@ class JujuApp:
         # meta from juju show-application
         self.name = name
         self.model = model
+        self.model.apps.add(self)
         self._meta = meta
 
         self.charm: str = meta.get("charm-name", "unknown")
@@ -110,16 +153,20 @@ class JujuApp:
         self.channel: str = meta.get("charm-channel", "unknown")
 
 
-def get_models(controller: str, names: Optional[List[str]]) -> List[JujuModel]:
+def get_models(
+    controller: JujuController, names: Optional[List[str]]
+) -> List[JujuModel]:
     logger.info(f"gathering models for {controller}...")
     try:
-        models = Juju().models(controller)
+        models = Juju().models(controller.name)
     except subprocess.CalledProcessError:
-        logger.exception(f"unable to fetch models for {controller}, verify your juju")
+        logger.exception(
+            f"unable to fetch models for {controller.name}, verify your juju"
+        )
         return []
 
     return [
-        JujuModel(meta=meta)
+        JujuModel(meta=meta, controller=controller)
         for meta in models
         if (not names or meta["short-name"] in names)
     ]

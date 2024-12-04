@@ -5,6 +5,7 @@ import sys
 
 import typer
 from qtpy.QtWidgets import QApplication
+from typing import List
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
 
@@ -17,17 +18,34 @@ logger = bp_logger.getChild(__file__)
 
 
 class Blackpearl:
-    def __init__(self):
+    """Main blackpearl class."""
+
+    def __init__(self, models: List[str] | None = None):
         self.view = BPView()
-        self.model = BPModel(models=["svcgraph"])
+        self.model = BPModel(models=models)
         self.controller = BPController(view=self.view, model=self.model)
 
 
-def show_main_window():
+def main_cli(
+    model: List[str] = typer.Option(
+        None,
+        "-m",
+        "--model",
+        help="Restrict the field-of-view to these models only, for the initial load.",
+    ),
+):
+    """Fire up the BlackPearl GUI.
+
+    Aye aye!
+    """
+    return show_main_window(models=model)
+
+
+def show_main_window(*args, **kwargs):
     app = QApplication([])
     app.setStyle("Fusion")
 
-    blackpearl = Blackpearl()
+    blackpearl = Blackpearl(*args, **kwargs)
     app.blackpearl = blackpearl
 
     view = blackpearl.view
