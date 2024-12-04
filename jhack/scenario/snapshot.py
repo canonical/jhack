@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-from importlib import metadata
-
 import dataclasses
 import datetime
 import json
-import ops.pebble
 import os
 import re
 import shlex
 import sys
 import tempfile
-import typer
-import yaml
 from dataclasses import dataclass
 from enum import Enum
+from importlib import metadata
 from itertools import chain
-from ops.storage import SQLiteStorage
 from pathlib import Path
+from subprocess import run
+from typing import Any, BinaryIO, Dict, Iterable, List, Optional, TextIO, Tuple, Union
+
+import ops.pebble
+import typer
+import yaml
+from ops.storage import SQLiteStorage
 from scenario.runtime import UnitStateDB
 from scenario.state import (
     Address,
     BindAddress,
     Container,
-    _Event,
     Model,
     Mount,
     Network,
@@ -33,9 +34,8 @@ from scenario.state import (
     Secret,
     State,
     _EntityStatus,
+    _Event,
 )
-from subprocess import run
-from typing import Any, BinaryIO, Dict, Iterable, List, Optional, TextIO, Tuple, Union
 
 from jhack.logger import logger as jhack_root_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName

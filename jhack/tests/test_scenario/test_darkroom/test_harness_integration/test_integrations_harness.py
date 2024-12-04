@@ -1,6 +1,5 @@
 import ops
 import pytest
-import scenario
 import yaml
 from ops import BlockedStatus, CharmBase, WaitingStatus
 from ops.testing import Harness

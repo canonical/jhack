@@ -43,28 +43,27 @@ in `charm.py`:
 """
 
 import logging
-import ops
 import os
-import scenario
-from ops._private.harness import _TestingModelBackend
 from typing import (
     TYPE_CHECKING,
     Callable,
-    Dict,
     List,
     Literal,
     Sequence,
+    Set,
     Tuple,
     Union,
-    Set,
-    Iterable,
 )
 
+import ops
+import scenario
 import yaml
 from ops import CharmBase, EventBase
-from ops.model import ModelError, SecretRotate, StatusBase, _ModelBackend
+from ops._private.harness import _TestingModelBackend
+from ops.model import ModelError, SecretRotate, _ModelBackend
 from scenario import (
     Container,
+    ICMPPort,
     Model,
     Network,
     Port,
@@ -73,10 +72,9 @@ from scenario import (
     State,
     TCPPort,
     UDPPort,
-    ICMPPort,
 )
 from scenario.mocking import _MockModelBackend
-from scenario.state import _CharmSpec, _Event, _EntityStatus
+from scenario.state import _CharmSpec, _EntityStatus, _Event
 
 if TYPE_CHECKING:
     from ops import Framework

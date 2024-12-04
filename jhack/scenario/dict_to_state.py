@@ -3,8 +3,6 @@
 # See LICENSE file for licensing details.
 
 """Facilities to convert json to State."""
-import dataclasses
-
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict
