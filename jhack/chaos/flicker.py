@@ -4,6 +4,8 @@ import shlex
 from subprocess import CalledProcessError, check_output
 from typing import List
 
+import typer
+
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import juju_status
 from jhack.logger import logger as jhack_logger
@@ -11,8 +13,6 @@ from jhack.utils.helpers.gather_endpoints import RelationBinding
 from jhack.utils.integrate import IntegrationMatrix
 
 logger = jhack_logger.getChild("gather_endpoints")
-
-import typer
 
 
 def _flicker(

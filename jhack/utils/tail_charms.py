@@ -591,8 +591,9 @@ class PoorPrinter(Printer):
         events: List[EventLogMsg],
     ):
         count = self._count_events(events)
+        # counter has a .total() method since python 3.10
         print(
-            f"Jhack tail v0.4:  captured {count.total()} events in {len(count.keys())} units."
+            f"Jhack tail v0.4:  captured {sum(count.values())} events in {len(count.keys())} units."
         )
         if not self._live:
             if self._output:
@@ -611,6 +612,7 @@ class RichPrinter(Printer):
         show_defer: bool = False,
         output: Optional[Path] = None,
         max_length: int = 10,
+        framerate: float = 0.5,
     ):
         self._color = color
         self._max_length = max_length
@@ -620,14 +622,19 @@ class RichPrinter(Printer):
         self._show_ns = show_ns
         self._rendered = False
         self._output = output
+        self._framerate = framerate
 
         self._n_colors = {}
 
         if color == "no":
             color = None
 
-        self.console = console = Console(color_system=color)
-        self.live = live = Live(console=console)
+        self.console = console = Console(
+            color_system=color,
+        )
+        self.live = live = Live(
+            console=console, refresh_per_second=60 / self._framerate
+        )
         live.update("Listening for events...", refresh=True)
         live.start()
 
@@ -770,7 +777,10 @@ class RichPrinter(Printer):
 
         output = self._output
         if output:
-            self._max_length = float("inf")
+            logger.info(
+                "exit + output mode: setting max length to 0 to disable cropping for exit summary"
+            )
+            self._max_length = 0
 
         rendered = self.render(
             events,
@@ -835,6 +845,7 @@ class Processor:
         # only available in rich printing mode
         color: _Color = "auto",
         flip: bool = False,
+        framerate: int = 0.5,
     ):
         self.targets = targets
         self.leaders = leaders or {}
@@ -860,6 +871,7 @@ class Processor:
                 show_trace_ids=show_trace_ids,
                 output=self.output,
                 max_length=max_length,
+                framerate=framerate,
             )
         else:
             exit(f"unknown printer type: {printer}")
@@ -1346,7 +1358,7 @@ def _tail_events(
     flip: bool = False,
     show_trace_ids: bool = False,
     watch: bool = True,
-    color: str = "auto",
+    color: _Color = "auto",
     files: List[Union[str, Path]] = None,
     event_filter: str = None,
     # for script use only
@@ -1414,6 +1426,7 @@ def _tail_events(
         model=model,
         flip=flip,
         output=output,
+        framerate=framerate,
     )
 
     if replay:

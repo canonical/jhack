@@ -1,16 +1,7 @@
 name: jhack
 
-# we're stuck with core20 until juju bumps to core22
-# as Juju depends on libssl 1.1 which is hard to get on core22
-base: core20
-
-architectures:
-#  - build-on: s390x
-#  - build-on: ppc64el
-  - build-on: arm64
-#  - build-on: armhf
-  - build-on: amd64
-  - build-on: i386
+# our upper bound is juju's base, which at the time of writing is core24
+base: core24
 
 adopt-info: jhack
 summary: Cli tool packed with juju hacks.
