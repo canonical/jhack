@@ -44,25 +44,47 @@ in `charm.py`:
 
 import logging
 import os
-from typing import TYPE_CHECKING, Callable, Dict, List, Literal, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    List,
+    Literal,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
+import ops
+import scenario
 import yaml
 from ops import CharmBase, EventBase
-from ops.model import ModelError, SecretRotate, StatusBase, _ModelBackend
-from ops.testing import _TestingModelBackend
-from scenario import Container, Event, Model, Network, Port, Relation, Secret, State
+from ops._private.harness import _TestingModelBackend
+from ops.model import ModelError, SecretRotate, _ModelBackend
+from scenario import (
+    Container,
+    ICMPPort,
+    Model,
+    Network,
+    Port,
+    Relation,
+    Secret,
+    State,
+    TCPPort,
+    UDPPort,
+)
 from scenario.mocking import _MockModelBackend
-from scenario.state import _CharmSpec
+from scenario.state import _CharmSpec, _EntityStatus, _Event
 
 if TYPE_CHECKING:
     from ops import Framework
 
-_Trace = Sequence[Tuple[Event, State]]
+_Trace = Sequence[Tuple[_Event, State]]
 _SupportedBackends = Union[_TestingModelBackend, _ModelBackend, _MockModelBackend]
 
 logger = logging.getLogger("darkroom")
 
-# TODO move those to Scenario.State and add an Event._is_framework_event() method.
+# TODO move those to Scenario.State and add an _Event._is_framework_event() method.
 FRAMEWORK_EVENT_NAMES = {
     "pre_commit",
     "commit",
@@ -81,6 +103,19 @@ UNKNOWN = _Unknown()
 # Singleton representing missing information that cannot be retrieved,
 # because of e.g. lack of leadership.
 del _Unknown
+
+
+def ops_port_to_scenario(port: ops.Port) -> scenario.Port:
+    """Convert ops.Port to scenario.Port."""
+    match port.protocol:
+        case "tcp":
+            return TCPPort(port=port.port)
+        case "udp":
+            return UDPPort(port=port.port)
+        case "icmp":
+            return ICMPPort(port=port.port)
+        case _:
+            raise ValueError(port.protocol)
 
 
 class Darkroom:
@@ -137,7 +172,7 @@ class Darkroom:
         self._capture_framework_events = capture_framework_events
         self._capture_custom_events = capture_custom_events
 
-    def _listen_to(self, event: Event, framework: "Framework") -> bool:
+    def _listen_to(self, event: _Event, framework: "Framework") -> bool:
         """Whether this event should be captured or not.
 
         Depends on the init-provided skip config.
@@ -234,15 +269,15 @@ class Darkroom:
         return getattr(backend, "_workload_version", UNKNOWN)
 
     @staticmethod
-    def _get_unit_status(backend: _SupportedBackends) -> StatusBase:
+    def _get_unit_status(backend: _SupportedBackends) -> _EntityStatus:
         raw = backend.status_get()
-        return StatusBase.from_name(message=raw["message"], name=raw["status"])
+        return _EntityStatus(message=raw["message"], name=raw["status"])  # type: ignore
 
     @staticmethod
-    def _get_app_status(backend: _SupportedBackends) -> StatusBase:
+    def _get_app_status(backend: _SupportedBackends) -> _EntityStatus:
         try:
             raw = backend.status_get(is_app=True)
-            return StatusBase.from_name(message=raw["message"], name=raw["status"])
+            return _EntityStatus(message=raw["message"], name=raw["status"])  # type: ignore
         except ModelError:  # missing leadership
             return UNKNOWN
 
@@ -262,7 +297,7 @@ class Darkroom:
 
     @staticmethod
     def _get_opened_ports(backend: _SupportedBackends) -> List[Port]:
-        return [Port(p.protocol, p.port) for p in backend.opened_ports()]
+        return list(map(ops_port_to_scenario, backend.opened_ports()))
 
     def _get_relations(self, backend: _SupportedBackends) -> List[Relation]:
         relations = []
@@ -309,7 +344,7 @@ class Darkroom:
         return Relation(
             endpoint=endpoint,
             interface=get_interface_name(endpoint),
-            relation_id=r_id,
+            id=r_id,
             local_app_data=try_get(rel_data, local_app_name),
             local_unit_data=try_get(rel_data, local_unit_name),
             remote_app_data=try_get(rel_data, remote_app_name),
@@ -337,8 +372,8 @@ class Darkroom:
             containers.append(Container(name=name, mounts=c.mounts))
         return containers
 
-    def _get_networks(self, backend: _SupportedBackends) -> Dict[str, Network]:
-        networks = {nw_name: Network(**nw) for nw_name, nw in backend._networks.items()}
+    def _get_networks(self, backend: _SupportedBackends) -> Set[Network]:
+        networks = {Network(**nw) for nw in backend._networks.values()}
         return networks
 
     def _get_secrets(self, backend: _SupportedBackends) -> List[Secret]:
@@ -368,10 +403,10 @@ class Darkroom:
             )
         return secrets
 
-    def _get_event(self, event: EventBase) -> Event:
-        return Event(event.handle.kind)
+    def _get_event(self, event: EventBase) -> _Event:
+        return _Event(event.handle.kind)
 
-    def attach(self, listener: Callable[[Event, State], None]):
+    def attach(self, listener: Callable[[_Event, State], None]):
         """Every time an event is emitted, record the event and capture the state."""
         from ops import Framework
 
@@ -383,7 +418,7 @@ class Darkroom:
         def _darkroom_emit(instance: Framework, ops_event):
             # proceed with framework._emit()
             Framework.__orig_emit__(instance, ops_event)
-            event: Event = self._get_event(ops_event)
+            event: _Event = self._get_event(ops_event)
 
             if not self._listen_to(event, instance):
                 logger.debug(f"skipping event {ops_event}")

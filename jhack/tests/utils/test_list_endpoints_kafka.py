@@ -39,14 +39,16 @@ def fake_libinfo(*args, **kwargs):
 
 @pytest.fixture(autouse=True)
 def mock_stdout():
-    with patch(
-        "jhack.utils.helpers.gather_endpoints.juju_status", wraps=fake_juju_status
-    ), patch(
-        "jhack.utils.helpers.gather_endpoints.fetch_file", wraps=fake_fetch_file
-    ), patch(
-        "jhack.utils.list_endpoints.juju_version", wraps=lambda: JujuVersion((3, 2), "")
-    ), patch(
-        "jhack.utils.list_endpoints.get_libinfo", wraps=fake_libinfo
+    with (
+        patch(
+            "jhack.utils.helpers.gather_endpoints.juju_status", wraps=fake_juju_status
+        ),
+        patch("jhack.utils.helpers.gather_endpoints.fetch_file", wraps=fake_fetch_file),
+        patch(
+            "jhack.utils.list_endpoints.juju_version",
+            wraps=lambda: JujuVersion((3, 2), ""),
+        ),
+        patch("jhack.utils.list_endpoints.get_libinfo", wraps=fake_libinfo),
     ):
         yield
 

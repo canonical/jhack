@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
-
+import dataclasses
 import datetime
 import json
 import os
@@ -11,6 +11,7 @@ import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
+from importlib import metadata
 from itertools import chain
 from pathlib import Path
 from subprocess import run
@@ -24,9 +25,7 @@ from scenario.runtime import UnitStateDB
 from scenario.state import (
     Address,
     BindAddress,
-    BindFailedError,
     Container,
-    Event,
     Model,
     Mount,
     Network,
@@ -35,10 +34,12 @@ from scenario.state import (
     Secret,
     State,
     _EntityStatus,
+    _Event,
 )
 
 from jhack.logger import logger as jhack_root_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
+from jhack.scenario.integrations.darkroom import ops_port_to_scenario
 from jhack.scenario.state_to_dict import state_to_dict
 from jhack.scenario.utils import JujuUnitName
 
@@ -100,6 +101,74 @@ def test_case():
 """
 
 
+class BindFailedError(Exception):
+    """Raised by bind_event_to_state on failure to bind."""
+
+
+def bind_event_to_state(event: _Event, state: State):
+    """Attach to this event the state component it needs.
+
+    For example, a relation event initialized without a Relation instance will search for
+    a suitable relation in the provided state and return a copy of itself with that
+    relation attached.
+
+    In case of ambiguity (e.g. multiple relations found on 'foo' for event
+    'foo-relation-changed', we pop a warning and bind the first one. Use with care!
+    """
+    entity_name = event._path.prefix  # noqa
+
+    if event._is_workload_event and not event.container:  # noqa
+        try:
+            container = state.get_container(entity_name)
+        except ValueError:
+            raise BindFailedError(f"no container found with name {entity_name}")
+        return dataclasses.replace(event, container=container)
+
+    if event._is_secret_event and not event.secret:  # noqa
+        secrets = list(state.secrets)
+        if len(secrets) < 1:
+            raise BindFailedError(f"no secrets found in state: cannot bind {event}")
+        if len(secrets) > 1:
+            raise BindFailedError(
+                f"too many secrets found in state: cannot automatically bind {event}",
+            )
+        return dataclasses.replace(event, secret=secrets[0])
+
+    if event._is_storage_event and not event.storage:  # noqa
+        storages = state.get_storages(entity_name)
+        if len(storages) < 1:
+            raise BindFailedError(
+                f"no storages called {entity_name} found in state",
+            )
+        if len(storages) > 1:
+            logger.warning(
+                f"too many storages called {entity_name}: binding to first one",
+            )
+        storage = storages[0]
+        return dataclasses.replace(event, storage=storage)
+
+    if event._is_relation_event and not event.relation:  # noqa
+        ep_name = entity_name
+        relations = state.get_relations(ep_name)
+        if len(relations) < 1:
+            raise BindFailedError(f"no relations on {ep_name} found in state")
+        if len(relations) > 1:
+            logger.warning(f"too many relations on {ep_name}: binding to first one")
+        return dataclasses.replace(event, relation=relations[0])
+
+    if event._is_action_event and not event.action:  # noqa
+        raise BindFailedError(
+            "cannot automatically bind action events: if the action has mandatory parameters "
+            "this would probably result in horrible, undebuggable failures downstream.",
+        )
+
+    else:
+        raise BindFailedError(
+            f"cannot bind {event}: only relation, secret, "
+            f"or workload events can be bound.",
+        )
+
+
 def format_test_case(
     state: State,
     charm_type_name: str = None,
@@ -111,7 +180,7 @@ def format_test_case(
     en = "EVENT_NAME,  # TODO: replace with event name"
     if event_name:
         try:
-            en = Event(event_name).bind(state)
+            en = _Event(event_name)
         except BindFailedError:
             logger.error(
                 f"Failed to bind {event_name} to {state}; leaving placeholder instead",
@@ -173,9 +242,9 @@ def get_network(target: JujuUnitName, model: Optional[str], endpoint: str) -> Ne
             addresses.append(
                 Address(
                     hostname=raw_adds["hostname"],
-                    value=raw_adds["value"],
+                    # older jujus used 'address'
+                    value=raw_adds.get("address", raw_adds["value"]),
                     cidr=raw_adds["cidr"],
-                    address=raw_adds.get("address", ""),
                 ),
             )
 
@@ -186,7 +255,7 @@ def get_network(target: JujuUnitName, model: Optional[str], endpoint: str) -> Ne
             ),
         )
     return Network(
-        name=endpoint,
+        binding_name=endpoint,
         bind_addresses=bind_addresses,
         egress_subnets=json_data.get("egress-subnets", None),
         ingress_addresses=json_data.get("ingress-addresses", None),
@@ -260,8 +329,8 @@ class RemotePebbleClient:
     def _run(self, cmd: str) -> str:
         _model = f" -m {self.model}" if self.model else ""
         command = (
-            f"juju ssh{_model} --container {self.container} {self.target.unit_name} "
-            f"/charm/bin/pebble {cmd}"
+            f"juju ssh{_model} {self.target.unit_name} "
+            f"PEBBLE_SOCKET={self.socket_path} /charm/bin/pebble {cmd}"
         )
         proc = run(shlex.split(command), capture_output=True, text=True)
         if proc.returncode == 0:
@@ -276,7 +345,7 @@ class RemotePebbleClient:
     def can_connect(self) -> bool:
         try:
             version = self.get_system_info()
-        except Exception:
+        except Exception:  # noqa
             return False
         return bool(version)
 
@@ -378,7 +447,7 @@ def get_mounts(
         if not mount:
             # create the mount obj and tempdir
             location = tempfile.TemporaryDirectory(dir=str(temp_dir_base_path)).name
-            mount = Mount(src=src, location=location)
+            mount = Mount(source=src, location=location)
             mounts[mount_name] = mount
 
         # populate the local tempdir
@@ -393,8 +462,8 @@ def get_mounts(
                 local_path=filepath,
             )
 
-        except RuntimeError as e:
-            logger.error(e)
+        except RuntimeError:
+            logger.exception()
 
     return mounts
 
@@ -513,7 +582,8 @@ def get_opened_ports(
 
     for raw_port in json.loads(opened_ports_raw):
         _port_n, _proto = raw_port.split("/")
-        ports.append(Port(_proto, int(_port_n)))
+        # ugly but can't be arsed to do that switch again
+        ports.append(ops_port_to_scenario(ops.Port(_proto, int(_port_n))))
 
     return ports
 
@@ -538,7 +608,7 @@ def get_config(
     }
 
     cfg = {}
-    for name, option in json_data.get("settings", ()).items():
+    for name, option in json_data.get("settings", {}).items():
         if value := option.get("value"):
             try:
                 converter = converters[option["type"]]
@@ -590,8 +660,8 @@ def get_relations(
 
     try:
         json_data = _juju_run(f"show-unit {target}", model=model)
-    except json.JSONDecodeError as e:
-        raise InvalidTargetUnitName(target) from e
+    except json.JSONDecodeError:
+        raise InvalidTargetUnitName(target)
 
     def _clean(relation_data: dict):
         if include_juju_relation_data:
@@ -646,7 +716,7 @@ def get_relations(
                     raw_relation["endpoint"],
                     metadata,
                 ),
-                relation_id=relation_id,
+                id=relation_id,
                 remote_app_data=raw_relation["application-data"],
                 remote_app_name=some_remote_unit_id.app_name,
                 remote_units_data={
@@ -670,8 +740,8 @@ def get_model(name: str = None) -> Model:
         model_info = next(
             filter(lambda m: m["short-name"] == model_name, json_data["models"]),
         )
-    except StopIteration as e:
-        raise InvalidTargetModelName(name) from e
+    except StopIteration:
+        raise InvalidTargetModelName(name)
 
     model_uuid = model_info["model-uuid"]
     model_type = model_info["type"]
@@ -691,8 +761,8 @@ def try_guess_charm_type_name() -> Optional[str]:
             elif len(charms) > 1:
                 raise RuntimeError(f"Too many charms at {charm_path}.")
             return charms[0]
-    except Exception as e:
-        logger.warning(f"unable to guess charm type: {e}")
+    except Exception as _err:
+        logger.warning(f"unable to guess charm type: {_err}")
     return None
 
 
@@ -756,6 +826,10 @@ class RemoteUnitStateDB(UnitStateDB):
         return super()._open_db()
 
 
+def get_scenario_version():
+    return metadata.metadata("ops-scenario")["Version"]
+
+
 def _snapshot(
     target: str,
     model: Optional[str] = None,
@@ -763,7 +837,7 @@ def _snapshot(
     include: Optional[str] = None,
     include_juju_relation_data=False,
     include_dead_relation_networks=False,
-    format: FormatOption = "state",
+    format_: FormatOption = "state",
     event_name: Optional[str] = None,
     fetch_files: Optional[Dict[str, Dict[Path, Path]]] = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
@@ -865,9 +939,9 @@ def _snapshot(
                 unit_state_db.get_deferred_events,
                 [],
             ),
-            stored_state=if_include(
+            stored_states=if_include(
                 "t",
-                unit_state_db.get_stored_state,
+                unit_state_db.get_stored_states,
                 [],
             ),
         )
@@ -885,8 +959,9 @@ def _snapshot(
 
     if pprint:
         charm_version = get_charm_version(target, juju_status)
+        scenario_version = get_scenario_version()
         juju_version = get_juju_version(juju_status)
-        if format == FormatOption.pytest:
+        if format_ == FormatOption.pytest:
             charm_type_name = try_guess_charm_type_name()
             txt = format_test_case(
                 state,
@@ -894,23 +969,24 @@ def _snapshot(
                 charm_type_name=charm_type_name,
                 juju_version=juju_version,
             )
-        elif format == FormatOption.state:
+        elif format_ == FormatOption.state:
             txt = format_state(state)
-        elif format == FormatOption.json:
+        elif format_ == FormatOption.json:
             txt = json.dumps(state_to_dict(state), indent=2)
         else:
-            raise ValueError(f"unknown format {format}")
+            raise ValueError(f"unknown format {format_}")
 
         # json does not support comments, so it would be invalid output.
-        if format != FormatOption.json:
+        if format_ != FormatOption.json:
             # print out some metadata
             controller_timestamp = juju_status["controller"]["timestamp"]
             local_timestamp = datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
             print(
-                f"# Generated by scenario.snapshot. \n"
+                f"# Generated by jhack.scenario.snapshot. \n"
                 f"# Snapshot of {state_model.name}:{target.unit_name} at {local_timestamp}. \n"
                 f"# Controller timestamp := {controller_timestamp}. \n"
                 f"# Juju version := {juju_version} \n"
+                f"# Scenario version := {scenario_version} \n"
                 f"# Charm fingerprint := {charm_version} \n",
             )
 
@@ -927,7 +1003,7 @@ def snapshot(
         "--model",
         help="Which model to look at.",
     ),
-    format: FormatOption = typer.Option(
+    format_: FormatOption = typer.Option(
         "state",
         "-f",
         "--format",
@@ -995,7 +1071,7 @@ def snapshot(
     return _snapshot(
         target=target,
         model=model,
-        format=format,
+        format_=format_,
         event_name=event_name,
         include=include,
         include_juju_relation_data=include_juju_relation_data,
@@ -1014,7 +1090,7 @@ if __name__ == "__main__":
     print(
         _snapshot(
             "traefik/0",
-            format=FormatOption.state,
+            format_=FormatOption.state,
             include="r",
             # fetch_files={
             #     "traefik": [

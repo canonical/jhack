@@ -56,7 +56,9 @@ def test_gather_push_file_calls():
     (sub / "qux.txt").write_text("and multiverse!")
 
     calls = _gather_push_file_calls(
-        [Container("foo", mounts={"opt": Mount("/opt", mount_path)})], "unit/0", "model"
+        [Container("foo", mounts={"opt": Mount(location="/opt", source=mount_path)})],
+        "unit/0",
+        "model",
     )
     assert set(calls) == {
         f"juju scp -m model {mount_path}/foo.bar unit/0:/opt/foo.bar",
