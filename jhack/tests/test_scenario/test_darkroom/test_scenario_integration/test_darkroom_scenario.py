@@ -14,7 +14,7 @@ def test_attach():
     l = []
     Darkroom().attach(lambda e, s: l.append((e, s)))
     c = Context(MyCharm, meta=MyCharm.META)
-    c.run("start", State())
+    c.run(c.on.start(), State())
 
     assert len(l) == 1
     assert l[0][0].name == "start"

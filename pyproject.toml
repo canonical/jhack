@@ -14,7 +14,7 @@ license.text = "Apache 2.0"
 keywords = ["juju", "hacks", "cli", "charm", "charming"]
 urls.Source = "https://github.com/canonical/jhack"
 dependencies = [
-    "ops-scenario(==6.1.6)",
+    "ops-scenario(~=7.0)",
     "ops(==2.16.0)",
     "typer(==0.7.0)",
     "black",

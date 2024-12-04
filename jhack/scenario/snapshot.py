@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
+import dataclasses
 
 import datetime
 import json
@@ -24,9 +25,8 @@ from scenario.runtime import UnitStateDB
 from scenario.state import (
     Address,
     BindAddress,
-    BindFailedError,
     Container,
-    Event,
+    _Event,
     Model,
     Mount,
     Network,
@@ -100,6 +100,73 @@ def test_case():
 """
 
 
+class BindFailedError(Exception):
+    """Raised by bind_event_to_state on failure to bind."""
+
+
+def bind_event_to_state(event: _Event, state: State):
+    """Attach to this event the state component it needs.
+
+    For example, a relation event initialized without a Relation instance will search for
+    a suitable relation in the provided state and return a copy of itself with that
+    relation attached.
+
+    In case of ambiguity (e.g. multiple relations found on 'foo' for event
+    'foo-relation-changed', we pop a warning and bind the first one. Use with care!
+    """
+    entity_name = event._path.prefix
+
+    if event._is_workload_event and not event.container:
+        try:
+            container = state.get_container(entity_name)
+        except ValueError:
+            raise BindFailedError(f"no container found with name {entity_name}")
+        return dataclasses.replace(event, container=container)
+
+    if event._is_secret_event and not event.secret:
+        if len(state.secrets) < 1:
+            raise BindFailedError(f"no secrets found in state: cannot bind {event}")
+        if len(state.secrets) > 1:
+            raise BindFailedError(
+                f"too many secrets found in state: cannot automatically bind {event}",
+            )
+        return dataclasses.replace(event, secret=state.secrets[0])
+
+    if event._is_storage_event and not event.storage:
+        storages = state.get_storages(entity_name)
+        if len(storages) < 1:
+            raise BindFailedError(
+                f"no storages called {entity_name} found in state",
+            )
+        if len(storages) > 1:
+            logger.warning(
+                f"too many storages called {entity_name}: binding to first one",
+            )
+        storage = storages[0]
+        return dataclasses.replace(event, storage=storage)
+
+    if event._is_relation_event and not event.relation:
+        ep_name = entity_name
+        relations = state.get_relations(ep_name)
+        if len(relations) < 1:
+            raise BindFailedError(f"no relations on {ep_name} found in state")
+        if len(relations) > 1:
+            logger.warning(f"too many relations on {ep_name}: binding to first one")
+        return dataclasses.replace(event, relation=relations[0])
+
+    if event._is_action_event and not event.action:
+        raise BindFailedError(
+            "cannot automatically bind action events: if the action has mandatory parameters "
+            "this would probably result in horrible, undebuggable failures downstream.",
+        )
+
+    else:
+        raise BindFailedError(
+            f"cannot bind {event}: only relation, secret, "
+            f"or workload events can be bound.",
+        )
+
+
 def format_test_case(
     state: State,
     charm_type_name: str = None,
@@ -111,7 +178,7 @@ def format_test_case(
     en = "EVENT_NAME,  # TODO: replace with event name"
     if event_name:
         try:
-            en = Event(event_name).bind(state)
+            en = _Event(event_name)
         except BindFailedError:
             logger.error(
                 f"Failed to bind {event_name} to {state}; leaving placeholder instead",
@@ -378,7 +445,7 @@ def get_mounts(
         if not mount:
             # create the mount obj and tempdir
             location = tempfile.TemporaryDirectory(dir=str(temp_dir_base_path)).name
-            mount = Mount(src=src, location=location)
+            mount = Mount(source=src, location=location)
             mounts[mount_name] = mount
 
         # populate the local tempdir

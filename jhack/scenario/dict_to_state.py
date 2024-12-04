@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Facilities to convert json to State."""
+import dataclasses
 
 from datetime import datetime
 from pathlib import Path
@@ -25,6 +26,8 @@ from scenario.state import (
     SubordinateRelation,
     _EntityStatus,
 )
+
+from jhack.scenario.integrations.darkroom import ops_port_to_scenario
 
 if TYPE_CHECKING:
     from scenario.state import AnyRelation
@@ -74,7 +77,7 @@ def _dict_to_container(value: Dict) -> Container:
 
 
 def _dict_to_opened_port(value: Dict) -> Port:
-    return Port(**value)
+    return ops_port_to_scenario(Port(**value))
 
 
 def _dict_to_secret(value: Dict) -> Secret:
@@ -116,26 +119,24 @@ def dict_to_state(state_json: Dict) -> State:
         elif key == "model":
             overrides[key] = _dict_to_model(value)
         elif key == "relations":
-            overrides[key] = [_dict_to_relation(obj) for obj in value]
+            overrides[key] = {_dict_to_relation(obj) for obj in value}
         elif key == "networks":
-            overrides[key] = {
-                name: _dict_to_network(obj) for name, obj in value.items()
-            }
+            overrides[key] = {_dict_to_network(obj) for obj in value}
         elif key == "resources":
-            overrides[key] = {name: Path(obj) for name, obj in value.items()}
+            overrides[key] = {Path(obj) for obj in value}
         elif key == "containers":
-            overrides[key] = [_dict_to_container(obj) for obj in value]
-        elif key == "storage":
-            overrides[key] = [_dict_to_storage(obj) for obj in value]
+            overrides[key] = {_dict_to_container(obj) for obj in value}
+        elif key == "storages":
+            overrides[key] = {_dict_to_storage(obj) for obj in value}
         elif key == "opened_ports":
-            overrides[key] = [_dict_to_opened_port(obj) for obj in value]
+            overrides[key] = {_dict_to_opened_port(obj) for obj in value}
         elif key == "secrets":
-            overrides[key] = [_dict_to_secret(obj) for obj in value]
-        elif key == "stored_state":
-            overrides[key] = [_dict_to_stored_state(obj) for obj in value]
+            overrides[key] = {_dict_to_secret(obj) for obj in value}
+        elif key == "stored_states":
+            overrides[key] = {_dict_to_stored_state(obj) for obj in value}
         elif key == "deferred":
             overrides[key] = [_dict_to_deferred(obj) for obj in value]
         else:
             raise KeyError(key)
 
-    return State().replace(**overrides)
+    return State(**overrides)

@@ -6,7 +6,7 @@ from ops import BlockedStatus, CharmBase, WaitingStatus
 from ops.testing import Harness
 from scenario import Model
 
-from jhack.scenario.integrations.darkroom import Darkroom
+from jhack.scenario.integrations.darkroom import Darkroom, ops_port_to_scenario
 
 
 class MyCharm(CharmBase):
@@ -69,9 +69,7 @@ def test_opened_ports(harness, ports):
     harness.begin()
     harness.charm.unit.set_ports(*ports)
     state = Darkroom().capture(harness.model._backend)
-    assert set(state.opened_ports) == set(
-        scenario.Port(port.protocol, port.port) for port in ports
-    )
+    assert set(state.opened_ports) == set(map(ops_port_to_scenario, ports))
 
 
 # todo add tests for all other State components

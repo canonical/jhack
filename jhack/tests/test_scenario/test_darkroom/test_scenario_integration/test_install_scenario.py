@@ -1,3 +1,6 @@
+import dataclasses
+
+
 def test_install():
     from jhack.scenario.integrations.darkroom import Darkroom
 
@@ -14,19 +17,19 @@ def test_install():
     s1, s2, s3, s4, s5, s6, s7 = [State() for _ in range(7)]
 
     c = Context(MyCharm, meta=MyCharm.META)
-    c.run("start", s1)
-    c.run("install", s2)
+    c.run(c.on.start(), s1)
+    c.run(c.on.install(), s2)
 
     c = Context(MyCharm, meta=MyCharm.META)
-    c.run("start", s3)
-    c.run("update-status", s4)
+    c.run(c.on.start(), s3)
+    c.run(c.on.update_status(), s4)
 
     c = Context(MyCharm, meta=MyCharm.META)
-    c.run("start", s5)
-    c.run("install", s6)
+    c.run(c.on.start(), s5)
+    c.run(c.on.install(), s6)
     foo = Relation("foo")
-    s7_mod = s7.replace(relations=[foo])
-    c.run(foo.changed_event, s7_mod)
+    s7_mod = dataclasses.replace(s7, relations=[foo])
+    c.run(c.on.relation_changed(foo), s7_mod)
 
     assert len(l) == 3
     assert [len(x) for x in l] == [2, 2, 3]
