@@ -25,9 +25,7 @@ DEFAULT_REFRESH_RATE = 0.5
 
 
 class SvcLogTable(Table):
-    def __init__(
-        self, target: Target, container: str, service: str, *args, **kwargs
-    ) -> None:
+    def __init__(self, target: Target, container: str, service: str, *args, **kwargs) -> None:
         super().__init__(
             *args,
             **kwargs,
@@ -115,15 +113,10 @@ class JujuLogTable(Table):
 def _pebble(target: Target, *, command: str, container: str = "charm"):
     """Run a pebble command on a unit."""
     container_var = (
-        f" PEBBLE_SOCKET=/charm/containers/{container}/pebble.socket"
-        if container
-        else ""
+        f" PEBBLE_SOCKET=/charm/containers/{container}/pebble.socket" if container else ""
     )
-    cmd = shlex.split(
-        rf"juju ssh {target.unit_name}{container_var} /charm/bin/pebble {command}"
-    )
+    cmd = shlex.split(rf"juju ssh {target.unit_name}{container_var} /charm/bin/pebble {command}")
     try:
-
         proc = subprocess.Popen(cmd, bufsize=1000, stdout=subprocess.PIPE)
         proc.wait()
 
@@ -151,10 +144,8 @@ def get_container_names(target: Target) -> Tuple[str, ...]:
             except RuntimeError:
                 fetch_file(target.unit_name, "charmcraft.yaml", path)
             meta = yaml.safe_load(path.read_text())
-    except:
-        logger.exception(
-            f"failed to get metadata.yaml|charmcraft.yaml from {target.unit_name}"
-        )
+    except:  # noqa
+        logger.exception(f"failed to get metadata.yaml|charmcraft.yaml from {target.unit_name}")
         return ()
 
     containers = meta.get("containers", {})
@@ -163,16 +154,13 @@ def get_container_names(target: Target) -> Tuple[str, ...]:
 
 @dataclass
 class _Service:
-
     name: str
     startup: str
     active: bool
 
     @staticmethod
     def from_pebble_output(line: bytes):
-        service, startup, current, *_ = (
-            x.strip() for x in line.decode("utf-8").split()
-        )
+        service, startup, current, *_ = (x.strip() for x in line.decode("utf-8").split())
         return _Service(service, startup, current == "active")
 
     @property
@@ -275,8 +263,7 @@ def _parse_sources(sources: Optional[Sequence[str]]):
 
 def _collect_log_sources(target: Target, focus: Dict[str, List[str]]):
     found = {
-        container: get_services(target, container)
-        for container in get_container_names(target)
+        container: get_services(target, container) for container in get_container_names(target)
     }
 
     if not focus:
@@ -287,9 +274,7 @@ def _collect_log_sources(target: Target, focus: Dict[str, List[str]]):
 
         for container, services in focus.items():
             if container not in found:
-                logger.error(
-                    f"focused container {container!r} not found in {target.unit_name!r}"
-                )
+                logger.error(f"focused container {container!r} not found in {target.unit_name!r}")
                 continue
 
             if None in services:
@@ -327,9 +312,7 @@ def _collect_log_sources(target: Target, focus: Dict[str, List[str]]):
     return keep
 
 
-def make_pebble_layout(
-    target: Target, focus: Optional[List[str]], show_tree: bool = True
-):
+def make_pebble_layout(target: Target, focus: Optional[List[str]], show_tree: bool = True):
     containers_to_services = _collect_log_sources(target, focus=_parse_sources(focus))
 
     container_layouts = []
@@ -451,9 +434,7 @@ def _tail_logs(
 
 def tail_logs(
     target: str = typer.Argument("Target unit. For example: `prometheus-k8s/0`."),
-    refresh_rate: float = typer.Option(
-        DEFAULT_REFRESH_RATE, help="Refreshes per second (goal)."
-    ),
+    refresh_rate: float = typer.Option(DEFAULT_REFRESH_RATE, help="Refreshes per second (goal)."),
     include: str = typer.Option(
         "jpt",
         "-i",

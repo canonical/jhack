@@ -24,10 +24,8 @@ from jhack.scenario.state_to_dict import state_to_dict
         #     ]
         # ),
         State(containers=[Container("foo", can_connect=True)]),
-        State(networks={"foo": Network.default()}),
-        State(
-            relations=[Relation("foo"), PeerRelation("bar"), SubordinateRelation("baz")]
-        ),
+        State(networks={Network("foo")}),
+        State(relations=[Relation("foo"), PeerRelation("bar"), SubordinateRelation("baz")]),
     ),
 )
 def test_roundtrip(state):

@@ -21,9 +21,7 @@ def get_jhack_version():
         pyproject = JHACK_PROJECT_ROOT / "pyproject.toml"
         if pyproject.exists():
             jhack_version = (
-                toml.load(pyproject)
-                .get("project", {})
-                .get("version", "<unknown version>")
+                toml.load(pyproject).get("project", {}).get("version", "<unknown version>")
             )
         else:
             jhack_version = "<unknown version>"

@@ -73,9 +73,7 @@ def set_status(
         logger.warning("Cannot set app status to unknown. Only Juju can.")
     else:
         logger.info("applying app status...")
-        cmds.append(
-            f"status-set --application {app_status.name} {app_status.message!r}"
-        )
+        cmds.append(f"status-set --application {app_status.name} {app_status.message!r}")
 
     if app_version:
         logger.info("applying application version...")
@@ -215,21 +213,20 @@ def _gather_push_file_calls(
     for container in containers:
         mount: Mount
         for mount in container.mounts.values():
-            if not mount.src.exists():
+            if not mount.source.exists():
                 logger.error(f"mount source directory {mount.src} not found.")
                 continue
 
             mount_loc = Path(mount.location)
 
-            for root, _, files in os.walk(mount.src):
+            for root, _, files in os.walk(mount.source):
                 for file in files:
                     # `file` is the absolute path of the object as it would be on the
                     # container filesystem.
                     # we need to relativize it to the tempdir the mount is simulated by.
-                    # dest_path = Path(file).relative_to(mount.src)
+                    # dest_path = Path(file).relative_to(mount.source)
                     dest_path = (
-                        mount_loc.joinpath(*Path(root).relative_to(mount.src).parts)
-                        / file
+                        mount_loc.joinpath(*Path(root).relative_to(mount.source).parts) / file
                     )
                     src_path = Path(root) / file
                     cmds.append(f"juju scp{_model} {src_path} {target}:{dest_path}")

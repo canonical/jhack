@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jhack"
-version = "0.4.4.0.8"
+version = "0.4.4.0.10"
 requires-python = ">=3.10" # core24 supports up to 3.12 but data platform depends on 3.10
 authors = [
     { name = "Pietro Pasotti", email = "pietro.pasotti@canonical.com" }
@@ -15,8 +15,7 @@ requires-python= ">=3.11"
 keywords = ["juju", "hacks", "cli", "charm", "charming"]
 urls.Source = "https://github.com/canonical/jhack"
 dependencies = [
-    "ops-scenario(==6.1.6)",
-    "ops(==2.16.0)",
+    "ops[testing](==2.17.1)",
     "typer(==0.7.0)",
     "black",
     "rich(==13.3.0)",
@@ -32,6 +31,17 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Topic :: Utilities",
     "License :: OSI Approved :: Apache Software License",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "coverage[toml]",
+    "black",
+    "ruff",
+    "pyproject-flake8",
+    "pep8-naming",
+    "isort",
 ]
 
 [project.scripts]

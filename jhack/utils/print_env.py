@@ -35,9 +35,7 @@ def _gather_juju_snaps_versions(format: Format = FormatOption):
     local_snaps = []
     try:
         installed_snaps = get_output("snap list").splitlines()
-        juju_snaps = [
-            snap.split() for snap in installed_snaps if snap.startswith("juju")
-        ]
+        juju_snaps = [snap.split() for snap in installed_snaps if snap.startswith("juju")]
         for name, version, revision, channel, _owner, _notes in juju_snaps:
             local_snaps.append(
                 {
@@ -64,9 +62,7 @@ def _gather_juju_snaps_versions(format: Format = FormatOption):
     if format == Format.json:
         return versions
 
-    table = Table(
-        show_header=False, show_edge=False, show_lines=False, show_footer=False
-    )
+    table = Table(show_header=False, show_edge=False, show_lines=False, show_footer=False)
 
     for k, v in versions.items():
         table.add_row(k, v)
@@ -96,9 +92,7 @@ def print_env(format: Format = FormatOption):
         )
 
     python_v = sys.version_info
-    python_version = (
-        f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
-    )
+    python_version = f"{python_v.major}.{python_v.minor}.{python_v.micro} ({sys.executable})"
 
     multipass_version = get_multipass_version()
 

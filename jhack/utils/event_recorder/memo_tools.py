@@ -144,19 +144,13 @@ def inject_memoizer(source_file: Path, decorate: Dict[str, Dict[str, DecorateSpe
     for cls in filter(_should_decorate_class, atok.body):
 
         def _should_decorate_method(token: ast.AST):
-            return (
-                isinstance(token, ast.FunctionDef) and token.name in decorate[cls.name]
-            )
+            return isinstance(token, ast.FunctionDef) and token.name in decorate[cls.name]
 
         for method in filter(_should_decorate_method, cls.body):
-            existing_decorators = {
-                token.first_token.string for token in method.decorator_list
-            }
+            existing_decorators = {token.first_token.string for token in method.decorator_list}
             # only add the decorator if the function is not already decorated:
             if "memo" not in existing_decorators:
-                spec_token = decorate[cls.name][method.name].as_token(
-                    default_namespace=cls.name
-                )
+                spec_token = decorate[cls.name][method.name].as_token(default_namespace=cls.name)
                 method.decorator_list.append(spec_token)
 
     # horrible solution for a very weird issue nobody seems to care about

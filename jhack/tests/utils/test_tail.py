@@ -116,10 +116,16 @@ def _fake_log_proc(n):
 @pytest.fixture(params=(1, 2, 3, 4))
 def mock_stdout(request):
     n = request.param
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
-    ):
-        yield
+    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)):
+
+        def fake_find_leaders(apps, model=None):
+            return {app: f"{app}/0" for app in apps}
+
+        with patch(
+            "jhack.utils.tail_charms.find_leaders",
+            new=fake_find_leaders,
+        ):
+            yield
 
 
 @pytest.fixture(autouse=True)
@@ -148,9 +154,7 @@ def test_tail(deferrals, length, mock_stdout):
 @pytest.mark.parametrize("length", (3, 10, 100))
 @pytest.mark.parametrize("show_ns", (True, False))
 def test_with_real_trfk_log(deferrals, length, show_ns):
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
-    ):
+    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")):
         _tail_events(
             targets=["trfk/0"],
             length=length,
@@ -190,12 +194,6 @@ def test_jhack_fire_log():
 
 def test_defer_log():
     # scenario 5: jhack fire
-    lines = [
-        # we re-re-emit it and consume it when processing install
-        "unit-traefik-0: 12:04:20 DEBUG unit.traefik/0.juju-log Re-emitting deferred event <UpdateStatusEvent via TraefikIngressCharm/on/update_status[318]>.",
-        "unit-traefik-0: 12:04:20 INFO unit.traefik/0.juju-log Emitting Juju event install.",
-    ]
-
     proc = Processor([], show_defer=True)
 
     # we emit update status
@@ -280,9 +278,7 @@ def test_tail_with_file_input_and_output(tmp_path):
     ),
 )
 def test_tail_event_filter(pattern, log, match):
-    proc = Processor(
-        targets=[], event_filter_re=(re.compile(pattern) if pattern else None)
-    )
+    proc = Processor(targets=[], event_filter_re=(re.compile(pattern) if pattern else None))
     msg = proc.process(log)
     if match:
         assert msg
@@ -292,20 +288,18 @@ def test_tail_event_filter(pattern, log, match):
 
 def test_machine_log_with_subordinates():
     mock_uniter_events_only(False)
-    proc = _tail_events(
-        length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
-    )
-    units = {l.unit for l in proc._captured_logs}
+    proc = _tail_events(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
+    units = {log.unit for log in proc._captured_logs}
     assert len(units) == 4
 
-    assert [l.event for l in proc._captured_logs if l.unit == "mongodb/0"] == [
+    assert [log.event for log in proc._captured_logs if log.unit == "mongodb/0"] == [
         "testing_mock",
     ]  # mock event we added
-    assert [l.event for l in proc._captured_logs if l.unit == "ceil/0"] == [
+    assert [log.event for log in proc._captured_logs if log.unit == "ceil/0"] == [
         "testing_mock"
     ]  # mock event we added
     assert [
-        l.event for l in proc._captured_logs if l.unit == "prometheus-node-exporter/0"
+        log.event for log in proc._captured_logs if log.unit == "prometheus-node-exporter/0"
     ] == [
         "install",
         "juju_info_relation_created",
@@ -315,7 +309,7 @@ def test_machine_log_with_subordinates():
         "juju_info_relation_joined",
         "juju_info_relation_changed",
     ]
-    assert [l.event for l in proc._captured_logs if l.unit == "ubuntu/0"] == [
+    assert [log.event for log in proc._captured_logs if log.unit == "ubuntu/0"] == [
         "install",
         "leader_elected",
         "config_changed",
@@ -344,7 +338,7 @@ def test_machine_log_with_subordinates():
 def test_custom_event(line, expected_event):
     p = Processor([Target("prom", 1)])
     p.process(line)
-    assert [l for l in p._captured_logs if l.unit == "prom/1"]
+    assert [log for log in p._captured_logs if log.unit == "prom/1"]
 
 
 def test_borky_trfk_log_defer():
@@ -366,7 +360,7 @@ def test_trace_ids_relation_evt():
         "/on/ready_for_unit[14]>.",
     ):
         p.process(line)
-    evt = [l for l in p._captured_logs if l.unit == "prom/1"][0]
+    evt = [log for log in p._captured_logs if log.unit == "prom/1"][0]
     assert evt.trace_id == "12312321412412312321"
 
 
@@ -380,5 +374,5 @@ def test_trace_ids_no_relation_evt():
         "/on/ready_for_unit[14]>.",
     ):
         p.process(line)
-    evt = [l for l in p._captured_logs if l.unit == "prom/1"][0]
+    evt = [log for log in p._captured_logs if log.unit == "prom/1"][0]
     assert evt.trace_id == "12312321412412312321"

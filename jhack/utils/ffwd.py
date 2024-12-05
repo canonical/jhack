@@ -20,9 +20,7 @@ def fast_forward(
     ),
 ):
     """Temporarily speed up update-status hook interval."""
-    cmd = JPopen(
-        f"juju model-config update-status-hook-interval={fast_interval}s".split(" ")
-    )
+    cmd = JPopen(f"juju model-config update-status-hook-interval={fast_interval}s".split(" "))
     cmd.wait()
     start = datetime.datetime.now()
     ping = start
@@ -54,7 +52,5 @@ def fast_forward(
     except KeyboardInterrupt:
         print("(aborted)")
 
-    cmd = JPopen(
-        f"juju model-config " f"update-status-hook-interval={slow_interval}".split(" ")
-    )
+    cmd = JPopen(f"juju model-config " f"update-status-hook-interval={slow_interval}".split(" "))
     cmd.wait()

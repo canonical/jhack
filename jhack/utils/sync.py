@@ -71,9 +71,7 @@ def watch(
             try:
                 new_tstamp = os.path.getmtime(file)
             except FileNotFoundError:
-                logger.error(
-                    f"skipping sync for {file}: cannot stat (file does not exist)"
-                )
+                logger.error(f"skipping sync for {file}: cannot stat (file does not exist)")
                 return False
             if new_tstamp == old_tstamp:
                 logger.debug(f"timestamp unchanged {old_tstamp}")
@@ -97,9 +95,7 @@ def watch(
 
         if venv:
             # determine which local python packages have changed
-            changed_python_packages = (
-                file for file in venv_list if _check_changed(file)
-            )
+            changed_python_packages = (file for file in venv_list if _check_changed(file))
             if changed_python_packages:
                 on_change(changed_python_packages, True)
 
@@ -156,10 +152,7 @@ def _sync(
     status = juju_status(json=True)
     apps_status = status.get("applications")
     if not apps_status:
-        exit(
-            "no applications found in `juju status`. "
-            "Is the model still being spun up?"
-        )
+        exit("no applications found in `juju status`. " "Is the model still being spun up?")
 
     if not targets:
         local_charm_meta = Path.cwd() / "charmcraft.yaml"
@@ -172,18 +165,14 @@ def _sync(
 
         name = yaml.safe_load(local_charm_meta.read_text()).get("name")
         if not name:
-            name = yaml.safe_load((Path.cwd() / "metadata.yaml").read_text()).get(
-                "name"
-            )
+            name = yaml.safe_load((Path.cwd() / "metadata.yaml").read_text()).get("name")
             if not name:
                 exit(
                     "could not find name in charmcraft.yaml / metadata.yaml. "
                     "Specify a target manually."
                 )
 
-        targets = [
-            app for app, appmeta in apps_status.items() if appmeta["charm-name"] == name
-        ]
+        targets = [app for app, appmeta in apps_status.items() if appmeta["charm-name"] == name]
 
     if "*" in targets:
         targets = list(apps_status)
@@ -227,9 +216,7 @@ def _sync(
         loop.run_until_complete(asyncio.gather(*coros))
         print("Initial sync done.")
 
-    def on_change(
-        changed_files: typing.Iterable[typing.Union[str, Path]], is_venv: bool = False
-    ):
+    def on_change(changed_files: typing.Iterable[typing.Union[str, Path]], is_venv: bool = False):
         loop = asyncio.events.get_event_loop()
         loop.run_until_complete(
             asyncio.gather(
@@ -291,9 +278,7 @@ def sync(
         "If remote-root is `__venv__`, "
         "the remote path will be set to the charm's venv.",
     ),
-    container_name: str = typer.Option(
-        "charm", "--container", "-c", help="Container to scp to."
-    ),
+    container_name: str = typer.Option("charm", "--container", "-c", help="Container to scp to."),
     refresh_rate: float = typer.Option(
         1, "--refresh-rate", help="Rate at which we will check for changes, in seconds."
     ),
@@ -312,8 +297,7 @@ def sync(
         r".*\.py$",
         "--include-files",
         "-i",
-        help="A regex to filter the watchable files with. By defauly, we only sync *.py "
-        "files.",
+        help="A regex to filter the watchable files with. By defauly, we only sync *.py " "files.",
     ),
     skip_initial_sync: bool = typer.Option(
         None,
@@ -339,8 +323,7 @@ def sync(
     touch: List[Path] = typer.Option(
         None,
         "--touch",
-        help="Only push these files and exit. "
-        "Overrules --skip-initial-sync and --source-dirs",
+        help="Only push these files and exit. " "Overrules --skip-initial-sync and --source-dirs",
     ),
 ):
     """Syncs a local folder to a remote juju unit via juju scp.
@@ -407,13 +390,11 @@ async def push_to_remote_juju_unit(
             )
             return
 
-        remote_file_path = (remote_venv_root + pkg_path).format(
+        remote_file_path = (remote_venv_root + pkg_path).format(unit_id=unit_id, app=app)
+    else:
+        remote_file_path = (remote_root + str(file.absolute())[len(os.getcwd()) + 1 :]).format(
             unit_id=unit_id, app=app
         )
-    else:
-        remote_file_path = (
-            remote_root + str(file.absolute())[len(os.getcwd()) + 1 :]
-        ).format(unit_id=unit_id, app=app)
 
     push_file(
         unit,

@@ -32,13 +32,9 @@ def _mancioppi(
     _all = set(status["applications"])
 
     if unknown_excl := exclude.difference(_all):
-        exit(
-            f"unknown excludes: apps {unknown_excl} not found in model {model or '<current>'}"
-        )
+        exit(f"unknown excludes: apps {unknown_excl} not found in model {model or '<current>'}")
     if unknown_incl := include.difference(_all):
-        exit(
-            f"unknown includes: apps {unknown_incl} not found in model {model or '<current>'}"
-        )
+        exit(f"unknown includes: apps {unknown_incl} not found in model {model or '<current>'}")
 
     if include:
         targets = list(include)
@@ -96,9 +92,7 @@ def _mancioppi(
         return done
 
     if not dry_run:
-        check_destructive_commands_allowed(
-            "mancioppi", "juju add-unit | juju remove-unit"
-        )
+        check_destructive_commands_allowed("mancioppi", "juju add-unit | juju remove-unit")
 
     if reverse:
         one, two = down, up
@@ -127,19 +121,13 @@ def _mancioppi(
 
 def mancioppi(
     model: str = typer.Option(None, "--model", "-m", help="The model to Mancioppi."),
-    include: List[str] = typer.Option(
-        None, "--include", "-i", help="Mancioppi this app."
-    ),
-    exclude: List[str] = typer.Option(
-        None, "--exclude", "-e", help="Do not Mancioppi this app."
-    ),
+    include: List[str] = typer.Option(None, "--include", "-i", help="Mancioppi this app."),
+    exclude: List[str] = typer.Option(None, "--exclude", "-e", help="Do not Mancioppi this app."),
     step: int = typer.Option(2, "--step", "-s", help="Mancioppi steppi."),
     wait_user: bool = typer.Option(
         True, is_flag=True, help="Wait for user input before Demanciopping."
     ),
-    reverse: bool = typer.Option(
-        False, is_flag=True, help="First scale down, then up."
-    ),
+    reverse: bool = typer.Option(False, is_flag=True, help="First scale down, then up."),
     dry_run: bool = typer.Option(
         False,
         is_flag=True,

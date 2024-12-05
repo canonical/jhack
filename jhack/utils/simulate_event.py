@@ -46,9 +46,7 @@ juju_context_id = "JUJU_CONTEXT_ID"
 logger = jhack_logger.getChild("simulate_event")
 
 
-def _get_relation_id(
-    unit: str, endpoint: str, relation_remote_app: str = None, model: str = None
-):
+def _get_relation_id(unit: str, endpoint: str, relation_remote_app: str = None, model: str = None):
     unit = show_unit(unit, model=model)
     relation_info = unit.get("relation-info")
     if not relation_info:
@@ -118,9 +116,7 @@ def build_event_env(
 
         if relation_id is None:
             try:
-                relation_id = _get_relation_id(
-                    unit, endpoint, relation_remote_app, model=model
-                )
+                relation_id = _get_relation_id(unit, endpoint, relation_remote_app, model=model)
             except RuntimeError:
                 logger.warning(
                     f"failed to obtain a relation ID for a relation over {endpoint}. "
@@ -295,8 +291,7 @@ def build_event_env(
         for opt in override:
             if "=" not in opt:
                 logger.error(
-                    f"env option {opt!r} invalid: expected "
-                    f'"<key>=<value>"; skipping...'
+                    f"env option {opt!r} invalid: expected " f'"<key>=<value>"; skipping...'
                 )
                 continue
 
@@ -424,9 +419,7 @@ def _simulate_event(
     targets = [t.unit_name for t in parse_target(target, model=model)]
 
     if not targets:
-        sys.exit(
-            f"invalid target: {target!r} not found in {model or '<the current model>'}"
-        )
+        sys.exit(f"invalid target: {target!r} not found in {model or '<the current model>'}")
 
     cmds = tuple(
         _build_command(
@@ -557,9 +550,7 @@ def simulate_event(
         "E.g."
         " - fire foo-pebble-ready --env JUJU_DEPARTING_UNIT_NAME=remote/0 --env FOO=bar",
     ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
+    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
     dry_run: bool = typer.Option(
         None, help="Do nothing, print out what would have happened.", is_flag=True
     ),

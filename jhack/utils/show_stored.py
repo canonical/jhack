@@ -119,8 +119,7 @@ def _load_adapters(file: str):
             raise RuntimeError(f"unable to import {file} as a python module")
         if not hasattr(adapter_module, "adapters"):
             raise RuntimeError(
-                f"imported module {adapter_module} has no "
-                f"`adapters` variable defined."
+                f"imported module {adapter_module} has no " f"`adapters` variable defined."
             )
         adapters = adapter_module.adapters
         return adapters
@@ -184,9 +183,7 @@ class StorageView:
         elif adapter := self._builtin_adapters.get(snapshot_name):
             logger.info(f"found builtin adapter for {snapshot_name}: {adapter}")
         else:
-            logger.debug(
-                f"no specific path adapter found for {snapshot_name}: using builtin view"
-            )
+            logger.debug(f"no specific path adapter found for {snapshot_name}: using builtin view")
             adapter = view
         return adapter(snapshot_content)
 
@@ -209,9 +206,7 @@ class StorageView:
                 size += sum([get_size(k, seen) for k in obj.keys()])
             elif hasattr(obj, "__dict__"):
                 size += get_size(obj.__dict__, seen)
-            elif hasattr(obj, "__iter__") and not isinstance(
-                obj, (str, bytes, bytearray)
-            ):
+            elif hasattr(obj, "__iter__") and not isinstance(obj, (str, bytes, bytearray)):
                 size += sum([get_size(i, seen) for i in obj])
             return size
 
@@ -225,9 +220,7 @@ class StorageView:
         t.add_column(justify="right")
         t.add_column()
         t.add_row(Text("handle:", style="blue bold"), Text(snapshot, style="green"))
-        t.add_row(
-            Text("size:", style="blue bold"), Text(self._get_size(obj), style="red")
-        )
+        t.add_row(Text("size:", style="blue bold"), Text(self._get_size(obj), style="red"))
         return t
 
     def _render_snapshot(self, snapshot_name: str):
@@ -259,9 +252,7 @@ class StorageView:
         try:
             self.store = store = self.get_store(store_path)
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to parse SQLite storage file {store_path}: {e}"
-            ) from e
+            raise RuntimeError(f"Failed to parse SQLite storage file {store_path}: {e}") from e
 
         table = Table(title="stored data v0.1")
         contents = []
@@ -324,9 +315,7 @@ def get_local_storage(unit_name: str, model: str = None):
             proc.wait(10)
 
             if not proc.returncode == 0:
-                logger.error(
-                    f"failed to fetch db; command {cmd} exited with {proc.returncode}"
-                )
+                logger.error(f"failed to fetch db; command {cmd} exited with {proc.returncode}")
                 print(f"failed to fetch db; aborting. {proc.stderr.read()}")
                 return
             yield tf.name
@@ -345,9 +334,7 @@ def get_controller_storage(unit_name: str, model: str = None):
             proc.wait(10)
 
             if not proc.returncode == 0:
-                logger.error(
-                    f"failed to fetch db; command {cmd} exited with {proc.returncode}"
-                )
+                logger.error(f"failed to fetch db; command {cmd} exited with {proc.returncode}")
                 print(f"failed to fetch db; aborting. {proc.stderr.read()}")
                 return
 
@@ -432,8 +419,7 @@ def show_stored(
         False,
         "--cs",
         "--controller-storage",
-        help="Whether the target _unit_ uses controller storage "
-        "instead of local storage.",
+        help="Whether the target _unit_ uses controller storage " "instead of local storage.",
         is_flag=True,
     ),
     filter_: Optional[str] = typer.Option(
@@ -473,9 +459,7 @@ def show_stored(
         "--refresh-rate",
         help="How often the stored state view should be updated.",
     ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
+    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
 ):
     """Visualize the stored state attached to a Juju unit."""
     return _show_stored(

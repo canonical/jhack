@@ -59,9 +59,7 @@ class Runtime:
         install: bool = False,
     ):
         self._charm_type = charm_type
-        local_db_path = local_db_path or Path(
-            tempfile.NamedTemporaryFile(delete=False).name
-        )
+        local_db_path = local_db_path or Path(tempfile.NamedTemporaryFile(delete=False).name)
         local_db_path.touch(exist_ok=True)
 
         self._local_db_path = local_db_path
@@ -78,9 +76,7 @@ class Runtime:
     def load(self, unit: str, remote_db_path=None):
         """Fetch event db and charm metadata from the live unit."""
         logger.info(f"Fetching db from {unit}@~/{remote_db_path}.")
-        fetch_file(
-            unit, remote_db_path or self._remote_db_path, local_path=self._local_db_path
-        )
+        fetch_file(unit, remote_db_path or self._remote_db_path, local_path=self._local_db_path)
 
         if not self._meta:
             logger.info(f"Fetching metadata from {unit}.")
@@ -156,9 +152,7 @@ class Runtime:
         model_path = Path(model.__file__)
 
         if "from recorder import memo" not in model_path.read_text():
-            logger.error(
-                f"ops.model ({model_path} does not seem to import recorder.memo."
-            )
+            logger.error(f"ops.model ({model_path} does not seem to import recorder.memo.")
             return False
 
         try:
@@ -259,9 +253,7 @@ class Runtime:
             try:
                 charm = main(self._charm_type)
             except Exception as e:
-                raise RuntimeError(
-                    f"Uncaught error in operator/charm code: {e}."
-                ) from e
+                raise RuntimeError(f"Uncaught error in operator/charm code: {e}.") from e
 
         return charm, scene
 

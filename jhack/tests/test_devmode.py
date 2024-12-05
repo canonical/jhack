@@ -11,9 +11,7 @@ from jhack.conf.conf import CONFIG, _Reason, check_destructive_commands_allowed
 @pytest.mark.parametrize("env_yes", (True, False))
 def test_check_destructive_commands(conf_yes, user_yes, env_yes, monkeypatch):
     CONFIG._data = {
-        "general": {
-            "enable_destructive_commands_NO_PRODUCTION_zero_guarantees": conf_yes
-        }
+        "general": {"enable_destructive_commands_NO_PRODUCTION_zero_guarantees": conf_yes}
     }
     os.environ["JHACK_PROFILE"] = "devmode" if env_yes else ""
     monkeypatch.setattr("sys.stdin", io.StringIO("yes" if user_yes else "no"))

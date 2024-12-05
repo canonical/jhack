@@ -1,8 +1,8 @@
 def test_install():
     from jhack.scenario.integrations.darkroom import Darkroom
 
-    l = []
-    Darkroom.install(l)
+    logs = []
+    Darkroom.install(logs)
 
     import yaml
     from ops import CharmBase
@@ -22,8 +22,8 @@ def test_install():
     h.begin_with_initial_hooks()
     h.add_relation("foo", "remote2")
 
-    assert len(l) == 3
-    assert [len(x) for x in l] == [4, 5, 5]
-    assert l[0][1][0].name == "leader_settings_changed"
-    assert l[1][-1][0].name == "foo_relation_created"
-    assert l[2][-1][0].name == "foo_relation_created"
+    assert len(logs) == 3
+    assert [len(x) for x in logs] == [4, 5, 5]
+    assert logs[0][1][0].name == "leader_settings_changed"
+    assert logs[1][-1][0].name == "foo_relation_created"
+    assert logs[2][-1][0].name == "foo_relation_created"

@@ -15,9 +15,7 @@ logger = jhack_logger.getChild("provision")
 
 # we need the script to live in a location juju can access (juju 3.0 is strictly
 # confined, so this is the only safe location for now...)
-PROVISION_SCRIPT_TEMPFILE_PATH = Path(
-    "~/.local/share/juju/.provision_script.tmp"
-).expanduser()
+PROVISION_SCRIPT_TEMPFILE_PATH = Path("~/.local/share/juju/.provision_script.tmp").expanduser()
 _separator = ";"
 
 
@@ -68,8 +66,7 @@ def _provision_unit(
         logger.info("setting workload status to maintenance...")
         wl_status = status["applications"][app_name]["units"][unit]["workload-status"]
         proc = JPopen(
-            f"juju exec --unit {unit} -- status-set "
-            f"maintenance provisioning... &".split()
+            f"juju exec --unit {unit} -- status-set " f"maintenance provisioning... &".split()
         )
         proc.wait()
 
@@ -77,9 +74,7 @@ def _provision_unit(
         proc = JPopen(f"juju scp {tf_script.absolute()} {unit}:/provision".split())
         proc.wait()
 
-        container_arg = (
-            f" --container {container}" if (container and is_k8s_model(status)) else ""
-        )
+        container_arg = f" --container {container}" if (container and is_k8s_model(status)) else ""
         cmd = f"juju ssh{container_arg} {unit} /provision"
         logger.debug(f"cmd: {cmd}")
         proc = JPopen(cmd.split())
@@ -135,15 +130,11 @@ def list_apps(status):
 
 def _get_provisioner_targets(target: str, status: dict) -> Iterable[str]:
     if target is None:
-        return chain(
-            *(_get_provisioner_targets(app, status) for app in list_apps(status))
-        )
+        return chain(*(_get_provisioner_targets(app, status) for app in list_apps(status)))
     elif not target:
         return ()
     if _separator in target:
-        return chain(
-            *(_get_provisioner_targets(tgt, status) for tgt in target.split(_separator))
-        )
+        return chain(*(_get_provisioner_targets(tgt, status) for tgt in target.split(_separator)))
 
     is_app = identify(target, status) == "app"
     if is_app:
@@ -165,9 +156,7 @@ def _provision(
     targets = tuple(_get_provisioner_targets(target, status))
 
     if not dry_run:
-        check_destructive_commands_allowed(
-            "provision", f"would run {tf_script} on {targets}"
-        )
+        check_destructive_commands_allowed("provision", f"would run {tf_script} on {targets}")
 
     if dry_run:
         print(f"would run: {tf_script}")
