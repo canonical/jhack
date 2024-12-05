@@ -14,8 +14,7 @@ license.text = "Apache 2.0"
 keywords = ["juju", "hacks", "cli", "charm", "charming"]
 urls.Source = "https://github.com/canonical/jhack"
 dependencies = [
-    "ops-scenario(~=7.0)",
-    "ops(==2.16.0)",
+    "ops[testing](~=2.7.0)",
     "typer(==0.7.0)",
     "black",
     "rich(==13.3.0)",
@@ -31,6 +30,17 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Topic :: Utilities",
     "License :: OSI Approved :: Apache Software License",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "coverage[toml]",
+    "black",
+    "ruff",
+    "pyproject-flake8",
+    "pep8-naming",
+    "isort",
 ]
 
 [project.scripts]

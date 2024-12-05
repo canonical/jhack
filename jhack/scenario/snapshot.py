@@ -164,8 +164,7 @@ def bind_event_to_state(event: _Event, state: State):
 
     else:
         raise BindFailedError(
-            f"cannot bind {event}: only relation, secret, "
-            f"or workload events can be bound.",
+            f"cannot bind {event}: only relation, secret, " f"or workload events can be bound.",
         )
 
 

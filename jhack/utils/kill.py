@@ -28,17 +28,13 @@ def _get_running_hook(
         out = json.loads(getoutput(cmd))
     except JSONDecodeError:
         logger.debug(f"{cmd} didn't yield valid JSON, probably the unit doesn't exist.")
-        exit(
-            f"Failure retrieving running hook for {target.unit_name}; does the unit exist?"
-        )
+        exit(f"Failure retrieving running hook for {target.unit_name}; does the unit exist?")
 
     juju_unit_changes = [e for e in out if e["type"] == "juju-unit"]
     # ignore workload-set statuses
     last_change = juju_unit_changes[-1]
     if not last_change["status"] == "executing":
-        logger.error(
-            "charm doesn't appear to be executing anything ATM; we'll try anyway."
-        )
+        logger.error("charm doesn't appear to be executing anything ATM; we'll try anyway.")
         return "<whatever>"
 
     parts = last_change["message"].split()
@@ -68,9 +64,7 @@ def _install_dependencies(
         print("Installing dependencies...")
 
     try:
-        check_call(
-            shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-        )
+        check_call(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     except CalledProcessError:
         logger.exception(f"failed to install procps and gdb on {target.unit_name}")
         exit(1)
@@ -105,11 +99,7 @@ class _ProcInfo(NamedTuple):
 
     def safe_compare(self, other: "_ProcInfo"):
         """Compare outside cgroup boundary."""
-        return (
-            self.vsz == other.vsz
-            and self.time == other.time
-            and self.command == other.command
-        )
+        return self.vsz == other.vsz and self.time == other.time and self.command == other.command
 
 
 def _get_running_process_info(
@@ -122,9 +112,7 @@ def _get_running_process_info(
     if dry_run:
         print("would run:", cmd)
         return [
-            _ProcInfo.parse(
-                "root 7007 0.2 0.1 65280 56368 ? S 10:22 0:00 python3 ./src/charm.py"
-            )
+            _ProcInfo.parse("root 7007 0.2 0.1 65280 56368 ? S 10:22 0:00 python3 ./src/charm.py")
         ]
     else:
         print("Searching for charm process...")
@@ -212,9 +200,7 @@ def _get_host_pid(container_proc_info: _ProcInfo, dry_run: bool = False) -> int:
         exit(f"unable to find host PID for container process {container_proc_info!r}")
 
     if len(found) > 1:
-        exit(
-            f"cannot find unique host PID for container process {container_proc_info!r}"
-        )
+        exit(f"cannot find unique host PID for container process {container_proc_info!r}")
     return int(found[0])
 
 
@@ -231,15 +217,11 @@ def _kill(
     try:
         target = Target.from_name(target)
     except InvalidUnitNameError:
-        exit(
-            f"This command only works on units. Please pass a unit name, not {target!r}"
-        )
+        exit(f"This command only works on units. Please pass a unit name, not {target!r}")
 
     running_hook = _get_running_hook(target, model=model, dry_run=dry_run)
     if not running_hook and not dry_run:
-        logger.error(
-            "The charm isn't running any hook right now. We'll go on though..."
-        )
+        logger.error("The charm isn't running any hook right now. We'll go on though...")
 
     print(f"Preparing to interrupt the {running_hook} hook.")
 
@@ -248,9 +230,7 @@ def _kill(
     #     deps.append("gdb")
 
     _install_dependencies(deps, target, model, dry_run=dry_run)
-    pinfo = _get_running_process_info(
-        target, model, command_name=command_name, dry_run=dry_run
-    )
+    pinfo = _get_running_process_info(target, model, command_name=command_name, dry_run=dry_run)
 
     if not pinfo:
         exit(f"no charm process appears to be running on {target.unit_name}")
@@ -282,9 +262,7 @@ def _kill(
 
 
 def kill(
-    target: str = typer.Argument(
-        ..., help="Unit whose charm process should be murdered."
-    ),
+    target: str = typer.Argument(..., help="Unit whose charm process should be murdered."),
     model: Optional[str] = typer.Option(
         None, "--model", "-m", help="Model in which to apply this command."
     ),

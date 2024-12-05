@@ -60,8 +60,7 @@ def configure():
 
     if not snap_data or "jhack" not in snap_data:  # we could be in another snap
         logger.info(
-            "jhack running in unsnapped mode. "
-            "Skipping .local/share/juju configuration."
+            "jhack running in unsnapped mode. " "Skipping .local/share/juju configuration."
         )
     else:
         global IS_SNAPPED

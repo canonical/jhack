@@ -92,9 +92,7 @@ class Config:
                     logger.error(f"{item} not found in default config; invalid path")
                     raise
 
-                logger.info(
-                    f"{item} not found in user-config {self._path}; defaulting..."
-                )
+                logger.info(f"{item} not found in user-config {self._path}; defaulting...")
                 return self.get_default(*path)
         return data
 
@@ -159,12 +157,9 @@ def check_destructive_commands_allowed(
         logger.debug(f"operation {msg!r} allowed by devmode profile.")
         return _Allowed(_Reason.devmode_temp)
 
-    if not CONFIG.get(
-        "general", "enable_destructive_commands_NO_PRODUCTION_zero_guarantees"
-    ):
+    if not CONFIG.get("general", "enable_destructive_commands_NO_PRODUCTION_zero_guarantees"):
         preamble = (
-            "\n ** Jhack is now 'safe'! **\n"
-            "All dangerous commands require manual confirmation."
+            "\n ** Jhack is now 'safe'! **\n" "All dangerous commands require manual confirmation."
         )
 
         if CONFIG.is_default:
@@ -176,7 +171,9 @@ def check_destructive_commands_allowed(
         else:
             body = "If you know better, you can tune `~/.config/jhack/config.toml` to your needs."
 
-        closure = "See https://github.com/canonical/jhack?tab=readme-ov-file#enabling-devmode for more."
+        closure = (
+            "See https://github.com/canonical/jhack?tab=readme-ov-file#enabling-devmode for more."
+        )
 
         logger.warning("\n\n".join([preamble, body, closure]))
 
@@ -184,9 +181,7 @@ def check_destructive_commands_allowed(
             print(f"{msg!r} would run: \n\t {dry_run_cmd}")
 
         confirmation_msg = (
-            "confirm"
-            if dry_run_cmd
-            else "Proceed with this potentially world-ending command"
+            "confirm" if dry_run_cmd else "Proceed with this potentially world-ending command"
         )
         try:
             if not typer.confirm(confirmation_msg, default=False):

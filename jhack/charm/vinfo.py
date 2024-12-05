@@ -107,8 +107,7 @@ def _add_charm_lib_info(
 ):
     if check_outdated and not check_command_available("charmcraft"):
         logger.error(
-            "Cannot check outdated libs: "
-            "command unavailable: `charmcraft`. Is this a snap?"
+            "Cannot check outdated libs: " "command unavailable: `charmcraft`. Is this a snap?"
         )
         check_outdated = False
 
@@ -126,16 +125,12 @@ def _add_charm_lib_info(
             lib_info_ch = _check_outdated(owner)
             ch_lib_meta[owner] = {obj["library_name"]: obj for obj in lib_info_ch}
 
-    def _check_version(
-        owner: str, lib_name: str, version: Tuple[int, int]
-    ) -> OutdatedCheck:
+    def _check_version(owner: str, lib_name: str, version: Tuple[int, int]) -> OutdatedCheck:
         lib_path = f"charms.{owner}.v{version[0]}.{lib_name}"
         try:
             lib_meta = ch_lib_meta[owner][lib_name]
         except KeyError as e:
-            logger.warning(
-                f"Couldn't find {e} in charmcraft lib-info for {owner}.{lib_name}"
-            )
+            logger.warning(f"Couldn't find {e} in charmcraft lib-info for {owner}.{lib_name}")
             return OutdatedCheck(
                 SyncStatus.unknown, Text(_symbol_unknown, style="orange"), lib_path
             )
@@ -169,9 +164,7 @@ def _add_charm_lib_info(
         )
 
     for owner, version, lib_name, revision in libinfo:
-        description = (
-            Text(version, style="bold") + "." + Text(revision, style="default")
-        )
+        description = Text(version, style="bold") + "." + Text(revision, style="default")
 
         if check_outdated:
             description += "\t"
@@ -228,9 +221,7 @@ def _vinfo(
     if is_path is None:
         is_path = _is_path(target)
     if is_path and model:
-        logger.warning(
-            f"ignoring `model={model}` since the target appears to be a path."
-        )
+        logger.warning(f"ignoring `model={model}` since the target appears to be a path.")
 
     if is_path:
         target = Path(target)
@@ -280,9 +271,7 @@ def vinfo(
         is_flag=True,
     ),
     color: Optional[str] = ColorOption,
-    model: str = typer.Option(
-        None, "--model", "-m", help="Model in which to apply this command."
-    ),
+    model: str = typer.Option(None, "--model", "-m", help="Model in which to apply this command."),
 ):
     """Show version information of a charm and its charm libs."""
     _vinfo(

@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Facilities to convert json to State."""
+
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict
@@ -68,9 +69,7 @@ def _dict_to_network(value: Dict) -> Network:
 
 def _dict_to_container(value: Dict) -> Container:
     if layers := value.get("layers"):
-        value["layers"] = {
-            l_name: pebble.Layer(l_raw) for l_name, l_raw in layers.items()
-        }
+        value["layers"] = {l_name: pebble.Layer(l_raw) for l_name, l_raw in layers.items()}
     return Container(**value)
 
 

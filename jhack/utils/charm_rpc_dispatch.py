@@ -39,7 +39,9 @@ except ImportError:
 
     ctx = _JujuContext.from_dict(os.environ)
     _Dispatcher = partial(_Dispatcher, juju_context=ctx)
-    _get_charm_dir = lambda: ctx.charm_dir
+
+    def _get_charm_dir():
+        return ctx.charm_dir
 
 
 def _decode(expr: str) -> str:
@@ -68,14 +70,14 @@ def output(obj: Any):
 
     try:
         out = json.dumps(obj)
-    except:
+    except:  # noqa
         logger.error(f"failed serializing {obj} to json.")
         return
 
     try:
         of = Path(OUTPUT_PATH)
         of.write_text(out)
-    except:
+    except:  # noqa
         logger.error(f"failed writing to output path {OUTPUT_PATH}")
         return
 
@@ -90,9 +92,7 @@ def rpc(charm):
         # load module
         module = importlib.import_module(MODULE_NAME)
         entrypoint = getattr(module, ENTRYPOINT)
-        logger.debug(
-            f"found entrypoint {ENTRYPOINT!r} in crpc script. Invoking on charm..."
-        )
+        logger.debug(f"found entrypoint {ENTRYPOINT!r} in crpc script. Invoking on charm...")
         try:
             return entrypoint(charm)
         except Exception as e:  # noqa

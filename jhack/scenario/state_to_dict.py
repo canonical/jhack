@@ -3,6 +3,7 @@
 # See LICENSE file for licensing details.
 
 """Facilities to convert State to json."""
+
 from dataclasses import asdict, fields, is_dataclass
 from typing import TYPE_CHECKING, Dict
 

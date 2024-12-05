@@ -45,7 +45,6 @@ def _print_plan(targets: List[Target]):
     table = {target: _get_lobo_details(target) for target in targets}
     t = Table("unit", "lobotomy", "retry", "events", title="lobotomy plan")
     for target, (lobotomized, retry) in table.items():
-
         t.add_row(
             target.unit_name,
             Text(

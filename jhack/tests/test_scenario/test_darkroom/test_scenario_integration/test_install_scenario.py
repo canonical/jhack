@@ -4,8 +4,8 @@ import dataclasses
 def test_install():
     from jhack.scenario.integrations.darkroom import Darkroom
 
-    l = []
-    Darkroom.install(l)
+    logs = []
+    Darkroom.install(logs)
 
     from ops import CharmBase
     from scenario import Context, Relation, State
@@ -31,14 +31,14 @@ def test_install():
     s7_mod = dataclasses.replace(s7, relations=[foo])
     c.run(c.on.relation_changed(foo), s7_mod)
 
-    assert len(l) == 3
-    assert [len(x) for x in l] == [2, 2, 3]
+    assert len(logs) == 3
+    assert [len(x) for x in logs] == [2, 2, 3]
 
-    assert [s[0].name for s in l[0]] == ["start", "install"]
-    assert [s[0].name for s in l[1]] == ["start", "update_status"]
-    assert [s[0].name for s in l[2]] == ["start", "install", "foo_relation_changed"]
+    assert [s[0].name for s in logs[0]] == ["start", "install"]
+    assert [s[0].name for s in logs[1]] == ["start", "update_status"]
+    assert [s[0].name for s in logs[2]] == ["start", "install", "foo_relation_changed"]
 
     # states-in == states-out
-    assert [s[1] for s in l[0]] == [s1, s2]
-    assert [s[1] for s in l[1]] == [s3, s4]
-    assert [s[1] for s in l[2]] == [s5, s6, s7_mod]
+    assert [s[1] for s in logs[0]] == [s1, s2]
+    assert [s[1] for s in logs[1]] == [s3, s4]
+    assert [s[1] for s in logs[2]] == [s5, s6, s7_mod]

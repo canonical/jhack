@@ -73,9 +73,7 @@ def set_status(
         logger.warning("Cannot set app status to unknown. Only Juju can.")
     else:
         logger.info("applying app status...")
-        cmds.append(
-            f"status-set --application {app_status.name} {app_status.message!r}"
-        )
+        cmds.append(f"status-set --application {app_status.name} {app_status.message!r}")
 
     if app_version:
         logger.info("applying application version...")
@@ -228,8 +226,7 @@ def _gather_push_file_calls(
                     # we need to relativize it to the tempdir the mount is simulated by.
                     # dest_path = Path(file).relative_to(mount.source)
                     dest_path = (
-                        mount_loc.joinpath(*Path(root).relative_to(mount.source).parts)
-                        / file
+                        mount_loc.joinpath(*Path(root).relative_to(mount.source).parts) / file
                     )
                     src_path = Path(root) / file
                     cmds.append(f"juju scp{_model} {src_path} {target}:{dest_path}")

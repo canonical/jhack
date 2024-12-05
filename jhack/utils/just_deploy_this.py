@@ -11,9 +11,7 @@ from jhack.conf.conf import check_destructive_commands_allowed
 suffixes = ["-k8s", "-operator"]
 
 
-def _just_deploy_this(
-    path: Path, name: str = None, dry_run: bool = False, refresh: bool = False
-):
+def _just_deploy_this(path: Path, name: str = None, dry_run: bool = False, refresh: bool = False):
     if path.name.endswith(".charm"):
         charms = [path]
     else:
@@ -103,9 +101,7 @@ def just_deploy_this(
     dry_run: bool = typer.Option(
         False, help="Do nothing, print out what would have happened.", is_flag=True
     ),
-    refresh: bool = typer.Option(
-        False, help="Refresh instead of deploying", is_flag=True
-    ),
+    refresh: bool = typer.Option(False, help="Refresh instead of deploying", is_flag=True),
 ):
     """Just Deploy This. (Pretty please).
 

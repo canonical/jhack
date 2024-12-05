@@ -52,9 +52,7 @@ def _check_caching_policy(policy: _CachingPolicy) -> _CachingPolicy:
     if policy in {"strict", "loose"}:
         return policy
     else:
-        logger.warning(
-            f"invalid caching policy: {policy!r}. " f"defaulting to `strict`"
-        )
+        logger.warning(f"invalid caching policy: {policy!r}. " f"defaulting to `strict`")
     return "strict"
 
 
@@ -70,9 +68,7 @@ def _load_memo_mode() -> MemoModes:
         if not _PRINTED_MODE:
             print("MEMO: replaying")
     else:
-        warnings.warn(
-            f"[ERROR]: MEMO: invalid value ({val!r}). Defaulting to `record`."
-        )
+        warnings.warn(f"[ERROR]: MEMO: invalid value ({val!r}). Defaulting to `record`.")
         _PRINTED_MODE = True
         return "record"
 
@@ -114,16 +110,11 @@ def _log_memo(
     else:
         fn_repr = fn_name
 
-    log_fn(
-        f"@memo[{hit}]: replaying {fn_repr}(*{args}, **{kwargs})"
-        f"\n\t --> {trim}{trimmed}"
-    )
+    log_fn(f"@memo[{hit}]: replaying {fn_repr}(*{args}, **{kwargs})" f"\n\t --> {trim}{trimmed}")
 
 
 def _check_serializer(
-    serializer: Union[
-        SUPPORTED_SERIALIZERS, Tuple[SUPPORTED_SERIALIZERS, SUPPORTED_SERIALIZERS]
-    ]
+    serializer: Union[SUPPORTED_SERIALIZERS, Tuple[SUPPORTED_SERIALIZERS, SUPPORTED_SERIALIZERS]],
 ) -> Tuple[SUPPORTED_SERIALIZERS, SUPPORTED_SERIALIZERS]:
     if isinstance(serializer, str):
         input_serializer = output_serializer = serializer
@@ -132,14 +123,12 @@ def _check_serializer(
 
     if input_serializer not in SUPPORTED_SERIALIZERS_LIST:
         warnings.warn(
-            f"invalid input serializer name: {input_serializer}; "
-            f"falling back to `json`."
+            f"invalid input serializer name: {input_serializer}; " f"falling back to `json`."
         )
         input_serializer = "json"
     if output_serializer not in SUPPORTED_SERIALIZERS_LIST:
         warnings.warn(
-            f"invalid output serializer name: {input_serializer}; "
-            f"falling back to `json`."
+            f"invalid output serializer name: {input_serializer}; " f"falling back to `json`."
         )
         output_serializer = "json"
 
@@ -216,8 +205,7 @@ def memo(
                 elif method == "io":
                     if not hasattr(obj, "read"):
                         raise TypeError(
-                            "you can only serialize with `io` "
-                            "stuff that has a .read method."
+                            "you can only serialize with `io` " "stuff that has a .read method."
                         )
                     byt = pickle.dumps(obj.read())
                     return base64.b64encode(byt).decode("utf-8")
@@ -293,9 +281,7 @@ def memo(
                     try:
                         idx = int(idx)
                     except TypeError:
-                        raise RuntimeError(
-                            f"invalid idx: ({idx}); expecting an integer."
-                        )
+                        raise RuntimeError(f"invalid idx: ({idx}); expecting an integer.")
 
                     try:
                         memo = data.scenes[idx].context.memos[memo_name]
@@ -303,9 +289,7 @@ def memo(
                     except KeyError:
                         # if no memo is present for this function, that might mean that
                         # in the recorded session it was not called (this path is new!)
-                        warnings.warn(
-                            f"No memo found for {memo_name}: " f"this path must be new."
-                        )
+                        warnings.warn(f"No memo found for {memo_name}: " f"this path must be new.")
                         return propagate()
 
                     if not all(
@@ -313,14 +297,8 @@ def memo(
                             memo.caching_policy == caching_policy,
                             # loading from yaml makes it a list
                             (
-                                (
-                                    memo.serializer
-                                    == [input_serializer, output_serializer]
-                                )
-                                or (
-                                    memo.serializer
-                                    == (input_serializer, output_serializer)
-                                )
+                                (memo.serializer == [input_serializer, output_serializer])
+                                or (memo.serializer == (input_serializer, output_serializer))
                             ),
                         )
                     ):
@@ -332,12 +310,8 @@ def memo(
                             f"\tserializer: {memo.serializer} "
                             f"(vs {(input_serializer, output_serializer)!r})..."
                         )
-                        strict_caching = (
-                            _check_caching_policy(memo.caching_policy) == "strict"
-                        )
-                        input_serializer, output_serializer = _check_serializer(
-                            memo.serializer
-                        )
+                        strict_caching = _check_caching_policy(memo.caching_policy) == "strict"
+                        input_serializer, output_serializer = _check_serializer(memo.serializer)
 
                     # we serialize args and kwargs to compare them with the memoed ones
                     fn_args_kwargs = _dump((memo_args, kwargs), input_serializer)
@@ -491,9 +465,7 @@ class Context:
 
     @staticmethod
     def from_dict(obj: dict):
-        return Context(
-            memos={name: Memo(**content) for name, content in obj["memos"].items()}
-        )
+        return Context(memos={name: Memo(**content) for name, content in obj["memos"].items()})
 
 
 @dataclass

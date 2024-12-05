@@ -90,9 +90,7 @@ def test_memoizer_injection():
             decorate={
                 "_ModelBackend": {
                     "action_set": DecorateSpec(),
-                    "action_get": DecorateSpec(
-                        caching_policy="loose", serializer="pickle"
-                    ),
+                    "action_get": DecorateSpec(caching_policy="loose", serializer="pickle"),
                 },
                 "Foo": {
                     "bar": DecorateSpec(
@@ -164,15 +162,11 @@ def test_memoizer_replay():
                             f"{DEFAULT_NAMESPACE}.my_fn": Memo(
                                 calls=[
                                     [
-                                        json.dumps(
-                                            [[10], {"retval": 10, "foo": "bar"}]
-                                        ),
+                                        json.dumps([[10], {"retval": 10, "foo": "bar"}]),
                                         "20",
                                     ],
                                     [
-                                        json.dumps(
-                                            [[10], {"retval": 11, "foo": "baz"}]
-                                        ),
+                                        json.dumps([[10], {"retval": 11, "foo": "baz"}]),
                                         "21",
                                     ],
                                     [
@@ -196,9 +190,7 @@ def test_memoizer_replay():
         def _catch_log_call(_, *args, **kwargs):
             caught_calls.append((args, kwargs))
 
-        with patch(
-            "jhack.utils.event_recorder.recorder._log_memo", new=_catch_log_call
-        ):
+        with patch("jhack.utils.event_recorder.recorder._log_memo", new=_catch_log_call):
             assert my_fn(10, retval=10, foo="bar") == 20
             assert my_fn(10, retval=11, foo="baz") == 21
             assert my_fn(11, retval=10, foo="baq", a="b") == 22
@@ -277,9 +269,7 @@ def test_memoizer_classmethod_recording():
             ]
 
             # replace return_value for replay test
-            memos["foo.my_fn"].calls = [
-                [json.dumps([[10], {"retval": 10, "foo": "bar"}]), "20"]
-            ]
+            memos["foo.my_fn"].calls = [[json.dumps([[10], {"retval": 10, "foo": "bar"}]), "20"]]
 
         os.environ[MEMO_MODE_KEY] = "replay"
         assert f.my_fn(10, retval=10, foo="bar") == 20

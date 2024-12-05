@@ -21,13 +21,10 @@ def unbork_juju(
     unbork_juju_script = Path(__file__).parent / "unbork_juju.sh"
     if not unbork_juju_script.exists():
         raise RuntimeError(
-            f"unbork_juju script not found. Is it where it should be? "
-            f"{unbork_juju_script}"
+            f"unbork_juju script not found. Is it where it should be? " f"{unbork_juju_script}"
         )
     if not os.access(unbork_juju_script, os.X_OK):
-        raise RuntimeError(
-            "unbork_juju script is not executable. Ensure it has X permissions."
-        )
+        raise RuntimeError("unbork_juju script is not executable. Ensure it has X permissions.")
     if not unbork_juju_script.exists():
         raise RuntimeError(
             f"unable to locate unbork_juju shell script " f"({unbork_juju_script!r})"

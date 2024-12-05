@@ -32,9 +32,7 @@ BROKEN_ENV_KEYS = {
 
 def _check_installed(unit):
     if not _is_installed(unit):
-        sys.exit(
-            f"Recorder is not installed. Do so with `jhack replay install {unit}`."
-        )
+        sys.exit(f"Recorder is not installed. Do so with `jhack replay install {unit}`.")
 
 
 def fetch_db(unit: str, remote_path: str, local_path: Path = None):
@@ -72,9 +70,7 @@ def _list_events(unit: str, db_path=DEFAULT_DB_NAME):
         _print_events(temp_db_file)
 
 
-def list_events(
-    unit: str = typer.Argument(..., help="Target unit."), db_path=DEFAULT_DB_NAME
-):
+def list_events(unit: str = typer.Argument(..., help="Target unit."), db_path=DEFAULT_DB_NAME):
     """List the events that have been captured on the unit and are stored in the database."""
     _check_installed(unit)
     return _list_events(unit, db_path)
@@ -190,9 +186,7 @@ def _purge_db(unit: str, idxs: str, db_path: str):
             if idxs:
                 for idx in idxs.split(","):
                     scene = data.scenes.pop(int(idx))
-                    print(
-                        f"Purged scene {idx}: {scene.event.name} ({scene.event.datetime})"
-                    )
+                    print(f"Purged scene {idx}: {scene.event.name} ({scene.event.datetime})")
             else:
                 n_s = len(data.scenes)
                 data.scenes = []
@@ -229,15 +223,11 @@ def _copy_recorder_script(unit: str):
 def _inject_memoizer(unit: str):
     unit_sanitized = unit.replace("/", "-")
 
-    ops_model_path = (
-        f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/venv/ops/model.py"
-    )
+    ops_model_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/venv/ops/model.py"
     with modify_remote_file(unit, ops_model_path) as model_source:
         inject_memoizer(model_source, decorate=DECORATE_MODEL)
 
-    ops_pebble_path = (
-        f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/venv/ops/pebble.py"
-    )
+    ops_pebble_path = f"/var/lib/juju/agents/unit-{unit_sanitized}/charm/venv/ops/pebble.py"
     with modify_remote_file(unit, ops_pebble_path) as pebble_source:
         inject_memoizer(pebble_source, decorate=DECORATE_PEBBLE)
 
@@ -349,6 +339,4 @@ if __name__ == "__main__":
     ts = datetime.datetime(hour=14, minute=53, second=3, day=10, month=10, year=2022)
     isotime = ts.isoformat()
     print(isotime)
-    juju_log(
-        "indico/0", f"update_status ({isotime.split('T')[1]}) was replayed by jhack."
-    )
+    juju_log("indico/0", f"update_status ({isotime.split('T')[1]}) was replayed by jhack.")

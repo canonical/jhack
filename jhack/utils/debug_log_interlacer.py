@@ -39,10 +39,7 @@ class DebugLogInterlacer:
 
                 if match := self.line_pattern.parse(line):
                     this_timestamp = match.named["timestamp"]
-                    if (
-                        next_line_timestamp is None
-                        or this_timestamp < next_line_timestamp
-                    ):
+                    if next_line_timestamp is None or this_timestamp < next_line_timestamp:
                         next_line_timestamp = this_timestamp
                         next_line_file_index = i
                 else:

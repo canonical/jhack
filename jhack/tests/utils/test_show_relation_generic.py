@@ -124,9 +124,7 @@ def test_match_endpoint_peer(rel, ep1, ep2, match, flip, unit, endpoint1, endpoi
         (None, "kuzz", "promep", False, False),
     ),
 )
-def test_match_endpoint_peer_underspecified_endpoint(
-    unit, endpoint1, endpoint2, match, flip
-):
+def test_match_endpoint_peer_underspecified_endpoint(unit, endpoint1, endpoint2, match, flip):
     rel = Relation("prom", "promep", "prom", "promep", "_", RelationType.peer)
     ep1 = "prom"
     ep2 = "prom"

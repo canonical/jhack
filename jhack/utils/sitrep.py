@@ -105,9 +105,7 @@ _status_name_to_short = {
 
 
 class _StatusTree:
-    def __init__(
-        self, statuses: Iterable[_Status], color: RichSupportedColorOptions = "auto"
-    ):
+    def __init__(self, statuses: Iterable[_Status], color: RichSupportedColorOptions = "auto"):
         self._statuses = _statuses = list(statuses)
 
         tree = defaultdict(list)
@@ -188,19 +186,13 @@ def sitrep(
         ...,
         help="Target unit name.",
     ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
+    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
     fmt: _Format = typer.Option("pprint", "--format", help="Output format."),
-    app: bool = typer.Option(
-        False, "--app", is_flag=True, help="Use application status."
-    ),
+    app: bool = typer.Option(False, "--app", is_flag=True, help="Use application status."),
     color: Optional[str] = ColorOption,
 ):
     """Gathers the status of the unit and prints it out."""
-    return _get_status(
-        target=Target.from_name(target), model=model, fmt=fmt, app=app, color=color
-    )
+    return _get_status(target=Target.from_name(target), model=model, fmt=fmt, app=app, color=color)
 
 
 if __name__ == "__main__":

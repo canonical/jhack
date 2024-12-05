@@ -11,10 +11,10 @@ class MyCharm(CharmBase):
 
 def test_attach():
     h = Harness(MyCharm, meta=yaml.safe_dump(MyCharm.META))
-    l = []
-    Darkroom().attach(lambda e, s: l.append((e, s)))
+    logs = []
+    Darkroom().attach(lambda e, s: logs.append((e, s)))
     h.begin()
     h.add_relation("foo", "remote")
 
-    assert len(l) == 1
-    assert l[0][0].name == "foo_relation_created"
+    assert len(logs) == 1
+    assert logs[0][0].name == "foo_relation_created"

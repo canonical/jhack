@@ -39,14 +39,11 @@ def _supported_versions(implementations: Sequence[LibInfo]):
     if not implementations:
         return Text("<library not found>", style="dim red")
     return Text("|").join(
-        Text(f"{lib.version}.{lib.revision}", style="bold cyan")
-        for lib in implementations
+        Text(f"{lib.version}.{lib.revision}", style="bold cyan") for lib in implementations
     )
 
 
-def _implementations(
-    libinfos: Sequence[LibInfo], interface_name: str
-) -> Sequence[LibInfo]:
+def _implementations(libinfos: Sequence[LibInfo], interface_name: str) -> Sequence[LibInfo]:
     """List of LibInfos corresponding to libs that probably implement this interface.
 
     (based on their name)
@@ -123,9 +120,7 @@ def _render(
         for endpoint_name, (interface_name, remotes) in endpoints[role].items():
             if remotes:
                 try:
-                    remote_info = [
-                        ", ".join(remote["related-application"] for remote in remotes)
-                    ]
+                    remote_info = [", ".join(remote["related-application"] for remote in remotes)]
                 except Exception:
                     logger.error(
                         f"unable to get related-applications from remotes: {remotes}."
@@ -146,16 +141,12 @@ def _render(
 
                 # highlight libs owned by the app we're looking at
                 owner_color = "cyan" if _normalize(owner) == _normalize(app) else "blue"
-                owner_tag = Text(owner, style=f"{owner_color}") + Text(
-                    ":", style="default"
-                )
+                owner_tag = Text(owner, style=f"{owner_color}") + Text(":", style="default")
 
             else:
                 owner_tag = Text("")
 
-            endpoint_info = (
-                epinfo.get(role, {}).get(endpoint_name, None) if epinfo else None
-            )
+            endpoint_info = epinfo.get(role, {}).get(endpoint_name, None) if epinfo else None
 
             table.add_row(
                 Text(role, style="bold " + color) if first else None,
@@ -171,11 +162,7 @@ def _render(
                         if "i" in extra_fields
                         else []
                     )
-                    + (
-                        [_supported_versions(implementations)]
-                        if "v" in extra_fields
-                        else []
-                    )
+                    + ([_supported_versions(implementations)] if "v" in extra_fields else [])
                     + (remote_info or ["-"] if "b" in extra_fields else [])
                     + (
                         [_description(endpoint_info, role, endpoint_name)]
@@ -195,9 +182,7 @@ def _render(
         first = True
         for binding in endpoints["peers"]:
             endpoint_info = (
-                epinfo.get("peers", {}).get(binding.provider_endpoint, None)
-                if epinfo
-                else None
+                epinfo.get("peers", {}).get(binding.provider_endpoint, None) if epinfo else None
             )
 
             row = (
@@ -241,9 +226,7 @@ def _list_endpoints(
 
     extra_fields = extra_fields or []
     libinfo = get_libinfo(app, model) if "v" in extra_fields else ()
-    epinfo = (
-        get_epinfo(app, model) if ("d" in extra_fields or "r" in extra_fields) else ()
-    )
+    epinfo = get_epinfo(app, model) if ("d" in extra_fields or "r" in extra_fields) else ()
 
     c = Console(color_system=color)
     c.print(_render(endpoints, libinfo, epinfo, app, extra_fields))
@@ -286,9 +269,7 @@ def list_endpoints(
         is_flag=True,
         help="Show endpoint descriptions as defined in the charmcraft yaml.",
     ),
-    model: str = typer.Option(
-        None, "--model", "-m", help="Model in which to apply this command."
-    ),
+    model: str = typer.Option(None, "--model", "-m", help="Model in which to apply this command."),
     color: Optional[str] = ColorOption,
 ):
     """Display the available integration endpoints."""

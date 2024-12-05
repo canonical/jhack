@@ -46,7 +46,9 @@ def _patch_machine(
     model: Optional[str],
     dry_run: bool = False,
 ):
-    systemctl_cmd = f"sudo systemctl {'start' if apply else 'stop'} jujud-machine-{unit.machine_id}.service"
+    systemctl_cmd = (
+        f"sudo systemctl {'start' if apply else 'stop'} jujud-machine-{unit.machine_id}.service"
+    )
     _model = f" {model}" if model else ""
     cmd = f"juju ssh{_model} {unit.unit_name} {systemctl_cmd}"
     logger.debug(f"stopping {unit} with {cmd}")
@@ -105,9 +107,7 @@ def timeout(seconds, raise_=False):
         signal.alarm(0)
 
 
-JHACK_MOCK_SERVER_LOCAL_PATH = (
-    Path(__file__).parent / "mock_health_server" / "server.py"
-)
+JHACK_MOCK_SERVER_LOCAL_PATH = Path(__file__).parent / "mock_health_server" / "server.py"
 assert JHACK_MOCK_SERVER_LOCAL_PATH.exists(), JHACK_MOCK_SERVER_LOCAL_PATH
 
 JHACK_MOCK_SERVER_REMOTE_PATH = "/jhack_mock_liveness_server.py"
@@ -192,18 +192,18 @@ def _patch_k8s(
             dry_run=dry_run,
         )
 
-    logger.debug(
-        f"adding layer and {'starting' if apply else 'killing'} mock server..."
-    )
+    logger.debug(f"adding layer and {'starting' if apply else 'killing'} mock server...")
 
     add_layer = f"/charm/bin/pebble add {'jhackdo' if threshold==THRESH_HIGH else 'jhackundo'} --combine {LAYER_REMOTE_PATH}"
     # if applying patch: stop container-agent, start server
     # if lifting patch: other way 'round
-    containeragent_cmd = (
-        f"/charm/bin/pebble {'stop' if apply else 'start'} container-agent"
+    containeragent_cmd = f"/charm/bin/pebble {'stop' if apply else 'start'} container-agent"
+    server_cmd_pebble = (
+        f"/charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME_PEBBLE}"
     )
-    server_cmd_pebble = f"/charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME_PEBBLE}"
-    server_cmd_k8s = f"/charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME_K8S}"
+    server_cmd_k8s = (
+        f"/charm/bin/pebble {'start' if apply else 'stop'} {MOCK_SERVER_SERVICE_NAME_K8S}"
+    )
     cmd = [
         "juju",
         "ssh",
@@ -235,9 +235,7 @@ def _patch_k8s(
             )
 
 
-def _leader_set(
-    target: Target, model: Optional[str] = None, cleanup=True, dry_run: bool = False
-):
+def _leader_set(target: Target, model: Optional[str] = None, cleanup=True, dry_run: bool = False):
     substrate = get_substrate(model)
     units = get_units(target.app, model=model)
     if not units:
@@ -318,9 +316,7 @@ def _leader_set(
 
 
 def leader_set(
-    target: str = typer.Argument(
-        None, help="Unit you want to elect. " "Example: traefik/0."
-    ),
+    target: str = typer.Argument(None, help="Unit you want to elect. " "Example: traefik/0."),
     model: Optional[str] = typer.Option(
         None, "-m", "--model", help="The model. Defaults to current model."
     ),

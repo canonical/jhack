@@ -105,8 +105,7 @@ def gather_endpoints(
 
         if include_peers:
             app_eps["peers"] = [
-                PeerBinding(ep, spec["interface"])
-                for ep, spec in meta.get("peers", {}).items()
+                PeerBinding(ep, spec["interface"]) for ep, spec in meta.get("peers", {}).items()
             ]
 
         eps[app_name] = app_eps
