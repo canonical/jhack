@@ -8,6 +8,7 @@ from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.model.jujucli import Juju, Status
 from jhack.blackpearl.blackpearl.view.helpers import get_color
 from jhack.utils.integrate import IntegrationMatrix
+from jhack.helpers import show_application
 
 logger = bp_logger.getChild(__file__)
 
@@ -32,6 +33,9 @@ class BPModel:
                 if model.name == model_name:
                     return model
         raise NotFoundError(model_name)
+
+    def show_application(self, app_name: str, model: str):
+        return show_application(app_name, model=model)
 
 
 class JujuController:

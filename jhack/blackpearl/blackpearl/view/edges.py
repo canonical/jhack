@@ -4,8 +4,8 @@ from typing import Union
 import math
 import typing
 from enum import Enum
-from nodeeditor.node_scene import Scene
-from nodeeditor.node_serializable import Serializable
+from jhack.blackpearl.nodeeditor.node_scene import Scene
+from jhack.blackpearl.nodeeditor.node_serializable import Serializable
 from qtpy.QtCore import Qt, QRectF, QPointF
 from qtpy.QtGui import QColor, QPen, QPainterPath, QPolygonF
 from qtpy.QtWidgets import (

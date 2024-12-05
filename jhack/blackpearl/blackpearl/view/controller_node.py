@@ -12,9 +12,9 @@ from jhack.blackpearl.blackpearl.model.model import JujuController
 from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
 from jhack.blackpearl.blackpearl.view.helpers import get_color
 from jhack.blackpearl.blackpearl.view.node import NodeBase, GrNodeBase
-from nodeeditor.node_graphics_node import QDMGraphicsNode
-from nodeeditor.node_scene import Scene
-from nodeeditor.node_serializable import Serializable
+from jhack.blackpearl.nodeeditor.node_graphics_node import QDMGraphicsNode
+from jhack.blackpearl.nodeeditor.node_scene import Scene
+from jhack.blackpearl.nodeeditor.node_serializable import Serializable
 
 
 class ControllerNode(NodeBase):

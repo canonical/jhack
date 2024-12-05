@@ -1,16 +1,11 @@
 import itertools
-
 import typing
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
-from jhack.helpers import show_application
 from jhack.blackpearl.blackpearl.model.model import (
     BPModel,
     JujuApp,
-    JujuModel,
-    JujuController,
 )
-
 from jhack.utils.helpers.gather_endpoints import RelationBinding, PeerBinding
 
 if typing.TYPE_CHECKING:
@@ -46,7 +41,7 @@ class BPController:
                     try:
                         app = JujuApp(
                             app_name,
-                            show_application(app_name, model=model.name),
+                            self._model.show_application(app_name, model=model.name),
                             model=model,
                         )
                     except:

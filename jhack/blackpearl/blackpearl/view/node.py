@@ -1,11 +1,11 @@
 import typing
 from qtpy.QtGui import QDragMoveEvent
 
-from nodeeditor.node_graphics_node import QDMGraphicsNode
-from nodeeditor.node_node import Node
+from jhack.blackpearl.nodeeditor.node_graphics_node import QDMGraphicsNode
+from jhack.blackpearl.nodeeditor.node_node import Node
 
 if typing.TYPE_CHECKING:
-    from nodeeditor.node_scene import Scene
+    from jhack.blackpearl.nodeeditor.node_scene import Scene
 
 
 class NodeBase(Node):

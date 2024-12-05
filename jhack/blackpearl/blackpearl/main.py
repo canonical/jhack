@@ -12,6 +12,7 @@ from jhack.blackpearl.blackpearl.logger import bp_logger
 
 from jhack.blackpearl.blackpearl.controller.controller import BPController
 from jhack.blackpearl.blackpearl.model.model import BPModel
+from jhack.blackpearl.blackpearl.model.testing import TestingBPModel
 from jhack.blackpearl.blackpearl.view.view import BPView
 
 logger = bp_logger.getChild(__file__)
@@ -22,7 +23,8 @@ class Blackpearl:
 
     def __init__(self, models: List[str] | None = None):
         self.view = BPView()
-        self.model = BPModel(models=models)
+        # self.model = BPModel(models=models)
+        self.model = TestingBPModel(models=models)
         self.controller = BPController(view=self.view, model=self.model)
 
 

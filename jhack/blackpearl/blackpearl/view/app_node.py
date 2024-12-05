@@ -1,21 +1,21 @@
 from collections import OrderedDict
 
 import typing
-from PyQt6.QtCore import QPointF
-from PyQt6.QtGui import QPen
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from qtpy.QtCore import QPointF
+from qtpy.QtGui import QPen
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QLabel
 
 from jhack.blackpearl.blackpearl.model.model import JujuApp
 from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
 from jhack.blackpearl.blackpearl.view.helpers import get_color
 from jhack.blackpearl.blackpearl.view.node import NodeBase, GrNodeBase
-from nodeeditor.node_graphics_node import QDMGraphicsNode
-from nodeeditor.node_scene import Scene
-from nodeeditor.node_serializable import Serializable
+from jhack.blackpearl.nodeeditor.node_graphics_node import QDMGraphicsNode
+from jhack.blackpearl.nodeeditor.node_scene import Scene
+from jhack.blackpearl.nodeeditor.node_serializable import Serializable
 
 
 if typing.TYPE_CHECKING:
-    from nodeeditor.node_scene import Scene
+    from jhack.blackpearl.nodeeditor.node_scene import Scene
     from jhack.blackpearl.blackpearl.model.model import JujuApp
 
 

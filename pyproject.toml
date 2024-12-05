@@ -11,9 +11,10 @@ authors = [
 ]
 description = "Chock-full of Juju hackery."
 license.text = "Apache 2.0"
-requires-python= ">=3.11"
+
 keywords = ["juju", "hacks", "cli", "charm", "charming"]
 urls.Source = "https://github.com/canonical/jhack"
+
 dependencies = [
     "ops[testing](==2.17.1)",
     "typer(==0.7.0)",
@@ -26,7 +27,10 @@ dependencies = [
     "asttokens",
     "astunparse",
     "toml",
+    "PyQt6",
+    "QtPy(>=1.9.0)"
 ]
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Topic :: Utilities",

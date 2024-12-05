@@ -272,7 +272,7 @@ wheels = [
 
 [[package]]
 name = "jhack"
-version = "0.4.4.0.9"
+version = "0.4.4.0.10"
 source = { editable = "." }
 dependencies = [
     { name = "asttokens" },
@@ -280,6 +280,7 @@ dependencies = [
     { name = "black" },
     { name = "ops", extra = ["testing"] },
     { name = "parse" },
+    { name = "qtpy" },
     { name = "requests" },
     { name = "requests-unixsocket" },
     { name = "rich" },
@@ -307,11 +308,12 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'" },
     { name = "coverage", extras = ["toml"], marker = "extra == 'dev'" },
     { name = "isort", marker = "extra == 'dev'" },
-    { name = "ops", extras = ["testing"], specifier = ">=2.17.1" },
+    { name = "ops", extras = ["testing"], specifier = "==2.17.1" },
     { name = "parse", specifier = "==1.19.0" },
     { name = "pep8-naming", marker = "extra == 'dev'" },
     { name = "pyproject-flake8", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'dev'" },
+    { name = "qtpy", specifier = ">=1.9.0" },
     { name = "requests", specifier = "==2.29.0" },
     { name = "requests-unixsocket", specifier = "==0.3.0" },
     { name = "rich", specifier = "==13.3.0" },
@@ -547,6 +549,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fe/0f/25911a9f080464c59fab9027482f822b86bf0608957a5fcc6eaac85aa515/PyYAML-6.0.2-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:68ccc6023a3400877818152ad9a1033e3db8625d899c72eacb5a668902e4d652", size = 751597 },
     { url = "https://files.pythonhosted.org/packages/14/0d/e2c3b43bbce3cf6bd97c840b46088a3031085179e596d4929729d8d68270/PyYAML-6.0.2-cp313-cp313-win32.whl", hash = "sha256:bc2fa7c6b47d6bc618dd7fb02ef6fdedb1090ec036abab80d4681424b84c1183", size = 140527 },
     { url = "https://files.pythonhosted.org/packages/fa/de/02b54f42487e3d3c6efb3f89428677074ca7bf43aae402517bc7cca949f3/PyYAML-6.0.2-cp313-cp313-win_amd64.whl", hash = "sha256:8388ee1976c416731879ac16da0aff3f63b286ffdd57cdeb95f3f2e085687563", size = 156446 },
+]
+
+[[package]]
+name = "qtpy"
+version = "2.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e5/10/51e0e50dd1e4a160c54ac0717b8ff11b2063d441e721c2037f61931cf38d/qtpy-2.4.2.tar.gz", hash = "sha256:9d6ec91a587cc1495eaebd23130f7619afa5cdd34a277acb87735b4ad7c65156", size = 66849 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/0c/58a1e48209b0b1220ca2368435573f39ff1fa3577b7eef913f8960c5d429/QtPy-2.4.2-py3-none-any.whl", hash = "sha256:5a696b1dd7a354cb330657da1d17c20c2190c72d4888ba923f8461da67aa1a1c", size = 95155 },
 ]
 
 [[package]]

@@ -18,9 +18,9 @@ from jhack.blackpearl.blackpearl.view.app_node import AppNode
 from jhack.blackpearl.blackpearl.view.controller_node import ControllerNode
 from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
 from jhack.blackpearl.blackpearl.view.model_node import ModelNode
-from nodeeditor.node_editor_widget import NodeEditorWidget
-from nodeeditor.node_editor_window import NodeEditorWindow
-from nodeeditor.utils import loadStylesheets
+from jhack.blackpearl.nodeeditor.node_editor_widget import NodeEditorWidget
+from jhack.blackpearl.nodeeditor.node_editor_window import NodeEditorWindow
+from jhack.blackpearl.nodeeditor.utils import loadStylesheets
 
 if typing.TYPE_CHECKING:
     from jhack.blackpearl.blackpearl.model.model import JujuApp
