@@ -59,7 +59,9 @@ import ops
 import scenario
 import yaml
 from ops import CharmBase, EventBase
+
 from ops._private.harness import _TestingModelBackend
+
 from ops.model import ModelError, SecretRotate, _ModelBackend
 from scenario import (
     Container,
@@ -202,7 +204,9 @@ class Darkroom:
             charm_spec = _CharmSpec(
                 charm_type,
                 meta=yaml.safe_load(meta.read_text()),
-                actions=(yaml.safe_load(actions.read_text()) if actions.exists() else None),
+                actions=(
+                    yaml.safe_load(actions.read_text()) if actions.exists() else None
+                ),
                 config=yaml.safe_load(config.read_text()) if config.exists() else None,
             )
         except Exception as e:
