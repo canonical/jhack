@@ -251,12 +251,12 @@ class SceneHistory:
 
             # first clear all selection on nodes
             for node in self.scene.nodes:
-                node.grNode.setSelected(False)
+                node.gr_node.setSelected(False)
             # now restore selected nodes from history_stamp
             for node_id in history_stamp["selection"]["nodes"]:
                 for node in self.scene.nodes:
                     if node.id == node_id:
-                        node.grNode.setSelected(True)
+                        node.gr_node.setSelected(True)
                         break
 
             current_selection = self.captureCurrentSelection()
@@ -264,7 +264,7 @@ class SceneHistory:
                 print("selected nodes after restore:", current_selection["nodes"])
 
             # reset the last_selected_items - since we're comparing change to the last_selected state
-            self.scene._last_selected_items = self.scene.getSelectedItems()
+            self.scene._last_selected_items = self.scene.get_selected_items()
 
             # if the selection of nodes differ before and after restoration, set flag
             if (

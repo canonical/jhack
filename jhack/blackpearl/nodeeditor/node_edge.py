@@ -63,7 +63,7 @@ class Edge(Serializable):
         # create Graphics Edge instance
         self.grEdge = self.createEdgeClassInstance()
 
-        self.scene.addEdge(self)
+        self.scene.add_edge(self)
 
     def __str__(self):
         return "<Edge %s..%s -- S:%s E:%s>" % (
@@ -92,9 +92,9 @@ class Edge(Serializable):
 
         # assign new start socket
         self._start_socket = value
-        # addEdge to the Socket class
+        # add_edge to the Socket class
         if self.start_socket is not None:
-            self.start_socket.addEdge(self)
+            self.start_socket.add_edge(self)
 
     @property
     def end_socket(self):
@@ -115,9 +115,9 @@ class Edge(Serializable):
 
         # assign new end socket
         self._end_socket = value
-        # addEdge to the Socket class
+        # add_edge to the Socket class
         if self.end_socket is not None:
-            self.end_socket.addEdge(self)
+            self.end_socket.add_edge(self)
 
     @property
     def edge_type(self):
@@ -221,13 +221,13 @@ class Edge(Serializable):
         This should be called if you update ``Edge`` positions.
         """
         source_pos = self.start_socket.getSocketPosition()
-        source_pos[0] += self.start_socket.node.grNode.pos().x()
-        source_pos[1] += self.start_socket.node.grNode.pos().y()
+        source_pos[0] += self.start_socket.node.gr_node.pos().x()
+        source_pos[1] += self.start_socket.node.gr_node.pos().y()
         self.grEdge.setSource(*source_pos)
         if self.end_socket is not None:
             end_pos = self.end_socket.getSocketPosition()
-            end_pos[0] += self.end_socket.node.grNode.pos().x()
-            end_pos[1] += self.end_socket.node.grNode.pos().y()
+            end_pos[0] += self.end_socket.node.gr_node.pos().x()
+            end_pos[1] += self.end_socket.node.gr_node.pos().y()
             self.grEdge.setDestination(*end_pos)
         else:
             self.grEdge.setDestination(*source_pos)

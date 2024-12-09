@@ -1,5 +1,6 @@
 import itertools
 import typing
+from multiprocessing.managers import Value
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.model.model import (
@@ -73,6 +74,18 @@ class BPController:
                                     relation,
                                 )
                             )
+                        else:
+                            raise ValueError(relation)
 
-        view.spread()
+            # now we've added all models, we can add cross-model relations
+            for model in controller.models:
+                model.collect_cmrs()
+                for cmr in model.cmrs:
+                    # fixme: could be provider or requirer
+                    app1 = self._view.find_app(model, cmr.provider_app)
+                    model2 = self._view.find_model(cmr.requirer_model, controller)
+                    app2 = self._view.find_app(model2.model, cmr.requirer_app)
+                    self._view.add_cmr(app1, app2, cmr)
+
         view.bind_all()
+        view.spread()

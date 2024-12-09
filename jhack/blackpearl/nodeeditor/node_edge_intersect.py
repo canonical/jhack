@@ -91,11 +91,11 @@ class EdgeIntersect:
         :return: `QRectF` describing node's position and area
         :rtype: `QRectF`
         """
-        nodePos = node.grNode.scenePos()
+        nodePos = node.gr_node.scenePos()
         x = nodePos.x()
         y = nodePos.y()
-        w = node.grNode.width
-        h = node.grNode.height
+        w = node.gr_node.width
+        h = node.gr_node.height
         return QRectF(x, y, w, h)
 
     def update(self, scene_pos_x: float, scene_pos_y: float):

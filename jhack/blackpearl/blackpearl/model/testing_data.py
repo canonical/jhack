@@ -1,60 +1,71 @@
-from jhack.utils.helpers.gather_endpoints import PeerBinding, RelationBinding
+from jhack.utils.helpers.gather_endpoints import (
+    RelationBinding,
+    RelationEndpoint,
+    PeerBinding,
+)
 
 SAMPLE_MATRIX = [
     [
         [
             PeerBinding(
-                provider_endpoint="replicas",
+                app="alertmanager",
+                model="svcgraph",
+                endpoint="replicas",
                 interface="alertmanager_replica",
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="alertmanager",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-dashboard",
                 interface="grafana_dashboard",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-dashboard",
-                active=True,
             ),
             RelationBinding(
+                provider_app="alertmanager",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-source",
                 interface="grafana_datasource",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-source",
-                active=True,
             ),
         ],
         [],
         [
             RelationBinding(
+                provider_app="alertmanager",
                 provider_model="svcgraph",
                 provider_endpoint="alerting",
                 interface="alertmanager_dispatch",
+                requirer_app="loki",
                 requirer_model="svcgraph",
                 requirer_endpoint="alertmanager",
-                active=True,
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="alertmanager",
                 provider_model="svcgraph",
                 provider_endpoint="alerting",
                 interface="alertmanager_dispatch",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="alertmanager",
-                active=True,
             ),
             RelationBinding(
+                provider_app="alertmanager",
                 provider_model="svcgraph",
                 provider_endpoint="self-metrics-endpoint",
                 interface="prometheus_scrape",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="metrics-endpoint",
-                active=True,
             ),
         ],
         [],
@@ -65,45 +76,56 @@ SAMPLE_MATRIX = [
     [
         [
             RelationBinding(
+                provider_app="catalogue",
                 provider_model="svcgraph",
                 provider_endpoint="catalogue",
                 interface="catalogue",
+                requirer_app="alertmanager",
                 requirer_model="svcgraph",
                 requirer_endpoint="catalogue",
-                active=True,
             )
         ],
-        [PeerBinding(provider_endpoint="replicas", interface="catalogue_replica")],
+        [
+            PeerBinding(
+                app="catalogue",
+                model="svcgraph",
+                endpoint="replicas",
+                interface="catalogue_replica",
+            )
+        ],
         [
             RelationBinding(
+                provider_app="catalogue",
                 provider_model="svcgraph",
                 provider_endpoint="catalogue",
                 interface="catalogue",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="catalogue",
-                active=True,
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="catalogue",
                 provider_model="svcgraph",
                 provider_endpoint="catalogue",
                 interface="catalogue",
+                requirer_app="loki",
                 requirer_model="svcgraph",
                 requirer_endpoint="catalogue",
-                active=True,
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="catalogue",
                 provider_model="svcgraph",
                 provider_endpoint="catalogue",
                 interface="catalogue",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="catalogue",
-                active=True,
             )
         ],
         [],
@@ -115,20 +137,31 @@ SAMPLE_MATRIX = [
         [],
         [],
         [
-            PeerBinding(provider_endpoint="grafana", interface="grafana_peers"),
-            PeerBinding(provider_endpoint="replicas", interface="grafana_replicas"),
+            PeerBinding(
+                app="grafana",
+                model="svcgraph",
+                endpoint="grafana",
+                interface="grafana_peers",
+            ),
+            PeerBinding(
+                app="grafana",
+                model="svcgraph",
+                endpoint="replicas",
+                interface="grafana_replicas",
+            ),
         ],
         [],
         [],
         [],
         [
             RelationBinding(
+                provider_app="grafana",
                 provider_model="svcgraph",
                 provider_endpoint="metrics-endpoint",
                 interface="prometheus_scrape",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="metrics-endpoint",
-                active=True,
             )
         ],
         [],
@@ -145,12 +178,13 @@ SAMPLE_MATRIX = [
         [],
         [
             RelationBinding(
+                provider_app="istio-beacon-k8s",
                 provider_model="svcgraph",
                 provider_endpoint="metrics-endpoint",
                 interface="prometheus_scrape",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="metrics-endpoint",
-                active=True,
             )
         ],
         [],
@@ -163,54 +197,66 @@ SAMPLE_MATRIX = [
         [],
         [
             RelationBinding(
+                provider_app="loki",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-dashboard",
                 interface="grafana_dashboard",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-dashboard",
-                active=True,
             ),
             RelationBinding(
+                provider_app="loki",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-source",
                 interface="grafana_datasource",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-source",
-                active=True,
             ),
         ],
         [],
-        [PeerBinding(provider_endpoint="replicas", interface="loki_replica")],
+        [
+            PeerBinding(
+                app="loki",
+                model="svcgraph",
+                endpoint="replicas",
+                interface="loki_replica",
+            )
+        ],
         [],
         [
             RelationBinding(
+                provider_app="loki",
                 provider_model="svcgraph",
                 provider_endpoint="metrics-endpoint",
                 interface="prometheus_scrape",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="metrics-endpoint",
-                active=True,
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="loki",
                 provider_model="svcgraph",
                 provider_endpoint="logging",
                 interface="loki_push_api",
+                requirer_app="tempo",
                 requirer_model="svcgraph",
                 requirer_endpoint="logging",
-                active=True,
             )
         ],
         [
             RelationBinding(
+                provider_app="loki",
                 provider_model="svcgraph",
                 provider_endpoint="logging",
                 interface="loki_push_api",
+                requirer_app="traefik",
                 requirer_model="svcgraph",
                 requirer_endpoint="logging",
-                active=True,
             )
         ],
         [],
@@ -220,12 +266,13 @@ SAMPLE_MATRIX = [
         [],
         [
             RelationBinding(
+                provider_app="minio",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-dashboard",
                 interface="grafana_dashboard",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-dashboard",
-                active=True,
             )
         ],
         [],
@@ -233,12 +280,13 @@ SAMPLE_MATRIX = [
         [],
         [
             RelationBinding(
+                provider_app="minio",
                 provider_model="svcgraph",
                 provider_endpoint="metrics-endpoint",
                 interface="prometheus_scrape",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="metrics-endpoint",
-                active=True,
             )
         ],
         [],
@@ -251,20 +299,22 @@ SAMPLE_MATRIX = [
         [],
         [
             RelationBinding(
+                provider_app="prometheus",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-dashboard",
                 interface="grafana_dashboard",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-dashboard",
-                active=True,
             ),
             RelationBinding(
+                provider_app="prometheus",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-source",
                 interface="grafana_datasource",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-source",
-                active=True,
             ),
         ],
         [],
@@ -272,19 +322,22 @@ SAMPLE_MATRIX = [
         [],
         [
             PeerBinding(
-                provider_endpoint="prometheus-peers",
+                app="prometheus",
+                model="svcgraph",
+                endpoint="prometheus-peers",
                 interface="prometheus_peers",
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="prometheus",
                 provider_model="svcgraph",
                 provider_endpoint="receive-remote-write",
                 interface="prometheus_remote_write",
+                requirer_app="tempo",
                 requirer_model="svcgraph",
                 requirer_endpoint="send-remote-write",
-                active=True,
             )
         ],
         [],
@@ -300,18 +353,21 @@ SAMPLE_MATRIX = [
         [],
         [
             PeerBinding(
-                provider_endpoint="s3-integrator-peers",
+                app="s3",
+                model="svcgraph",
+                endpoint="s3-integrator-peers",
                 interface="s3-integrator-peers",
             )
         ],
         [
             RelationBinding(
+                provider_app="s3",
                 provider_model="svcgraph",
                 provider_endpoint="s3-credentials",
                 interface="s3",
+                requirer_app="tempo",
                 requirer_model="svcgraph",
                 requirer_endpoint="s3",
-                active=True,
             )
         ],
         [],
@@ -320,209 +376,241 @@ SAMPLE_MATRIX = [
     [
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="alertmanager",
                 requirer_model="svcgraph",
                 requirer_endpoint="tracing",
-                active=True,
             )
         ],
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="catalogue",
                 requirer_model="svcgraph",
                 requirer_endpoint="tracing",
-                active=True,
             )
         ],
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-dashboard",
                 interface="grafana_dashboard",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-dashboard",
-                active=True,
             ),
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-source",
                 interface="grafana_datasource",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-source",
-                active=True,
             ),
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="tracing",
-                active=True,
             ),
         ],
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="istio-beacon-k8s",
                 requirer_model="svcgraph",
                 requirer_endpoint="charm-tracing",
-                active=True,
             )
         ],
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="loki",
                 requirer_model="svcgraph",
                 requirer_endpoint="tracing",
-                active=True,
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="metrics-endpoint",
                 interface="prometheus_scrape",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="metrics-endpoint",
-                active=True,
             ),
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="charm-tracing",
-                active=True,
             ),
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="workload-tracing",
-                active=True,
             ),
         ],
         [],
-        [PeerBinding(provider_endpoint="peers", interface="tempo_peers")],
+        [
+            PeerBinding(
+                app="tempo", model="svcgraph", endpoint="peers", interface="tempo_peers"
+            )
+        ],
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="traefik",
                 requirer_model="svcgraph",
                 requirer_endpoint="charm-tracing",
-                active=True,
             ),
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tracing",
                 interface="tracing",
+                requirer_app="traefik",
                 requirer_model="svcgraph",
                 requirer_endpoint="workload-tracing",
-                active=True,
             ),
         ],
         [
             RelationBinding(
+                provider_app="tempo",
                 provider_model="svcgraph",
                 provider_endpoint="tempo-cluster",
                 interface="tempo_cluster",
+                requirer_app="worker",
                 requirer_model="svcgraph",
                 requirer_endpoint="tempo-cluster",
-                active=True,
             )
         ],
     ],
     [
         [
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="ingress",
                 interface="ingress",
+                requirer_app="alertmanager",
                 requirer_model="svcgraph",
                 requirer_endpoint="ingress",
-                active=True,
             )
         ],
         [
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="ingress",
                 interface="ingress",
+                requirer_app="catalogue",
                 requirer_model="svcgraph",
                 requirer_endpoint="ingress",
-                active=True,
             )
         ],
         [
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="grafana-dashboard",
                 interface="grafana_dashboard",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="grafana-dashboard",
-                active=True,
             ),
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="traefik-route",
                 interface="traefik_route",
+                requirer_app="grafana",
                 requirer_model="svcgraph",
                 requirer_endpoint="ingress",
-                active=True,
             ),
         ],
         [],
         [
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="ingress-per-unit",
                 interface="ingress_per_unit",
+                requirer_app="loki",
                 requirer_model="svcgraph",
                 requirer_endpoint="ingress",
-                active=True,
             )
         ],
         [],
         [
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="ingress-per-unit",
                 interface="ingress_per_unit",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="ingress",
-                active=True,
             ),
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="metrics-endpoint",
                 interface="prometheus_scrape",
+                requirer_app="prometheus",
                 requirer_model="svcgraph",
                 requirer_endpoint="metrics-endpoint",
-                active=True,
             ),
         ],
         [],
         [
             RelationBinding(
+                provider_app="traefik",
                 provider_model="svcgraph",
                 provider_endpoint="traefik-route",
                 interface="traefik_route",
+                requirer_app="tempo",
                 requirer_model="svcgraph",
                 requirer_endpoint="ingress",
-                active=True,
             )
         ],
-        [PeerBinding(provider_endpoint="peers", interface="traefik_peers")],
+        [
+            PeerBinding(
+                app="traefik",
+                model="svcgraph",
+                endpoint="peers",
+                interface="traefik_peers",
+            )
+        ],
         [],
     ],
     [[], [], [], [], [], [], [], [], [], [], []],

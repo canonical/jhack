@@ -160,7 +160,7 @@ class Socket(Serializable):
         """
         return edge in self.edges
 
-    def addEdge(self, edge: "Edge"):
+    def add_edge(self, edge: "Edge"):
         """
         Append an Edge to the list of connected Edges
 

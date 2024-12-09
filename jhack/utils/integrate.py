@@ -3,6 +3,7 @@ import re
 import time
 from collections import defaultdict
 from functools import partial
+from multiprocessing.managers import Value
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import typer
@@ -28,6 +29,8 @@ from jhack.utils.helpers.gather_endpoints import (
     PeerBinding,
     RelationBinding,
     gather_endpoints,
+    build_matrix,
+    RelationEndpoint,
 )
 
 logger = jhack_logger.getChild("integrate")
@@ -100,73 +103,9 @@ class IntegrationMatrix:
         self,
     ) -> List[List[Union[List[PeerBinding], List[RelationBinding]]]]:
         logger.info(f"gathering imatrix for {self._model}...")
-
-        apps = self.apps
-        mtrx = [[[] for _ in range(len(apps))] for _ in range(len(apps))]
-        model = self._model
-
-        for provider, requirer in self._pairs():
-            prov_idx = apps.index(provider)
-            req_idx = apps.index(requirer)
-
-            if provider == requirer:
-                if self._include_peers:
-                    mtrx[prov_idx][req_idx] = self._endpoints[provider].get(
-                        "peers"
-                    )  # PeerBinding
-                continue
-
-            provides = self._endpoints[provider]["provides"]
-            requires = self._endpoints[requirer]["requires"]
-
-            # mapping from each supported interface to the endpoints using that interface,
-            # for the requirer.
-            requirer_interfaces_to_endpoints = defaultdict(list)
-            for endpoint, (interface, connected_provider_endpoints) in requires.items():
-                requirer_interfaces_to_endpoints[interface].append(
-                    (endpoint, connected_provider_endpoints)
-                )
-
-            shared: List[RelationBinding] = []
-
-            for provider_endpoint, (
-                interface,
-                connected_requirer_endpoints,
-            ) in provides.items():
-                requirer_endpoints_for_interface = requirer_interfaces_to_endpoints[
-                    interface
-                ]
-                connected_requirers = [
-                    obj["related-application"] for obj in connected_requirer_endpoints
-                ]
-
-                for (
-                    requirer_endpoint,
-                    connected_provider_endpoints,
-                ) in requirer_endpoints_for_interface:
-                    connected_providers = [
-                        obj["related-application"]
-                        for obj in connected_provider_endpoints
-                    ]
-                    active = (requirer in connected_requirers) and (
-                        provider in connected_providers
-                    )
-                    shared.append(
-                        RelationBinding(
-                            provider_model=model,
-                            provider_endpoint=provider_endpoint,
-                            interface=interface,
-                            requirer_model=model,
-                            requirer_endpoint=requirer_endpoint,
-                            active=active,
-                        )
-                    )
-
-            # sort by interface name first, provider endpoint, requirer endpoint, status then.
-            shared = sorted(shared, key=lambda foo: (foo[1], foo[0], foo[2], foo[3]))
-
-            mtrx[prov_idx][req_idx].extend(shared)
-        return mtrx
+        return build_matrix(
+            self._endpoints, model=self._model, include_peers=self._include_peers
+        )
 
     def _render_cell(self, provider_idx: int, requirer_idx: int):
         # this is our cell
@@ -212,17 +151,22 @@ class IntegrationMatrix:
                 return t
 
             for binding in bindings:
-                if binding.active:
+                if isinstance(binding, RelationBinding):
                     symtail, symhead = ">-", "->"
                     color = self.active_cell_text_style
-                else:
+                    prov, req = binding.provider_endpoint, binding.requirer_endpoint
+                elif isinstance(binding, PeerBinding):
+                    symtail, symhead = ">-", "-<"
+                    color = self.active_cell_text_style
+                    prov, req = binding.endpoint, binding.endpoint
+                elif isinstance(binding, RelationEndpoint):
                     symtail, symhead = "X-", "-X"
                     color = self.inactive_cell_text_style
+                    prov, req = binding.endpoint, binding.endpoint
+                else:
+                    raise ValueError(binding)
 
-                fmt_obj = (
-                    f"{binding.provider_endpoint} {symtail}[{binding.interface}]{symhead} "
-                    f"{binding.requirer_endpoint}"
-                )
+                fmt_obj = f"{prov} {symtail}[{binding.interface}]{symhead} {req}"
                 t.add_row(Text(fmt_obj, style=color))
             return t
 
@@ -316,14 +260,15 @@ class IntegrationMatrix:
         for (prov_idx, req_idx), bindings in self._cells(
             skip_diagonal=True, yield_indices=True
         ):
-            binding: RelationBinding
+            binding: Union[RelationBinding, RelationEndpoint]
             for binding in bindings:
                 prov = self.apps[prov_idx]
                 req = self.apps[req_idx]
 
                 if active in {True, False}:
                     # only include if the interface is currently not at the desired state
-                    if binding.active is not active:
+                    binding_active = isinstance(binding, RelationBinding)
+                    if binding_active is not active:
                         logger.debug(
                             f"skipping {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> "
                             f"{req}:{binding.requirer_endpoint} "

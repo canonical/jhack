@@ -50,7 +50,7 @@ def get_color(color: ColorType):
                     if isinstance(mapped_color, str)
                     else QColor(*mapped_color)
                 )
-    raise RuntimeError(f"invalid input: unable to map {color} to QColor.")
+    raise RuntimeError(f"invalid input: unable to map {color!r} to QColor.")
 
 
 class Color(QWidget):

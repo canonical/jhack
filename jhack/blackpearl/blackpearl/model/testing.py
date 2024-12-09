@@ -7,11 +7,10 @@ from typing import (
 )
 from unittest.mock import MagicMock
 
-from build.lib.jhack.utils.helpers.gather_endpoints import RelationBinding
 from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.model.model import JujuModel, JujuController, BPModel
 from jhack.blackpearl.blackpearl.model.testing_data import SAMPLE_MATRIX
-from jhack.utils.helpers.gather_endpoints import PeerBinding
+from jhack.utils.helpers.gather_endpoints import PeerBinding, RelationBinding
 
 logger = bp_logger.getChild(__file__)
 
@@ -23,44 +22,74 @@ class TestingBPModel(BPModel):
         controllers: Optional[Sequence[str]] = None,
     ):
         self._apps = {
-            "alertmanager": {},
-            "catalogue": {},
-            "grafana": {},
-            "istio-beacon-k8s": {},
-            "loki": {},
-            "minio": {},
-            "prometheus": {},
-            "s3": {},
-            "tempo": {},
-            "traefik": {},
-            "worker": {},
+            "model1": {
+                "alertmanager": {},
+                "catalogue": {},
+                "grafana": {},
+                "istio-beacon-k8s": {},
+                "loki": {},
+                "minio": {},
+                "prometheus": {},
+                "s3": {},
+                "tempo": {"charm-name": "tempo-coordinator-k8s"},
+                "traefik": {},
+                "worker": {},
+            },
+            "model2": {
+                "alertmanager": {},
+                "catalogue": {},
+                "grafana": {},
+                "istio-beacon-k8s": {},
+                "loki": {},
+                "minio": {},
+                "prometheus": {},
+                "s3": {},
+                "tempo": {},
+                "traefik": {},
+                "worker": {},
+            },
         }
         controller = TestingJujuController(
             "controller1",
-            apps=list(self._apps),
-            matrix=SAMPLE_MATRIX,
+            apps=self._apps,
+            matrices={"model1": SAMPLE_MATRIX, "model2": SAMPLE_MATRIX},
+            cmrs={
+                "model1": [
+                    RelationBinding(
+                        provider_app="alertmanager",
+                        provider_model="model1",
+                        provider_endpoint="grafana-dashboard",
+                        interface="grafana_dashboard",
+                        requirer_app="tempo",
+                        requirer_model="model2",
+                        requirer_endpoint="grafana-dashboard",
+                    ),
+                ]
+            },
         )
         self.controllers = [controller]
 
     def show_application(self, app_name: str, model: str):
-        return self._apps[app_name]
+        return self._apps[model][app_name]
 
 
 class TestingJujuModel(JujuModel):
     def __init__(
         self,
+        name: str,
         apps: Iterable[str],
         matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]],
+        cmrs: List[RelationBinding],
         controller,
     ):
         super().__init__(
             meta={
-                "short-name": "foo",
-                "name": "foo",
+                "short-name": name,
+                "name": name,
                 "type": "k8s",
                 "life": "alive",
                 "model-uuid": "1234",
-                "model-name": "foo",
+                "model-name": name,
                 "cloud": "foo",
                 "region": "foo",
                 "owner": "foo",
@@ -69,6 +98,10 @@ class TestingJujuModel(JujuModel):
         )
         self._matrix = matrix
         self._apps = list(apps)
+        self._cmrs = cmrs
+
+    def collect_cmrs(self):
+        self.cmrs = self._cmrs
 
     @property
     def imatrix(self):
@@ -90,6 +123,11 @@ class TestingJujuModel(JujuModel):
 
 
 class TestingJujuController(JujuController):
-    def __init__(self, name: str, apps, matrix):
+    def __init__(self, name: str, apps, matrices, cmrs):
         super().__init__(name, meta={"uuid": "123", "current-model": "foo"})
-        self.models = [TestingJujuModel(apps, matrix, self)]
+        self.models = [
+            TestingJujuModel(
+                mname, apps[mname], matrices[mname], cmrs.get(mname, []), self
+            )
+            for mname in apps
+        ]

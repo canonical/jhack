@@ -1,7 +1,8 @@
 from functools import partial
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 import typer
+from black.trans import defaultdict
 from rich.color import Color
 from rich.console import Console
 from rich.style import Style
@@ -15,12 +16,15 @@ from jhack.helpers import (
     get_epinfo,
     get_libinfo,
     juju_version,
+    Relation,
 )
 from jhack.logger import logger as jhack_logger
 from jhack.utils.helpers.gather_endpoints import (
     AppEndpoints,
     PeerBinding,
     gather_endpoints,
+    RelationEndpoint,
+    RelationBinding,
 )
 
 logger = jhack_logger.getChild("endpoints")
@@ -39,11 +43,14 @@ def _supported_versions(implementations: Sequence[LibInfo]):
     if not implementations:
         return Text("<library not found>", style="dim red")
     return Text("|").join(
-        Text(f"{lib.version}.{lib.revision}", style="bold cyan") for lib in implementations
+        Text(f"{lib.version}.{lib.revision}", style="bold cyan")
+        for lib in implementations
     )
 
 
-def _implementations(libinfos: Sequence[LibInfo], interface_name: str) -> Sequence[LibInfo]:
+def _implementations(
+    libinfos: Sequence[LibInfo], interface_name: str
+) -> Sequence[LibInfo]:
     """List of LibInfos corresponding to libs that probably implement this interface.
 
     (based on their name)
@@ -117,20 +124,33 @@ def _render(
 
     for role, color in zip(("requires", "provides"), ("green", "blue")):
         first = True
-        for endpoint_name, (interface_name, remotes) in endpoints[role].items():
-            if remotes:
-                try:
-                    remote_info = [", ".join(remote["related-application"] for remote in remotes)]
-                except Exception:
-                    logger.error(
-                        f"unable to get related-applications from remotes: {remotes}."
-                        f"This should be possible in juju {juju_version().version}."
-                    )
-                    remote_info = [_UNSUPPORTED_JUJU_BOUND]
+        bindings: List[Union[RelationEndpoint, RelationBinding]] = getattr(
+            endpoints, role
+        )
 
+        # mapping from endpoints of this app (str) to RelationEndpoint and RelationBinding
+        remotes: Dict[
+            str, List[Union[RelationEndpoint, RelationBinding]]
+        ] = defaultdict(list)
+
+        for b in bindings:
+            if isinstance(b, RelationEndpoint):
+                remotes[b.endpoint].append(b)
             else:
-                remote_info = []
+                if b.provider_app == app:
+                    remotes[b.provider_endpoint].append(b)
+                else:
+                    remotes[b.requirer_endpoint].append(b)
 
+        for endpoint_name, bindings in remotes.items():
+            remote_info = [
+                ", ".join(
+                    binding.other_app(app)
+                    for binding in bindings
+                    if isinstance(binding, RelationBinding)
+                )
+            ]
+            interface_name = bindings[0].interface
             implementations = _implementations(libinfo, interface_name)
 
             if libinfo:
@@ -141,12 +161,16 @@ def _render(
 
                 # highlight libs owned by the app we're looking at
                 owner_color = "cyan" if _normalize(owner) == _normalize(app) else "blue"
-                owner_tag = Text(owner, style=f"{owner_color}") + Text(":", style="default")
+                owner_tag = Text(owner, style=f"{owner_color}") + Text(
+                    ":", style="default"
+                )
 
             else:
                 owner_tag = Text("")
 
-            endpoint_info = epinfo.get(role, {}).get(endpoint_name, None) if epinfo else None
+            endpoint_info = (
+                epinfo.get(role, {}).get(endpoint_name, None) if epinfo else None
+            )
 
             table.add_row(
                 Text(role, style="bold " + color) if first else None,
@@ -162,7 +186,11 @@ def _render(
                         if "i" in extra_fields
                         else []
                     )
-                    + ([_supported_versions(implementations)] if "v" in extra_fields else [])
+                    + (
+                        [_supported_versions(implementations)]
+                        if "v" in extra_fields
+                        else []
+                    )
                     + (remote_info or ["-"] if "b" in extra_fields else [])
                     + (
                         [_description(endpoint_info, role, endpoint_name)]
@@ -177,18 +205,18 @@ def _render(
             table.add_section()
 
     table.add_section()
-    if endpoints["peers"]:
+    if endpoints.peers:
         binding: PeerBinding
         first = True
-        for binding in endpoints["peers"]:
+        for binding in endpoints.peers:
             endpoint_info = (
-                epinfo.get("peers", {}).get(binding.provider_endpoint, None) if epinfo else None
+                epinfo.get("peers", {}).get(binding.endpoint, None) if epinfo else None
             )
 
             row = (
                 [
                     Text("peers", style="bold yellow") if first else None,
-                    binding.provider_endpoint,
+                    binding.endpoint,
                 ]
                 + ([Text("n/a", style="dim")] if "r" in extra_fields else [])
                 + ([binding.interface] if "i" in extra_fields else [])
@@ -226,7 +254,9 @@ def _list_endpoints(
 
     extra_fields = extra_fields or []
     libinfo = get_libinfo(app, model) if "v" in extra_fields else ()
-    epinfo = get_epinfo(app, model) if ("d" in extra_fields or "r" in extra_fields) else ()
+    epinfo = (
+        get_epinfo(app, model) if ("d" in extra_fields or "r" in extra_fields) else ()
+    )
 
     c = Console(color_system=color)
     c.print(_render(endpoints, libinfo, epinfo, app, extra_fields))
@@ -269,7 +299,9 @@ def list_endpoints(
         is_flag=True,
         help="Show endpoint descriptions as defined in the charmcraft yaml.",
     ),
-    model: str = typer.Option(None, "--model", "-m", help="Model in which to apply this command."),
+    model: str = typer.Option(
+        None, "--model", "-m", help="Model in which to apply this command."
+    ),
     color: Optional[str] = ColorOption,
 ):
     """Display the available integration endpoints."""

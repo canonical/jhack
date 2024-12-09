@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-import os
 
 import sys
+from typing import List
 
 import typer
 from qtpy.QtWidgets import QApplication
-from typing import List
-
-from jhack.blackpearl.blackpearl.logger import bp_logger
-
 
 from jhack.blackpearl.blackpearl.controller.controller import BPController
-from jhack.blackpearl.blackpearl.model.model import BPModel
+from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.model.testing import TestingBPModel
 from jhack.blackpearl.blackpearl.view.view import BPView
 

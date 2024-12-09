@@ -1,26 +1,24 @@
 from collections import OrderedDict
-from typing import Union
 
-import math
 import typing
 from enum import Enum
+
+from jhack.blackpearl.blackpearl.view.graphics_edges import (
+    GraphicsEdge,
+    CMRGraphicsEdge,
+    PeerRelationGraphicsEdge,
+)
 from jhack.blackpearl.nodeeditor.node_scene import Scene
 from jhack.blackpearl.nodeeditor.node_serializable import Serializable
-from qtpy.QtCore import Qt, QRectF, QPointF
-from qtpy.QtGui import QColor, QPen, QPainterPath, QPolygonF
-from qtpy.QtWidgets import (
-    QGraphicsPathItem,
-    QWidget,
-    QGraphicsItem,
-    QGraphicsSimpleTextItem,
-)
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
-from jhack.blackpearl.blackpearl.view.helpers import get_color, translated
-from jhack.utils.helpers.gather_endpoints import RelationBinding, PeerBinding
+from jhack.utils.helpers.gather_endpoints import (
+    RelationBinding,
+    PeerBinding,
+)
 
 if typing.TYPE_CHECKING:
-    from jhack.blackpearl.blackpearl.view.nodes import Node
+    from jhack.blackpearl.blackpearl.view.node import Node
     from jhack.blackpearl.blackpearl.view.app_node import AppNode
 
 logger = bp_logger.getChild(__file__)
@@ -44,16 +42,13 @@ class Edge(Serializable):
     def __repr__(self):
         return self.tooltip
 
-    def __init__(
-        self,
-        scene: "Scene",
-    ):
+    def __init__(self, scene: "Scene", gr_edge: GraphicsEdge):
         super().__init__()
         self.scene = scene
 
         # create Graphics Edge instance
         self.grEdge = GraphicsEdge(self)
-        self.scene.addEdge(self)
+        self.scene.add_edge(self)
         self.scene.grScene.addItem(self.grEdge)
 
         for label in self.grEdge.labels:
@@ -122,7 +117,26 @@ class RelationEdge(Edge):
         self.binding = binding
         self.start = start
         self.end = end
-        super().__init__(scene)
+        super().__init__(scene, gr_edge=GraphicsEdge(self))
+
+    @property
+    def tooltip(self):
+        binding = self.binding
+        return f"<{binding.provider_endpoint} -- [{binding.interface}] --> {binding.requirer_endpoint}>"
+
+
+class CMREdge(Edge):
+    def __init__(
+        self,
+        scene: "Scene",
+        binding: RelationBinding,
+        start: "AppNode",
+        end: "AppNode",
+    ):
+        self.binding = binding
+        self.start = start
+        self.end = end
+        super().__init__(scene, gr_edge=CMRGraphicsEdge(self))
 
     @property
     def tooltip(self):
@@ -140,290 +154,8 @@ class PeerRelationEdge(Edge):
         self.binding = binding
         self.start = node
         self.end = node
-        super().__init__(scene)
+        super().__init__(scene, gr_edge=PeerRelationGraphicsEdge(self))
 
     @property
     def tooltip(self):
-        return f"<{self.binding.provider_endpoint} <-- [{self.binding.interface}]>"
-
-
-class DirectPath:
-    def __init__(
-        self, owner: "GraphicsEdge", start: "AppNode", end: "AppNode", offset: int = 0
-    ):
-        self.owner = owner
-        self.start = start
-        self.end = end
-        # offset to separate parallel edges in case of multiple relations
-        self.offset = offset
-        self.arrows = True
-
-    def path(self) -> QPainterPath:
-        path = QPainterPath(QPointF(self.owner.source[0], self.owner.source[1]))
-        path.lineTo(self.owner.destination[0], self.owner.destination[1])
-
-        angle = math.radians(180 + path.angleAtPercent(0))
-        dist = 10 * self.offset
-        path.translate(math.sin(angle) * dist, math.cos(angle) * dist)
-        return path
-
-
-class Arrow(QPolygonF):
-    def __init__(self, center: QPointF, direction: float, length: float, width: float):
-        super().__init__()
-        self.center = center
-        self.direction = direction
-        self.length = length
-
-        tip = translated(center, direction, length)
-        p1_l = translated(center, direction + 180, width / 2)
-        p2_r = translated(center, direction - 90, width / 2)
-
-        self.append(tip)
-        self.append(p1_l)
-        self.append(p2_r)
-        self.append(tip)
-
-
-class CenteredBezierPath:
-    """Better Cubic line connection Graphics Edge"""
-
-    EDGE_CP_ROUNDNESS = 100  #: Bezier control point distance on the line
-    WEIGHT_SOURCE = 0.2  #: factor for square edge to change the midpoint between start and end socket
-
-    EDGE_IBCP_ROUNDNESS = (
-        75  #: Scale EDGE_CURVATURE with distance of the edge endpoints
-    )
-    NODE_DISTANCE = 12
-    EDGE_CURVATURE = 2
-
-    def __init__(self, owner: "GraphicsEdge"):
-        self.owner = owner
-
-    def path(self) -> QPainterPath:
-        """Calculate the Direct line connection
-
-        :returns: ``QPainterPath`` of the painting line
-        :rtype: ``QPainterPath``
-        """
-        sx, sy = self.owner.source
-        dx, dy = self.owner.destination
-        distx, disty = dx - sx, dy - sy
-        dist = math.sqrt(distx * distx + disty * disty)
-
-        path = QPainterPath(QPointF(sx, sy))
-
-        if abs(dist) > self.NODE_DISTANCE:
-            curvature = max(
-                self.EDGE_CURVATURE,
-                (self.EDGE_CURVATURE * abs(dist)) / self.EDGE_IBCP_ROUNDNESS,
-            )
-
-            path.lineTo(sx, sy)
-
-            path.cubicTo(
-                QPointF(sx * curvature, sy),
-                QPointF(dx * curvature, dy),
-                QPointF(dx, dy),
-            )
-
-            path.lineTo(dx, dy)
-
-        path.lineTo(dx, dy)
-
-        return path
-
-
-class GraphicsEdge(QGraphicsPathItem):
-    def __init__(
-        self, edge: "Union[RelationEdge, PeerRelationEdge]", parent: QWidget = None
-    ):
-        super().__init__(parent)
-
-        self.edge = edge
-
-        # create instance of our path class
-        self.pather = DirectPath(self, edge.start, edge.end)
-
-        # init our flags
-        self._last_selected_state = False
-        self.hovered = False
-        self.show_direction = True
-
-        # init our variables
-        self.source = [0, 0]
-        self.destination = [200, 100]
-
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
-        self.setAcceptHoverEvents(True)
-
-        self.setZValue(-1)
-        self.setToolTip(edge.tooltip)
-
-        self._color = self._default_color = get_color("white")
-        self._color_selected = get_color("coral")
-        self._color_annotation = get_color("azure1")
-        self._color_hovered = QColor("darkorange")
-        self._pen = QPen(self._color)
-        self._pen_selected = QPen(self._color_selected)
-        self._pen_hovered = QPen(self._color_hovered)
-        self._pen_annotation = QPen(self._color_annotation)
-        self._pen.setWidthF(1.0)
-        self._pen_selected.setWidthF(2.0)
-        self._pen_hovered.setWidthF(3.0)
-
-        binding = self.edge.binding
-
-        self.labels = [
-            QGraphicsSimpleTextItem(binding.provider_endpoint),
-            QGraphicsSimpleTextItem(binding.interface),
-        ]
-        self._label_positions = (0.1, 0.4, 0.7)
-
-        if hasattr(binding, "requirer_endpoint"):
-            # regular relation
-            self.labels.append(QGraphicsSimpleTextItem(binding.requirer_endpoint))
-
-    def show_labels(self):
-        for label in self.labels:
-            label.show()
-
-    def hide_labels(self):
-        for label in self.labels:
-            label.hide()
-
-    def set_color(self, color):
-        """Change color of the edge from string hex value '#00ff00'"""
-        # print("^Called change color to:", color.red(), color.green(), color.blue(), "on edge:", self.edge)
-        self._color = QColor(color) if type(color) == str else color
-        self._pen = QPen(self._color)
-        self._pen.setWidthF(3.0)
-
-    def onSelected(self):
-        """Our event handling when the edge was selected"""
-        self.edge.scene.grScene.itemSelected.emit()
-
-    def doSelect(self, new_state: bool = True):
-        """Safe version of selecting the `Graphics Node`. Takes care about the selection state flag used internally
-
-        :param new_state: ``True`` to select, ``False`` to deselect
-        :type new_state: ``bool``
-        """
-        self.setSelected(new_state)
-        self._last_selected_state = new_state
-        if new_state:
-            self.onSelected()
-
-    def mouseReleaseEvent(self, event):
-        """Overridden Qt's method to handle selecting and deselecting this `Graphics Edge`"""
-        super().mouseReleaseEvent(event)
-        if self._last_selected_state != self.isSelected():
-            self.edge.scene.resetLastSelectedStates()
-            self._last_selected_state = self.isSelected()
-            self.onSelected()
-
-    def hoverEnterEvent(self, event: "QGraphicsSceneHoverEvent") -> None:
-        """Handle hover effect"""
-        self.hovered = True
-        self.update()
-
-    def hoverLeaveEvent(self, event: "QGraphicsSceneHoverEvent") -> None:
-        """Handle hover effect"""
-        self.hovered = False
-        self.update()
-
-    def set_source(self, pos: QPointF):
-        self.source = [pos.x(), pos.y()]
-        self._update_label_positions()
-
-    def set_destination(self, pos: QPointF):
-        self.destination = [pos.x(), pos.y()]
-        self._update_label_positions()
-
-    def boundingRect(self) -> QRectF:
-        """Defining Qt' bounding rectangle"""
-        return self.shape().boundingRect()
-
-    def shape(self) -> QPainterPath:
-        """Returns ``QPainterPath`` representation of this `Edge`
-
-        :return: path representation
-        :rtype: ``QPainterPath``
-        """
-        return self.path()
-
-    def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
-        """Qt's overridden method to paint this Graphics Edge. Path calculated
-        in :func:`~nodeeditor.node_graphics_edge.QDMGraphicsEdge.path` method"""
-        path = self.path()
-
-        painter.setRenderHint(painter.Antialiasing)
-        painter.setBrush(Qt.NoBrush)
-
-        if self.hovered:
-            pen = self._pen_hovered
-        elif self.isSelected():
-            pen = self._pen_selected
-        else:
-            pen = self._pen
-
-        painter.setPen(pen)
-        painter.drawPath(path)
-        self.setPath(path)
-        try:
-            arrows = self.get_arrow(path.pointAtPercent(0.5), path.pointAtPercent(0.51))
-            painter.drawPolyline(arrows)
-        except ZeroDivisionError:
-            pass
-
-    def get_arrow(self, start_point, end_point):
-        arrow_width = 4
-        arrow_height = 5
-        sx, sy = start_point.x(), start_point.y()
-        ex, ey = end_point.x(), end_point.y()
-
-        dx, dy = sx - ex, sy - ey
-
-        leng = math.sqrt(dx**2 + dy**2)
-        normX, normY = dx / leng, dy / leng  # normalize
-
-        # perpendicular vectors
-        perpX = -normY
-        perpY = normX
-
-        point2 = QPointF(
-            ex + arrow_height * normX + arrow_width * perpX,
-            ey + arrow_height * normY + arrow_width * perpY,
-        )
-        point3 = QPointF(
-            ex + arrow_height * normX - arrow_width * perpX,
-            ey + arrow_height * normY - arrow_width * perpY,
-        )
-
-        return QPolygonF([point2, end_point, point3])
-
-    def intersectsWith(self, p1: QPointF, p2: QPointF) -> bool:
-        """Does this Graphics Edge intersect with the line between point A and point B ?
-
-        :param p1: point A
-        :type p1: ``QPointF``
-        :param p2: point B
-        :type p2: ``QPointF``
-        :return: ``True`` if this `Graphics Edge` intersects
-        :rtype: ``bool``
-        """
-        cutpath = QPainterPath(p1)
-        cutpath.lineTo(p2)
-        path = self.path()
-        return cutpath.intersects(path)
-
-    def path(self) -> QPainterPath:
-        return self.pather.path()
-
-    def _update_label_positions(self):
-        path = self.path()
-
-        for label, relpos in zip(self.labels, self._label_positions):
-            # label.setTransformOriginPoint()
-            label.setPos(path.pointAtPercent(relpos))
-            label.setRotation(-path.angleAtPercent(relpos))
+        return f"<{self.binding.endpoint} -O- [{self.binding.interface}]>"

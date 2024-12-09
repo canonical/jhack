@@ -140,7 +140,7 @@ class QDMGraphicsEdge(QGraphicsPathItem):
         """Overridden Qt's method to handle selecting and deselecting this `Graphics Edge`"""
         super().mouseReleaseEvent(event)
         if self._last_selected_state != self.isSelected():
-            self.edge.scene.resetLastSelectedStates()
+            self.edge.scene.reset_last_selected_state()
             self._last_selected_state = self.isSelected()
             self.onSelected()
 

@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional, Literal, Generator, Sequence, Set
 from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.model.jujucli import Juju, Status
 from jhack.blackpearl.blackpearl.view.helpers import get_color
+from jhack.utils.helpers.gather_endpoints import RelationBinding
 from jhack.utils.integrate import IntegrationMatrix
 from jhack.helpers import show_application
 
@@ -101,6 +102,7 @@ class JujuModel:
         self.controller = controller
         self._meta = meta
         self.apps: Set[JujuApp] = set()
+        self.cmrs: List[RelationBinding] = []
 
         self.name: str = meta["short-name"]
         self.full_name: str = meta["name"]
@@ -124,7 +126,7 @@ class JujuModel:
         return self._status
 
     @property
-    def imatrix(self) -> Optional[IntegrationMatrix]:
+    def integrations(self) -> Optional[Any]:
         if self.life == "dying":
             logger.info(f"skipping model {self.name} as it is dying")
             return
@@ -136,6 +138,9 @@ class JujuModel:
 
     def update(self):
         pass
+
+    def collect_cmrs(self):
+        self.cmrs = collect_cmrs(self.name, controller=self.controller)
 
 
 class JujuApp:

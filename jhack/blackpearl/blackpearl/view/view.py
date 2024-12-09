@@ -6,6 +6,8 @@ import math
 import os
 import sys
 import typing
+
+from PyQt6.QtWidgets import QGraphicsTextItem
 from qtpy.QtCore import QPointF
 from qtpy.QtGui import QAction
 from qtpy.QtWidgets import QMessageBox
@@ -16,11 +18,16 @@ from jhack.blackpearl.blackpearl.model.model import JujuController
 from jhack.blackpearl.blackpearl.model.model import JujuModel
 from jhack.blackpearl.blackpearl.view.app_node import AppNode
 from jhack.blackpearl.blackpearl.view.controller_node import ControllerNode
-from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
+from jhack.blackpearl.blackpearl.view.edges import (
+    RelationEdge,
+    PeerRelationEdge,
+    CMREdge,
+)
 from jhack.blackpearl.blackpearl.view.model_node import ModelNode
 from jhack.blackpearl.nodeeditor.node_editor_widget import NodeEditorWidget
 from jhack.blackpearl.nodeeditor.node_editor_window import NodeEditorWindow
 from jhack.blackpearl.nodeeditor.utils import loadStylesheets
+from jhack.utils.helpers.gather_endpoints import RelationBinding
 
 if typing.TYPE_CHECKING:
     from jhack.blackpearl.blackpearl.model.model import JujuApp
@@ -66,16 +73,8 @@ class BPView(NodeEditorWindow):
         # self.create_toolbars()
         self.create_status_bar()
 
-        self.set_title()
+        self.current_node_editor_widget()
         # self.setWindowIcon(get_icon("theatre_logo", suffix="png"))
-
-    def closeEvent(self, event):
-        self.writeSettings()
-        event.accept()
-        # hacky fix for PyQt 5.14.x
-        import sys
-
-        sys.exit(0)
 
     def create_actions(self):
         self.actAbout = QAction(
@@ -84,21 +83,23 @@ class BPView(NodeEditorWindow):
             statusTip="Show the application's About box",
             triggered=self._about,
         )
-
-    @property
-    def current_node_editor(self):
-        active_subwindow = self.mdiArea.activeSubWindow()
-        if active_subwindow:
-            return active_subwindow.widget()
-        return None
+        self.actSpread = QAction(
+            "&Spread",
+            self,
+            statusTip="Auto-arrange all nodes.",
+            triggered=self.spread,
+        )
+        self.actCollapseRelations = QAction(
+            "&Collapse relations",
+            self,
+            statusTip="Show all relations as individual edges.",
+            triggered=self.collapse_relations,
+            checkable=True,
+        )
 
     def get_title(self):
         """Generate window title."""
         return "Blackpearl"
-
-    def set_title(self):
-        """Update window title."""
-        self.setWindowTitle(self.get_title())
 
     def _about(self):
         about_txt = "\n".join(
@@ -116,6 +117,10 @@ class BPView(NodeEditorWindow):
         self.windowMenu.aboutToShow.connect(self.update_window_menu)
 
         self.menuBar().addSeparator()
+
+        self.viewMenu = self.menuBar().addMenu("&View")
+        self.viewMenu.addAction(self.actSpread)
+        self.viewMenu.addAction(self.actCollapseRelations)
 
         self.helpMenu = self.menuBar().addMenu("&Help")
         self.helpMenu.addAction(self.actAbout)
@@ -153,7 +158,14 @@ class BPView(NodeEditorWindow):
             app: "JujuApp" = app_node.app
             if app.name == name and app.model is model:
                 return app_node
-        raise NodeNotFoundError(model, name)
+        raise NodeNotFoundError(model.full_name, name)
+
+    def find_model(self, name: str, controller: "JujuController") -> "ModelNode":
+        for model_node in self._juju_models:
+            model: "JujuModel" = model_node.model
+            if model.name == name and model.controller is controller:
+                return model_node
+        raise NodeNotFoundError(name)
 
     def get_app_node(self, app: "JujuApp") -> "AppNode":
         for app_node in self._juju_apps:
@@ -186,7 +198,25 @@ class BPView(NodeEditorWindow):
             end=requirer_node,
             binding=binding,
         )
-        self.nodeeditor.scene.addEdge(edge)
+        self.nodeeditor.scene.add_edge(edge)
+        provider_node.add_edge(edge)
+        requirer_node.add_edge(edge)
+        return edge
+
+    def add_cmr(
+        self,
+        provider_node: AppNode,
+        requirer_node: AppNode,
+        binding: "RelationBinding",
+    ):
+        """Cross-model relation."""
+        edge = CMREdge(
+            scene=self.nodeeditor.scene,
+            start=provider_node,
+            end=requirer_node,
+            binding=binding,
+        )
+        self.nodeeditor.scene.add_edge(edge)
         provider_node.add_edge(edge)
         requirer_node.add_edge(edge)
         return edge
@@ -221,27 +251,43 @@ class BPView(NodeEditorWindow):
             for model, apps in models.items():
                 model.bind_children(apps)
 
+    def show_point(self, pt: QPointF, name: str):
+        i = QGraphicsTextItem(name)
+        i.setPos(i.mapToItem(i, pt))
+        self.nodeeditor.view.scene().addItem(i)
+
+    def collapse_relations(
+        self,
+        collapse: bool = True,
+    ):
+        if collapse:
+            for node in self.nodeeditor.nodes:
+                if isinstance(node, AppNode):
+                    node.edges
+
     def spread(
         self,
         center: QPointF = None,
         # scale: float = 1.0,
     ):
         otree = self.object_tree
-
         center = center or QPointF(0, 0)
+        self.show_point(center, "center")
+
         self._spread_controller_nodes(
             sorted(self._juju_controllers, key=lambda c: c.controller.uuid),
             center=center,
         )
         for controller, models in otree.items():
+            self.show_point(center, "controller")
             self._spread_model_nodes(models=list(models), center=controller.center)
 
             for model, apps in models.items():
-                model_center = model.grNode.mapToScene(model.grNode.center)
-                self._spread_app_nodes(apps=apps, center=model_center)
-                model.grNode.update_size()
+                self.show_point(center, f"model {model.title}")
+                self._spread_app_nodes(apps=apps, center=model.gr_node.center)
+                model.gr_node.update_size()
 
-            controller.grNode.update_size()
+            controller.gr_node.update_size()
 
         self.nodeeditor.view.centerOn(center)
 
@@ -260,7 +306,7 @@ class BPView(NodeEditorWindow):
                 base_size=500,
             ),
         ):
-            node.setPos(pos.x(), pos.y())
+            node.set_pos(pos)
 
     def _spread_model_nodes(
         self,
@@ -273,21 +319,17 @@ class BPView(NodeEditorWindow):
             self._circular_spread(
                 center=center or QPointF(),
                 n=len(models),
-                diameter_ratio=1.1,
+                diameter_ratio=15.0,
                 base_size=300,
             ),
         ):
-            node.setPos(pos.x(), pos.y())
+            node.set_pos(pos)
 
     def _spread_app_nodes(
         self,
         apps: Sequence["AppNode"],
         center: QPointF = None,
     ):
-        if len(apps) == 1:
-            apps[0].setPos(center.x(), center.y())
-            return
-
         for node, pos in zip(
             apps,
             self._circular_spread(
@@ -297,7 +339,7 @@ class BPView(NodeEditorWindow):
                 base_size=200,
             ),
         ):
-            node.setPos(pos.x(), pos.y())
+            node.set_pos(pos, centered=True)
 
     def _circular_spread(
         self,
@@ -306,6 +348,9 @@ class BPView(NodeEditorWindow):
         diameter_ratio: float = 1.1,
         base_size: float = 200.0,
     ):
+        if n == 1:
+            yield center
+            return
         dist = n * 10 * diameter_ratio + base_size
         angle = 360 / n
         for i in range(n):

@@ -25,79 +25,36 @@ class ModelNode(NodeBase):
         model: "JujuModel",
     ):
         self.model = model
-        super().__init__(model, scene, f"M.{model.name}")
-        self.edges: typing.List[RelationEdge] = []
-
-    def add_edge(self, edge: typing.Union[RelationEdge, PeerRelationEdge]):
-        # we want to know how many parallel edges there are,
-        # (i.e. between the same two nodes, direction doesn't matter)
-        nodes = {edge.start, edge.end}
-        n_parallel_edges = len(
-            tuple(e for e in self.edges if e.start in nodes and e.end in nodes)
-        )
-
-        offset = n_parallel_edges
-        if n_parallel_edges % 2:
-            offset = -(offset - 1)
-        edge.grEdge.pather.offset = offset
-
-        self.edges.append(edge)
-
-    def initInnerClasses(self):
-        """Sets up graphics Node (PyQt) and Content Widget"""
-        self.grNode = ModelGraphicsNode(self)
-
-    def setPos(self, x: float, y: float):
-        self.grNode.setPos(x, y)
-        for edge in self.edges:
-            edge.update()
-
-    def updateConnectedEdges(self):
-        """Recalculate (Refresh) positions of all connected `Edges`. Used for updating Graphics Edges"""
-        for edge in self.edges:
-            edge.update()
+        super().__init__(model, scene, f"M.{model.name}", gr_node=ModelGraphicsNode)
 
 
 class ModelGraphicsNode(GrNodeBase):
     node: "ModelNode"
+    _scale = 50
 
     def __init__(self, node: "ModelNode", parent: QWidget = None):
-        self.radius = 100  # set later, as apps are added AFTER the model is created
 
-        # needed for parent class
-        self.width = 180
-        self.height = 90
-        self.edge_padding = 10
-        self.title_height = 24
-        self.title_horizontal_padding = 4.0
-        self.title_vertical_padding = 4.0
+        super().__init__(node, parent, color=get_color(node.model.ui_color))
+        # self.title_item.setPos(self.mapToScene(self.boundingRect().topLeft()))
 
-        super().__init__(node, parent)
-        # node inherits model color
-        self._color = get_color(node.model.ui_color)
-        self._pen_default = QPen(self._color)
-
-    def initSizes(self):
-        pass
+        self.radius = self._scale
+        # updated later, as apps are added AFTER the model is created
 
     def update_size(self):
         # 10 applications kind of fit well in 1000 units
-        self.radius = max(100, 100 * len(self.node.model.apps))
-
-    @property
-    def center(self):
-        # center is in local coordinates
-        return self.boundingRect().center()
+        self.radius = max(self._scale, self._scale * len(self.node.model.apps))
 
     def boundingRect(self) -> QRectF:
         """Defining Qt' bounding rectangle"""
-        return QRectF(0, 0, self.radius, self.radius).normalized()
+        return QRectF(
+            -self.radius, -self.radius, self.radius * 2, self.radius * 2
+        ).normalized()
 
     def paint(self, painter, QStyleOptionGraphicsItem, widget=None):
         """Paint the model circle."""
         # outline
         path_outline = QPainterPath()
-        path_outline.addEllipse(0, 0, self.radius + 1, self.radius + 1)
+        path_outline.addEllipse(QPointF(0, 0), self.radius + 1, self.radius + 1)
 
         painter.setBrush(Qt.NoBrush)
         if self.hovered:
@@ -110,8 +67,3 @@ class ModelGraphicsNode(GrNodeBase):
                 self._pen_default if not self.isSelected() else self._pen_selected
             )
             painter.drawPath(path_outline.simplified())
-
-        boundingrect = self.boundingRect()
-        qp = QPainterPath()
-        qp.addRect(boundingrect)
-        painter.drawPath(qp.simplified())

@@ -23,14 +23,16 @@ SOCKET_COLORS = [
     QColor("#FF888888"),
 ]
 
+
 class QDMGraphicsSocket(QGraphicsItem):
     """Class representing Graphic `Socket` in ``QGraphicsScene``"""
-    def __init__(self, socket:'Socket'):
+
+    def __init__(self, socket: "Socket"):
         """
         :param socket: reference to :class:`~nodeeditor.node_socket.Socket`
         :type socket: :class:`~nodeeditor.node_socket.Socket`
         """
-        super().__init__(socket.node.grNode)
+        super().__init__(socket.node.gr_node)
 
         self.socket = socket
 
@@ -46,8 +48,10 @@ class QDMGraphicsSocket(QGraphicsItem):
 
     def getSocketColor(self, key):
         """Returns the ``QColor`` for this ``key``"""
-        if type(key) == int: return SOCKET_COLORS[key]
-        elif type(key) == str: return QColor(key)
+        if type(key) == int:
+            return SOCKET_COLORS[key]
+        elif type(key) == str:
+            return QColor(key)
         return Qt.transparent
 
     def changeSocketType(self):
@@ -75,13 +79,15 @@ class QDMGraphicsSocket(QGraphicsItem):
         """Painting a circle"""
         painter.setBrush(self._brush)
         painter.setPen(self._pen if not self.isHighlighted else self._pen_highlight)
-        painter.drawEllipse(-self.radius, -self.radius, 2 * self.radius, 2 * self.radius)
+        painter.drawEllipse(
+            -self.radius, -self.radius, 2 * self.radius, 2 * self.radius
+        )
 
     def boundingRect(self) -> QRectF:
         """Defining Qt' bounding rectangle"""
         return QRectF(
-            - self.radius - self.outline_width,
-            - self.radius - self.outline_width,
+            -self.radius - self.outline_width,
+            -self.radius - self.outline_width,
             2 * (self.radius + self.outline_width),
             2 * (self.radius + self.outline_width),
         )

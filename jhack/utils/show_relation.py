@@ -5,7 +5,6 @@ import re
 import sys
 import time
 from dataclasses import dataclass
-from enum import Enum
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -19,6 +18,9 @@ from jhack.helpers import (
     JPopen,
     RichSupportedColorOptions,
     juju_status,
+    get_relations,
+    RelationType,
+    Relation,
 )
 from jhack.logger import logger
 
@@ -31,28 +33,6 @@ _JUJU_DATA_CACHE = {}
 
 _JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
 _UNIT_ID_RE = re.compile(r"/\d")
-_RELATIONS_RE = re.compile(r"([\w\-]+):([\w\-]+)\s+([\w\-]+):([\w\-]+)\s+([\w\-]+)\s+([\w\-]+).*")
-
-
-class RelationType(str, Enum):
-    regular = "regular"
-    subordinate = "subordinate"
-    peer = "peer"
-    cross_model = "cross_model"
-
-
-@dataclass
-class Relation:
-    provider: str
-    provider_endpoint: str
-    requirer: str
-    requirer_endpoint: str
-    interface: str
-    raw_type: str
-
-    @property
-    def type(self) -> RelationType:
-        return RelationType(self.raw_type)
 
 
 class RelationEndpointURL(str):
@@ -113,7 +93,9 @@ def _juju_status(*args, **kwargs):
     return juju_status(*args, **kwargs)
 
 
-def _show_unit(unit_name, related_to: str = None, endpoint: str = None, model: str = None):
+def _show_unit(
+    unit_name, related_to: str = None, endpoint: str = None, model: str = None
+):
     args = ["juju", "show-unit", "--format", "json"]
     if model:
         args.extend(["-m", model])
@@ -160,7 +142,9 @@ def _get_unit_info(
             f"are you sure it's a valid unit name?"
         )
     if unit_name not in data:
-        raise KeyError(f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}")
+        raise KeyError(
+            f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}"
+        )
 
     unit_data = data[unit_name]
     return unit_data
@@ -219,7 +203,9 @@ def get_relation_by_endpoint(
     if relation.type == RelationType.peer:
         matches = [r for r in relations if r["endpoint"] == relation.requirer_endpoint]
         if len(matches) != 1:
-            raise ValueError(f"Would expect a single peer on {relation.requirer_endpoint}")
+            raise ValueError(
+                f"Would expect a single peer on {relation.requirer_endpoint}"
+            )
         return matches[0]
 
     local_endpoint = obj.endpoint
@@ -248,7 +234,8 @@ def get_relation_by_endpoint(
         matches = [
             r
             for r in matches
-            if obj.unit_name in r.get("related-units", set()) and not r.get("cross-model")
+            if obj.unit_name in r.get("related-units", set())
+            and not r.get("cross-model")
         ]
 
     if not matches:
@@ -331,7 +318,9 @@ def get_metadata_from_status(
                 f"You might need to wait for all units to be allocated."
             )
         leader_id = unit_ids[0]
-        logger.debug(f"no leader elected yet, guessing it's the only unit out there: {leader_id}")
+        logger.debug(
+            f"no leader elected yet, guessing it's the only unit out there: {leader_id}"
+        )
     return Metadata(scale, tuple(unit_ids), leader_id)
 
 
@@ -413,11 +402,15 @@ def get_content(
                 other_unit_id = RelationEndpointURL(next(iter(other_units))).unit_id
             else:
                 # we need to get the units of the primary.
-                primary_units = other_model_status["applications"][primaries[0]]["units"]
+                primary_units = other_model_status["applications"][primaries[0]][
+                    "units"
+                ]
                 other_unit_id = RelationEndpointURL(next(iter(primary_units))).unit_id
 
     else:
-        other_unit_id = RelationEndpointURL(next(iter(other_app_status["units"]))).unit_id
+        other_unit_id = RelationEndpointURL(
+            next(iter(other_app_status["units"]))
+        ).unit_id
         # we might have a different number of units and other units, and it doesn't
         # matter which 'other' we pass to get the databags for 'this one'.
 
@@ -572,22 +565,12 @@ def get_relation_data(
     return RelationData(provider=provider_data, requirer=requirer_data)
 
 
-def get_relations(model: str = None) -> List[Relation]:
-    status = _juju_status(model=model)
-    # get the interface name from juju status.
-    raw_relations = _RELATIONS_RE.findall(status)
-
-    relations = []
-    for groups in raw_relations:
-        relations.append(Relation(*groups))
-
-    return relations
-
-
 def _render_unit(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
     unit_name, unit_data = obj
     unit_id = int(unit_name.split("/")[1])
-    return _render_databag(unit_name, unit_data, leader=(unit_id == source.meta.leader_id))
+    return _render_databag(
+        unit_name, unit_data, leader=(unit_id == source.meta.leader_id)
+    )
 
 
 def _render_databag(unit_name, dct, leader=False, hide_empty_databags: bool = False):
@@ -633,7 +616,9 @@ def _match_requirer(rel: Relation, ep: Optional[RelationEndpointURL]):
     )
 
 
-def _match_endpoint(rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]):
+def _match_endpoint(
+    rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]
+):
     if not ep2 or rel.type == RelationType.peer:
         # we could use _match_provider as well, they should be equivalent
         # so long as the peer relation is consistent
@@ -651,7 +636,9 @@ def _coalesce_endpoint_and_n(
     endpoint1, endpoint2, n, model: Optional[str]
 ) -> Tuple[RelationEndpointURL, Optional[RelationEndpointURL], Relation]:
     if n is not None and (endpoint1 or endpoint2):
-        raise RuntimeError("Invalid usage: provide `n` or " "(`endpoint1` + `endpoint2`).")
+        raise RuntimeError(
+            "Invalid usage: provide `n` or " "(`endpoint1` + `endpoint2`)."
+        )
 
     relations = get_relations(model)
 
@@ -674,8 +661,12 @@ def _coalesce_endpoint_and_n(
                 f"relation{pl(plur_rel, 's')}. "
                 f"Can't show index={n + 1}."
             )
-        endpoint1 = RelationEndpointURL(f"{relation.provider}:{relation.provider_endpoint}")
-        endpoint2 = RelationEndpointURL(f"{relation.requirer}:{relation.requirer_endpoint}")
+        endpoint1 = RelationEndpointURL(
+            f"{relation.provider}:{relation.provider_endpoint}"
+        )
+        endpoint2 = RelationEndpointURL(
+            f"{relation.requirer}:{relation.requirer_endpoint}"
+        )
         return endpoint1, endpoint2, relation
 
     ep_url_1 = RelationEndpointURL(endpoint1)
@@ -701,7 +692,9 @@ def _coalesce_endpoint_and_n(
         apps = status["applications"]
         app1 = apps.get(ep_url_1.app_name)
         app2 = apps.get(ep_url_2.app_name)
-        app_not_found = ep_url_1.app_name if not app1 else ep_url_2.app_name if not app2 else None
+        app_not_found = (
+            ep_url_1.app_name if not app1 else ep_url_2.app_name if not app2 else None
+        )
         if app_not_found:
             msg += f" {app_not_found!r} not found in model {model or '<the current model>'!r}."
             raise RuntimeError(msg)
@@ -773,7 +766,9 @@ async def render_relation(
     >>> render_relation('prometheus/0:ingress', 'traefik/1:ingress-per-unit')
     """
 
-    endpoint1, endpoint2, relation = _coalesce_endpoint_and_n(endpoint1, endpoint2, n, model)
+    endpoint1, endpoint2, relation = _coalesce_endpoint_and_n(
+        endpoint1, endpoint2, n, model
+    )
 
     if relation.type is RelationType.regular:
         # still a chance it's a CMR.
@@ -792,7 +787,9 @@ async def render_relation(
     )
 
     if format == Format.auto:
-        return _rich_format_table(entities, relation, hide_empty_databags=hide_empty_databags)
+        return _rich_format_table(
+            entities, relation, hide_empty_databags=hide_empty_databags
+        )
 
     elif format == Format.json:
         return _format_json(entities, relation.type)
@@ -860,8 +857,12 @@ def _rich_format_table(
         # omit the "=" in column 2
         table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"))
         table.add_row("interface", Text(relation.interface, style="blue bold"))
-        table.add_row("model", Text(entities[0].model or "the current model", style="yellow bold"))
-        table.add_row("relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"))
+        table.add_row(
+            "model", Text(entities[0].model or "the current model", style="yellow bold")
+        )
+        table.add_row(
+            "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold")
+        )
 
     else:
         table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"), "=")
@@ -873,7 +874,9 @@ def _rich_format_table(
                 Text(entities[0].model or "the current model", style="yellow bold"),
                 "=",
             )
-            table.add_row("relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"), "=")
+            table.add_row(
+                "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"), "="
+            )
         else:
             table.add_row(
                 "model",
@@ -893,7 +896,9 @@ def _rich_format_table(
             )
 
     if not is_peer:
-        table.add_row("role", *(Text(role, style="white") for role in ["provider", "requirer"]))
+        table.add_row(
+            "role", *(Text(role, style="white") for role in ["provider", "requirer"])
+        )
 
     table.add_row(
         "endpoint",
@@ -909,7 +914,9 @@ def _rich_format_table(
     table.add_row(
         "application data",
         *(
-            _render_databag("", entity.application_data, hide_empty_databags=hide_empty_databags)
+            _render_databag(
+                "", entity.application_data, hide_empty_databags=hide_empty_databags
+            )
             for entity in entities
         ),
     )
@@ -959,7 +966,9 @@ def sync_show_relation(
     hide_empty_databags: bool = typer.Option(
         False, "--hide-empty", "-h", help="Do not show empty databags."
     ),
-    watch: bool = typer.Option(False, "-w", "--watch", help="Keep watching for changes."),
+    watch: bool = typer.Option(
+        False, "-w", "--watch", help="Keep watching for changes."
+    ),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
     color: Optional[str] = ColorOption,
     format: Format = FormatOption,
@@ -1051,6 +1060,6 @@ def _sync_show_relation(
 
 if __name__ == "__main__":
     _sync_show_relation(
-        "loki",
-        "gagent",
+        "tempo",
+        "istio-ingress-k8s",
     )
