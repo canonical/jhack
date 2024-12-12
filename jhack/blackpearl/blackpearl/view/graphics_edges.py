@@ -1,10 +1,11 @@
 import math
 import typing
 from typing import Union
+from unicodedata import bidirectional
 
-from PyQt6.QtCore import Qt, QPointF, QRectF
-from PyQt6.QtGui import QColor, QPen, QPainterPath, QPolygonF
-from PyQt6.QtWidgets import (
+from qtpy.QtCore import Qt, QPointF, QRectF
+from qtpy.QtGui import QColor, QPen, QPainterPath, QPolygonF
+from qtpy.QtWidgets import (
     QGraphicsPathItem,
     QWidget,
     QGraphicsItem,
@@ -20,6 +21,7 @@ if typing.TYPE_CHECKING:
         RelationEdge,
         PeerRelationEdge,
         CMREdge,
+        CompoundEdge,
     )
     from jhack.blackpearl.blackpearl.view.app_node import AppNode
 
@@ -46,11 +48,12 @@ class GraphicsEdge(QGraphicsPathItem):
         self.edge = edge
 
         # create instance of our path class
-        self.pather = DirectPath(self, edge.start, edge.end)
+        self._pather: "QPainterPath" = None  # lazy attr
 
         # init our flags
         self._last_selected_state = False
         self.hovered = False
+        self.selected = False  # the built-in isSelected() is acting weird
         self.show_direction = True
 
         # init our variables
@@ -61,20 +64,43 @@ class GraphicsEdge(QGraphicsPathItem):
         self.setAcceptHoverEvents(True)
 
         self.setZValue(zvalues.edges)
-        self.setToolTip(edge.tooltip)
         self.set_style(**self._styles)
 
-        binding = self.edge.binding
+        self.labels = self.make_labels()
 
-        self.labels = [
-            RelationEndpointGraphicsLabel(binding.provider_endpoint),
-            RelationInterfaceGraphicsLabel(binding.interface),
+    @property
+    def bidirectional(self):
+        return False
+
+    def make_labels(self):
+        binding = self.edge.binding
+        labels = [
+            RelationEndpointGraphicsLabel(
+                binding.provider_endpoint, parent=self, rel_pos=0.1
+            ),
+            RelationInterfaceGraphicsLabel(
+                binding.interface,
+                parent=self,
+                rel_pos=0.4,
+            ),
         ]
-        self._label_positions = (0.1, 0.4, 0.7)
 
         if hasattr(binding, "requirer_endpoint"):
             # regular relation
-            self.labels.append(RelationEndpointGraphicsLabel(binding.requirer_endpoint))
+            labels.append(
+                RelationEndpointGraphicsLabel(
+                    binding.requirer_endpoint, parent=self, rel_pos=0.7
+                )
+            )
+        return labels
+
+    @property
+    def pather(self):
+        """Lazy pather attr."""
+        if not (pather := self._pather):
+            pather = DirectPath(self, self.edge.start, self.edge.end)
+            self._pather = pather
+        return pather
 
     def set_style(
         self,
@@ -103,7 +129,7 @@ class GraphicsEdge(QGraphicsPathItem):
 
     def update(self, *__args):
         super().update(*__args)
-        if self.isSelected() or self.hovered:
+        if self.selected or self.hovered:
             for label in self.labels:
                 label.show()
         else:
@@ -119,7 +145,7 @@ class GraphicsEdge(QGraphicsPathItem):
 
     def onSelected(self):
         """Our event handling when the edge was selected"""
-        self.edge.scene.grScene.itemSelected.emit()
+        self.edge.scene.gr_scene.itemSelected.emit()
 
     def doSelect(self, new_state: bool = True):
         """Safe version of selecting the `Graphics Node`. Takes care about the selection state flag used internally
@@ -135,20 +161,21 @@ class GraphicsEdge(QGraphicsPathItem):
     def mouseReleaseEvent(self, event):
         """Overridden Qt's method to handle selecting and deselecting this `Graphics Edge`"""
         super().mouseReleaseEvent(event)
-        if self._last_selected_state != self.isSelected():
+        if self._last_selected_state != self.selected:
             self.edge.scene.reset_last_selected_state()
-            self._last_selected_state = self.isSelected()
+            self._last_selected_state = self.selected
             self.onSelected()
 
-    def hoverEnterEvent(self, event: "QGraphicsSceneHoverEvent") -> None:
-        """Handle hover effect"""
-        self.hovered = True
-        self.update()
-
-    def hoverLeaveEvent(self, event: "QGraphicsSceneHoverEvent") -> None:
-        """Handle hover effect"""
-        self.hovered = False
-        self.update()
+    # not working
+    # def hoverEnterEvent(self, event: "QGraphicsSceneHoverEvent") -> None:
+    #     """Handle hover effect"""
+    #     self.hovered = True
+    #     self.update()
+    #
+    # def hoverLeaveEvent(self, event: "QGraphicsSceneHoverEvent") -> None:
+    #     """Handle hover effect"""
+    #     self.hovered = False
+    #     self.update()
 
     def set_source(self, pos: QPointF):
         self.source = [pos.x(), pos.y()]
@@ -180,7 +207,7 @@ class GraphicsEdge(QGraphicsPathItem):
 
         if self.hovered:
             pen = self._pen_hovered
-        elif self.isSelected():
+        elif self.selected:
             pen = self._pen_selected
         else:
             pen = self._pen
@@ -241,10 +268,10 @@ class GraphicsEdge(QGraphicsPathItem):
     def _update_label_positions(self):
         path = self.path()
 
-        for label, relpos in zip(self.labels, self._label_positions):
+        for label in self.labels:
             # anchor at center
-            label.setPos(path.pointAtPercent(relpos))
-            label.setRotation(-path.angleAtPercent(relpos))
+            label.setPos(path.pointAtPercent(label.rel_pos))
+            label.setRotation(-path.angleAtPercent(label.rel_pos))
 
 
 class CMRGraphicsEdge(GraphicsEdge):
@@ -271,6 +298,38 @@ class PeerRelationGraphicsEdge(GraphicsEdge):
         "width_hovered": 3.0,
         "style": Qt.DotLine,
     }
+
+
+class CompoundRelationGraphicsEdge(GraphicsEdge):
+    _styles = {
+        "color": "firebrick3",
+        "color_selected": "coral",
+        "color_annotation": "azure1",
+        "color_hovered": "darkorange",
+        "width": 3,
+        "width_selected": 4,
+        "width_hovered": 5,
+        "style": Qt.DashDotLine,
+    }
+
+    edge: "CompoundEdge"
+
+    @property
+    def bidirectional(self):
+        return len(set(c.start for c in self.edge.components))
+
+    def make_labels(self):
+        bindings = self.edge.components
+        interfaces = set(b.binding.interface for b in bindings)
+        labels = [
+            RelationInterfaceGraphicsLabel(
+                ",".join(interfaces),
+                bidirectional=self.bidirectional,
+                parent=self,
+                rel_pos=0.4,
+            )
+        ]
+        return labels
 
 
 class DirectPath:
@@ -364,6 +423,10 @@ LABEL_BGCOLOR = get_color("dimgray")
 
 
 class RelationGraphicsLabel(QGraphicsSimpleTextItem):
+    def __init__(self, text, parent, rel_pos: float = 0.5):
+        super().__init__(text, parent)
+        self.rel_pos = rel_pos
+
     @property
     def path(self):
         path = QPainterPath()
@@ -391,6 +454,10 @@ class RelationEndpointGraphicsLabel(RelationGraphicsLabel):
 class RelationInterfaceGraphicsLabel(RelationGraphicsLabel):
     _padding = 2
 
+    def __init__(self, text, parent, rel_pos: float = 0.5, bidirectional: bool = False):
+        super().__init__(text, parent, rel_pos)
+        self.bidirectional = bidirectional
+
     @property
     def path(self):
         path = QPainterPath()
@@ -399,14 +466,22 @@ class RelationInterfaceGraphicsLabel(RelationGraphicsLabel):
         cursor = boundingrect.topLeft()
         poly = QPolygonF()
 
-        for transform in (
+        transforms = (
             QPointF(-2, -2),  # initial point
             QPointF(w, 0),
             QPointF(10, h / 2 + 2),  # arrowtip
             QPointF(-10, h / 2 + 2),
             QPointF(-w, 0),
-            QPointF(0, -h - 2),
-        ):
+        )
+        if self.bidirectional:
+            transforms += (
+                QPointF(-10, -(h / 2 + 2)),  # other side arrowtip
+                QPointF(+10, -(h / 2 + 2)),
+            )
+        else:
+            transforms += (QPointF(0, -h - 2),)
+
+        for transform in transforms:
             cursor += transform
             poly.append(cursor)
 

@@ -2,18 +2,19 @@
 """
 A module containing the representation of the NodeEditor's Scene
 """
-import json
-import os
-import sys
-from collections import OrderedDict
-from typing import Callable
+import logging
+import typing
 
+from jhack.blackpearl.blackpearl.view.app_node import AppGraphicsNode
 from jhack.blackpearl.nodeeditor.node_edge import Edge
 from jhack.blackpearl.nodeeditor.node_graphics_scene import QDMGraphicsScene
 from jhack.blackpearl.nodeeditor.node_node import Node
-from jhack.blackpearl.nodeeditor.utils_no_qt import dumpException
+
+if typing.TYPE_CHECKING:
+    from jhack.blackpearl.nodeeditor.node_graphics_view import QDMGraphicsView
 
 DEBUG_REMOVE_WARNINGS = False
+logger = logging.getLogger(__file__)
 
 
 class InvalidFile(Exception):
@@ -42,25 +43,16 @@ class Scene:
         self.scene_width = 64000
         self.scene_height = 64000
 
-        # suppress triggering on_item_selected
-        self._silent_selection_events = False
-
         self._has_been_modified = False
-        self._last_selected_items = None
-
-        # initialize all listeners
-        self._has_been_modified_listeners = []
-        self._item_selected_listeners = []
-        self._items_deselected_listeners = []
-
+        self._last_selected_items = []
         # here we can store callback for retrieving the class for Nodes
         self.node_class_selector = None
 
-        self.grScene = QDMGraphicsScene(self)
-        self.grScene.setGrScene(self.scene_width, self.scene_height)
+        self.gr_scene = QDMGraphicsScene(self)
+        self.gr_scene.setgr_scene(self.scene_width, self.scene_height)
 
-        self.grScene.itemSelected.connect(self.on_item_selected)
-        self.grScene.itemsDeselected.connect(self.on_items_deselected)
+        self.gr_scene.itemSelected.connect(self.on_item_selected)
+        self.gr_scene.itemsDeselected.connect(self.on_items_deselected)
 
     @property
     def has_been_modified(self):
@@ -79,10 +71,6 @@ class Scene:
             # set it now, because we will be reading it soon
             self._has_been_modified = value
 
-            # call all registered listeners
-            for callback in self._has_been_modified_listeners:
-                callback()
-
         self._has_been_modified = value
 
     def get_node_by_id(self, node_id: int):
@@ -98,46 +86,29 @@ class Scene:
                 return node
         return None
 
-    def on_item_selected(self, silent: bool = False):
+    def on_item_selected(self):
         """
         Handle Item selection and trigger event `Item Selected`
 
         :param silent: If ``True`` scene's on_item_selected won't be called and history stamp not stored
         :type silent: ``bool``
         """
-        if self._silent_selection_events:
+        selected = self.view.selected_items()
+        for item in selected:
+            if isinstance(item, AppGraphicsNode):
+                item.onSelected()
+
+    def on_items_deselected(self):
+        deselected = self.view.deselected_items()
+        for item in deselected:
+            if isinstance(item, AppGraphicsNode):
+                item.onDeselected()
+
+        # current_selected_items = self.get_selected_items()
+        if not deselected:
+            logger.warning("nothing was deselected; ignoring event...")
             return
-
-        current_selected_items = self.get_selected_items()
-        if current_selected_items != self._last_selected_items:
-            self._last_selected_items = current_selected_items
-            if not silent:
-                # we could create some kind of UI which could be serialized,
-                # therefore first run all callbacks...
-                for callback in self._item_selected_listeners:
-                    callback()
-
-    def on_items_deselected(self, silent: bool = False):
-        """
-        Handle Items deselection and trigger event `Items Deselected`
-
-        :param silent: If ``True`` scene's on_items_deselected won't be called and history stamp not stored
-        :type silent: ``bool``
-        """
-        # somehow this event is being triggered when we start dragging file outside of our application
-        # or we just loose focus on our app? -- which does not mean we've deselected item in the scene!
-        # double check if the selection has actually changed, since
-        current_selected_items = self.get_selected_items()
-        if current_selected_items == self._last_selected_items:
-            # print("Qt itemsDeselected Invalid Event! Ignoring")
-            return
-
         self.reset_last_selected_state()
-        if not current_selected_items:
-            self._last_selected_items = []
-            if not silent:
-                for callback in self._items_deselected_listeners:
-                    callback()
 
     def isModified(self) -> bool:
         """Is this `Scene` dirty aka `has been modified` ?
@@ -154,16 +125,7 @@ class Scene:
         :return: list of ``QGraphicsItems``
         :rtype: list[QGraphicsItem]
         """
-        return self.grScene.selectedItems()
-
-    # our helper listener functions
-    def on_modified(self, callback: Callable):
-        """
-        Register callback for `Has Been Modified` event
-
-        :param callback: callback function
-        """
-        self._has_been_modified_listeners.append(callback)
+        return self.gr_scene.selectedItems()
 
     # custom flag to detect node or edge has been selected....
     def reset_last_selected_state(self):
@@ -171,15 +133,16 @@ class Scene:
         for node in self.nodes:
             node.gr_node._last_selected_state = False
         for edge in self.edges:
-            edge.grEdge._last_selected_state = False
+            edge.gr_edge._last_selected_state = False
 
-    def get_view(self) -> "QGraphicsView":
+    @property
+    def view(self) -> "QDMGraphicsView":
         """Shortcut for returning `Scene` ``QGraphicsView``
 
         :return: ``QGraphicsView`` attached to the `Scene`
         :rtype: ``QGraphicsView``
         """
-        return self.grScene.views()[0]
+        return self.gr_scene.views()[0]
 
     def add_node(self, node: Node):
         """Add :class:`~nodeeditor.node_node.Node` to this `Scene`
@@ -188,6 +151,10 @@ class Scene:
         :type node: :class:`~nodeeditor.node_node.Node`
         """
         self.nodes.append(node)
+        self.gr_scene.addItem(node.gr_node)
+
+        # FIXME: this is uncool, but some logic in grnode needs access to the scene.
+        node.scene = self
 
     def add_edge(self, edge: Edge):
         """Add :class:`~nodeeditor.node_edge.Edge` to this `Scene`
@@ -196,42 +163,26 @@ class Scene:
         :return: :class:`~nodeeditor.node_edge.Edge`
         """
         self.edges.append(edge)
+        self.gr_scene.addItem(edge.gr_edge)
+        edge.gr_edge.show()
 
-    def removeNode(self, node: Node):
+    def remove_node(self, node: Node):
         """Remove :class:`~nodeeditor.node_node.Node` from this `Scene`
 
         :param node: :class:`~nodeeditor.node_node.Node` to be removed from this `Scene`
         :type node: :class:`~nodeeditor.node_node.Node`
         """
-        if node in self.nodes:
-            self.nodes.remove(node)
-        else:
-            if DEBUG_REMOVE_WARNINGS:
-                print(
-                    "!W:",
-                    "Scene::removeNode",
-                    "wanna remove nodeeditor",
-                    node,
-                    "from self.nodes but it's not in the list!",
-                )
+        self.nodes.remove(node)
+        self.gr_scene.removeItem(node.gr_node)
 
-    def removeEdge(self, edge: Edge):
+    def remove_edge(self, edge: Edge):
         """Remove :class:`~nodeeditor.node_edge.Edge` from this `Scene`
 
         :param edge: :class:`~nodeeditor.node_edge.Edge` to be remove from this `Scene`
         :return: :class:`~nodeeditor.node_edge.Edge`
         """
-        if edge in self.edges:
-            self.edges.remove(edge)
-        else:
-            if DEBUG_REMOVE_WARNINGS:
-                print(
-                    "!W:",
-                    "Scene::removeEdge",
-                    "wanna remove edge",
-                    edge,
-                    "from self.edges but it's not in the list!",
-                )
+        self.edges.remove(edge)
+        self.gr_scene.removeItem(edge.gr_edge)
 
     def clear(self):
         """Remove all `Nodes` from this `Scene`. This causes also to remove all `Edges`"""
@@ -239,47 +190,3 @@ class Scene:
             self.nodes[0].remove()
 
         self.has_been_modified = False
-
-    def saveToFile(self, filename: str):
-        """
-        Save this `Scene` to the file on disk.
-
-        :param filename: where to save this scene
-        :type filename: ``str``
-        """
-        with open(filename, "w") as file:
-            file.write(json.dumps(self.serialize(), indent=4))
-            # print("saving to", filename, "was successfull.")
-
-            self.has_been_modified = False
-            self.filename = filename
-
-    def loadFromFile(self, filename: str):
-        """
-        Load `Scene` from a file on disk
-
-        :param filename: from what file to load the `Scene`
-        :type filename: ``str``
-        :raises: :class:`~nodeeditor.node_scene.InvalidFile` if there was an error decoding JSON file
-        """
-
-        with open(filename, "r") as file:
-            raw_data = file.read()
-            try:
-                if sys.version_info >= (3, 9):
-                    data = json.loads(raw_data)
-                else:
-                    data = json.loads(raw_data, encoding="utf-8")
-                self.filename = filename
-                self.deserialize(data)
-                self.has_been_modified = False
-            except json.JSONDecodeError:
-                raise InvalidFile(
-                    "%s is not a valid JSON file" % os.path.basename(filename)
-                )
-            except Exception as e:
-                dumpException(e)
-
-    def getEdgeClass(self):
-        """Return the class representing Edge. Override me if needed"""
-        return Edge

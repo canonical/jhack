@@ -10,7 +10,7 @@ from jhack.blackpearl.nodeeditor.node_edge import Edge
 
 class EdgeIntersect:
     def __init__(self, grView: "QGraphicsView"):
-        self.grScene = grView.grScene
+        self.gr_scene = grView.gr_scene
         self.grView = grView
         self.draggedNode = None
         self.hoveredList = []
@@ -69,16 +69,16 @@ class EdgeIntersect:
         # The new edges will have the same edge_type as the intersected edge
         edge_type = edge.edge_type
         edge.remove()
-        self.grView.grScene.scene.history.storeHistory(
+        self.grView.gr_scene.scene.history.storeHistory(
             "Delete existing edge", setModified=True
         )
 
         new_node_socket_in = node.inputs[0]
-        Edge(self.grScene.scene, socket_start, new_node_socket_in, edge_type=edge_type)
+        Edge(self.gr_scene.scene, socket_start, new_node_socket_in, edge_type=edge_type)
         new_node_socket_out = node.outputs[0]
-        Edge(self.grScene.scene, new_node_socket_out, socket_end, edge_type=edge_type)
+        Edge(self.gr_scene.scene, new_node_socket_out, socket_end, edge_type=edge_type)
 
-        self.grView.grScene.scene.history.storeHistory(
+        self.grView.gr_scene.scene.history.storeHistory(
             "Created new edges by dropping node", setModified=True
         )
 
@@ -108,9 +108,9 @@ class EdgeIntersect:
         :type scene_pos_y: `float`
         """
         rect = self.hotZoneRect(self.draggedNode)
-        grItems = self.grScene.items(rect)
-        for grEdge in self.hoveredList:
-            grEdge.hovered = False
+        grItems = self.gr_scene.items(rect)
+        for gr_edge in self.hoveredList:
+            gr_edge.hovered = False
         self.hoveredList = []
         for grItem in grItems:
             if hasattr(grItem, "edge") and not self.draggedNode.hasConnectedEdge(
@@ -128,7 +128,7 @@ class EdgeIntersect:
         :rtype: :class:`~nodeeditor.node_edge.Edge`
         """
         # returns the first edge that intersects with the dropped node, ignores the rest
-        grItems = self.grScene.items(node_box)
+        grItems = self.gr_scene.items(node_box)
         for grItem in grItems:
             if hasattr(grItem, "edge") and not self.draggedNode.hasConnectedEdge(
                 grItem.edge

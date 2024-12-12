@@ -3,6 +3,8 @@
 A module containing Graphic representation of :class:`~nodeeditor.node_scene.Scene`
 """
 import math
+from typing import List, Any
+
 from qtpy.QtWidgets import QGraphicsScene, QWidget
 from qtpy.QtCore import Signal, QRect, QLine, Qt
 from qtpy.QtGui import QColor, QPen, QFont, QPainter
@@ -67,7 +69,7 @@ class QDMGraphicsScene(QGraphicsScene):
         """Overriden Qt's dragMoveEvent to enable Qt's Drag Events"""
         pass
 
-    def setGrScene(self, width: int, height: int):
+    def setgr_scene(self, width: int, height: int):
         """Set `width` and `height` of the `Graphics Scene`"""
         self.setSceneRect(-width // 2, -height // 2, width, height)
 

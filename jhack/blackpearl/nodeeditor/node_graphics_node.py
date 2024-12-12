@@ -91,10 +91,10 @@ class QDMGraphicsNode(QGraphicsItem):
                 self.height - 2 * self.edge_padding - self.title_height,
             )
 
-        # get the QGraphicsProxyWidget when inserted into the grScene
-        self.grContent = self.node.scene.grScene.addWidget(self.content)
-        self.grContent.node = self.node
-        self.grContent.setParentItem(self)
+        # # get the QGraphicsProxyWidget when inserted into the gr_scene
+        # self.grContent = self.node.scene.gr_scene.addWidget(self.content)
+        # self.grContent.node = self.node
+        # self.grContent.setParentItem(self)
 
     @property
     def content(self):
@@ -118,18 +118,11 @@ class QDMGraphicsNode(QGraphicsItem):
 
     def onSelected(self):
         """Our event handling when the node was selected"""
-        self.node.scene.grScene.itemSelected.emit()
+        # self.node.scene.gr_scene.itemSelected.emit()
 
-    def doSelect(self, new_state=True):
-        """Safe version of selecting the `Graphics Node`. Takes care about the selection state flag used internally
-
-        :param new_state: ``True`` to select, ``False`` to deselect
-        :type new_state: ``bool``
-        """
-        self.setSelected(new_state)
-        self._last_selected_state = new_state
-        if new_state:
-            self.onSelected()
+    def onDeselected(self):
+        """Our event handling when the node was deselected"""
+        # self.node.scene.gr_scene.itemSelected.emit()
 
     def mouseMoveEvent(self, event):
         """Overridden event to detect that we moved with this `Node`"""
@@ -138,7 +131,7 @@ class QDMGraphicsNode(QGraphicsItem):
         # TODO optimize me! just update the selected nodes
         for node in self.scene().scene.nodes:
             if node.gr_node.isSelected():
-                node.update_connected_edges()
+                node.update_edges()
 
         if self._previous_position:
             self.onMoved(self.pos() - self._previous_position)
@@ -157,24 +150,16 @@ class QDMGraphicsNode(QGraphicsItem):
         if self._was_moved:
             self._was_moved = False
             self._previous_position = None
-            self.node.scene.reset_last_selected_state()
-            self.doSelect()  # also trigger itemSelected when node was moved
-
-            # we need to store the last selected state, because moving does also select the nodes
-            self.node.scene._last_selected_items = self.node.scene.get_selected_items()
+            # self.node.scene.reset_last_selected_state()
+            # self.doSelect()  # also trigger itemSelected when node was moved
 
             # now we want to skip storing selection
             return
 
         # handle when gr_node was clicked on
-        if (
-            self._last_selected_state != self.isSelected()
-            or self.node.scene._last_selected_items
-            != self.node.scene.get_selected_items()
-        ):
-            self.node.scene.reset_last_selected_state()
+        if self._last_selected_state != self.isSelected():
+            # self.node.scene.reset_last_selected_state()
             self._last_selected_state = self.isSelected()
-            self.onSelected()
 
     def mouseDoubleClickEvent(self, event):
         """Overriden event for doubleclick. Resend to `Node::onDoubleClicked`"""

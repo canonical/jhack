@@ -95,6 +95,10 @@ class RelationBinding(NamedTuple):
             return self.requirer_model
         return self.provider_model
 
+    @property
+    def is_cmr(self):
+        return self.provider_model != self.requirer_model
+
 
 def gather_endpoints(
     model=None,
@@ -153,7 +157,9 @@ def gather_endpoints(
                 )
                 for r in all_relations
                 if r.provider == app_name and r.type is RelationType.peer
-            ],
+            ]
+            if include_peers
+            else [],
             "requires": [
                 RelationBinding(
                     provider_app=r.provider,

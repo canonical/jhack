@@ -2,9 +2,10 @@ import itertools
 import re
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 from functools import partial
 from multiprocessing.managers import Value
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union, Any, Sequence
 
 import typer
 from rich.align import Align
@@ -31,9 +32,35 @@ from jhack.utils.helpers.gather_endpoints import (
     gather_endpoints,
     build_matrix,
     RelationEndpoint,
+    AppEndpoints,
 )
 
 logger = jhack_logger.getChild("integrate")
+
+
+@dataclass
+class IMatrix:
+    endpoints: Dict[AppName, AppEndpoints]
+    apps: Tuple[str, ...]
+    matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]]
+
+
+def gather_imatrix(
+    model,
+    apps: Optional[Sequence[str]] = None,
+    include_peers: bool = False,
+    include_cmrs: bool = False,
+    include_inactive: bool = False,
+) -> IMatrix:
+    endpoints = gather_endpoints(
+        model,
+        apps or (),
+        include_peers=include_peers,
+        include_cmrs=include_cmrs,
+        include_inactive=include_inactive,
+    )
+    matrix = build_matrix(endpoints, model=model, include_peers=include_peers)
+    return IMatrix(endpoints=endpoints, apps=tuple(sorted(endpoints)), matrix=matrix)
 
 
 class IntegrationMatrix:
@@ -56,21 +83,17 @@ class IntegrationMatrix:
     ):
         self._model: str = model or get_current_model()
         self._color = color
-        self._endpoints = gather_endpoints(
-            model, apps or (), include_peers=include_peers
-        )
-        self.apps = tuple(sorted(self._endpoints))
         self._include_peers = include_peers
 
-        if apps:
-            apps_re = re.compile(apps)
-            self.apps = tuple(filter(lambda x: apps_re.match(x), self.apps))
+        imatrix = gather_imatrix(
+            apps=apps, model=self._model, include_peers=include_peers
+        )
+        self._endpoints = imatrix.endpoints
+        self.apps = imatrix.apps
 
         # X axis: requires
         # Y axis: provides
-        self.matrix: List[
-            List[Union[List[PeerBinding], List[RelationBinding]]]
-        ] = self._build_matrix()
+        self.matrix = imatrix.matrix
 
     @property
     def model(self) -> str:
@@ -98,14 +121,6 @@ class IntegrationMatrix:
                     yield (i, j), cell
                 else:
                     yield cell
-
-    def _build_matrix(
-        self,
-    ) -> List[List[Union[List[PeerBinding], List[RelationBinding]]]]:
-        logger.info(f"gathering imatrix for {self._model}...")
-        return build_matrix(
-            self._endpoints, model=self._model, include_peers=self._include_peers
-        )
 
     def _render_cell(self, provider_idx: int, requirer_idx: int):
         # this is our cell

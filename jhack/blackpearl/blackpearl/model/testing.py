@@ -8,6 +8,7 @@ from typing import (
 from unittest.mock import MagicMock
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
+from jhack.blackpearl.blackpearl.model.edge_map import EdgeMap
 from jhack.blackpearl.blackpearl.model.model import JujuModel, JujuController, BPModel
 from jhack.blackpearl.blackpearl.model.testing_data import SAMPLE_MATRIX
 from jhack.utils.helpers.gather_endpoints import PeerBinding, RelationBinding
@@ -21,6 +22,12 @@ class TestingBPModel(BPModel):
         models: Optional[Sequence[str]] = None,
         controllers: Optional[Sequence[str]] = None,
     ):
+        self.juju_apps = set()
+        self.juju_models = set()
+        self.juju_controllers = set()
+
+        self.edges = EdgeMap()
+
         self._apps = {
             "model1": {
                 "alertmanager": {},
@@ -98,10 +105,7 @@ class TestingJujuModel(JujuModel):
         )
         self._matrix = matrix
         self._apps = list(apps)
-        self._cmrs = cmrs
-
-    def collect_cmrs(self):
-        self.cmrs = self._cmrs
+        self.cmrs.extend(cmrs)
 
     @property
     def imatrix(self):

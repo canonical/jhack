@@ -2,6 +2,7 @@
 """
 A module containing ``NodeEditorWidget`` class
 """
+from PyQt6.QtGui import QMouseEvent
 from qtpy.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -38,7 +39,7 @@ class NodeEditorWidget(QWidget):
         self.scene = self.__class__.Scene_class()
 
         # create graphics view
-        self.view = self.__class__.GraphicsView_class(self.scene.grScene, self)
+        self.view = self.__class__.GraphicsView_class(self.scene.gr_scene, self)
         self.layout.addWidget(self.view)
 
     def get_selected_items(self) -> list:
@@ -52,3 +53,7 @@ class NodeEditorWidget(QWidget):
     @property
     def nodes(self):
         return self.scene.nodes
+
+    def mousePressEvent(self, a0: QMouseEvent):
+        super().mousePressEvent(a0)
+        print(f"unhandled click on {self}")

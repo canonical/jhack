@@ -1,33 +1,29 @@
-from collections import OrderedDict
-
 import typing
+
+from qtpy.QtCore import QPointF, QRectF
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QPainterPath
-from qtpy.QtCore import QPointF, QRectF
-from qtpy.QtGui import QPen
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QLabel
+from qtpy.QtWidgets import QWidget
 
-
-from jhack.blackpearl.blackpearl.model.model import JujuController
-from jhack.blackpearl.blackpearl.view.edges import RelationEdge, PeerRelationEdge
 from jhack.blackpearl.blackpearl.view.helpers import get_color
 from jhack.blackpearl.blackpearl.view.node import NodeBase, GrNodeBase
-from jhack.blackpearl.nodeeditor.node_graphics_node import QDMGraphicsNode
-from jhack.blackpearl.nodeeditor.node_scene import Scene
-from jhack.blackpearl.nodeeditor.node_serializable import Serializable
+
+if typing.TYPE_CHECKING:
+    from jhack.blackpearl.blackpearl.model.model import JujuController
+    from jhack.blackpearl.blackpearl.model.edge_map import EdgeMap
 
 
 class ControllerNode(NodeBase):
     def __init__(
         self,
-        scene: "Scene",
         controller: "JujuController",
+        edges: "EdgeMap",
     ):
         self.controller = controller
         super().__init__(
-            controller,
-            scene,
-            f"C.{controller.name}",
+            parent=controller,
+            edges=edges,
+            title=f"C.{controller.name}",
             gr_node=ControllerGraphicsNode,
         )
 

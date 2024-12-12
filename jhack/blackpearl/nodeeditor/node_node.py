@@ -2,22 +2,10 @@
 """
 A module containing NodeEditor's class for representing `Node`.
 """
-from collections import OrderedDict
 from typing import Type
 
 from jhack.blackpearl.nodeeditor.node_graphics_node import QDMGraphicsNode
 from jhack.blackpearl.nodeeditor.node_content_widget import QDMNodeContentWidget
-from jhack.blackpearl.nodeeditor.node_serializable import Serializable
-from jhack.blackpearl.nodeeditor.node_socket import (
-    Socket,
-    LEFT_BOTTOM,
-    LEFT_CENTER,
-    LEFT_TOP,
-    RIGHT_BOTTOM,
-    RIGHT_CENTER,
-    RIGHT_TOP,
-)
-from jhack.blackpearl.nodeeditor.utils_no_qt import dumpException, pp
 
 DEBUG = False
 
@@ -29,21 +17,13 @@ class Node:
 
     def __init__(
         self,
-        scene: "Scene",
         title: str = "Undefined Node",
         gr_node: Type[QDMGraphicsNode] = None,
         content: Type[QDMNodeContentWidget] = None,
     ):
         self._title = title
-        super().__init__()
-
-        self.scene = scene
-
         self.content = content(self) if content else QDMNodeContentWidget(self)
         self.gr_node = gr_node(self) if gr_node else QDMGraphicsNode(self)
-
-        self.scene.add_node(self)
-        self.scene.grScene.addItem(self.gr_node)
 
     def __str__(self):
         return "<%s:%s %s..%s>" % (
@@ -69,7 +49,7 @@ class Node:
         self._title = value
         self.gr_node.title = self._title
 
-    def onEdgeConnectionChanged(self, new_edge: "Edge"):
+    def on_edge_connection_changed(self, new_edge: "Edge"):
         """
         Event handling that any connection (`Edge`) has changed. Currently not used...
 
@@ -96,14 +76,6 @@ class Node:
     def onDoubleClicked(self, event):
         """Event handling double click on Graphics Node in `Scene`"""
         pass
-
-    def doSelect(self, new_state: bool = True):
-        """Shortcut method for selecting/deselecting the `Node`
-
-        :param new_state: ``True`` if you want to select the `Node`. ``False`` if you want to deselect the `Node`
-        :type new_state: ``bool``
-        """
-        self.gr_node.doSelect(new_state)
 
     def isSelected(self):
         """Returns ``True`` if current `Node` is selected"""
