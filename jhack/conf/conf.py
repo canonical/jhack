@@ -49,13 +49,10 @@ class Config:
             return jconf, False
 
         except Exception:
-            logger.debug(
-                "Error encountered while attempting to initialize user config",
-                exc_info=True,
-            )
-            logger.warning(
-                f"failed to create default user config in {jconf}. "
-                f"You'll have to do that manually."
+            logger.exception(
+                "Error encountered while attempting to initialize user config: ",
+                f"Failed to create default user config in {jconf}. "
+                f"You'll have to do that manually.",
             )
 
         return self._DEFAULTS, True
