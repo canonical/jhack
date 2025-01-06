@@ -44,13 +44,31 @@ class IMatrix:
     apps: Tuple[str, ...]
     matrix: List[List[Union[List[PeerBinding], List[RelationBinding]]]]
 
+    def get_integrations(
+        self, *, provider: str, requirer: str
+    ) -> Union[List[PeerBinding], List[RelationBinding]]:
+        """The list of relation bindings for these two applications."""
+        return self.matrix[self.apps.index(provider)][self.apps.index(requirer)]
+
+    @property
+    def pairs(self):
+        """All (provider, requirer) pairs."""
+        return itertools.product(self.apps, repeat=2)
+
+    @property
+    def cmrs(self) -> Tuple[RelationBinding, ...]:
+        """All cmrs for all apps."""
+        return tuple(
+            itertools.chain(*(endpoints.cmrs for endpoints in self.endpoints.values()))
+        )
+
 
 def gather_imatrix(
     model,
     apps: Optional[Sequence[str]] = None,
     include_peers: bool = False,
     include_cmrs: bool = False,
-    include_inactive: bool = False,
+    include_inactive: bool = True,
 ) -> IMatrix:
     endpoints = gather_endpoints(
         model,
@@ -59,7 +77,9 @@ def gather_imatrix(
         include_cmrs=include_cmrs,
         include_inactive=include_inactive,
     )
-    matrix = build_matrix(endpoints, model=model, include_peers=include_peers)
+    matrix = build_matrix(
+        endpoints, include_peers=include_peers, include_inactive=include_inactive
+    )
     return IMatrix(endpoints=endpoints, apps=tuple(sorted(endpoints)), matrix=matrix)
 
 
@@ -86,13 +106,17 @@ class IntegrationMatrix:
         self._include_peers = include_peers
 
         imatrix = gather_imatrix(
-            apps=apps, model=self._model, include_peers=include_peers
+            apps=apps,
+            model=self._model,
+            include_peers=include_peers,
+            include_inactive=True,
         )
         self._endpoints = imatrix.endpoints
         self.apps = imatrix.apps
 
         # X axis: requires
         # Y axis: provides
+        self._imatrix = imatrix
         self.matrix = imatrix.matrix
 
     @property
@@ -103,14 +127,10 @@ class IntegrationMatrix:
         self._endpoints = gather_endpoints(model=self._model, apps=self.apps)
 
     def get_integrations(
-        self, provider_app: str, requirer_app: str
+        self, provider: str, requirer: str
     ) -> Union[List[PeerBinding], List[RelationBinding]]:
         """Get the list of peer or regular relation bindings for these apps."""
-        return self.matrix[self.apps.index(provider_app)][self.apps.index(requirer_app)]
-
-    def _pairs(self):
-        # returns provider, requirer pairs.
-        return itertools.product(self.apps, repeat=2)
+        return self._imatrix.get_integrations(provider=provider, requirer=requirer)
 
     def _cells(self, skip_diagonal=True, yield_indices=False):
         for i, row in enumerate(self.matrix):
@@ -150,9 +170,9 @@ class IntegrationMatrix:
                 )
                 return t
 
-            for endpoint, interface in bindings:
+            for binding in bindings:
                 sym = "↻"
-                fmt_obj = f"{endpoint} [{interface}] {sym}"
+                fmt_obj = f"{binding.endpoint} [{binding.interface}] {sym}"
                 t.add_row(Text(fmt_obj, style=self.peer_cell_text_style))
             return t
 
@@ -167,16 +187,16 @@ class IntegrationMatrix:
 
             for binding in bindings:
                 if isinstance(binding, RelationBinding):
-                    symtail, symhead = ">-", "->"
-                    color = self.active_cell_text_style
+                    if binding.active:
+                        symtail, symhead = ">-", "->"
+                        color = self.active_cell_text_style
+                    else:
+                        symtail, symhead = "X-", "-X"
+                        color = self.inactive_cell_text_style
                     prov, req = binding.provider_endpoint, binding.requirer_endpoint
                 elif isinstance(binding, PeerBinding):
                     symtail, symhead = ">-", "-<"
                     color = self.active_cell_text_style
-                    prov, req = binding.endpoint, binding.endpoint
-                elif isinstance(binding, RelationEndpoint):
-                    symtail, symhead = "X-", "-X"
-                    color = self.inactive_cell_text_style
                     prov, req = binding.endpoint, binding.endpoint
                 else:
                     raise ValueError(binding)
@@ -254,8 +274,8 @@ class IntegrationMatrix:
         exclude: str,
         verb: str,
         juju_cmd: str,
+        active: bool,
         dry_run: bool = False,
-        active: bool = None,
     ):
         targets = self.apps
 
@@ -280,16 +300,15 @@ class IntegrationMatrix:
                 prov = self.apps[prov_idx]
                 req = self.apps[req_idx]
 
-                if active in {True, False}:
-                    # only include if the interface is currently not at the desired state
-                    binding_active = isinstance(binding, RelationBinding)
-                    if binding_active is not active:
-                        logger.debug(
-                            f"skipping {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> "
-                            f"{req}:{binding.requirer_endpoint} "
-                            f'interface is already {"in" if active else ""}active'
-                        )
-                        continue
+                # only include if the interface is currently not at the desired state
+                binding_active = isinstance(binding, RelationBinding) and binding.active
+                if binding_active is not active:
+                    logger.debug(
+                        f"skipping {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> "
+                        f"{req}:{binding.requirer_endpoint} "
+                        f'interface is already {"in" if active else ""}active'
+                    )
+                    continue
 
                 if prov not in target_apps:
                     logger.debug(f"skipping {prov}: not a target")
@@ -637,7 +656,7 @@ def _pull_cmrs(
 
 
 if __name__ == "__main__":
-    mtrx = IntegrationMatrix(include_peers=True, model="svcgraph")
+    mtrx = IntegrationMatrix(include_peers=True, model="test-nginxc")
     # mtrx.connect()
     # # mtrx.watch()
     mtrx.pprint()

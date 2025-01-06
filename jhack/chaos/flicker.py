@@ -32,9 +32,13 @@ def _flicker(
     _all = set(status["applications"])
 
     if unknown_excl := exclude.difference(_all):
-        exit(f"unknown excludes: apps {unknown_excl} not found in model {model or '<current>'}")
+        exit(
+            f"unknown excludes: apps {unknown_excl} not found in model {model or '<current>'}"
+        )
     if unknown_incl := include.difference(_all):
-        exit(f"unknown includes: apps {unknown_incl} not found in model {model or '<current>'}")
+        exit(
+            f"unknown includes: apps {unknown_incl} not found in model {model or '<current>'}"
+        )
 
     if include:
         targets = list(include)
@@ -44,7 +48,9 @@ def _flicker(
         targets = list(_all)
 
     if lntargets := len(targets) < 2:
-        exit(f"not enough targets ({lntargets}, min 2): --include more or --exclude less")
+        exit(
+            f"not enough targets ({lntargets}, min 2): --include more or --exclude less"
+        )
 
     print("Gathering imatrix...")
     imatrix = IntegrationMatrix(model=model)
@@ -54,7 +60,7 @@ def _flicker(
             continue  # skip peers
 
         i: RelationBinding  # no peers expected
-        for i in imatrix.get_integrations(prov, req):
+        for i in imatrix.get_integrations(provider=prov, requirer=req):
             # reverse = remove first, add last
             # if we're looking to remove, we want to only select integrations that are active
             if reverse != i.active:
@@ -78,15 +84,17 @@ def _flicker(
             if dry_run:
                 print(f"\t{cmd}")
             else:
-                integration_repr = (
-                    f"{prov}:{integration.provider_endpoint} --[{integration.interface}]--> {req}"
-                )
+                integration_repr = f"{prov}:{integration.provider_endpoint} --[{integration.interface}]--> {req}"
                 print(f"\tDisintegrating {integration_repr}")
                 try:
                     check_output(shlex.split(cmd))
                 except CalledProcessError:
-                    logger.error(f"error disintegrating {integration_repr} ({cmd}). Skipping...")
-                    logger.debug(f"error disintegrating {integration_repr}", exc_info=True)
+                    logger.error(
+                        f"error disintegrating {integration_repr} ({cmd}). Skipping..."
+                    )
+                    logger.debug(
+                        f"error disintegrating {integration_repr}", exc_info=True
+                    )
                     continue
 
             done.append((prov, req, integration))
@@ -100,14 +108,14 @@ def _flicker(
             if dry_run:
                 print(f"\t{cmd}")
             else:
-                integration_repr = (
-                    f"{prov}:{integration.provider_endpoint} --[{integration.interface}]--> {req}"
-                )
+                integration_repr = f"{prov}:{integration.provider_endpoint} --[{integration.interface}]--> {req}"
                 print(f"\tIntegrating {integration_repr}")
                 try:
                     check_output(shlex.split(cmd))
                 except CalledProcessError:
-                    logger.error(f"error integrating {integration_repr} ({cmd}). Skipping...")
+                    logger.error(
+                        f"error integrating {integration_repr} ({cmd}). Skipping..."
+                    )
                     logger.debug(f"error integrating {integration_repr}", exc_info=True)
                     continue
 
@@ -116,7 +124,9 @@ def _flicker(
         return done
 
     if not dry_run:
-        check_destructive_commands_allowed("mancioppi", "juju integrate | juju remove-relation")
+        check_destructive_commands_allowed(
+            "mancioppi", "juju integrate | juju remove-relation"
+        )
 
     if reverse:
         one, two = integrate, disintegrate
@@ -145,8 +155,12 @@ def _flicker(
 
 def flicker(
     model: str = typer.Option(None, "--model", "-m", help="The model to flicker."),
-    include: List[str] = typer.Option(None, "--include", "-i", help="Flicker this app."),
-    exclude: List[str] = typer.Option(None, "--exclude", "-e", help="Leave this app unflickered."),
+    include: List[str] = typer.Option(
+        None, "--include", "-i", help="Flicker this app."
+    ),
+    exclude: List[str] = typer.Option(
+        None, "--exclude", "-e", help="Leave this app unflickered."
+    ),
     wait_user: bool = typer.Option(
         True, is_flag=True, help="Wait for user input before unflickering."
     ),
@@ -155,7 +169,9 @@ def flicker(
         is_flag=True,
         help="Don't actually do anything, just print what would have happened.",
     ),
-    reverse: bool = typer.Option(False, is_flag=True, help="First scale down, then up."),
+    reverse: bool = typer.Option(
+        False, is_flag=True, help="First scale down, then up."
+    ),
 ):
     """Flickers the bugs out of this model.
 

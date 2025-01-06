@@ -1,19 +1,13 @@
 import itertools
 import sys
-from collections import defaultdict
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Dict, List, NamedTuple, Union, Optional
 
-import yaml
-
 from jhack.helpers import (
-    fetch_file,
-    get_units,
     juju_status,
     get_relations,
     RelationType,
     get_app_metadata,
-    Relation,
 )
 from jhack.logger import logger as jhack_logger
 
@@ -64,13 +58,6 @@ class PeerBinding(NamedTuple):
         return self.model
 
 
-class RelationEndpoint(NamedTuple):
-    app: str
-    model: str
-    endpoint: str
-    interface: str
-
-
 class RelationBinding(NamedTuple):
     provider_app: str
     provider_model: str
@@ -79,6 +66,7 @@ class RelationBinding(NamedTuple):
     requirer_app: str
     requirer_model: str
     requirer_endpoint: str
+    active: bool = True
 
     def other_app(self, app: str):
         if app == self.provider_app:
@@ -100,6 +88,28 @@ class RelationBinding(NamedTuple):
         return self.provider_model != self.requirer_model
 
 
+class RelationEndpoint(NamedTuple):
+    app: str
+    model: str
+    endpoint: str
+    interface: str
+
+    def bound_as_provider(
+        self, other: "RelationEndpoint", active: bool = False
+    ) -> RelationBinding:
+        """Create a relation binding between these two endpoints, where this one is provider."""
+        return RelationBinding(
+            provider_app=self.app,
+            provider_model=self.model,
+            provider_endpoint=self.endpoint,
+            requirer_app=other.app,
+            requirer_model=other.model,
+            requirer_endpoint=other.endpoint,
+            interface=self.interface,
+            active=active,
+        )
+
+
 def gather_endpoints(
     model=None,
     apps=(),
@@ -107,15 +117,9 @@ def gather_endpoints(
     include_cmrs: bool = False,
     include_inactive: bool = True,
 ) -> Dict[AppName, AppEndpoints]:
-
     for app in apps:
         if "/" in app:
             raise ValueError(f"not an app: {app}")
-
-    def remotes(app, endpoint):
-        if "relations" not in app:
-            return []
-        return app["relations"].get(endpoint, [])
 
     eps = {}
 
@@ -141,7 +145,7 @@ def gather_endpoints(
             )
             continue
 
-        CMR_endpoints = status.get("application-endpoints")
+        CMR_endpoints = status.get("application-endpoints", ())
 
         def is_cross_model(obj: str):
             return obj in CMR_endpoints
@@ -193,6 +197,8 @@ def gather_endpoints(
         }
 
         if include_inactive:
+            # TODO: replace RelationEndpoint with RelationBinding here
+
             active_endpoints = {
                 binding.provider_endpoint for binding in app_eps["provides"]
             }.union({binding.requirer_endpoint for binding in app_eps["requires"]})
@@ -247,9 +253,9 @@ def gather_endpoints(
                 if is_cross_model(rel.requirer):
                     # parse "mk8s:admin/svcgraph.tempo"
                     requirer_model = CMR_endpoints[rel.requirer]["url"].split(".")[0]
-                    provider_model = model
+                    provider_model = f"{status['model']['controller']}:admin/{status['model']['name']}"
                 elif is_cross_model(rel.provider):
-                    requirer_model = model
+                    requirer_model = f"{status['model']['controller']}:admin/{status['model']['name']}"
                     provider_model = CMR_endpoints[rel.provider]["url"].split(".")[0]
                 else:
                     continue  # not a CMR
@@ -269,7 +275,9 @@ def gather_endpoints(
 
 
 def build_matrix(
-    endpoints: Dict[AppName, AppEndpoints], model: str, include_peers: bool = False
+    endpoints: Dict[AppName, AppEndpoints],
+    include_peers: bool = False,
+    include_inactive: bool = True,
 ) -> List[List[List[Union[PeerBinding, RelationBinding, RelationEndpoint]]]]:
     apps = list(endpoints)
     mtrx = [[[] for _ in range(len(apps))] for _ in range(len(apps))]
@@ -285,7 +293,7 @@ def build_matrix(
 
         provides = endpoints[provider].provides
         requires = endpoints[requirer].requires
-        interfaces_supported_by_requirer = [r.interface for r in requires]
+        interfaces_supported_by_requirer = set(r.interface for r in requires)
 
         shared: List[RelationBinding] = [
             binding
@@ -295,12 +303,14 @@ def build_matrix(
             and binding.provider_app == provider
             and binding.requirer_app == requirer
         ]
-        shared.extend(
-            binding
-            for binding in provides
-            if binding.interface in interfaces_supported_by_requirer
-            and isinstance(binding, RelationEndpoint)
-        )
+        if include_inactive:
+            # FIXME: replace this with a not RelationBinding.active check
+            shared.extend(
+                binding
+                for binding in provides
+                if binding.interface in interfaces_supported_by_requirer
+                and isinstance(binding, RelationEndpoint)
+            )
 
         # sort by interface name first, provider endpoint, requirer endpoint.
         sorted_s = sorted(
@@ -319,5 +329,6 @@ def build_matrix(
 
 
 if __name__ == "__main__":
-    eps = gather_endpoints("ingress", include_cmrs=True)
+    eps = gather_endpoints("test-nginxc", include_peers=True, include_inactive=True)
+    mtrx = build_matrix(endpoints=eps)
     print(eps)

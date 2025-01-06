@@ -1,4 +1,5 @@
 import itertools
+import re
 import typing
 from itertools import pairwise, product
 from multiprocessing.managers import Value
@@ -37,7 +38,6 @@ class BPController:
             bp_view.add_node(bp_model.add_controller(controller))
             for model in controller.models:
                 bp_view.add_node(bp_model.add_model(model))
-
                 imatrix = model.imatrix
                 if not imatrix:
                     logger.warning(
@@ -60,8 +60,10 @@ class BPController:
 
                 logger.info("bootstrapping relations...")
 
-                for prov, req in itertools.product(imatrix.apps, repeat=2):
-                    for relation in imatrix.get_integrations(prov, req):
+                for prov, req in imatrix.pairs:
+                    for relation in imatrix.get_integrations(
+                        provider=prov, requirer=req
+                    ):
                         if isinstance(relation, PeerBinding):
                             # peer
                             edge = bp_model.add_peer_relation(
@@ -81,11 +83,16 @@ class BPController:
 
             logger.info("bootstrapping CMRs...")
             # now we've added all models, we can add cross-model relations
+            def split_model(model_name) -> typing.Tuple[str, str]:
+                """Split model name expressed in controller:username/model."""
+                controller_name, _, model_name = re.compile(r"[:/]").split(model_name)
+                return (model_name, controller_name)
+
             for model in controller.models:
                 for cmr in model.cmrs:
-                    # fixme: could be provider or requirer
-                    app1 = bp_model.find_app(model, cmr.provider_app)
-                    model2 = bp_model.find_model(cmr.requirer_model, controller)
+                    model1 = bp_model.find_model(*split_model(cmr.provider_model))
+                    app1 = bp_model.find_app(model1.model, cmr.provider_app)
+                    model2 = bp_model.find_model(*split_model(cmr.requirer_model))
                     app2 = bp_model.find_app(model2.model, cmr.requirer_app)
                     edge = bp_model.add_cmr(app1, app2, cmr)
                     self._model.edges.add(edge)

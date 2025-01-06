@@ -1,3 +1,4 @@
+import re
 import typing
 from collections import defaultdict
 
@@ -5,7 +6,7 @@ from PyQt6.QtGui import QColor
 from itertools import cycle
 
 import subprocess
-from typing import List, Dict, Any, Optional, Literal, Generator, Sequence, Set
+from typing import List, Dict, Any, Optional, Literal, Generator, Sequence, Set, Tuple
 
 from jhack.blackpearl.blackpearl.logger import bp_logger
 from jhack.blackpearl.blackpearl.model.edge_map import EdgeMap
@@ -21,7 +22,7 @@ from jhack.blackpearl.blackpearl.view.helpers import get_color
 from jhack.blackpearl.blackpearl.view.model_node import ModelNode
 from jhack.utils.helpers.gather_endpoints import RelationBinding
 from jhack.utils.integrate import IntegrationMatrix, IMatrix, gather_imatrix
-from jhack.helpers import show_application
+from jhack.helpers import show_application, modify_remote_file
 
 logger = bp_logger.getChild(__file__)
 
@@ -56,6 +57,12 @@ class BPModel:
         for controller in self.juju_controllers:
             logger.info(f"bootstrapping models from controller {controller.name}...")
             controller.load_models(self._juju_model_names)
+            for model in tuple(controller.models):
+                logger.info(f"bootstrapping model {model.name}...")
+                success = model.bootstrap()
+                if not success:
+                    logger.warning(f"bootstrap FAILED for {model.name}")
+                    controller.models.remove(model)
 
     def add_controller(self, controller: "JujuController") -> ControllerNode:
         node = ControllerNode(controller, edges=self.edges)
@@ -127,10 +134,24 @@ class BPModel:
                 return app_node
         raise NodeNotFoundError(model.full_name, name)
 
-    def find_model(self, name: str, controller: "JujuController") -> "ModelNode":
+    def find_controller(self, name: str) -> "ControllerNode":
+        for controller_node in self.controller_nodes:
+            controller: "JujuController" = controller_node.controller
+            if controller.name == name:
+                return controller_node
+        raise NodeNotFoundError(name)
+
+    def find_model(
+        self, name: str, controller: typing.Union["JujuController", str]
+    ) -> "ModelNode":
+        controller_ = (
+            self.find_controller(controller).controller
+            if isinstance(controller, str)
+            else controller
+        )
         for model_node in self.model_nodes:
             model: "JujuModel" = model_node.model
-            if model.name == name and model.controller is controller:
+            if model.name == name and model.controller is controller_:
                 return model_node
         raise NodeNotFoundError(name)
 
@@ -185,6 +206,9 @@ class BPModel:
 class JujuController:
     """Juju controller datastructure wrapper."""
 
+    def __repr__(self):
+        return f"<JujuController {self.name}>"
+
     _CONTROLLER_COLOR_CYCLER = cycle(
         ("controller_1", "controller_2", "controller_3", "controller_4", "controller_5")
     )
@@ -218,6 +242,9 @@ class JujuController:
 class JujuModel:
     """Juju model datastructure wrapper."""
 
+    def __repr__(self):
+        return f"<JujuModel {self.name}>"
+
     _MODEL_COLOR_CYCLER = cycle(
         (
             "model_1",
@@ -245,8 +272,6 @@ class JujuModel:
         self.controller = controller
         self._meta = meta
         self.apps: Set[JujuApp] = set()
-        self.cmrs: List[RelationBinding] = []
-
         self.name: str = meta["short-name"]
         self.full_name: str = meta["name"]
         self.type: Literal["lxd", "k8s"] = meta["type"]
@@ -259,6 +284,13 @@ class JujuModel:
         self.cli = Juju(self.name)
         self._status: Optional[Status] = None
         self.ui_color = self._get_ui_color()
+        self.imatrix: Optional["IMatrix"] = None
+
+    @property
+    def cmrs(self) -> Tuple["RelationBinding", ...]:
+        if not self.imatrix:
+            raise ValueError(f"{self} not bootstrapped")
+        return self.imatrix.cmrs
 
     def status(self, refresh=False) -> Status:
         """Get juju status"""
@@ -268,22 +300,28 @@ class JujuModel:
             self._status = self.cli.status()
         return self._status
 
-    @property
-    def imatrix(self) -> Optional["IMatrix"]:
+    def bootstrap(self):
         if self.life == "dying":
             logger.info(f"skipping model {self.name} as it is dying")
-            return
+            return False
         try:
-            return gather_imatrix(
-                model=self.name, include_peers=True, include_cmrs=True
+            self.imatrix = gather_imatrix(
+                model=self.name,
+                include_peers=True,
+                include_cmrs=True,
+                include_inactive=False,
             )
         except:
             logger.exception(f"failed to collect imatrix for model {self.name}")
-            return
+            return False
+        return True
 
 
 class JujuApp:
     """Juju app datastructure wrapper."""
+
+    def __repr__(self):
+        return f"<JujuApp {self.name}>"
 
     def __hash__(self):
         return hash((self.name, self.model.uuid))

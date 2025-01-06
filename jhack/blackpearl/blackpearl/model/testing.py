@@ -4,6 +4,8 @@ from typing import (
     Sequence,
     Union,
     Iterable,
+    Dict,
+    Tuple,
 )
 from unittest.mock import MagicMock
 
@@ -105,7 +107,11 @@ class TestingJujuModel(JujuModel):
         )
         self._matrix = matrix
         self._apps = list(apps)
-        self.cmrs.extend(cmrs)
+        self._cmrs = tuple(cmrs)
+
+    @property
+    def cmrs(self) -> Tuple["RelationBinding", ...]:
+        return self._cmrs
 
     @property
     def imatrix(self):
