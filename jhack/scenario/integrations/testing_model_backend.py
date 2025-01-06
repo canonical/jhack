@@ -187,9 +187,7 @@ class _TestingConfig(Dict[str, Union[str, int, float, bool]]):
         if declared_type not in self._supported_types:
             raise RuntimeError(
                 "Incorrectly formatted `options.yaml`: `type` needs to be one "
-                "of [{}], not {}.".format(
-                    ", ".join(self._supported_types), declared_type
-                )
+                "of [{}], not {}.".format(", ".join(self._supported_types), declared_type)
             )
 
         if type(value) is not self._supported_types[declared_type]:
@@ -209,9 +207,7 @@ class _TestingConfig(Dict[str, Union[str, int, float, bool]]):
 class _TestingRelationDataContents(Dict[str, str]):
     def __setitem__(self, key: str, value: str):
         if not isinstance(key, str):
-            raise model.RelationDataError(
-                f"relation data keys must be strings, not {type(key)}"
-            )
+            raise model.RelationDataError(f"relation data keys must be strings, not {type(key)}")
         if not isinstance(value, str):
             raise model.RelationDataError(
                 f"relation data values must be strings, not {type(value)}"
@@ -264,12 +260,8 @@ class TestingModelBackend:
         self.model_uuid = str(uuid.uuid4())
 
         self._harness_tmp_dir = tempfile.TemporaryDirectory(prefix="ops-harness-")
-        self._harness_storage_path = (
-            pathlib.Path(self._harness_tmp_dir.name) / "storages"
-        )
-        self._harness_container_path = (
-            pathlib.Path(self._harness_tmp_dir.name) / "containers"
-        )
+        self._harness_storage_path = pathlib.Path(self._harness_tmp_dir.name) / "storages"
+        self._harness_container_path = pathlib.Path(self._harness_tmp_dir.name) / "containers"
         self._harness_storage_path.mkdir()
         self._harness_container_path.mkdir()
         # this is used by the  decorator
@@ -303,9 +295,7 @@ class TestingModelBackend:
         self._storage_list: Dict[str, Dict[int, Dict[str, Any]]] = {
             k: {} for k in self._meta.storages
         }
-        self._storage_attached: Dict[str, Set[int]] = {
-            k: set() for k in self._meta.storages
-        }
+        self._storage_attached: Dict[str, Set[int]] = {k: set() for k in self._meta.storages}
         self._storage_index_counter = 0
         # {container_name : _TestingPebbleClient}
         self._pebble_clients: Dict[str, _TestingPebbleClient] = {}
@@ -341,9 +331,7 @@ class TestingModelBackend:
             # In actual Juju, the resource path for a charm's resource is
             # $AGENT_DIR/resources/$RESOURCE_NAME/$RESOURCE_FILENAME
             # However, charms shouldn't depend on this.
-            self._resource_dir = tempfile.TemporaryDirectory(
-                prefix="tmp-ops-test-resource-"
-            )
+            self._resource_dir = tempfile.TemporaryDirectory(prefix="tmp-ops-test-resource-")
         res_dir_name = cast(str, self._resource_dir.name)
         return pathlib.Path(res_dir_name)
 
@@ -352,9 +340,7 @@ class TestingModelBackend:
             return self._relation_ids_map[relation_name]
         except KeyError:
             if relation_name not in self._meta.relations:
-                raise model.ModelError(
-                    f"{relation_name} is not a known relation"
-                ) from None
+                raise model.ModelError(f"{relation_name} is not a known relation") from None
             no_ids: List[int] = []
             return no_ids
 
@@ -395,9 +381,8 @@ class TestingModelBackend:
         if not isinstance(is_app, bool):
             raise TypeError("is_app parameter to relation_set must be a boolean")
 
-        if (
-            "relation_broken" in self._hook_is_running
-            and not self.relation_remote_app_name(relation_id)
+        if "relation_broken" in self._hook_is_running and not self.relation_remote_app_name(
+            relation_id
         ):
             raise RuntimeError(
                 "remote-side relation data cannot be accessed during a relation-broken event"
@@ -455,9 +440,7 @@ class TestingModelBackend:
         else:
             return self._unit_status
 
-    def status_set(
-        self, status: "StatusName", message: str = "", *, is_app: bool = False
-    ):
+    def status_set(self, status: "StatusName", message: str = "", *, is_app: bool = False):
         if status in [model.ErrorStatus.name, model.UnknownStatus.name]:
             raise model.ModelError(
                 f'ERROR invalid status "{status}", expected one of'
@@ -549,9 +532,9 @@ class TestingModelBackend:
                         # If the symlink is already the one we want, then we
                         # don't need to do anything here.
                         # NOTE: In Python 3.9, this can use `mounting_dir.readlink()`
-                        if not mounting_dir.is_symlink() or os.readlink(
-                            mounting_dir
-                        ) != str(target_dir):
+                        if not mounting_dir.is_symlink() or os.readlink(mounting_dir) != str(
+                            target_dir
+                        ):
                             raise
 
         index = int(index)
@@ -593,9 +576,7 @@ class TestingModelBackend:
         # are setting results that will not work.
         # This also does some validation on keys to make sure that they fit the
         # Juju constraints.
-        model._format_action_result_dict(
-            results
-        )  # Validate, but ignore returned value.
+        model._format_action_result_dict(results)  # Validate, but ignore returned value.
         self._running_action.output.results.update(results)
 
     def action_log(self, message: str):
@@ -607,9 +588,7 @@ class TestingModelBackend:
         # If fail is called multiple times, Juju only retains the most recent failure message.
         self._running_action.failure_message = message
 
-    def network_get(
-        self, endpoint_name: str, relation_id: Optional[int] = None
-    ) -> "_NetworkDict":
+    def network_get(self, endpoint_name: str, relation_id: Optional[int] = None) -> "_NetworkDict":
         data = self._networks.get((endpoint_name, relation_id))
         if data is not None:
             return data
@@ -635,9 +614,7 @@ class TestingModelBackend:
         raise NotImplementedError(self.juju_log)  # type:ignore
 
     def get_pebble(self, socket_path: str) -> "_TestingPebbleClient":
-        container = socket_path.split("/")[
-            3
-        ]  # /charm/containers/<container_name>/pebble.socket
+        container = socket_path.split("/")[3]  # /charm/containers/<container_name>/pebble.socket
         client = self._pebble_clients.get(container, None)
         if client is None:
             container_root = self._harness_container_path / container
@@ -675,9 +652,7 @@ class TestingModelBackend:
         return len(units) + 1  # Account for this unit.
 
     def _get_secret(self, id: str) -> Optional[_Secret]:
-        return next(
-            (s for s in self._secrets if self._secret_ids_are_equal(s.id, id)), None
-        )
+        return next((s for s in self._secrets if self._secret_ids_are_equal(s.id, id)), None)
 
     def _ensure_secret(self, id: str) -> _Secret:
         secret = self._get_secret(id)
@@ -754,13 +729,9 @@ class TestingModelBackend:
             if refresh:
                 secret.tracked = revision.revision
         else:
-            revision = next(
-                (r for r in secret.revisions if r.revision == secret.tracked), None
-            )
+            revision = next((r for r in secret.revisions if r.revision == secret.tracked), None)
             if revision is None:
-                raise model.SecretNotFoundError(
-                    f"Secret {id!r} tracked revision was removed"
-                )
+                raise model.SecretNotFoundError(f"Secret {id!r} tracked revision was removed")
 
         return revision.content
 
@@ -825,15 +796,11 @@ class TestingModelBackend:
     ) -> None:
         secret = self._ensure_secret(id)
         if not self._has_secret_owner_permission(secret):
-            raise RuntimeError(
-                f"You must own secret {secret.id!r} to perform this operation"
-            )
+            raise RuntimeError(f"You must own secret {secret.id!r} to perform this operation")
 
         if content is None:
             content = secret.revisions[-1].content
-        revision = _SecretRevision(
-            revision=secret.revisions[-1].revision + 1, content=content
-        )
+        revision = _SecretRevision(revision=secret.revisions[-1].revision + 1, content=content)
         secret.revisions.append(revision)
         if label is not None:
             if label:
@@ -905,9 +872,7 @@ class TestingModelBackend:
         self._secrets.append(secret)
         return id  # Note that this is the 'short' ID, not the canonicalised one.
 
-    def secret_grant(
-        self, id: str, relation_id: int, *, unit: Optional[str] = None
-    ) -> None:
+    def secret_grant(self, id: str, relation_id: int, *, unit: Optional[str] = None) -> None:
         secret = self._ensure_secret(id)
         if not self._has_secret_owner_permission(secret):
             raise model.SecretNotFoundError(
@@ -919,14 +884,10 @@ class TestingModelBackend:
         remote_app_name = self._relation_app_and_units[relation_id]["app"]
         secret.grants[relation_id].add(unit or remote_app_name)
 
-    def secret_revoke(
-        self, id: str, relation_id: int, *, unit: Optional[str] = None
-    ) -> None:
+    def secret_revoke(self, id: str, relation_id: int, *, unit: Optional[str] = None) -> None:
         secret = self._ensure_secret(id)
         if not self._has_secret_owner_permission(secret):
-            raise RuntimeError(
-                f"You must own secret {secret.id!r} to perform this operation"
-            )
+            raise RuntimeError(f"You must own secret {secret.id!r} to perform this operation")
 
         if relation_id not in secret.grants:
             return
@@ -936,16 +897,12 @@ class TestingModelBackend:
     def secret_remove(self, id: str, *, revision: Optional[int] = None) -> None:
         secret = self._ensure_secret(id)
         if not self._has_secret_owner_permission(secret):
-            raise RuntimeError(
-                f"You must own secret {secret.id!r} to perform this operation"
-            )
+            raise RuntimeError(f"You must own secret {secret.id!r} to perform this operation")
 
         if revision is not None:
             revisions = [r for r in secret.revisions if r.revision != revision]
             if len(revisions) == len(secret.revisions):
-                raise model.SecretNotFoundError(
-                    f"Secret {id!r} revision {revision} not found"
-                )
+                raise model.SecretNotFoundError(f"Secret {id!r} revision {revision} not found")
             if revisions:
                 secret.revisions = revisions
             else:
@@ -954,9 +911,7 @@ class TestingModelBackend:
                     s for s in self._secrets if not self._secret_ids_are_equal(s.id, id)
                 ]
         else:
-            self._secrets = [
-                s for s in self._secrets if not self._secret_ids_are_equal(s.id, id)
-            ]
+            self._secrets = [s for s in self._secrets if not self._secret_ids_are_equal(s.id, id)]
 
     def open_port(self, protocol: str, port: Optional[int] = None):
         self._check_protocol_and_port(protocol, port)
@@ -1033,19 +988,13 @@ class _TestingExecProcess:
 
     def wait(self):
         if self._is_timeout:
-            raise pebble.TimeoutError(
-                f"timed out waiting for change ({self._timeout} seconds)"
-            )
+            raise pebble.TimeoutError(f"timed out waiting for change ({self._timeout} seconds)")
         if self._exit_code != 0:
-            raise pebble.ExecError(
-                self._command, cast(int, self._exit_code), None, None
-            )
+            raise pebble.ExecError(self._command, cast(int, self._exit_code), None, None)
 
     def wait_output(self) -> Tuple[AnyStr, Optional[AnyStr]]:
         if self._is_timeout:
-            raise pebble.TimeoutError(
-                f"timed out waiting for change ({self._timeout} seconds)"
-            )
+            raise pebble.TimeoutError(f"timed out waiting for change ({self._timeout} seconds)")
         out_value = self.stdout.read() if self.stdout is not None else None
         err_value = self.stderr.read() if self.stderr is not None else None
         if self._exit_code != 0:
@@ -1151,9 +1100,7 @@ class _TestingPebbleClient:
         # A common mistake is to pass just the name of a service, rather than a list of services,
         # so trap that so it is caught quickly.
         if isinstance(services, str):
-            raise TypeError(
-                f'start_services should take a list of names, not just "{services}"'
-            )
+            raise TypeError(f'start_services should take a list of names, not just "{services}"')
 
         self._check_connection()
 
@@ -1176,9 +1123,7 @@ class _TestingPebbleClient:
     ):
         # handle a common mistake of passing just a name rather than a list of names
         if isinstance(services, str):
-            raise TypeError(
-                f'stop_services should take a list of names, not just "{services}"'
-            )
+            raise TypeError(f'stop_services should take a list of names, not just "{services}"')
 
         self._check_connection()
 
@@ -1201,9 +1146,7 @@ class _TestingPebbleClient:
     ):
         # handle a common mistake of passing just a name rather than a list of names
         if isinstance(services, str):
-            raise TypeError(
-                f'restart_services should take a list of names, not just "{services}"'
-            )
+            raise TypeError(f'restart_services should take a list of names, not just "{services}"')
 
         self._check_connection()
 
@@ -1349,13 +1292,9 @@ class _TestingPebbleClient:
         plan.log_targets.update(self._render_log_targets())
         return plan
 
-    def get_services(
-        self, names: Optional[List[str]] = None
-    ) -> List[pebble.ServiceInfo]:
+    def get_services(self, names: Optional[List[str]] = None) -> List[pebble.ServiceInfo]:
         if isinstance(names, str):
-            raise TypeError(
-                f'start_services should take a list of names, not just "{names}"'
-            )
+            raise TypeError(f'start_services should take a list of names, not just "{names}"')
 
         self._check_connection()
         services = self._render_services()
@@ -1374,22 +1313,16 @@ class _TestingPebbleClient:
                 startup = pebble.ServiceStartup.DISABLED
             else:
                 startup = pebble.ServiceStartup(service.startup)
-            info = pebble.ServiceInfo(
-                name, startup=startup, current=pebble.ServiceStatus(status)
-            )
+            info = pebble.ServiceInfo(name, startup=startup, current=pebble.ServiceStatus(status))
             infos.append(info)
         return infos
 
     @staticmethod
     def _check_absolute_path(path: str):
         if not path.startswith("/"):
-            raise pebble.PathError(
-                "generic-file-error", f"paths must be absolute, got {path!r}"
-            )
+            raise pebble.PathError("generic-file-error", f"paths must be absolute, got {path!r}")
 
-    def pull(
-        self, path: str, *, encoding: Optional[str] = "utf-8"
-    ) -> Union[BinaryIO, TextIO]:
+    def pull(self, path: str, *, encoding: Optional[str] = "utf-8") -> Union[BinaryIO, TextIO]:
         self._check_connection()
         self._check_absolute_path(path)
         file_path = self._root / path[1:]
@@ -1530,9 +1463,7 @@ class _TestingPebbleClient:
                 ) from None
         except NotADirectoryError as e:
             # Attempted to create a subdirectory of a file
-            raise pebble.PathError(
-                "generic-file-error", f"not a directory: {e.args[0]}"
-            ) from None
+            raise pebble.PathError("generic-file-error", f"not a directory: {e.args[0]}") from None
 
     def remove_path(self, path: str, *, recursive: bool = False):
         self._check_connection()
@@ -1541,9 +1472,7 @@ class _TestingPebbleClient:
         if not file_path.exists():
             if recursive:
                 return
-            raise pebble.PathError(
-                "not-found", f"remove {path}: no such file or directory"
-            )
+            raise pebble.PathError("not-found", f"remove {path}: no such file or directory")
         if file_path.is_dir():
             if recursive:
                 shutil.rmtree(file_path)
@@ -1668,9 +1597,7 @@ class _TestingPebbleClient:
             proc_stdout = self._transform_exec_handler_output(result.stdout, encoding)
             proc_stderr = self._transform_exec_handler_output(result.stderr, encoding)
         else:
-            raise TypeError(
-                f"execution handler returned an unexpected type: {type(result)!r}."
-            )
+            raise TypeError(f"execution handler returned an unexpected type: {type(result)!r}.")
         if combine_stderr and proc_stderr.getvalue():
             raise ValueError(
                 "execution handler returned a non-empty stderr "
@@ -1706,10 +1633,7 @@ class _TestingPebbleClient:
 
         plan = self.get_plan()
         for service in service_names:
-            if (
-                service not in plan.services
-                or not self.get_services([service])[0].is_running()
-            ):
+            if service not in plan.services or not self.get_services([service])[0].is_running():
                 # conform with the real pebble api
                 message = f'cannot send signal to "{service}": service is not running'
                 raise self._api_error(500, message)
@@ -1720,9 +1644,7 @@ class _TestingPebbleClient:
         except KeyError:
             # conform with the real pebble api
             first_service = next(iter(service_names))
-            message = (
-                f'cannot send signal to "{first_service}": invalid signal name "{sig}"'
-            )
+            message = f'cannot send signal to "{first_service}": invalid signal name "{sig}"'
             raise self._api_error(500, message) from None
 
     def get_checks(
@@ -1735,8 +1657,7 @@ class _TestingPebbleClient:
         return [
             info
             for info in self._check_infos.values()
-            if (level is None or level == info.level)
-            and (names is None or info.name in names)
+            if (level is None or level == info.level) and (names is None or info.name in names)
         ]
 
     def notify(
@@ -1840,9 +1761,7 @@ class _TestingPebbleClient:
             filter_user_id = None
 
         if types is not None:
-            types = {
-                (t.value if isinstance(t, pebble.NoticeType) else t) for t in types
-            }
+            types = {(t.value if isinstance(t, pebble.NoticeType) else t) for t in types}
         if keys is not None:
             keys = set(keys)
 
@@ -1863,9 +1782,7 @@ class _TestingPebbleClient:
     ) -> bool:
         # Same logic as NoticeFilter.matches in Pebble.
         # For example: if user_id filter is set and it doesn't match, return False.
-        if user_id is not None and not (
-            notice.user_id is None or user_id == notice.user_id
-        ):
+        if user_id is not None and not (notice.user_id is None or user_id == notice.user_id):
             return False
         if types is not None and notice.type not in types:
             return False
