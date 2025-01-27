@@ -151,7 +151,9 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
     if not raw:
         logger.error(f"{cmd} produced no output.")
         if model:
-            logger.error(f"This usually means that the model {model!r} you passed does not exist")
+            logger.error(
+                f"This usually means that the model {model!r} you passed does not exist"
+            )
         else:
             logger.error("This usually means that the juju client isn't reachable")
 
@@ -223,7 +225,9 @@ def get_models(include_controller=False):
     data = json.loads(proc.stdout.read().decode("utf-8"))
     if include_controller:
         return [model["short-name"] for model in data["models"]]
-    return [model["short-name"] for model in data["models"] if not model["is-controller"]]
+    return [
+        model["short-name"] for model in data["models"] if not model["is-controller"]
+    ]
 
 
 def show_unit(unit: str, model: str = None):
@@ -348,7 +352,9 @@ def _push_file_machine_cmd(
     )
 
     if mkdir_remote:
-        mkdir_cmd = f"juju ssh{model_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        mkdir_cmd = (
+            f"juju ssh{model_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        )
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -420,11 +426,17 @@ def push_file(
         logger.error(f"{cmd} errored with code {retcode}: ")
         raise RuntimeError(
             f"Failed to push {local_path} to {unit} with {cmd!r}."
-            + (" (verify that the path is readable by the jhack snap)" if IS_SNAPPED else "")
+            + (
+                " (verify that the path is readable by the jhack snap)"
+                if IS_SNAPPED
+                else ""
+            )
         )
 
 
-def rm_file(unit: str, remote_path: str, model: str = None, is_path_relative=True, dry_run=False):
+def rm_file(
+    unit: str, remote_path: str, model: str = None, is_path_relative=True, dry_run=False
+):
     if is_path_relative:
         if remote_path.startswith("/"):
             remote_path = remote_path[1:]
@@ -504,7 +516,9 @@ def pull_metadata(unit: str, model: str):
             try:
                 fetch_file(unit, charmcraft_path, tf.name, model=model)
             except RuntimeError as e:
-                raise RuntimeError(f"cannot find charmcraft nor metadata in {unit}") from e
+                raise RuntimeError(
+                    f"cannot find charmcraft nor metadata in {unit}"
+                ) from e
 
         return yaml.safe_load(Path(tf.name).read_text())
 
@@ -593,14 +607,16 @@ class Target:
             app, unit_ = name.split("/")
         except ValueError:
             raise InvalidUnitNameError(
-                "invalid target name: expected `<app_name>/<unit_id>`; " f"got {name!r}."
+                "invalid target name: expected `<app_name>/<unit_id>`; "
+                f"got {name!r}."
             )
 
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
         if not unit or not unit.isdigit():
             raise InvalidUnitNameError(
-                "invalid target name: expected `<app_name:str>/<unit_id:int>`; " f"got {name!r}."
+                "invalid target name: expected `<app_name:str>/<unit_id:int>`; "
+                f"got {name!r}."
             )
         return Target(app, int(unit), leader=leader)
 
@@ -628,7 +644,9 @@ class Target:
 def get_all_units(model: str = None) -> Tuple[Target, ...]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
-    return tuple(chain(*(_get_units(app, status) for app in status.get("applications", {}))))
+    return tuple(
+        chain(*(_get_units(app, status) for app in status.get("applications", {})))
+    )
 
 
 def _get_units(
@@ -645,7 +663,9 @@ def _get_units(
                 continue
 
             # if the principal is still being set up, it could have no 'units' yet.
-            for unit_id, unit_meta in status["applications"][principal].get("units", {}).items():
+            for unit_id, unit_meta in (
+                status["applications"][principal].get("units", {}).items()
+            ):
                 unit = int(unit_id.split("/")[1])
                 units.append(
                     Target(
@@ -753,7 +773,9 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
         return {}
 
     apps = (
-        set(t.split("/")[0] for t in targets) if targets else list(status.get("applications", []))
+        set(t.split("/")[0] for t in targets)
+        if targets
+        else list(status.get("applications", []))
     )
 
     leaders = {}
@@ -761,7 +783,7 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
         units: dict = status["applications"][app].get("units", {})
         leaders_found = [unit for unit, meta in units.items() if meta.get("leader")]
         if not leaders_found:
-            logger.error(f"leader not found for {app!r} (not elected yet?)")
+            logger.debug(f"leader not found for {app!r} (not elected yet?)")
             continue
         leaders[app] = leaders_found[0]
     return leaders
