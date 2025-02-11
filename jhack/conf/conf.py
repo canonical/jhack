@@ -156,7 +156,7 @@ def check_destructive_commands_allowed(
 
     if not CONFIG.get("general", "enable_destructive_commands_NO_PRODUCTION_zero_guarantees"):
         preamble = (
-            "\n ** Jhack is now 'safe'! **\n" "All dangerous commands require manual confirmation."
+            "\n ** Jhack is now 'safe'! **\nAll dangerous commands require manual confirmation."
         )
 
         if CONFIG.is_default:

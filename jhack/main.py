@@ -14,7 +14,7 @@ sys.path.append(str(Path(os.path.realpath(__file__)).parent.parent))
 try:
     find_spec("jhack")
 except ModuleNotFoundError:
-    raise RuntimeError(f"cannot find jhack modules; " f"check your PATH={sys.path}.")
+    raise RuntimeError(f"cannot find jhack modules; check your PATH={sys.path}.")
 
 
 def main():

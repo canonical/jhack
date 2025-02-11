@@ -88,7 +88,7 @@ def gather_endpoints(
         except RuntimeError as e:
             logger.error(
                 f"Failed to fetch metadata.yaml from {unit} in "
-                f'model={model or "<current model>"}\n\n'
+                f"model={model or '<current model>'}\n\n"
                 f"{e}\n\n"
                 f"APP ={app}"
             )

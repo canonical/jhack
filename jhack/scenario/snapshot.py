@@ -164,7 +164,7 @@ def bind_event_to_state(event: _Event, state: State):
 
     else:
         raise BindFailedError(
-            f"cannot bind {event}: only relation, secret, " f"or workload events can be bound.",
+            f"cannot bind {event}: only relation, secret, or workload events can be bound.",
         )
 
 
@@ -612,7 +612,7 @@ def get_config(
             try:
                 converter = converters[option["type"]]
             except KeyError:
-                raise ValueError(f'unrecognized type {option["type"]}')
+                raise ValueError(f"unrecognized type {option['type']}")
             cfg[name] = converter(value)
 
         else:
@@ -852,7 +852,7 @@ def _snapshot(
         )
         sys.exit(1)
 
-    logger.info(f'beginning snapshot of {target} in model {model or "<current>"}...')
+    logger.info(f"beginning snapshot of {target} in model {model or '<current>'}...")
 
     def if_include(key, fn, default):
         if include is None or key in include:

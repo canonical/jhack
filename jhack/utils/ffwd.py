@@ -52,5 +52,5 @@ def fast_forward(
     except KeyboardInterrupt:
         print("(aborted)")
 
-    cmd = JPopen(f"juju model-config " f"update-status-hook-interval={slow_interval}".split(" "))
+    cmd = JPopen(f"juju model-config update-status-hook-interval={slow_interval}".split(" "))
     cmd.wait()

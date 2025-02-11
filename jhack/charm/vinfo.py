@@ -107,7 +107,7 @@ def _add_charm_lib_info(
 ):
     if check_outdated and not check_command_available("charmcraft"):
         logger.error(
-            "Cannot check outdated libs: " "command unavailable: `charmcraft`. Is this a snap?"
+            "Cannot check outdated libs: command unavailable: `charmcraft`. Is this a snap?"
         )
         check_outdated = False
 

@@ -156,8 +156,7 @@ def _get_unit_info(
     data = _show_unit(unit_name, related_to=related_to, endpoint=endpoint, model=model)
     if not data:
         raise ValueError(
-            f"no unit info could be grabbed for {unit_name}; "
-            f"are you sure it's a valid unit name?"
+            f"no unit info could be grabbed for {unit_name}; are you sure it's a valid unit name?"
         )
     if unit_name not in data:
         raise KeyError(f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}")
@@ -651,7 +650,7 @@ def _coalesce_endpoint_and_n(
     endpoint1, endpoint2, n, model: Optional[str]
 ) -> Tuple[RelationEndpointURL, Optional[RelationEndpointURL], Relation]:
     if n is not None and (endpoint1 or endpoint2):
-        raise RuntimeError("Invalid usage: provide `n` or " "(`endpoint1` + `endpoint2`).")
+        raise RuntimeError("Invalid usage: provide `n` or (`endpoint1` + `endpoint2`).")
 
     relations = get_relations(model)
 

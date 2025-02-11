@@ -42,7 +42,7 @@ def fetch_db(unit: str, remote_path: str, local_path: Path = None):
         return fetch_file(unit=unit, remote_path=remote_path, local_path=local_path)
     except RuntimeError as e:
         raise RuntimeError(
-            "Probably no event has fired yet. " "Try simulating one with jhack fire."
+            "Probably no event has fired yet. Try simulating one with jhack fire."
         ) from e
 
 
@@ -168,8 +168,7 @@ def dump_db(
     unit: str = typer.Argument(..., help="Target unit."),
     idx: Optional[int] = typer.Argument(
         None,
-        help="Index of the event to dump (as per `list`), or '' if you want "
-        "to dump the full db.",
+        help="Index of the event to dump (as per `list`), or '' if you want to dump the full db.",
     ),
     db_path=DEFAULT_DB_NAME,
 ):
@@ -255,9 +254,7 @@ def _inject_record_current_event_call(file):
             break
 
     if mainline is None:
-        raise RuntimeError(
-            "recorder installation failed: " f"could not find main clause in {file}"
-        )
+        raise RuntimeError(f"recorder installation failed: could not find main clause in {file}")
 
     charm_py_lines.insert(-mainline, recorder_call)
     # in between, somewhere, the `main(MyCharm)` call
@@ -314,7 +311,7 @@ def _install(unit: str):
     _copy_recorder_script(unit)
 
     if recorder_only:
-        print("Recorder script refreshed. " "Skipping remaining steps.")
+        print("Recorder script refreshed. Skipping remaining steps.")
         return
 
     print("Injecting record_current_event call in charm source...")

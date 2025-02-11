@@ -315,7 +315,7 @@ def _nuke(
         if nukeable.type == "model":
             nuked_models.add(nukeable.name)
             nukes.append(
-                f"juju destroy-model{politeness} " f"--destroy-storage --no-prompt {nukeable.name}"
+                f"juju destroy-model{politeness} --destroy-storage --no-prompt {nukeable.name}"
             )
 
         elif nukeable.type == "app":
@@ -344,7 +344,7 @@ def _nuke(
 
     if n is not None:
         if n != (real_n := len(nukeables)):
-            logger.debug(f"Unexpected number of nukeables; " f"expected {n}, got: {nukeables}")
+            logger.debug(f"Unexpected number of nukeables; expected {n}, got: {nukeables}")
             for nukeable in nukeables:
                 print(f"would {ATOM} {nukeable}")
             word = "less" if n > real_n else "more"
@@ -410,8 +410,8 @@ def _nuke(
         if proc.returncode != 0:
             print(
                 f"something went wrong nuking {nukeable.name};"
-                f'stdout={proc.stdout.read().decode("utf-8")}'
-                f'stderr={proc.stderr.read().decode("utf-8")}'
+                f"stdout={proc.stdout.read().decode('utf-8')}"
+                f"stderr={proc.stderr.read().decode('utf-8')}"
             )
         else:
             logger.debug("hit and sunk")
@@ -467,7 +467,7 @@ def nuke(
         None,
         "-n",
         "--number",
-        help="Exact number of things you're expectig to get nuked." "Safety first.",
+        help="Exact number of things you're expectig to get nuked.Safety first.",
     ),
     borked: bool = typer.Option(
         None,

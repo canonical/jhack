@@ -72,7 +72,7 @@ def check_command_available(cmd: str):
 
 def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
     """Attempts to guess whether we're talking k8s or machine."""
-    cmd = f'juju show-model{f" {model}" if model else ""} --format=json'
+    cmd = f"juju show-model{f' {model}' if model else ''} --format=json"
     proc = JPopen(cmd.split())
     raw = proc.stdout.read().decode("utf-8")
     model_info = jsn.loads(raw)
@@ -140,7 +140,7 @@ def juju_log(unit: str, msg: str, model: str = None, debug=True):
 
 
 def juju_status(app_name=None, model: str = None, json: bool = False):
-    cmd = f'juju status{" " + app_name if app_name else ""} --relations'
+    cmd = f"juju status{' ' + app_name if app_name else ''} --relations"
     if model:
         cmd += f" -m {model}"
     if json:
@@ -317,10 +317,7 @@ def _push_file_k8s_cmd(
 
     cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
     if mkdir_remote:
-        mkdir_cmd = (
-            f"juju ssh{model_arg}{container_arg} {unit} mkdir -p "
-            f"{Path(full_remote_path).parent}"
-        )
+        mkdir_cmd = f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -435,7 +432,12 @@ def push_file(
 
 
 def rm_file(
-    unit: str, remote_path: str, model: str = None, is_path_relative=True, dry_run=False
+    unit: str,
+    remote_path: str,
+    model: str = None,
+    is_path_relative=True,
+    dry_run=False,
+    force: bool = False,
 ):
     if is_path_relative:
         if remote_path.startswith("/"):
@@ -445,7 +447,7 @@ def rm_file(
         full_remote_path = remote_path
 
     model_arg = f" -m {model}" if model else ""
-    cmd = f"juju ssh{model_arg} {unit} rm {full_remote_path}"
+    cmd = f"juju ssh{model_arg} {unit} rm{' -f' if force else ''} {full_remote_path}"
     if dry_run:
         print(f"would run: {cmd}")
         return
@@ -607,16 +609,14 @@ class Target:
             app, unit_ = name.split("/")
         except ValueError:
             raise InvalidUnitNameError(
-                "invalid target name: expected `<app_name>/<unit_id>`; "
-                f"got {name!r}."
+                f"invalid target name: expected `<app_name>/<unit_id>`; got {name!r}."
             )
 
         leader = unit_.endswith("*")
         unit = unit_.strip("*")
         if not unit or not unit.isdigit():
             raise InvalidUnitNameError(
-                "invalid target name: expected `<app_name:str>/<unit_id:int>`; "
-                f"got {name!r}."
+                f"invalid target name: expected `<app_name:str>/<unit_id:int>`; got {name!r}."
             )
         return Target(app, int(unit), leader=leader)
 

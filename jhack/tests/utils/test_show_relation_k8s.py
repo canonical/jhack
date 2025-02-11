@@ -24,7 +24,7 @@ def fake_juju_status(model=None, json: bool = False):
 def fake_juju_show_unit(
     unit_name, related_to: str = None, endpoint: str = None, model: str = None
 ):
-    source = f"{unit_name.replace('/','')}_show.json"
+    source = f"{unit_name.replace('/', '')}_show.json"
     mock_file = Path(__file__).parent / "show_relation_mocks" / "k8s" / source
     if not mock_file.exists():
         raise ValueError(unit_name)

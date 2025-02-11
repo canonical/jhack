@@ -32,7 +32,7 @@ def _get_lobo_details(target: Target) -> Tuple[Union[bool, List[str]], str]:
     - Return code: "0" or "1"
     """
     # if dispatch.ori is present; dispatch is lobo dispatch (or cleanup failed; either way)
-    cmd = f"juju ssh {target.unit_name} cat {target.charm_root_path/'dispatch'} | grep -A1 DISABLED= "
+    cmd = f"juju ssh {target.unit_name} cat {target.charm_root_path / 'dispatch'} | grep -A1 DISABLED= "
     try:
         out = check_output(shlex.split(cmd), stderr=subprocess.PIPE, text=True).strip()
         disabled, exitcode = out.split("\n") if out else (None, None)
@@ -132,8 +132,8 @@ def _do_lobotomy(
         # move dispatch.ori back to dispatch
         move_cmd = (
             f"juju ssh {target.unit_name}{sudo} mv "
-            f"{target.charm_root_path/'dispatch.ori'} "
-            f"{target.charm_root_path/'dispatch'}"
+            f"{target.charm_root_path / 'dispatch.ori'} "
+            f"{target.charm_root_path / 'dispatch'}"
         )
         if dry_run:
             print("would run:")
@@ -143,8 +143,8 @@ def _do_lobotomy(
         # move dispatch to dispatch.ori
         move_cmd = (
             f"juju ssh {target.unit_name}{sudo} mv "
-            f"{target.charm_root_path/'dispatch'} "
-            f"{target.charm_root_path/'dispatch.ori'}"
+            f"{target.charm_root_path / 'dispatch'} "
+            f"{target.charm_root_path / 'dispatch.ori'}"
         )
 
     if dry_run:

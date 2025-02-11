@@ -194,7 +194,7 @@ def _patch_k8s(
 
     logger.debug(f"adding layer and {'starting' if apply else 'killing'} mock server...")
 
-    add_layer = f"/charm/bin/pebble add {'jhackdo' if threshold==THRESH_HIGH else 'jhackundo'} --combine {LAYER_REMOTE_PATH}"
+    add_layer = f"/charm/bin/pebble add {'jhackdo' if threshold == THRESH_HIGH else 'jhackundo'} --combine {LAYER_REMOTE_PATH}"
     # if applying patch: stop container-agent, start server
     # if lifting patch: other way 'round
     containeragent_cmd = f"/charm/bin/pebble {'stop' if apply else 'start'} container-agent"
@@ -316,7 +316,7 @@ def _leader_set(target: Target, model: Optional[str] = None, cleanup=True, dry_r
 
 
 def leader_set(
-    target: str = typer.Argument(None, help="Unit you want to elect. " "Example: traefik/0."),
+    target: str = typer.Argument(None, help="Unit you want to elect. Example: traefik/0."),
     model: Optional[str] = typer.Option(
         None, "-m", "--model", help="The model. Defaults to current model."
     ),

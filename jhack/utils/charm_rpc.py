@@ -280,8 +280,7 @@ def _charm_script(
         except Exception as e:
             logger.debug(e, exc_info=True)
             logger.error(
-                f"encountered exception while verifying entrypoint signature... {e}"
-                f"Proceeding..."
+                f"encountered exception while verifying entrypoint signature... {e}Proceeding..."
             )
 
     targets = _get_targets(target, model)
@@ -510,7 +509,7 @@ def _exec_crpc_expr(
     if cleanup:
         logger.info("cleaning up...")
         try:
-            rm_file(target.unit_name, remote_rpc_dispatch_path, model=model)
+            rm_file(target.unit_name, remote_rpc_dispatch_path, model=model, force=True)
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
 

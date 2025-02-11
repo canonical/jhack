@@ -52,7 +52,7 @@ def _check_caching_policy(policy: _CachingPolicy) -> _CachingPolicy:
     if policy in {"strict", "loose"}:
         return policy
     else:
-        logger.warning(f"invalid caching policy: {policy!r}. " f"defaulting to `strict`")
+        logger.warning(f"invalid caching policy: {policy!r}. defaulting to `strict`")
     return "strict"
 
 
@@ -110,7 +110,7 @@ def _log_memo(
     else:
         fn_repr = fn_name
 
-    log_fn(f"@memo[{hit}]: replaying {fn_repr}(*{args}, **{kwargs})" f"\n\t --> {trim}{trimmed}")
+    log_fn(f"@memo[{hit}]: replaying {fn_repr}(*{args}, **{kwargs})\n\t --> {trim}{trimmed}")
 
 
 def _check_serializer(
@@ -123,12 +123,12 @@ def _check_serializer(
 
     if input_serializer not in SUPPORTED_SERIALIZERS_LIST:
         warnings.warn(
-            f"invalid input serializer name: {input_serializer}; " f"falling back to `json`."
+            f"invalid input serializer name: {input_serializer}; falling back to `json`."
         )
         input_serializer = "json"
     if output_serializer not in SUPPORTED_SERIALIZERS_LIST:
         warnings.warn(
-            f"invalid output serializer name: {input_serializer}; " f"falling back to `json`."
+            f"invalid output serializer name: {input_serializer}; falling back to `json`."
         )
         output_serializer = "json"
 
@@ -205,7 +205,7 @@ def memo(
                 elif method == "io":
                     if not hasattr(obj, "read"):
                         raise TypeError(
-                            "you can only serialize with `io` " "stuff that has a .read method."
+                            "you can only serialize with `io` stuff that has a .read method."
                         )
                     byt = pickle.dumps(obj.read())
                     return base64.b64encode(byt).decode("utf-8")
@@ -289,7 +289,7 @@ def memo(
                     except KeyError:
                         # if no memo is present for this function, that might mean that
                         # in the recorded session it was not called (this path is new!)
-                        warnings.warn(f"No memo found for {memo_name}: " f"this path must be new.")
+                        warnings.warn(f"No memo found for {memo_name}: this path must be new.")
                         return propagate()
 
                     if not all(

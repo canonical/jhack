@@ -255,7 +255,7 @@ def _state_apply(
         sys.exit(1)
 
     logger.info(
-        f'Preparing to drop {state} onto {target} in model {model or "<current>"}...',
+        f"Preparing to drop {state} onto {target} in model {model or '<current>'}...",
     )
 
     j_exec_cmds = _gather_juju_exec_cmds(include, state)

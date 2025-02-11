@@ -59,9 +59,7 @@ def configure():
     snap_data = os.environ.get("SNAP_DATA")
 
     if not snap_data or "jhack" not in snap_data:  # we could be in another snap
-        logger.info(
-            "jhack running in unsnapped mode. " "Skipping .local/share/juju configuration."
-        )
+        logger.info("jhack running in unsnapped mode. Skipping .local/share/juju configuration.")
     else:
         global IS_SNAPPED
         IS_SNAPPED = True
@@ -88,8 +86,7 @@ def configure():
             test_file.unlink()
         except FileNotFoundError:
             sys.exit(
-                f"JUJU_DATA default directory not found at {jdata}. "
-                f"Is the juju snap bootstrapped?"
+                f"JUJU_DATA default directory not found at {jdata}. Is the juju snap bootstrapped?"
             )
         except PermissionError:
             logger.error(

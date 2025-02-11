@@ -4,7 +4,7 @@ import typer
 def rmodel(
     model_name=typer.Argument(
         None,
-        help="comma-separated list of models to be removed, or single " "globbed name",
+        help="comma-separated list of models to be removed, or single globbed name",
     ),
     force: bool = True,
     restart: bool = False,

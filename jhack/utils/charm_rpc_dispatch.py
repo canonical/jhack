@@ -198,8 +198,7 @@ def load_charm_type() -> Type[ops.charm.CharmBase]:
         if charm_name and charm_subclasses:
             options = ", ".join((a[0] for a in charm_subclasses))
             raise RuntimeError(
-                f"couldn't find any charm type called "
-                f"{charm_name!r} in charm.py; only {options!r}"
+                f"couldn't find any charm type called {charm_name!r} in charm.py; only {options!r}"
             )
         raise RuntimeError("couldn't find any charm type in charm.py")
 

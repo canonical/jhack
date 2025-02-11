@@ -306,7 +306,7 @@ class IntegrationMatrix:
                         logger.debug(
                             f"skipping {prov}:{binding.provider_endpoint} --> [{binding.interface}] --> "
                             f"{req}:{binding.requirer_endpoint} "
-                            f'interface is already {"in" if active else ""}active'
+                            f"interface is already {'in' if active else ''}active"
                         )
                         continue
 

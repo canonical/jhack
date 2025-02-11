@@ -144,9 +144,7 @@ def run(
     try:
         import astunparse
     except ModuleNotFoundError:
-        print(
-            "this function requires the `astunparse` module. " "To solve: `pip install astunparse`"
-        )
+        print("this function requires the `astunparse` module. To solve: `pip install astunparse`")
         return
 
     if not Path(built_charm_template).exists():

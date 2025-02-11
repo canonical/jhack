@@ -119,12 +119,12 @@ def _load_adapters(file: str):
             raise RuntimeError(f"unable to import {file} as a python module")
         if not hasattr(adapter_module, "adapters"):
             raise RuntimeError(
-                f"imported module {adapter_module} has no " f"`adapters` variable defined."
+                f"imported module {adapter_module} has no `adapters` variable defined."
             )
         adapters = adapter_module.adapters
         return adapters
     except Exception as e:
-        logger.error(f"Failed to parse adapter file {file}: an error occurred. " f"{e}")
+        logger.error(f"Failed to parse adapter file {file}: an error occurred. {e}")
 
 
 class StorageView:
@@ -419,7 +419,7 @@ def show_stored(
         False,
         "--cs",
         "--controller-storage",
-        help="Whether the target _unit_ uses controller storage " "instead of local storage.",
+        help="Whether the target _unit_ uses controller storage instead of local storage.",
         is_flag=True,
     ),
     filter_: Optional[str] = typer.Option(
@@ -450,7 +450,7 @@ def show_stored(
         False,
         "-o",
         "--of-storage",
-        help="Also show Operator Framework storage " "(StoredStateData[_stored]).",
+        help="Also show Operator Framework storage (StoredStateData[_stored]).",
         is_flag=True,
     ),
     refresh_rate: float = typer.Option(

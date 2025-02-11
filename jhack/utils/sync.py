@@ -152,7 +152,7 @@ def _sync(
     status = juju_status(json=True)
     apps_status = status.get("applications")
     if not apps_status:
-        exit("no applications found in `juju status`. " "Is the model still being spun up?")
+        exit("no applications found in `juju status`. Is the model still being spun up?")
 
     if not targets:
         local_charm_meta = Path.cwd() / "charmcraft.yaml"
@@ -297,7 +297,7 @@ def sync(
         r".*\.py$",
         "--include-files",
         "-i",
-        help="A regex to filter the watchable files with. By defauly, we only sync *.py " "files.",
+        help="A regex to filter the watchable files with. By defauly, we only sync *.py files.",
     ),
     skip_initial_sync: bool = typer.Option(
         None,
@@ -323,7 +323,7 @@ def sync(
     touch: List[Path] = typer.Option(
         None,
         "--touch",
-        help="Only push these files and exit. " "Overrules --skip-initial-sync and --source-dirs",
+        help="Only push these files and exit. Overrules --skip-initial-sync and --source-dirs",
     ),
 ):
     """Syncs a local folder to a remote juju unit via juju scp.

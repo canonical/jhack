@@ -309,8 +309,7 @@ class LogLineParser:
     jhack_fire_evt_suffix = "The previous (?P<event>\S+) was fired by jhack\."
     event_fired_jhack = re.compile(base_pattern + jhack_fire_evt_suffix)
     jhack_replay_evt_suffix = (
-        "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\)"
-        " was replayed by jhack\."
+        "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
     )
     event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
 
@@ -902,7 +901,7 @@ class Processor:
                 deferred=DeferralStatus.deferred,
             )
             self._captured_logs.append(found)
-            logger.debug(f"Mocking {found}: we're deferring it but " f"we've not seen it before.")
+            logger.debug(f"Mocking {found}: we're deferring it but we've not seen it before.")
 
         currently_deferred_ns = {d.n for d in self._currently_deferred}
         is_already_deferred = deferred.n in currently_deferred_ns
@@ -943,9 +942,7 @@ class Processor:
             )
 
             self._defer(deferred)
-            logger.debug(
-                f"mocking {deferred}: we're reemitting it but " f"we've not seen it before."
-            )
+            logger.debug(f"mocking {deferred}: we're reemitting it but we've not seen it before.")
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more to pretend we've seen it.
 

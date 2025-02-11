@@ -51,8 +51,7 @@ def _get_relation_id(unit: str, endpoint: str, relation_remote_app: str = None, 
     relation_info = unit.get("relation-info")
     if not relation_info:
         raise RuntimeError(
-            f"No relation-info found in show-unit {unit} output. "
-            f"Does this unit have any relation?"
+            f"No relation-info found in show-unit {unit} output. Does this unit have any relation?"
         )
 
     for binding in relation_info:
@@ -158,7 +157,7 @@ def build_event_env(
         if not secret_id_or_label:
             print("no secret ID or label provided.")
             print(f"Existing secrets for {unit}:")
-            print(f"\t(owner): \tsecret_id {11*' '}\tlabel")
+            print(f"\t(owner): \tsecret_id {11 * ' '}\tlabel")
 
         for secret, owner in secrets.items():
             secret_meta = show_secret(secret, model=model)
@@ -290,9 +289,7 @@ def build_event_env(
     if override:
         for opt in override:
             if "=" not in opt:
-                logger.error(
-                    f"env option {opt!r} invalid: expected " f'"<key>=<value>"; skipping...'
-                )
+                logger.error(f'env option {opt!r} invalid: expected "<key>=<value>"; skipping...')
                 continue
 
             key, value = opt.split("=")

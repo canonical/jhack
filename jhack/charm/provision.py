@@ -66,7 +66,7 @@ def _provision_unit(
         logger.info("setting workload status to maintenance...")
         wl_status = status["applications"][app_name]["units"][unit]["workload-status"]
         proc = JPopen(
-            f"juju exec --unit {unit} -- status-set " f"maintenance provisioning... &".split()
+            f"juju exec --unit {unit} -- status-set maintenance provisioning... &".split()
         )
         proc.wait()
 
@@ -98,8 +98,8 @@ def _provision_unit(
             # todo: if status changed in the meantime, don't overwrite it!
             proc = JPopen(
                 f"juju exec --unit {unit} -- "
-                f'status-set {wl_status["current"]} '
-                f'{wl_status.get("message", "")} &'.split()
+                f"status-set {wl_status['current']} "
+                f"{wl_status.get('message', '')} &".split()
             )
             proc.wait()
         except:  # noqa: E722
