@@ -1,5 +1,6 @@
 import os
 import sys
+import types
 from enum import Enum
 from pathlib import Path
 from typing import Union
@@ -145,6 +146,25 @@ class _Allowed:
 
     def __bool__(self):
         return True
+
+
+def test_devmode():
+    """Dummy devmode command to verify the destructive profile."""
+    check_destructive_commands_allowed("test-devmode")
+    print("BOOM!")
+    print("--unsafe command executed--")
+    print("was this production? NO MORE!")
+
+    print("BAD BOI! BAD!")
+
+
+def doc_devmode_only(command: types.FunctionType):
+    """Add to a function a docstring telling users this is a devmode-only command."""
+    if not command.__doc__:
+        logger.error(f"{command} has no docstring")
+        return
+    command.__doc__ = command.__doc__ + "\n\n **--this command is DEVMODE ONLY--**"
+    return command
 
 
 def check_destructive_commands_allowed(
