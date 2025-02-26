@@ -16,7 +16,9 @@ def get_container_names(target, model):
     try:
         metadata = fetch_file(target, "metadata.yaml", model=model)
     except RuntimeError:
-        exit(f"Failed to fetch metadata.yaml from {target} in model={model or '<current model>'}")
+        exit(
+            f"Failed to fetch metadata.yaml from {target} in model={model or '<current model>'}"
+        )
     raw_meta = yaml.safe_load(metadata)
     containers = raw_meta.get("containers")
     if not containers:
@@ -37,16 +39,26 @@ def _pebble(
         exit(f"invalid target: expected `app_name/unit_id`, got: {target!r}")
 
     if not container_name:
-        container_name = get_container_names(target, model)[0]
+        for container in get_container_names(target, model):
+            print(f"result for container {container!r}:")
+            _pebble(target, command, container, model, dry_run)
+        return
 
-    client = RemotePebbleClient(container_name, target=target, model=model, dry_run=dry_run)
+    client = RemotePebbleClient(
+        container_name, target=target, model=model, dry_run=dry_run
+    )
     out = client.run(command)
+    if not out.strip():
+        _command = " ".join(["pebble"] + command)
+        out = f"[no output: {_command!r}]"
     print(out)
 
 
 def pebble(
     target: str = typer.Argument(..., help="Target unit."),
-    command: List[str] = typer.Argument(..., help="Pebble command to execute on the container."),
+    command: List[str] = typer.Argument(
+        ..., help="Pebble command to execute on the container."
+    ),
     container_name: str = typer.Option(
         None,
         "-c",
