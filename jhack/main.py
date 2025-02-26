@@ -7,6 +7,7 @@ from pathlib import Path
 
 import typer
 
+
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
 sys.path.append(str(Path(os.path.realpath(__file__)).parent.parent))
@@ -21,10 +22,6 @@ def main():
     from jhack.config import configure
 
     configure()
-
-    def devmode_only(command):
-        command.__doc__ = command.__doc__ + "\n\n **--this command is DEVMODE ONLY--**"
-        return command
 
     from jhack.chaos.flicker import flicker
     from jhack.chaos.mancioppi import mancioppi
@@ -41,11 +38,18 @@ def main():
         print_defaults,
         print_destructive,
         print_yolo,
+        test_devmode,
+        doc_devmode_only,
     )
     from jhack.logger import LOGLEVEL, logger
     from jhack.scenario.snapshot import snapshot
     from jhack.scenario.state_apply import state_apply
-    from jhack.utils import integrate
+    from jhack.utils.integrate import (
+        cmr as pull_cmr,
+        link as imatrix_fill,
+        clear as imatrix_clear,
+        show as imatrix_view,
+    )
     from jhack.utils.charm_rpc import charm_eval, charm_script
     from jhack.utils.event_recorder.client import (
         dump_db,
@@ -55,27 +59,54 @@ def main():
         purge_db,
     )
     from jhack.utils.ffwd import fast_forward
-    from jhack.utils.just_deploy_this import just_deploy_this
+    from jhack.utils.just_deploy_this import just_deploy_this as deploy
     from jhack.utils.kill import kill
     from jhack.utils.list_endpoints import list_endpoints
     from jhack.utils.nuke import nuke
     from jhack.utils.print_env import print_env
-    from jhack.utils.propaganda import leader_set
+    from jhack.utils.propaganda import leader_set as elect
     from jhack.utils.show_relation import sync_show_relation
     from jhack.utils.show_stored import show_stored
-    from jhack.utils.simulate_event import simulate_event
+    from jhack.utils.simulate_event import simulate_event as fire
     from jhack.utils.sitrep import sitrep
     from jhack.utils.sync import sync as sync_deployed_charm
     from jhack.utils.tail_charms import tail_events
     from jhack.utils.tail_logs import tail_logs
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity, vanity_2
+    from jhack.utils.pebble import pebble
     from jhack.version import print_jhack_version
 
     if "--" in sys.argv:
         sep = sys.argv.index("--")
         typer.Typer._extra_args = sys.argv[sep + 1 :]
         sys.argv = sys.argv[:sep]
+
+    # Add to all devmode-only commands a doc line warning the user it's only "safe" but not ``safe`` to use them
+    for devmode_only_command in {
+        charm_eval,
+        charm_script,
+        emit,
+        flicker,
+        install,
+        imatrix_fill,
+        imatrix_clear,
+        deploy,
+        kill,
+        elect,
+        lobotomy,
+        mancioppi,
+        nuke,
+        pebble,
+        provision,
+        purge_db,
+        fire,
+        state_apply,
+        sync_deployed_charm,
+        test_devmode,
+        unbork_juju,
+    }:
+        doc_devmode_only(devmode_only_command)
 
     utils = typer.Typer(name="utils", help="Charming utilities.")
     utils.command(name="show-relation", no_args_is_help=True)(sync_show_relation)
@@ -85,33 +116,34 @@ def main():
     utils.command(name="ffwd")(fast_forward)
     utils.command(name="print-env")(print_env)
 
-    utils.command(name="unbork-juju")(devmode_only(unbork_juju))
-    utils.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
-    utils.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
-    utils.command(name="elect", no_args_is_help=True)(devmode_only(leader_set))
+    utils.command(name="unbork-juju")(unbork_juju)
+    utils.command(name="fire", no_args_is_help=True)(fire)
+    utils.command(name="pull-cmr", no_args_is_help=True)(pull_cmr)
+    utils.command(name="elect", no_args_is_help=True)(elect)
+    utils.command(name="pebble", no_args_is_help=True)(pebble)
 
     charm = typer.Typer(name="charm", help="Charmcrafting utilities.")
     charm.command(name="update", no_args_is_help=True)(update)
     charm.command(name="init", no_args_is_help=True)(init)
     charm.command(name="func", no_args_is_help=True)(functional.run)
     charm.command(name="sync-packed", no_args_is_help=True)(sync_packed_charm)
-    charm.command(name="lobotomy", no_args_is_help=True)(devmode_only(lobotomy))
-    charm.command(name="provision")(devmode_only(provision))
+    charm.command(name="lobotomy", no_args_is_help=True)(lobotomy)
+    charm.command(name="provision")(provision)
     charm.command(name="sitrep", no_args_is_help=True)(sitrep)
 
     replay = typer.Typer(name="replay", help="Commands to replay events.")
-    replay.command(name="install", no_args_is_help=True)(devmode_only(install))
-    replay.command(name="purge", no_args_is_help=True)(devmode_only(purge_db))
+    replay.command(name="install", no_args_is_help=True)(install)
+    replay.command(name="purge", no_args_is_help=True)(purge_db)
     replay.command(name="list", no_args_is_help=True)(list_events)
     replay.command(name="dump", no_args_is_help=True)(dump_db)
-    replay.command(name="emit", no_args_is_help=True)(devmode_only(emit))
+    replay.command(name="emit", no_args_is_help=True)(emit)
 
     integration_matrix = typer.Typer(
         name="imatrix", help="Commands to view and manage the integration matrix."
     )
-    integration_matrix.command(name="view")(integrate.show)
-    integration_matrix.command(name="fill")(devmode_only(integrate.link))
-    integration_matrix.command(name="clear")(devmode_only(integrate.clear))
+    integration_matrix.command(name="view")(imatrix_view)
+    integration_matrix.command(name="fill")(imatrix_fill)
+    integration_matrix.command(name="clear")(imatrix_clear)
 
     app = typer.Typer(
         name="jhack",
@@ -133,21 +165,13 @@ def main():
     app.command(name="jenv")(print_env)
     app.command(name="list-endpoints")(list_endpoints)
 
-    # DEVMODE ONLY COMMANDS
-    def _test_devmode():
-        """Dummy devmode command to verify the destructive profile."""
-        from jhack.conf.conf import check_destructive_commands_allowed
-
-        check_destructive_commands_allowed("test-devmode")
-        print("BOOM!")
-
-    app.command(name="test-devmode")(devmode_only(_test_devmode))
-    app.command(name="sync")(devmode_only(sync_deployed_charm))
-    app.command(name="nuke")(devmode_only(nuke))
-    app.command(name="kill")(devmode_only(kill))
-    app.command(name="deploy")(devmode_only(just_deploy_this))
-    app.command(name="fire", no_args_is_help=True)(devmode_only(simulate_event))
-    app.command(name="pull-cmr", no_args_is_help=True)(integrate.cmr)
+    app.command(name="test-devmode")(test_devmode)
+    app.command(name="sync")(sync_deployed_charm)
+    app.command(name="nuke")(nuke)
+    app.command(name="kill")(kill)
+    app.command(name="deploy")(deploy)
+    app.command(name="fire", no_args_is_help=True)(fire)
+    app.command(name="pull-cmr", no_args_is_help=True)(pull_cmr)
     app.command(name="charm-info", no_args_is_help=True)(vinfo)
     app.command(
         name="vinfo",
@@ -155,9 +179,10 @@ def main():
         no_args_is_help=True,
         help="deprecated in favour of charm-info",
     )(vinfo)
-    app.command(name="eval", no_args_is_help=True)(devmode_only(charm_eval))
+    app.command(name="eval", no_args_is_help=True)(charm_eval)
     app.command(name="debug-log", no_args_is_help=True)(tail_logs)
-    app.command(name="script", no_args_is_help=True)(devmode_only(charm_script))
+    app.command(name="script", no_args_is_help=True)(charm_script)
+    app.command(name="pebble", no_args_is_help=True)(pebble)
 
     conf = typer.Typer(
         # TODO md formatting is currently quite bork cfr. https://github.com/tiangolo/typer/pull/815
@@ -191,15 +216,15 @@ def main():
         no_args_is_help=True,
     )
     scenario.command(name="snapshot")(snapshot)
-    scenario.command(name="state-apply")(devmode_only(state_apply))
+    scenario.command(name="state-apply")(state_apply)
 
     chaos = typer.Typer(
         name="chaos",
         help="""Commands to spread the chaos.""",
         no_args_is_help=True,
     )
-    chaos.command(name="mancioppi")(devmode_only(mancioppi))
-    chaos.command(name="flicker")(devmode_only(flicker))
+    chaos.command(name="mancioppi")(mancioppi)
+    chaos.command(name="flicker")(flicker)
 
     # register all subcommands
     app.add_typer(conf, no_args_is_help=True)

@@ -1051,3 +1051,10 @@ You can change the panels shown by default to only keep those that you want usin
 
 You can enter **focus mode** (only show logs for specified containers or pebble services) by running:
 `jhack debug-log myapp/0 -f mycontainer:myservice`.
+
+# `jhack pebble`
+
+`jhack pebble` is a command to run pebble commands on live juju units.
+
+`jhack pebble -c tempo tempo/0 plan` becomes:
+`juju ssh tempo/0 PEBBLE_SOCKET=/charm/containers/tempo/pebble.socket /charm/bin/pebble plan`
