@@ -80,9 +80,9 @@ def pebble(
 ):
     """Proxy a pebble command to a remote unit.
     Example usage:
-    -  $ jhack -c tempo tempo/0 pebble plan
-    -  $ jhack -c pg pg/0 pebble status pgbouncer
-    -  $ jhack -c tempo tempo/0 pebble exec "which tempo"
+    -  $ jhack pebble -c nginx tempo/0 plan
+    -  $ jhack pebble -c pg pg/0 status pgbouncer
+    -  $ jhack pebble -c tempo tempo-worker/0 exec "which tempo"
     -  $ jhack pebble -c parca parca/0 exec "ls -la /"
 
     Note that ATM jhack can't distinguish arguments passed to this command vs arguments passed to pebble,
