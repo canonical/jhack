@@ -5,6 +5,9 @@ base: core24
 
 platforms:
   amd64:
+  arm64:
+  ppc64el:
+  s390x:
 
 adopt-info: jhack
 summary: Cli tool packed with juju hacks.
