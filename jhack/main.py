@@ -91,7 +91,7 @@ def main():
     utils.command(name="elect", no_args_is_help=True)(devmode_only(leader_set))
 
     charm = typer.Typer(name="charm", help="Charmcrafting utilities.")
-    charm.command(name="update", no_args_is_help=True)(update)
+    charm.command(name="update")(update)
     charm.command(name="init", no_args_is_help=True)(init)
     charm.command(name="func", no_args_is_help=True)(functional.run)
     charm.command(name="sync-packed", no_args_is_help=True)(sync_packed_charm)
