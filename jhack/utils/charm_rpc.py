@@ -16,7 +16,14 @@ from typing import List, Optional
 import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import Target, fetch_file, get_units, push_file, rm_file
+from jhack.helpers import (
+    Target,
+    fetch_file,
+    get_units,
+    push_file,
+    rm_file,
+    get_substrate,
+)
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
 
@@ -352,6 +359,7 @@ def _charm_rpc(
         expr=encoded_expr,
         crpc_dispatch_name=crpc_dispatch_name,
         model=model,
+        substrate=get_substrate(model),
         cleanup=cleanup,
         event=event,
         env_override=env_override or [],
@@ -484,6 +492,7 @@ def _exec_crpc_expr(
     model: str,
     crpc_dispatch_name: str = "crpc_dispatch",
     cleanup: bool = True,
+    substrate: str = "k8s",
     env_override: Optional[List[str]] = None,
     charm_name: Optional[str] = None,
     print_output: bool = True,
@@ -509,7 +518,13 @@ def _exec_crpc_expr(
     if cleanup:
         logger.info("cleaning up...")
         try:
-            rm_file(target.unit_name, remote_rpc_dispatch_path, model=model, force=True)
+            rm_file(
+                target.unit_name,
+                remote_rpc_dispatch_path,
+                model=model,
+                force=True,
+                sudo=substrate == "machine",
+            )
         except RuntimeError as e:
             logger.warning(f"cleanup FAILED with {e}")
 

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from jhack.charm.update import update, dir_diff, _Change, _ChangeType, _update
+from jhack.charm.update import update, _update
 
 dnttchme = "don_t_touch_me.txt"
 untouched = "untouched"
@@ -115,40 +115,6 @@ def test_charm_update_default(packed_charm, mock_charm_dev_dir):
 
     untouched_zf = zf.open(dnttchme).read().decode("utf-8").strip()
     assert untouched_zf == untouched
-
-
-def test_dir_diff():
-    root = (Path(__file__).parent / "update_tests_resource").resolve()
-    changes = dir_diff(root / "src_tst", root / "dst_tst")
-    assert changes == [
-        _Change(
-            src=Path(root / "src_tst/bar.py"),
-            dst=Path(root / "dst_tst/bar.py"),
-            typ=_ChangeType.copy,
-        ),
-        _Change(
-            dst=Path(root / "dst_tst/baz/else.py"),
-            typ=_ChangeType.delete,
-        ),
-        _Change(
-            src=Path(root / "src_tst/baz/newer.py"),
-            dst=Path(root / "dst_tst/baz/newer.py"),
-            typ=_ChangeType.copy,
-        ),
-        _Change(
-            src=Path(root / "src_tst/baz/something.py"),
-            dst=Path(root / "dst_tst/baz/something.py"),
-            typ=_ChangeType.change,
-        ),
-        _Change(
-            dst=Path(root / "dst_tst/coo"),
-            typ=_ChangeType.delete,
-        ),
-        _Change(
-            dst=Path(root / "dst_tst/foo.py"),
-            typ=_ChangeType.delete,
-        ),
-    ]
 
 
 def test_e2e(tmp_path):

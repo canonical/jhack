@@ -149,9 +149,14 @@ def ops_main_rpc(charm_class: Type[ops.charm.CharmBase], use_juju_for_storage: b
         store = ops.storage.JujuStorage()
     else:
         store = ops.storage.SQLiteStorage(charm_state_path)
-    framework = ops.framework.Framework(
-        store, charm_dir, meta, model, event_name=dispatcher.event_name
-    )
+    try:
+        framework = ops.framework.Framework(
+            store, charm_dir, meta, model, event_name=dispatcher.event_name
+        )
+    except TypeError:
+        # older versions don't have the `event_name` keyword.
+        framework = ops.framework.Framework(store, charm_dir, meta, model)
+
     framework.set_breakpointhook()
     charm = charm_class(framework)
 
