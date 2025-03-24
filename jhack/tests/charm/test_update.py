@@ -1,13 +1,14 @@
 import contextlib
 import os
 import shutil
+import subprocess
 import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from jhack.charm.update import update
+from jhack.charm.update import update, _update
 
 dnttchme = "don_t_touch_me.txt"
 untouched = "untouched"
@@ -114,3 +115,24 @@ def test_charm_update_default(packed_charm, mock_charm_dev_dir):
 
     untouched_zf = zf.open(dnttchme).read().decode("utf-8").strip()
     assert untouched_zf == untouched
+
+
+def test_e2e(tmp_path):
+    # zip src and dst to a tempfile
+    root = (Path(__file__).parent / "update_tests_resource").resolve()
+    tempzip_src = tmp_path / "src_tst"
+    subprocess.run(["zip", root / "src_tst", tempzip_src])
+    tempzip_dst = tmp_path / "dst_tst"
+    subprocess.run(["zip", root / "dst_tst", tempzip_dst])
+
+    # run update on dst; verify the created file == src
+    old_wd = os.getcwd()
+    os.chdir(root / "src_tst")
+
+    # update ./baz into dst/baz
+    _update(
+        tempzip_dst,
+        ["baz:baz"],
+    )
+
+    os.chdir(old_wd)

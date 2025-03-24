@@ -3,6 +3,12 @@ name: jhack
 # our upper bound is juju's base, which at the time of writing is core24
 base: core24
 
+platforms:
+  amd64:
+  arm64:
+  ppc64el:
+  s390x:
+
 adopt-info: jhack
 summary: Cli tool packed with juju hacks.
 
@@ -27,7 +33,9 @@ parts:
       VERSION="$(grep -Po 'version = "\K[^"]*' ./pyproject.toml)"
       snapcraftctl set-version $VERSION
     stage-snaps:
-      - juju/3.3/beta
+      - juju/3.6/stable
+    stage-packages:
+      - openssh-client
 
 apps:
   jhack:

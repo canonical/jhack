@@ -430,6 +430,7 @@ def rm_file(
     is_path_relative=True,
     dry_run=False,
     force: bool = False,
+    sudo: bool = False,
 ):
     if is_path_relative:
         if remote_path.startswith("/"):
@@ -439,7 +440,8 @@ def rm_file(
         full_remote_path = remote_path
 
     model_arg = f" -m {model}" if model else ""
-    cmd = f"juju ssh{model_arg} {unit} rm{' -f' if force else ''} {full_remote_path}"
+    sudo_arg = " sudo" if sudo else ""
+    cmd = f"juju ssh{model_arg} {unit}{sudo_arg} rm{' -f' if force else ''} {full_remote_path}"
     if dry_run:
         print(f"would run: {cmd}")
         return

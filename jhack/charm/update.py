@@ -1,13 +1,17 @@
 import os
-import shutil
+import re
 import stat
-import tempfile
-import zipfile
+import subprocess
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Union, Sequence
+
+import typer
 
 from jhack.helpers import get_local_charm
 from jhack.logger import logger
+
+DIFF_CHANGED_RE = re.compile(r"Files (.+) and (.+) differ")
+ONLY_IN_RE = re.compile(r"Only in (.+): (.+)")
 
 
 def chmod_plusx(file):
@@ -15,82 +19,68 @@ def chmod_plusx(file):
 
 
 def update(
-    charm: Path = None,
-    src: List[Path] = ("./src", "./lib"),
-    dst: List[Path] = ("src", "lib"),
+    charm: Optional[Path] = typer.Argument(
+        None,
+        help="Charm package to update; will default to any .charm file found in the CWD.",
+    ),
+    location: List[str] = typer.Option(
+        ["./src", "./lib"],
+        "--location",
+        "-l",
+        help="Map source to destination paths.",
+    ),
     dry_run: bool = False,
 ):
     """
     Force-push into a local .charm file one or more directories.
 
-    E.g. `jhack charm update my_charm.charm --src ./foo --dst bar` will grab
-    ./src/* and copy it to [the charm's root]/src/*.
+    E.g. ``jhack charm update my_charm.charm -l ./foo`` will grab
+    ./foo/* and copy it to [the charm's root]/foo/*.
 
     >>> update('./my_local_charm-amd64.charm',
-    ...        ['./src', './lib'],
-    ...        ['src', 'lib'])
+    ...        ["./src", "./lib"])
 
-    If `charm` is None, it will scan the CWD for the first `*.charm` file
+    If ``charm`` is None, it will scan the CWD for the first `*.charm` file
     and use that.
     """
-    charm = Path(charm) or get_local_charm()
-    src = tuple(map(Path, src))
-    dst = tuple(map(Path, dst))
+    return _update(charm=charm, location=location, dry_run=dry_run)
 
-    assert charm.exists() and charm.is_file()
-    for dir_ in src:
-        assert dir_.exists() and dir_.is_dir()
-    assert len(dst) == len(src)
 
-    logger.info(f"updating charm with args:, {charm}, {src, dst}, {dry_run}")
+def _update(
+    charm: Optional[Union[str, Path]],
+    location: Sequence[str] = None,
+    dry_run: bool = False,
+):
+    charm = Path(charm) if charm else get_local_charm()
+    if not charm.exists() and charm.is_file():
+        exit(f"{charm} is not a valid charm file")
 
-    build_dir = Path(tempfile.mkdtemp())
-    len(os.getcwd()) + 1
+    if not location:
+        logger.info("loading default locations")
+        location = []
+        cwd = Path(os.getcwd())
+        for default_loc in ("src", "lib"):
+            if (path := cwd / default_loc).exists():
+                location.append(path)
+        location.extend(cwd.glob("*.yaml"))
+        logger.info(f"default locations: {location}")
 
-    try:
-        # extract charm to build directory
-        with zipfile.ZipFile(charm, "r") as zip_read:
-            zip_read.extractall(build_dir)
-            logger.info(f"Extracted {len(zip_read.filelist)} files to build folder.")
+    logger.info(f"updating charm with args:, {charm}, {location}, {dry_run}")
+    for loc in location:
+        if not Path(loc).exists():
+            exit(f"invalid location: {loc!r}, should be a valid path")
 
-        # remove src and lib
-        for source, destination in zip(src, dst):
-            build_dst = build_dir / destination
-            # ensure the destination is **gone**
-            if dry_run:
-                logger.info(f"Would remove {build_dst}...")
-                if source.exists():
-                    logger.info(f"...and replace it with {source}")
-                continue
-
-            # ensure the build_dst is clear
-            shutil.rmtree(build_dst, ignore_errors=True)
-
-            if not source.exists():
-                continue
-
-            shutil.copytree(source, build_dst, copy_function=shutil.copy)
-            if not dry_run:
-                logger.info(f"Copy: {source} --> {build_dst}.")
+        print(f"{'would sync' if dry_run else 'syncing'} {loc} --> {charm}...")
 
         if dry_run:
-            logger.info(f"Would unlink {charm} and replace it with {build_dir}.")
-            return
+            continue
 
-        # remove old charm
-        os.unlink(charm)
-        # replace it by zipping the build dir
-        charm_package_name = str(charm)[:-6]
+        proc = subprocess.run(["zip", "-ur", charm, loc], capture_output=True, text=True)
+        print(proc.stdout)
 
-        # for some reason copytree breaks permissions...
-        chmod_plusx(build_dir / "dispatch")
-        chmod_plusx(build_dir / "src" / "charm.py")
+    print("all done.")
 
-        shutil.make_archive(charm_package_name, "zip", build_dir)
 
-        # rename back to .charm as shutil.make_archive
-        # won't let us override .zip
-        os.rename(charm_package_name + ".zip", charm_package_name + ".charm")
-
-    finally:
-        shutil.rmtree(build_dir)
+if __name__ == "__main__":
+    os.chdir("/home/pietro/hacking/jhack/jhack/tests/charm/update_tests_resource/src_tst")
+    _update(charm="./dst_tst.zip", location=("baz:dst_tst/baz",))
