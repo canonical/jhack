@@ -34,8 +34,8 @@ parts:
       snapcraftctl set-version $VERSION
     stage-snaps:
       - juju/3.6/stable
-#    stage-packages:
-#      - openssh-client
+    stage-packages:
+      - openssh-client
 
 apps:
   jhack:
