@@ -278,7 +278,7 @@ def sync(
         "based on the CWD. If you pass ``*``, it will sync to ALL apps.",
     ),
     model: Optional[str] = typer.Option(
-        None, help="The model in which the target lives. "
+        None, "--model", "-m", help="The model in which the target lives. "
     ),
     source_dirs: List[str] = typer.Option(
         ["./src", "./lib"],
