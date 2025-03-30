@@ -301,7 +301,6 @@ def _nuke(
     gently: bool = GENTLY,
 ):
 
-    # breakpoint()
     cur_model = model or get_current_model()
     if not cur_model:
         nukeables = []
@@ -341,6 +340,7 @@ def _nuke(
             cur_model=cur_model,
         )
         logger.debug(f"Gathered: {nukeables}")
+
     politeness = " --force --no-wait" if not gently else ""
     nukes = []
     nuked_apps = set()
@@ -550,7 +550,7 @@ def nuke(
         color=color,
         gently=gently,
     )
-    if what == []:
+    if what is None:
         _nuke(None, **kwargs)
     else:
         for obj in what:
