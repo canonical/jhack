@@ -254,6 +254,42 @@ def _gather_nukeables(
     return nukeables
 
 
+def print_centered(s, color: _Color = "auto"):
+    console = Console(color_system=color)
+    return console.print(Align(s, align="center"))
+
+
+def fire(nukeable: Nukeable, nuke: str):
+    """defcon 5"""
+    _atom = Style(bold=True, color="green")
+
+    nukeable_name = nukeable.name
+    if not nukeable.type == "model":
+        nukeable_name += f" ({nukeable.model})"
+
+    to_nuke = Style(color=COLOR_MAP[nukeable.type])
+    text = (
+        Text(ICBM + " " * 2).append(nukeable_name, to_nuke).append("  " + ATOM, _atom)
+    )
+
+    print_centered(text)
+
+    # todo split model nukes to a separate process and pass there shell=True
+    logger.debug(f"nuking {nukeable} with {nuke}")
+    proc = JPopen(nuke.split(" "))
+    proc.wait()
+    while proc.returncode is None:
+        sleep(0.1)
+    if proc.returncode != 0:
+        print(
+            f"something went wrong nuking {nukeable.name};"
+            f"stdout={proc.stdout.read().decode('utf-8')}"
+            f"stderr={proc.stderr.read().decode('utf-8')}"
+        )
+    else:
+        logger.debug("hit and sunk")
+
+
 def _nuke(
     obj: Optional[str],
     model: Optional[str] = None,
@@ -264,8 +300,9 @@ def _nuke(
     color: _Color = "auto",
     gently: bool = GENTLY,
 ):
-    cur_model = model or get_current_model()
 
+    # breakpoint()
+    cur_model = model or get_current_model()
     if not cur_model:
         nukeables = []
 
@@ -304,7 +341,6 @@ def _nuke(
             cur_model=cur_model,
         )
         logger.debug(f"Gathered: {nukeables}")
-
     politeness = " --force --no-wait" if not gently else ""
     nukes = []
     nuked_apps = set()
@@ -326,14 +362,19 @@ def _nuke(
                 nukeables.remove(nukeable)
                 continue
 
-            nukes.append(f"juju remove-application {nukeable.name}{politeness} --no-prompt")
+            nukes.append(
+                f"juju remove-application {nukeable.name}{politeness} --no-prompt"
+            )
 
         elif nukeable.type == "relation":
             # if we're already nuking either app, let's skip nuking the relation
             assert nukeable.endpoints, f"relation {nukeable.name} has unknown endpoints"
             provider = nukeable.endpoints.provider
             requirer = nukeable.endpoints.requirer
-            if provider.split(":")[0] in nuked_apps or requirer.split(":")[0] in nuked_apps:
+            if (
+                provider.split(":")[0] in nuked_apps
+                or requirer.split(":")[0] in nuked_apps
+            ):
                 nukeables.remove(nukeable)
                 continue
 
@@ -344,7 +385,9 @@ def _nuke(
 
     if n is not None:
         if n != (real_n := len(nukeables)):
-            logger.debug(f"Unexpected number of nukeables; expected {n}, got: {nukeables}")
+            logger.debug(
+                f"Unexpected number of nukeables; expected {n}, got: {nukeables}"
+            )
             for nukeable in nukeables:
                 print(f"would {ATOM} {nukeable}")
             word = "less" if n > real_n else "more"
@@ -383,45 +426,13 @@ def _nuke(
     if color == "no":
         color = None
 
-    console = Console(color_system=color)
-
-    def print_centered(s):
-        return console.print(Align(s, align="center"))
-
-    def fire(nukeable: Nukeable, nuke: str):
-        """defcon 5"""
-        _atom = Style(bold=True, color="green")
-
-        nukeable_name = nukeable.name
-        if not nukeable.type == "model":
-            nukeable_name += f" ({nukeable.model})"
-
-        to_nuke = Style(color=COLOR_MAP[nukeable.type])
-        text = Text(ICBM + " " * 2).append(nukeable_name, to_nuke).append("  " + ATOM, _atom)
-
-        print_centered(text)
-
-        # todo split model nukes to a separate process and pass there shell=True
-        logger.debug(f"nuking {nukeable} with {nuke}")
-        proc = JPopen(nuke.split(" "))
-        proc.wait()
-        while proc.returncode is None:
-            sleep(0.1)
-        if proc.returncode != 0:
-            print(
-                f"something went wrong nuking {nukeable.name};"
-                f"stdout={proc.stdout.read().decode('utf-8')}"
-                f"stderr={proc.stderr.read().decode('utf-8')}"
-            )
-        else:
-            logger.debug("hit and sunk")
-
     ascii_art = NUKE_GENTLY_ASCII_ART if gently else NUKE_ASCII_ART
     print_centered(
         Text(
             ascii_art,
             style=Style(dim=True, blink=BLINK, bold=True),
-        )
+        ),
+        color=color,
     )
 
     tp = ThreadPool()
@@ -437,15 +448,22 @@ def _nuke(
 
     for res, nkbl, nk in results:
         if not res.ready():
-            print_centered(f"{ICBM} {nkbl} still in flight")
+            print_centered(f"{ICBM} {nkbl} still in flight", color=color)
         else:
             if not res.successful():
-                print_centered(f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die")
+                print_centered(
+                    f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die",
+                    color=color,
+                )
 
     if not dry_run:
-        print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)))
+        print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)), color=color)
 
 
+app = typer.Typer()
+
+
+@app.command()
 def nuke(
     what: List[str] = typer.Argument(None, help=f"What to {ATOM}."),
     selectors: str = typer.Option(
@@ -532,7 +550,7 @@ def nuke(
         color=color,
         gently=gently,
     )
-    if what is None:
+    if what == []:
         _nuke(None, **kwargs)
     else:
         for obj in what:

@@ -593,21 +593,6 @@ Future work:
   have it talk to a real backend living somewhere else.
 
 
-# model
-## clear
-
-`jhack model clear`
-
-Will nuke all applications in the current model.
-
-
-## rm
-
-`jhack model rm`
-
-Will nuke the current model.
-
-
 # charm
 
 ## update
