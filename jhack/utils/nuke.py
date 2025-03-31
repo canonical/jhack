@@ -326,14 +326,19 @@ def _nuke(
                 nukeables.remove(nukeable)
                 continue
 
-            nukes.append(f"juju remove-application {nukeable.name}{politeness} --no-prompt")
+            nukes.append(
+                f"juju remove-application {nukeable.name}{politeness} --no-prompt"
+            )
 
         elif nukeable.type == "relation":
             # if we're already nuking either app, let's skip nuking the relation
             assert nukeable.endpoints, f"relation {nukeable.name} has unknown endpoints"
             provider = nukeable.endpoints.provider
             requirer = nukeable.endpoints.requirer
-            if provider.split(":")[0] in nuked_apps or requirer.split(":")[0] in nuked_apps:
+            if (
+                provider.split(":")[0] in nuked_apps
+                or requirer.split(":")[0] in nuked_apps
+            ):
                 nukeables.remove(nukeable)
                 continue
 
@@ -344,7 +349,9 @@ def _nuke(
 
     if n is not None:
         if n != (real_n := len(nukeables)):
-            logger.debug(f"Unexpected number of nukeables; expected {n}, got: {nukeables}")
+            logger.debug(
+                f"Unexpected number of nukeables; expected {n}, got: {nukeables}"
+            )
             for nukeable in nukeables:
                 print(f"would {ATOM} {nukeable}")
             word = "less" if n > real_n else "more"
@@ -397,7 +404,11 @@ def _nuke(
             nukeable_name += f" ({nukeable.model})"
 
         to_nuke = Style(color=COLOR_MAP[nukeable.type])
-        text = Text(ICBM + " " * 2).append(nukeable_name, to_nuke).append("  " + ATOM, _atom)
+        text = (
+            Text(ICBM + " " * 2)
+            .append(nukeable_name, to_nuke)
+            .append("  " + ATOM, _atom)
+        )
 
         print_centered(text)
 
@@ -440,7 +451,9 @@ def _nuke(
             print_centered(f"{ICBM} {nkbl} still in flight")
         else:
             if not res.successful():
-                print_centered(f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die")
+                print_centered(
+                    f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die"
+                )
 
     if not dry_run:
         print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)))
@@ -515,13 +528,14 @@ def nuke(
     logger.info("starting jhack nuke")
 
     if n is not None:
-        assert n > 0, f"nonsense: {n}"
+        if n <= 0:
+            exit(f"nonsense: `-n` should be >0. Got: {n}")
+
         if not len(what) == 1:
-            print("You cannot use `-n` with multiple targets.")
-            return
+            exit("You cannot use `-n` with multiple targets.")
+
     if selectors != "a" and borked:
-        print("borked implies selector=`a`")
-        return
+        exit("borked implies selector=`a`")
 
     kwargs = dict(
         model=model,
@@ -532,7 +546,7 @@ def nuke(
         color=color,
         gently=gently,
     )
-    if what is None:
+    if not what:
         _nuke(None, **kwargs)
     else:
         for obj in what:
