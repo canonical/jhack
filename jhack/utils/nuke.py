@@ -528,13 +528,14 @@ def nuke(
     logger.info("starting jhack nuke")
 
     if n is not None:
-        assert n > 0, f"nonsense: {n}"
+        if n <= 0:
+            exit(f"nonsense: `-n` should be >0. Got: {n}")
+
         if not len(what) == 1:
-            print("You cannot use `-n` with multiple targets.")
-            return
+            exit("You cannot use `-n` with multiple targets.")
+
     if selectors != "a" and borked:
-        print("borked implies selector=`a`")
-        return
+        exit("borked implies selector=`a`")
 
     kwargs = dict(
         model=model,
@@ -545,7 +546,7 @@ def nuke(
         color=color,
         gently=gently,
     )
-    if what is None:
+    if not what:
         _nuke(None, **kwargs)
     else:
         for obj in what:

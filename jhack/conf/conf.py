@@ -18,6 +18,7 @@ class Config:
     _DEFAULTS = Path(__file__).parent / "jhack_config_defaults.toml"
     _DESTRUCTIVE = Path(__file__).parent / "jhack_config_destructive.toml"
     _YOLO = Path(__file__).parent / "jhack_config_yolo.toml"
+    DEVMODE_CONFIG_KEY = "enable_destructive_commands_NO_PRODUCTION_zero_guarantees"
 
     def __init__(self, path: Path = None):
         is_default = False
@@ -180,9 +181,7 @@ def check_destructive_commands_allowed(
         logger.debug(f"operation {msg!r} allowed by devmode profile.")
         return _Allowed(_Reason.devmode_temp)
 
-    if not CONFIG.get(
-        "general", "enable_destructive_commands_NO_PRODUCTION_zero_guarantees"
-    ):
+    if not CONFIG.get("general", CONFIG.DEVMODE_CONFIG_KEY):
         preamble = "\n ** Jhack is now 'safe'! **\nAll dangerous commands require manual confirmation."
 
         if CONFIG.is_default:
