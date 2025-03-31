@@ -460,10 +460,6 @@ def _nuke(
         print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)), color=color)
 
 
-app = typer.Typer()
-
-
-@app.command()
 def nuke(
     what: List[str] = typer.Argument(None, help=f"What to {ATOM}."),
     selectors: str = typer.Option(
@@ -550,7 +546,7 @@ def nuke(
         color=color,
         gently=gently,
     )
-    if what is None:
+    if what == []:
         _nuke(None, **kwargs)
     else:
         for obj in what:
