@@ -254,12 +254,12 @@ def _gather_nukeables(
     return nukeables
 
 
-def print_centered(s, color: _Color = "auto"):
+def _print_centered(s, color: _Color = "auto"):
     console = Console(color_system=color)
     return console.print(Align(s, align="center"))
 
 
-def fire(nukeable: Nukeable, nuke: str):
+def _fire(nukeable: Nukeable, nuke: str):
     """defcon 5"""
     _atom = Style(bold=True, color="green")
 
@@ -272,7 +272,7 @@ def fire(nukeable: Nukeable, nuke: str):
         Text(ICBM + " " * 2).append(nukeable_name, to_nuke).append("  " + ATOM, _atom)
     )
 
-    print_centered(text)
+    _print_centered(text)
 
     # todo split model nukes to a separate process and pass there shell=True
     logger.debug(f"nuking {nukeable} with {nuke}")
@@ -427,7 +427,7 @@ def _nuke(
         color = None
         
     ascii_art = NUKE_GENTLY_ASCII_ART if gently else NUKE_ASCII_ART
-    print_centered(
+    _print_centered(
         Text(
             ascii_art,
             style=Style(dim=True, blink=BLINK, bold=True),
@@ -439,7 +439,7 @@ def _nuke(
     results = []
     for nukeable, nuke in zip(nukeables, nukes):
         logger.debug(f"firing {nuke} {ICBM} {nukeable}")
-        res = tp.apply_async(fire, (nukeable, nuke))
+        res = tp.apply_async(_fire, (nukeable, nuke))
         results.append((res, nukeable, nuke))
 
     with timeout(1):
@@ -448,16 +448,16 @@ def _nuke(
 
     for res, nkbl, nk in results:
         if not res.ready():
-            print_centered(f"{ICBM} {nkbl} still in flight", color=color)
+            _print_centered(f"{ICBM} {nkbl} still in flight", color=color)
         else:
             if not res.successful():
-                print_centered(
+                _print_centered(
                     f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die",
                     color=color,
                 )
 
     if not dry_run:
-        print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)), color=color)
+        _print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)), color=color)
 
 
 def nuke(
