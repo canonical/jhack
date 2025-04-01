@@ -12,7 +12,7 @@ def test_nuke_model():
     runner = CliRunner()
     app = Typer()
     app.command()(nuke)
-    with patch("jhack.utils.nuke.fire") as mock_fire:
+    with patch("jhack.utils.nuke._fire") as mock_fire:
         _ = runner.invoke(app, ["--model", test_model])
 
         expected_nukeable = Nukeable(name=test_model, type="model")
