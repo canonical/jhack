@@ -3,13 +3,13 @@ from importlib.metadata import PackageNotFoundError
 
 import toml
 
-from jhack.conf.conf import check_destructive_commands_allowed
+from jhack.conf.conf import check_destructive_commands_allowed, CONFIG
 from jhack.config import JHACK_PROJECT_ROOT
 
 
 def print_jhack_version():
     """Print the currently installed jhack version and exit."""
-    is_devmode = check_destructive_commands_allowed("", _check_only=True)
+    is_devmode = CONFIG.get("general", CONFIG.DEVMODE_CONFIG_KEY)
     print(f"jhack {get_jhack_version()}{' --DEVMODE--' if is_devmode else ''}")
 
 
@@ -21,7 +21,9 @@ def get_jhack_version():
         pyproject = JHACK_PROJECT_ROOT / "pyproject.toml"
         if pyproject.exists():
             jhack_version = (
-                toml.load(pyproject).get("project", {}).get("version", "<unknown version>")
+                toml.load(pyproject)
+                .get("project", {})
+                .get("version", "<unknown version>")
             )
         else:
             jhack_version = "<unknown version>"

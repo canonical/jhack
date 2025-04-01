@@ -37,13 +37,14 @@ from scenario.state import (
     _Event,
 )
 
-from jhack.logger import logger as jhack_root_logger
+from jhack.conf.conf import check_destructive_commands_allowed
+from jhack.logger import logger as jhack_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
 from jhack.scenario.integrations.darkroom import ops_port_to_scenario
 from jhack.scenario.state_to_dict import state_to_dict
 from jhack.scenario.utils import JujuUnitName
 
-logger = jhack_root_logger.getChild(__file__)
+logger = jhack_logger.getChild(__file__)
 
 JUJU_RELATION_KEYS = frozenset({"egress-subnets", "ingress-address", "private-address"})
 JUJU_CONFIG_KEYS = frozenset({})
@@ -319,11 +320,13 @@ class RemotePebbleClient:
         container: str,
         target: JujuUnitName,
         model: Optional[str] = None,
+        dry_run: bool = False,
     ):
         self.socket_path = f"/charm/containers/{container}/pebble.socket"
         self.container = container
         self.target = target
         self.model = model
+        self._dry_run = dry_run
 
     def _run(self, cmd: str) -> str:
         _model = f" -m {self.model}" if self.model else ""
@@ -331,15 +334,27 @@ class RemotePebbleClient:
             f"juju ssh{_model} {self.target.unit_name} "
             f"PEBBLE_SOCKET={self.socket_path} /charm/bin/pebble {cmd}"
         )
+
+        if self._dry_run:
+            print(f"would run:\n\t{command!r}")
+            return ""
+        else:
+            check_destructive_commands_allowed("sync", dry_run_cmd=command)
+
         proc = run(shlex.split(command), capture_output=True, text=True)
         if proc.returncode == 0:
             return proc.stdout
+
         raise RuntimeError(
             f"error wrapping pebble call with {command}: "
             f"process exited with {proc.returncode}; "
             f"stdout = {proc.stdout}; "
             f"stderr = {proc.stderr}",
         )
+
+    def run(self, command: List[str]):
+        """Run a command on this pebble."""
+        return self._run(shlex.join(command))
 
     def can_connect(self) -> bool:
         try:
