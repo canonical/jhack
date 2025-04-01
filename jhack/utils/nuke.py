@@ -546,7 +546,7 @@ def nuke(
         color=color,
         gently=gently,
     )
-    if what == []:
+    if what is None:
         _nuke(None, **kwargs)
     else:
         for obj in what:
