@@ -14,25 +14,8 @@ JHACK_PROJECT_ROOT = Path(__file__).parent.parent
 
 def get_home_dir() -> Path:
     """Get the path to the home directory for the user."""
-    try:
-        usr = pwd.getpwuid(os.getuid())[0]
-    except KeyError:
-        logger.debug(
-            "pwd.getpwuid could not get pwd for your UID. "
-            "If you think you're root, something must have gone wrong. "
-            "Set the envvar JHACK_DATA to some snap-writable path where "
-            "jhack should store its data and config."
-        )
-        usr = ""
-
-    if usr == "root":
-        home_dir = Path("/root")
-    elif user := os.environ.get("USER"):
-        home_dir = Path("/home") / user
-    else:
-        # this looks up the ~HOME envvar and tries more things if not set (see pathlib._PosixFlavour.gethomedir)
-        home_dir = Path("~").expanduser().absolute()
-    return home_dir
+    # this looks up the ~HOME envvar and tries more things if not set (see pathlib._PosixFlavour.gethomedir)
+    return Path("~").expanduser().absolute()
 
 
 def get_jhack_data_path() -> Path:
@@ -59,7 +42,9 @@ def configure():
     snap_data = os.environ.get("SNAP_DATA")
 
     if not snap_data or "jhack" not in snap_data:  # we could be in another snap
-        logger.info("jhack running in unsnapped mode. Skipping .local/share/juju configuration.")
+        logger.info(
+            "jhack running in unsnapped mode. Skipping .local/share/juju configuration."
+        )
     else:
         global IS_SNAPPED
         IS_SNAPPED = True
