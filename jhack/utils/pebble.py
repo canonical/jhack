@@ -64,7 +64,7 @@ def pebble(
         "-c",
         "--container",
         help="Container name to target. "
-        "Will default to the first container defined in charmcraft.yaml if none is provided.",
+        "Will execute for each container in turn if none is specified.",
     ),
     model: Optional[str] = typer.Option(
         None,
