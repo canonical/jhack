@@ -43,7 +43,8 @@ def _pebble(
         exit(f"invalid target: expected `app_name/unit_id`, got: {target!r}")
 
     if not container_name:
-        for container in get_container_names(target, model):
+        container_names = get_container_names(target, model)
+        for container in container_names:
             print(f"result for container {container!r}:")
             _pebble(target, command, container, model, dry_run)
         return
