@@ -254,6 +254,42 @@ def _gather_nukeables(
     return nukeables
 
 
+def _print_centered(s, color: _Color = "auto"):
+    console = Console(color_system=color)
+    return console.print(Align(s, align="center"))
+
+
+def _fire(nukeable: Nukeable, nuke: str):
+    """defcon 5"""
+    _atom = Style(bold=True, color="green")
+
+    nukeable_name = nukeable.name
+    if not nukeable.type == "model":
+        nukeable_name += f" ({nukeable.model})"
+
+    to_nuke = Style(color=COLOR_MAP[nukeable.type])
+    text = (
+        Text(ICBM + " " * 2).append(nukeable_name, to_nuke).append("  " + ATOM, _atom)
+    )
+
+    _print_centered(text)
+
+    # todo split model nukes to a separate process and pass there shell=True
+    logger.debug(f"nuking {nukeable} with {nuke}")
+    proc = JPopen(nuke.split(" "))
+    proc.wait()
+    while proc.returncode is None:
+        sleep(0.1)
+    if proc.returncode != 0:
+        print(
+            f"something went wrong nuking {nukeable.name};"
+            f"stdout={proc.stdout.read().decode('utf-8')}"
+            f"stderr={proc.stderr.read().decode('utf-8')}"
+        )
+    else:
+        logger.debug("hit and sunk")
+
+
 def _nuke(
     obj: Optional[str],
     model: Optional[str] = None,
@@ -264,8 +300,8 @@ def _nuke(
     color: _Color = "auto",
     gently: bool = GENTLY,
 ):
-    cur_model = model or get_current_model()
 
+    cur_model = model or get_current_model()
     if not cur_model:
         nukeables = []
 
@@ -389,57 +425,21 @@ def _nuke(
 
     if color == "no":
         color = None
-
-    console = Console(color_system=color)
-
-    def print_centered(s):
-        return console.print(Align(s, align="center"))
-
-    def fire(nukeable: Nukeable, nuke: str):
-        """defcon 5"""
-        _atom = Style(bold=True, color="green")
-
-        nukeable_name = nukeable.name
-        if not nukeable.type == "model":
-            nukeable_name += f" ({nukeable.model})"
-
-        to_nuke = Style(color=COLOR_MAP[nukeable.type])
-        text = (
-            Text(ICBM + " " * 2)
-            .append(nukeable_name, to_nuke)
-            .append("  " + ATOM, _atom)
-        )
-
-        print_centered(text)
-
-        # todo split model nukes to a separate process and pass there shell=True
-        logger.debug(f"nuking {nukeable} with {nuke}")
-        proc = JPopen(nuke.split(" "))
-        proc.wait()
-        while proc.returncode is None:
-            sleep(0.1)
-        if proc.returncode != 0:
-            print(
-                f"something went wrong nuking {nukeable.name};"
-                f"stdout={proc.stdout.read().decode('utf-8')}"
-                f"stderr={proc.stderr.read().decode('utf-8')}"
-            )
-        else:
-            logger.debug("hit and sunk")
-
+        
     ascii_art = NUKE_GENTLY_ASCII_ART if gently else NUKE_ASCII_ART
-    print_centered(
+    _print_centered(
         Text(
             ascii_art,
             style=Style(dim=True, blink=BLINK, bold=True),
-        )
+        ),
+        color=color,
     )
 
     tp = ThreadPool()
     results = []
     for nukeable, nuke in zip(nukeables, nukes):
         logger.debug(f"firing {nuke} {ICBM} {nukeable}")
-        res = tp.apply_async(fire, (nukeable, nuke))
+        res = tp.apply_async(_fire, (nukeable, nuke))
         results.append((res, nukeable, nuke))
 
     with timeout(1):
@@ -448,15 +448,16 @@ def _nuke(
 
     for res, nkbl, nk in results:
         if not res.ready():
-            print_centered(f"{ICBM} {nkbl} still in flight")
+            _print_centered(f"{ICBM} {nkbl} still in flight", color=color)
         else:
             if not res.successful():
-                print_centered(
-                    f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die"
+                _print_centered(
+                    f"nuke {nk!r} {ICBM} {nkbl!r} failed; someone doesn't want to die",
+                    color=color,
                 )
 
     if not dry_run:
-        print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)))
+        _print_centered(Text("✞ RIP ✞", style=Style(bold=True, dim=True)), color=color)
 
 
 def nuke(

@@ -6,7 +6,11 @@ import yaml
 from jhack.helpers import fetch_file
 from jhack.logger import logger as jhack_logger
 from jhack.scenario.errors import InvalidTargetUnitName
-from jhack.scenario.snapshot import RemotePebbleClient
+from jhack.scenario.snapshot import (
+    RemotePebbleClient,
+    InvalidContainerNameError,
+    PebbleClientError,
+)
 from jhack.scenario.utils import JujuUnitName
 
 logger = jhack_logger.getChild(__name__)
@@ -47,7 +51,11 @@ def _pebble(
     client = RemotePebbleClient(
         container_name, target=target, model=model, dry_run=dry_run
     )
-    out = client.run(command)
+    try:
+        out = client.run(command)
+    except InvalidContainerNameError:
+        exit(f"Invalid container name: {container_name}.")
+
     if not out.strip():
         _command = " ".join(["pebble"] + command)
         out = f"[no output: {_command!r}]"
@@ -64,7 +72,7 @@ def pebble(
         "-c",
         "--container",
         help="Container name to target. "
-        "Will default to the first container defined in charmcraft.yaml if none is provided.",
+        "Will execute for each container in turn if none is specified.",
     ),
     model: Optional[str] = typer.Option(
         None,

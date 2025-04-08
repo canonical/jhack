@@ -312,6 +312,14 @@ def get_metadata(target: JujuUnitName, model: Model):
     return yaml.safe_load(raw_meta)
 
 
+class PebbleClientError(Exception):
+    """Error raised by RemotePebbleClient._run."""
+
+
+class InvalidContainerNameError(PebbleClientError):
+    """Raised when you attempt RemotePebbleClient operations on a bad container name."""
+
+
 class RemotePebbleClient:
     """Clever little class that wraps calls to a remote pebble client."""
 
@@ -344,6 +352,11 @@ class RemotePebbleClient:
         proc = run(shlex.split(command), capture_output=True, text=True)
         if proc.returncode == 0:
             return proc.stdout
+
+        if re.compile(
+            rf"error: cannot communicate with server: Get (\S+): socket \"{self.socket_path}\" not found"
+        ).match(proc.stdout):
+            raise InvalidContainerNameError(self.container)
 
         raise RuntimeError(
             f"error wrapping pebble call with {command}: "
