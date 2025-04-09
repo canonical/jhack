@@ -14,8 +14,25 @@ JHACK_PROJECT_ROOT = Path(__file__).parent.parent
 
 def get_home_dir() -> Path:
     """Get the path to the home directory for the user."""
-    # this looks up the ~HOME envvar and tries more things if not set (see pathlib._PosixFlavour.gethomedir)
-    return Path("~").expanduser().absolute()
+    try:
+        usr = pwd.getpwuid(os.getuid())[0]
+    except KeyError:
+        logger.debug(
+            "pwd.getpwuid could not get pwd for your UID. "
+            "If you think you're root, something must have gone wrong. "
+            "Set the envvar JHACK_DATA to some snap-writable path where "
+            "jhack should store its data and config."
+        )
+        usr = ""
+
+    if usr == "root":
+        home_dir = Path("/root")
+    elif user := os.environ.get("USER"):
+        home_dir = Path("/home") / user
+    else:
+        # this looks up the ~HOME envvar and tries more things if not set (see pathlib._PosixFlavour.gethomedir)
+        home_dir = Path("~").expanduser().absolute()
+    return home_dir
 
 
 def get_jhack_data_path() -> Path:
