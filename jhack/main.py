@@ -5,8 +5,9 @@ import sys
 from importlib.util import find_spec
 from pathlib import Path
 
+import click
 import typer
-
+from click import UsageError
 
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
@@ -151,7 +152,11 @@ def main():
         Hacky, wacky, but ultimately charming.
         
         Home is https://github.com/canonical/jhack.\n
-        Head there for feature requests, bugs, etc...""",
+        Head there for feature requests, bugs, etc...\n\n
+        
+        You can run `jhack commands` for an (almost) exhaustive list of all 
+        available command groups and subcommands.
+        """,
         no_args_is_help=True,
         rich_markup_mode="markdown",
     )
@@ -183,6 +188,29 @@ def main():
     app.command(name="debug-log", no_args_is_help=True)(tail_logs)
     app.command(name="script", no_args_is_help=True)(charm_script)
     app.command(name="pebble", no_args_is_help=True)(pebble)
+
+    def list_commands():
+        """List all jhack commands and nested subcommands."""
+
+        def display_ctree(obj, nesting=1):
+            prefix = "\t" * nesting
+            # print(prefix, obj.name)
+            for command in obj.registered_commands:
+                if command.hidden:
+                    continue
+                print(
+                    f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}"
+                )
+            for group in obj.registered_groups:
+                print(
+                    f"{prefix + group.typer_instance.info.name:<22} {group.typer_instance.info.help.splitlines()[0]}"
+                )
+                display_ctree(group.typer_instance, nesting + 1)
+
+        print("jhack:                 What juju wished it didn't need.")
+        display_ctree(app)
+
+    app.command(name="commands")(list_commands)
 
     conf = typer.Typer(
         # TODO md formatting is currently quite bork cfr. https://github.com/tiangolo/typer/pull/815

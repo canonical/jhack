@@ -997,7 +997,7 @@ If you are writing an integration test, or working with your development cloud a
 should be the leader of your deployment, but you really, really disagree and want `myapp/2` to be in charge instead, 
 worry no longer! You now wield the power of advanced hackery and election manipulation: type
 
-> `jhack elect myapp/2`
+> `jhack utils elect myapp/2`
  
 ...and in no time (about a minute, to be precise), `myapp/7` shall be deposed and `myapp/2` elected in its place.
 What's going on is, Jhack is killing the container agents on all units except the one you want to elect, 

@@ -1,3 +1,5 @@
+import random
+
 from rich.align import Align
 from rich.console import Console
 from rich.text import Text
@@ -38,7 +40,18 @@ def vanity():
 
 
 def vanity_2():
-    Console().print(Text("better than juju", style="blink cyan bold"))
+    txt = random.choice(
+        [
+            "what juju wished it didn't need",
+            "better than juju",
+            "juju's fever dream",
+            "Harry Pidcock's worst nightmare",
+            "not your friend",
+            "not responsible for your production cloud going up in smoke",
+            "short for 'juju hack', nothing to do with java or javascript",
+        ]
+    )
+    Console().print(Text(txt, style="blink cyan bold"))
 
 
 if __name__ == "__main__":
