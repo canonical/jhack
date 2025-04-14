@@ -109,8 +109,13 @@ def _cached_juju_status(*args, **kwargs):
 def _juju_status(*args, **kwargs):
     # to facilitate mocking in utests
     if _CACHING:
-        return _cached_juju_status(*args, **kwargs)
-    return juju_status(*args, **kwargs)
+        cache = _cached_juju_status(*args, **kwargs)
+        if cache:
+            return cache
+    new = juju_status(*args, **kwargs)
+    if not new:
+        logger.error("juju status returned nothing!")
+    return new
 
 
 def _show_unit(unit_name, related_to: str = None, endpoint: str = None, model: str = None):
