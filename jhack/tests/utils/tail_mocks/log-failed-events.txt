@@ -1,0 +1,4 @@
+unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_changed.
+unit-parca-0: 15:01:49 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_created.
+unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_joined.
+unit-parca-0: 15:01:49 ERROR juju.worker.uniter.operation hook "profiling-endpoint-relation-created" (via hook dispatching script: dispatch) failed: exit status 1

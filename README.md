@@ -101,6 +101,8 @@ Pro tip: `jhack utils sync application-name -s ./src` will sync to all units of 
 
 Pro-pro tip: `jhack sync * -s ./lib` will sync to all applications in the current model! Handy when you're working on shared (relation interface, for example) libraries.
 
+Pro-pro-pro tip: `jhack sync mycharm/0 --source ./some-python-lib --remote-root=/var/lib/juju/agents/unit-parca-0/charm/venv/lib/python3.12/site-packages/` will sync a python library straight into a charm's virtual environment! Before you do this, make sure that you get the python version right.
+
 ## unbork-juju
 
 `jhack utils unbork-juju`
