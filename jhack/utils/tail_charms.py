@@ -532,7 +532,6 @@ _replay_symbol = "⟳"
 
 def _get_event_text(event: EventLogMsg, ascii=False):
     event_text = event.event
-    print(event.tags)
     if "jhack" in event.tags:
         if "lobotomy" in event.tags:
             event_text += f" {_lobotomy_symbol}"
