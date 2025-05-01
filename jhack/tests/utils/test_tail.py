@@ -116,7 +116,9 @@ def _fake_log_proc(n):
 @pytest.fixture(params=(1, 2, 3, 4))
 def mock_stdout(request):
     n = request.param
-    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)):
+    with patch(
+        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
+    ):
 
         def fake_find_leaders(apps, model=None):
             return {app: f"{app}/0" for app in apps}
@@ -154,7 +156,9 @@ def test_tail(deferrals, length, mock_stdout):
 @pytest.mark.parametrize("length", (3, 10, 100))
 @pytest.mark.parametrize("show_ns", (True, False))
 def test_with_real_trfk_log(deferrals, length, show_ns):
-    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")):
+    with patch(
+        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
+    ):
         _tail_events(
             targets=["trfk/0"],
             length=length,
@@ -278,7 +282,9 @@ def test_tail_with_file_input_and_output(tmp_path):
     ),
 )
 def test_tail_event_filter(pattern, log, match):
-    proc = Processor(targets=[], event_filter_re=(re.compile(pattern) if pattern else None))
+    proc = Processor(
+        targets=[], event_filter_re=(re.compile(pattern) if pattern else None)
+    )
     msg = proc.process(log)
     if match:
         assert msg
@@ -288,7 +294,9 @@ def test_tail_event_filter(pattern, log, match):
 
 def test_machine_log_with_subordinates():
     mock_uniter_events_only(False)
-    proc = _tail_events(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
+    proc = _tail_events(
+        length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
+    )
     units = {log.unit for log in proc._captured_logs}
     assert len(units) == 4
 
@@ -299,7 +307,9 @@ def test_machine_log_with_subordinates():
         "testing_mock"
     ]  # mock event we added
     assert [
-        log.event for log in proc._captured_logs if log.unit == "prometheus-node-exporter/0"
+        log.event
+        for log in proc._captured_logs
+        if log.unit == "prometheus-node-exporter/0"
     ] == [
         "install",
         "juju_info_relation_created",
@@ -336,7 +346,7 @@ def test_machine_log_with_subordinates():
     ),
 )
 def test_custom_event(line, expected_event):
-    p = Processor([Target("prom", 1)])
+    p = Processor(["prom/1"])
     p.process(line)
     assert [log for log in p._captured_logs if log.unit == "prom/1"]
 
@@ -352,7 +362,7 @@ def test_borky_trfk_log_defer():
 
 def test_trace_ids_relation_evt():
     mock_uniter_events_only(False)
-    p = Processor([Target("prom", 1)], show_trace_ids=True)
+    p = Processor(["prom/1"], show_trace_ids=True)
     for line in (
         "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Starting root trace with id='12312321412412312321'.",
         "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Emitting custom event "
@@ -376,3 +386,38 @@ def test_trace_ids_no_relation_evt():
         p.process(line)
     evt = [log for log in p._captured_logs if log.unit == "prom/1"][0]
     assert evt.trace_id == "12312321412412312321"
+
+
+def test_event_failed():
+    mock_uniter_events_only(True)
+    p = Processor(["parca/1"], show_trace_ids=True)
+    for line in (
+        'unit-parca-1: 12:30:58 INFO juju.worker.uniter.operation ran "update-status" hook '
+        "(via hook dispatching script: dispatch)",
+        'unit-parca-1: 12:31:01 ERROR juju.worker.uniter.operation hook "update-status" '
+        "(via hook dispatching script: dispatch) failed: exit status 444",
+    ):
+        p.process(line)
+
+    captured = [log for log in p._captured_logs if log.unit == "parca/1"]
+    assert len(captured) == 1
+    evt = captured[0]
+    assert evt.tags == ("failed",)
+    assert evt.exit_code == 444
+
+
+def test_event_failed2():
+    mock_uniter_events_only(False)
+    p = Processor([], show_trace_ids=True)
+    for line in (
+        "unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_changed.",
+        "unit-parca-0: 15:01:49 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_created.",
+        "unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_joined.",
+        'unit-parca-0: 15:01:49 ERROR juju.worker.uniter.operation hook "profiling-endpoint-relation-created" (via hook dispatching script: dispatch) failed: exit status 1',
+    ):
+        p.process(line)
+
+    captured = p._captured_logs
+    assert len(captured) == 3
+    assert [e.tags for e in captured] == [(), ("failed",), ()]
+    assert [e.exit_code for e in captured] == [0, 1, 0]
