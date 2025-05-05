@@ -32,6 +32,8 @@ from rich.style import Style
 from rich.table import Table
 from rich.text import Text
 
+from jhack import config
+from jhack.conf import conf
 from jhack.conf.conf import CONFIG
 from jhack.helpers import JPopen, find_leaders
 from jhack.logger import logger as jhack_logger
@@ -687,7 +689,8 @@ class RichPrinter(Printer):
             color_system=color,
         )
         self.live = live = Live(
-            console=console, refresh_per_second=60 / self._framerate
+            console=console,
+            refresh_per_second=conf.CONFIG.get("tail", "refresh_per_second"),
         )
         live.update("Listening for events...", refresh=True)
         live.start()
