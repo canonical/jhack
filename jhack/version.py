@@ -3,7 +3,7 @@ from importlib.metadata import PackageNotFoundError
 
 import toml
 
-from jhack.conf.conf import check_destructive_commands_allowed, CONFIG
+from jhack.conf.conf import CONFIG
 from jhack.config import JHACK_PROJECT_ROOT
 
 
@@ -21,9 +21,7 @@ def get_jhack_version():
         pyproject = JHACK_PROJECT_ROOT / "pyproject.toml"
         if pyproject.exists():
             jhack_version = (
-                toml.load(pyproject)
-                .get("project", {})
-                .get("version", "<unknown version>")
+                toml.load(pyproject).get("project", {}).get("version", "<unknown version>")
             )
         else:
             jhack_version = "<unknown version>"

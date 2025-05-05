@@ -340,9 +340,7 @@ class RemotePebbleClient:
         _model = f" -m {self.model}" if self.model else ""
 
         # charm container commands go straight to the charm container's pebble; no need to set a socket.
-        socket_var = (
-            f" PEBBLE_SOCKET={self.socket_path}" if self.container != "charm" else ""
-        )
+        socket_var = f" PEBBLE_SOCKET={self.socket_path}" if self.container != "charm" else ""
         command = f"juju ssh{_model} {self.target.unit_name}{socket_var} /charm/bin/pebble {cmd}"
 
         if self._dry_run:

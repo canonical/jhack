@@ -9,7 +9,6 @@ from jhack.scenario.errors import InvalidTargetUnitName
 from jhack.scenario.snapshot import (
     RemotePebbleClient,
     InvalidContainerNameError,
-    PebbleClientError,
 )
 from jhack.scenario.utils import JujuUnitName
 
@@ -20,9 +19,7 @@ def get_container_names(target, model):
     try:
         metadata = fetch_file(target, "metadata.yaml", model=model)
     except RuntimeError:
-        exit(
-            f"Failed to fetch metadata.yaml from {target} in model={model or '<current model>'}"
-        )
+        exit(f"Failed to fetch metadata.yaml from {target} in model={model or '<current model>'}")
     raw_meta = yaml.safe_load(metadata)
     containers = raw_meta.get("containers")
     if not containers:
@@ -49,9 +46,7 @@ def _pebble(
             _pebble(target, command, container, model, dry_run)
         return
 
-    client = RemotePebbleClient(
-        container_name, target=target, model=model, dry_run=dry_run
-    )
+    client = RemotePebbleClient(container_name, target=target, model=model, dry_run=dry_run)
     try:
         out = client.run(command)
     except InvalidContainerNameError:
@@ -65,9 +60,7 @@ def _pebble(
 
 def pebble(
     target: str = typer.Argument(..., help="Target unit."),
-    command: List[str] = typer.Argument(
-        ..., help="Pebble command to execute on the container."
-    ),
+    command: List[str] = typer.Argument(..., help="Pebble command to execute on the container."),
     container_name: str = typer.Option(
         None,
         "-c",

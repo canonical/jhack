@@ -268,9 +268,7 @@ def _fire(nukeable: Nukeable, nuke: str):
         nukeable_name += f" ({nukeable.model})"
 
     to_nuke = Style(color=COLOR_MAP[nukeable.type])
-    text = (
-        Text(ICBM + " " * 2).append(nukeable_name, to_nuke).append("  " + ATOM, _atom)
-    )
+    text = Text(ICBM + " " * 2).append(nukeable_name, to_nuke).append("  " + ATOM, _atom)
 
     _print_centered(text)
 
@@ -300,7 +298,6 @@ def _nuke(
     color: _Color = "auto",
     gently: bool = GENTLY,
 ):
-
     cur_model = model or get_current_model()
     if not cur_model:
         nukeables = []
@@ -362,19 +359,14 @@ def _nuke(
                 nukeables.remove(nukeable)
                 continue
 
-            nukes.append(
-                f"juju remove-application {nukeable.name}{politeness} --no-prompt"
-            )
+            nukes.append(f"juju remove-application {nukeable.name}{politeness} --no-prompt")
 
         elif nukeable.type == "relation":
             # if we're already nuking either app, let's skip nuking the relation
             assert nukeable.endpoints, f"relation {nukeable.name} has unknown endpoints"
             provider = nukeable.endpoints.provider
             requirer = nukeable.endpoints.requirer
-            if (
-                provider.split(":")[0] in nuked_apps
-                or requirer.split(":")[0] in nuked_apps
-            ):
+            if provider.split(":")[0] in nuked_apps or requirer.split(":")[0] in nuked_apps:
                 nukeables.remove(nukeable)
                 continue
 
@@ -385,9 +377,7 @@ def _nuke(
 
     if n is not None:
         if n != (real_n := len(nukeables)):
-            logger.debug(
-                f"Unexpected number of nukeables; expected {n}, got: {nukeables}"
-            )
+            logger.debug(f"Unexpected number of nukeables; expected {n}, got: {nukeables}")
             for nukeable in nukeables:
                 print(f"would {ATOM} {nukeable}")
             word = "less" if n > real_n else "more"
@@ -425,7 +415,7 @@ def _nuke(
 
     if color == "no":
         color = None
-        
+
     ascii_art = NUKE_GENTLY_ASCII_ART if gently else NUKE_ASCII_ART
     _print_centered(
         Text(

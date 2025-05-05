@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import jhack.utils.tail_charms
-from jhack.helpers import Target
 from jhack.utils.tail_charms import DeferralStatus, Processor, _tail_events
 
 
@@ -116,9 +115,7 @@ def _fake_log_proc(n):
 @pytest.fixture(params=(1, 2, 3, 4))
 def mock_stdout(request):
     n = request.param
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
-    ):
+    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)):
 
         def fake_find_leaders(apps, model=None):
             return {app: f"{app}/0" for app in apps}
@@ -156,9 +153,7 @@ def test_tail(deferrals, length, mock_stdout):
 @pytest.mark.parametrize("length", (3, 10, 100))
 @pytest.mark.parametrize("show_ns", (True, False))
 def test_with_real_trfk_log(deferrals, length, show_ns):
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
-    ):
+    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")):
         _tail_events(
             targets=["trfk/0"],
             length=length,
@@ -282,9 +277,7 @@ def test_tail_with_file_input_and_output(tmp_path):
     ),
 )
 def test_tail_event_filter(pattern, log, match):
-    proc = Processor(
-        targets=[], event_filter_re=(re.compile(pattern) if pattern else None)
-    )
+    proc = Processor(targets=[], event_filter_re=(re.compile(pattern) if pattern else None))
     msg = proc.process(log)
     if match:
         assert msg
@@ -294,9 +287,7 @@ def test_tail_event_filter(pattern, log, match):
 
 def test_machine_log_with_subordinates():
     mock_uniter_events_only(False)
-    proc = _tail_events(
-        length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
-    )
+    proc = _tail_events(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
     units = {log.unit for log in proc._captured_logs}
     assert len(units) == 4
 
@@ -307,9 +298,7 @@ def test_machine_log_with_subordinates():
         "testing_mock"
     ]  # mock event we added
     assert [
-        log.event
-        for log in proc._captured_logs
-        if log.unit == "prometheus-node-exporter/0"
+        log.event for log in proc._captured_logs if log.unit == "prometheus-node-exporter/0"
     ] == [
         "install",
         "juju_info_relation_created",

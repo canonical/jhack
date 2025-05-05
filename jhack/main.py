@@ -5,9 +5,7 @@ import sys
 from importlib.util import find_spec
 from pathlib import Path
 
-import click
 import typer
-from click import UsageError
 
 # this will make jhack find its modules if you call it directly (i.e. no symlinks)
 # aliases are OK
@@ -198,9 +196,7 @@ def main():
             for command in obj.registered_commands:
                 if command.hidden:
                     continue
-                print(
-                    f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}"
-                )
+                print(f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}")
             for group in obj.registered_groups:
                 print(
                     f"{prefix + group.typer_instance.info.name:<22} {group.typer_instance.info.help.splitlines()[0]}"
