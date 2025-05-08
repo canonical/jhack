@@ -322,7 +322,7 @@ def _random_color():
 class LogLineParser:
     base_pattern = (
         r"^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) "
-        r"unit\.(?P<unit>\S+)\.juju-log "
+        r"unit\.(?P<unit>\S+)\.juju-log (root:)?( )?"
     )
     base_relation_pattern = base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
 
@@ -517,7 +517,7 @@ def _get_event_color(event: EventLogMsg) -> Color:
 
 
 _fire_symbol = "🔥"
-_bomb_symbol = "💣"
+_bomb_symbol = "❌"
 _fire_symbol_ascii = "*"
 _lobotomy_symbol = "✂"
 _replay_symbol = "⟳"
@@ -1532,7 +1532,7 @@ def bump_loglevel() -> Optional[str]:
 
     for cfg in cfgs:
         if "ERROR" in cfg:
-            logger.error(f"failed bumping loglevel to unit=TRACE: {cfg}")
+            logger.error(f"failed bumping loglevel to unit=DEBUG: {cfg}")
             return
 
         n, lvl = cfg.split("=")
@@ -1541,7 +1541,7 @@ def bump_loglevel() -> Optional[str]:
             continue
         new_config.append(cfg)
 
-    new_config.append("unit=TRACE")
+    new_config.append("unit=DEBUG")
 
     cmd = f"juju model-config logging-config={';'.join(new_config)!r}"
     run(shlex.split(cmd))

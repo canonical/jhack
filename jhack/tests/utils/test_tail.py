@@ -410,3 +410,15 @@ def test_event_failed2():
     assert len(captured) == 3
     assert [e.tags for e in captured] == [(), ("failed",), ()]
     assert [e.exit_code for e in captured] == [0, 1, 0]
+
+
+def test_machine_event_logs():
+    mock_uniter_events_only(False)
+    p = Processor([], show_trace_ids=True)
+    for line in (
+        "unit-postgresql-1: 09:25:36 DEBUG unit.postgresql/1.juju-log root:Emitting Juju event leader_settings_changed.",
+    ):
+        p.process(line)
+
+    captured = p._captured_logs
+    assert len(captured) == 1
