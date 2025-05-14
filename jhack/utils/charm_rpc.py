@@ -23,12 +23,15 @@ from jhack.helpers import (
     push_file,
     rm_file,
     get_substrate,
+    get_charmcraft_version,
 )
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
 
 logger = jhack_logger.getChild("crpc")
 OUTPUT_PATH_FILENAME = ".crpc_output_file.json"
+PYTHONPATH_OLD_STYLE = "lib:venv"
+PYTHONPATH = "lib:venv/lib/python3.12/site-packages"
 
 
 def charm_eval(
@@ -45,7 +48,9 @@ def charm_eval(
         "- .model.relations['foo']\n"
         "- self.ingress.is_ready\n",
     ),
-    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
     cleanup: bool = typer.Option(
         True,
         help="Remove all files created onto the unit when you're done.",
@@ -144,7 +149,9 @@ def charm_script(
         help="Name of the charm type to import from `charm.py`. Useful if your charm.py "
         "contains more than one charm type (e.g. if you have a base class...).",
     ),
-    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
     cleanup: bool = typer.Option(
         True,
         help="Remove all files created onto the unit when you're done.",
@@ -406,7 +413,9 @@ def _prepare_crpc_env(target, event, env_override, model):
     if event or env_override:
         evt = event or "charm-rpc"
         logger.info(f"preparing environment for event {evt!r}...")
-        crpc_env = build_event_env(target.unit_name, evt, override=env_override, model=model)
+        crpc_env = build_event_env(
+            target.unit_name, evt, override=env_override, model=model
+        )
     else:
         logger.info("setting up generic event context...")
         crpc_env = "JUJU_DISPATCH_PATH=charm-rpc"
@@ -430,7 +439,9 @@ def _exec_crpc_script(
     remote_rpc_module_path = f"src/{crpc_module_name}.py"
     push_file(target.unit_name, script, remote_rpc_module_path, model=model)
 
-    remote_rpc_dispatch_path = _push_crpc_dispatch_script(target, model, crpc_dispatch_name)
+    remote_rpc_dispatch_path = _push_crpc_dispatch_script(
+        target, model, crpc_dispatch_name
+    )
     crpc_env = _prepare_crpc_env(target, event, env_override, model)
 
     env = " ".join(
@@ -442,7 +453,7 @@ def _exec_crpc_script(
             "CHARM_RPC_CHARM_NAME": charm_name,
             "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
             "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
-            "PYTHONPATH": "lib:venv",
+            "PYTHONPATH": get_pythonpath(target.unit_name),
         }.items()
     )
 
@@ -485,6 +496,15 @@ def _run_crpc(target, env, crpc_dispatch_name, model: str = None):
     return out
 
 
+def get_pythonpath(unit_name: str):
+    # or is it 3.4.4 that broke things?
+    # we don't know. Definitely 3.4.6 is broken.
+    if get_charmcraft_version(unit_name) > (3, 4, 3):
+        return PYTHONPATH
+    else:
+        return PYTHONPATH_OLD_STYLE
+
+
 def _exec_crpc_expr(
     target: Target,
     expr: str,
@@ -497,7 +517,9 @@ def _exec_crpc_expr(
     charm_name: Optional[str] = None,
     print_output: bool = True,
 ):
-    remote_rpc_dispatch_path = _push_crpc_dispatch_script(target, model, crpc_dispatch_name)
+    remote_rpc_dispatch_path = _push_crpc_dispatch_script(
+        target, model, crpc_dispatch_name
+    )
     crpc_env = _prepare_crpc_env(target, event, env_override, model)
 
     env_dict = {
@@ -505,7 +527,7 @@ def _exec_crpc_expr(
         "CHARM_RPC_EXPR": expr,
         "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
         "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
-        "PYTHONPATH": "lib:venv",
+        "PYTHONPATH": get_pythonpath(target.unit_name),
     }
     if charm_name:
         env_dict["CHARM_RPC_CHARM_NAME"] = charm_name
