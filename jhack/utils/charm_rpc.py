@@ -23,15 +23,14 @@ from jhack.helpers import (
     push_file,
     rm_file,
     get_substrate,
-    get_charmcraft_version,
+    get_venv_location,
 )
 from jhack.logger import logger as jhack_logger
 from jhack.utils.simulate_event import build_event_env
 
 logger = jhack_logger.getChild("crpc")
 OUTPUT_PATH_FILENAME = ".crpc_output_file.json"
-PYTHONPATH_OLD_STYLE = "lib:venv"
-PYTHONPATH = "lib:venv/lib/python3.12/site-packages"
+PYTHONPATH = "lib:{venv_path}"
 
 
 def charm_eval(
@@ -453,7 +452,7 @@ def _exec_crpc_script(
             "CHARM_RPC_CHARM_NAME": charm_name,
             "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
             "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
-            "PYTHONPATH": get_pythonpath(target.unit_name),
+            "PYTHONPATH": get_pythonpath(target.unit_name, model=model),
         }.items()
     )
 
@@ -496,13 +495,9 @@ def _run_crpc(target, env, crpc_dispatch_name, model: str = None):
     return out
 
 
-def get_pythonpath(unit_name: str):
-    # or is it 3.4.4 that broke things?
-    # we don't know. Definitely 3.4.6 is broken.
-    if get_charmcraft_version(unit_name) > (3, 4, 3):
-        return PYTHONPATH
-    else:
-        return PYTHONPATH_OLD_STYLE
+def get_pythonpath(unit_name: str, model: Optional[str] = None):
+    """Obtain the PYTHONPATH."""
+    return PYTHONPATH.format(venv_path=get_venv_location(unit_name, model=model))
 
 
 def _exec_crpc_expr(
@@ -527,7 +522,7 @@ def _exec_crpc_expr(
         "CHARM_RPC_EXPR": expr,
         "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
         "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
-        "PYTHONPATH": get_pythonpath(target.unit_name),
+        "PYTHONPATH": get_pythonpath(target.unit_name, model=model),
     }
     if charm_name:
         env_dict["CHARM_RPC_CHARM_NAME"] = charm_name

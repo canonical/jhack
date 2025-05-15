@@ -12,6 +12,7 @@ from functools import lru_cache
 from itertools import chain
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, check_call, check_output
+from sys import stdout
 from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import typer
@@ -467,16 +468,19 @@ def fetch_file(
 ) -> Optional[str]:
     model_arg = f" -m {model}" if model else ""
     charm_path = charm_root_path(unit) / remote_path
-    cmd = f"juju ssh{model_arg} {unit} cat {charm_path} || true"
-
-    raw = check_output(cmd.split())
-    if b"No such file or directory" in raw:
+    cmd = f"juju ssh{model_arg} {unit} cat {charm_path}"
+    try:
+        raw = subprocess.run(
+            shlex.split(cmd), text=True, capture_output=True, check=True
+        ).stdout
+    except CalledProcessError:
+        logger.debug(f"error fetching {charm_path} from {unit}@{model}:", exc_info=True)
         raise RuntimeError(f"Failed to fetch {charm_path} from {unit}.")
 
     if not local_path:
-        return raw.decode("utf-8")
+        return raw
 
-    Path(local_path).write_bytes(raw)
+    Path(local_path).write_text(raw)
 
 
 LibInfo = namedtuple("LibInfo", "owner, version, lib_name, revision")
@@ -791,21 +795,30 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
     return leaders
 
 
-def _get_manifest(unit: str, model: Optional[str] = None):
+def get_venv_location(unit: str, model: Optional[str] = None):
+    """Charms that were built with the UV plugin have their venv in a different place.
+
+    Since the charm itself contains no indication as to whether it was built with uv,
+    and where its venv is, we have to do some hacky guesswork.
+    """
     try:
-        raw = fetch_file(unit, "manifest.yaml", model=model)
+        fetch_file(unit, "./venv/ops/main.py", model=model)
+        return "venv"
     except RuntimeError:
-        logger.error(f"failed to fetch manifest from {unit=}")
-        raise
+        logger.debug("uv charm detected")
 
-    manifest = yaml.safe_load(raw)
-    return manifest
-
-
-def get_charmcraft_version(unit: str, model: str = None) -> Tuple[int, int, int]:
-    """Fetch the charmcraft version from a live unit's manifest.yaml."""
-    manifest = _get_manifest(unit, model=model)
-    return tuple(int(x) for x in manifest["charmcraft-version"].split("."))
+    # determine python version:
+    _model = f" --model {model}" if model else ""
+    charm_root_path = Target.from_name(unit).charm_root_path
+    cmd = f"juju ssh {unit}{_model} {charm_root_path}/venv/bin/python --version"
+    out = subprocess.run(
+        shlex.split(cmd),
+        text=True,
+        capture_output=True,
+    ).stdout
+    # out looks like: "Python 3.12.3", we want "3.12"
+    python_version = ".".join(out.split()[1].split(".")[:-1])
+    return f"{charm_root_path}/venv/lib/python{python_version}/site-packages"
 
 
 if __name__ == "__main__":
