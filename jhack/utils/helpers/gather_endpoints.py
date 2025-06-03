@@ -71,6 +71,9 @@ def gather_endpoints(
         is_subordinate = app.get("subordinate-to")
         if is_subordinate:
             units = get_units(app_name, model=model)
+            if not units:
+                logger.debug(f"skipping {app_name}: no units")
+                continue
             # grab any unit. We don't do `app_name/0` because we could be on machine models.
             unit = units[0].unit_name
         else:
@@ -105,7 +108,8 @@ def gather_endpoints(
 
         if include_peers:
             app_eps["peers"] = [
-                PeerBinding(ep, spec["interface"]) for ep, spec in meta.get("peers", {}).items()
+                PeerBinding(ep, spec["interface"])
+                for ep, spec in meta.get("peers", {}).items()
             ]
 
         eps[app_name] = app_eps

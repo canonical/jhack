@@ -42,8 +42,12 @@ class FormatUnavailable(NotImplementedError):
     """Raised when a command cannot comply with a format parameter."""
 
 
-class GetStatusError(RuntimeError):
+class GetStatusError(Exception):
     """Raised when juju_status fails."""
+
+
+class NoApplicationsInStatusError(Exception):
+    """Self-explanatory.""" ""
 
 
 RichSupportedColorOptions = Optional[
@@ -661,7 +665,10 @@ def _get_units(
     predicate: Optional[Callable] = None,
 ) -> Sequence[Target]:
     units = []
-    principals = status["applications"][app].get("subordinate-to", False)
+    applications = status.get("applications")
+    if not applications:
+        raise NoApplicationsInStatusError(status)
+    principals = applications[app].get("subordinate-to", False)
     if principals:
         # sub charm = one unit per principal unit
         for principal in principals:
@@ -669,9 +676,7 @@ def _get_units(
                 continue
 
             # if the principal is still being set up, it could have no 'units' yet.
-            for unit_id, unit_meta in (
-                status["applications"][principal].get("units", {}).items()
-            ):
+            for unit_id, unit_meta in applications[principal].get("units", {}).items():
                 unit = int(unit_id.split("/")[1])
                 units.append(
                     Target(
@@ -683,7 +688,7 @@ def _get_units(
                 )
 
     else:
-        for unit_id, unit_meta in status["applications"][app]["units"].items():
+        for unit_id, unit_meta in applications[app]["units"].items():
             if predicate and not predicate(unit_meta):
                 continue
             unit = int(unit_id.split("/")[1])
@@ -702,6 +707,12 @@ def get_units(*apps, model: str = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     if not apps:
         apps = status.get("applications", {}).keys()
+    if not apps:
+        logger.error(
+            f"no 'applications' key in juju-status for {model=}; "
+            f"is the model still bootstrapping?"
+        )
+        return ()
     return list(chain(*(_get_units(app, status) for app in apps)))
 
 
