@@ -159,9 +159,7 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
     if not raw:
         logger.error(f"{cmd} produced no output.")
         if model:
-            logger.error(
-                f"This usually means that the model {model!r} you passed does not exist"
-            )
+            logger.error(f"This usually means that the model {model!r} you passed does not exist")
         else:
             logger.error("This usually means that the juju client isn't reachable")
 
@@ -233,9 +231,7 @@ def get_models(include_controller=False):
     data = json.loads(proc.stdout.read().decode("utf-8"))
     if include_controller:
         return [model["short-name"] for model in data["models"]]
-    return [
-        model["short-name"] for model in data["models"] if not model["is-controller"]
-    ]
+    return [model["short-name"] for model in data["models"] if not model["is-controller"]]
 
 
 def show_unit(unit: str, model: str = None):
@@ -325,7 +321,9 @@ def _push_file_k8s_cmd(
 
     cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
     if mkdir_remote:
-        mkdir_cmd = f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        mkdir_cmd = (
+            f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        )
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -357,9 +355,7 @@ def _push_file_machine_cmd(
     )
 
     if mkdir_remote:
-        mkdir_cmd = (
-            f"juju ssh{model_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
-        )
+        mkdir_cmd = f"juju ssh{model_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -431,11 +427,7 @@ def push_file(
         logger.error(f"{cmd} errored with code {retcode}: ")
         raise RuntimeError(
             f"Failed to push {local_path} to {unit} with {cmd!r}."
-            + (
-                " (verify that the path is readable by the jhack snap)"
-                if IS_SNAPPED
-                else ""
-            )
+            + (" (verify that the path is readable by the jhack snap)" if IS_SNAPPED else "")
         )
 
 
@@ -477,9 +469,7 @@ def fetch_file(
     charm_path = charm_root_path(unit) / remote_path
     cmd = f"juju ssh{model_arg} {unit} cat {charm_path}"
     try:
-        raw = subprocess.run(
-            shlex.split(cmd), text=True, capture_output=True, check=True
-        ).stdout
+        raw = subprocess.run(shlex.split(cmd), text=True, capture_output=True, check=True).stdout
     except CalledProcessError:
         logger.debug(f"error fetching {charm_path} from {unit}@{model}:", exc_info=True)
         raise RuntimeError(f"Failed to fetch {charm_path} from {unit}.")
@@ -531,9 +521,7 @@ def pull_metadata(unit: str, model: str):
             try:
                 fetch_file(unit, charmcraft_path, tf.name, model=model)
             except RuntimeError as e:
-                raise RuntimeError(
-                    f"cannot find charmcraft nor metadata in {unit}"
-                ) from e
+                raise RuntimeError(f"cannot find charmcraft nor metadata in {unit}") from e
 
         return yaml.safe_load(Path(tf.name).read_text())
 
@@ -657,9 +645,7 @@ class Target:
 def get_all_units(model: str = None) -> Tuple[Target, ...]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
-    return tuple(
-        chain(*(_get_units(app, status) for app in status.get("applications", {})))
-    )
+    return tuple(chain(*(_get_units(app, status) for app in status.get("applications", {}))))
 
 
 def _get_units(
@@ -792,9 +778,7 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
         return {}
 
     apps = (
-        set(t.split("/")[0] for t in targets)
-        if targets
-        else list(status.get("applications", []))
+        set(t.split("/")[0] for t in targets) if targets else list(status.get("applications", []))
     )
 
     leaders = {}

@@ -105,10 +105,14 @@ with open(mocks_dir / "real-trfk-cropped.txt", mode="rb") as f:
     logs = f.read()
     MOCK_JDL["cropped"] = logs
 
+with open(mocks_dir / "real-pgql-machine-log.txt", mode="rb") as f:
+    logs = f.read()
+    MOCK_JDL["real-pgql-machine-log"] = logs
 
-def _fake_log_proc(n):
+
+def _fake_log_proc(id_):
     proc = MagicMock()
-    proc.stdout.readlines.return_value = MOCK_JDL[n].split(b"\n")
+    proc.stdout.readlines.return_value = MOCK_JDL[id_].split(b"\n")
     return proc
 
 
@@ -188,7 +192,7 @@ def test_jhack_fire_log():
     assert captured[1].tags == ("jhack", "fire")
 
     out = proc.printer.render(proc._captured_logs, _debug=True)
-    out.columns[1].cells
+    # out.columns[1].cells
 
 
 def test_defer_log():
@@ -417,8 +421,50 @@ def test_machine_event_logs():
     p = Processor([], show_trace_ids=True)
     for line in (
         "unit-postgresql-1: 09:25:36 DEBUG unit.postgresql/1.juju-log root:Emitting Juju event leader_settings_changed.",
+        "unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: root:Emitting Juju event refresh_v_three_relation_created.",
     ):
         p.process(line)
 
     captured = p._captured_logs
-    assert len(captured) == 1
+    assert len(captured) == 2
+
+
+def test_machine_pgql_logs():
+    with patch(
+        "jhack.utils.tail_charms._get_debug_log",
+        wraps=lambda _: _fake_log_proc("real-pgql-machine-log"),
+    ):
+        processor = _tail_events(
+            watch=False,
+        )
+
+    assert [log.event for log in processor._captured_logs] == [
+        "archive_storage_attached",
+        "data_storage_attached",
+        "temp_storage_attached",
+        "logs_storage_attached",
+        "install",
+        "restart_relation_created",
+        "database_peers_relation_created",
+        "refresh_v_three_relation_created",
+        "leader_elected",
+        "config_changed",
+        "start",
+        "refresh_v_three_relation_changed",
+        "database_peers_relation_changed",
+        "update_status",
+        "archive_storage_attached",
+        "data_storage_attached",
+        "temp_storage_attached",
+        "logs_storage_attached",
+        "install",
+        "restart_relation_created",
+        "database_peers_relation_created",
+        "refresh_v_three_relation_created",
+        "leader_elected",
+        "config_changed",
+        "start",
+        "refresh_v_three_relation_changed",
+        "database_peers_relation_changed",
+        "update_status",
+    ]

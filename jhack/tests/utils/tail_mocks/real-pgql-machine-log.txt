@@ -1,0 +1,740 @@
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.apicaller [3753b0] "machine-0" successfully connected to "wss://localhost:17070"
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.logforwarder config change - log forwarding not enabled
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.metricworker start "sender"
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.machineundertaker setting up machine undertaker
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.logger logger worker started
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.metricworker start "cleanup"
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.pruner.action pruner config: max age: 336h0m0s, max collection size 5120M for test8 (3753b024-4c3c-468d-8fe5-a8c177e0c44f)
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.pruner.statushistory pruner config: max age: 336h0m0s, max collection size 5120M for test8 (3753b024-4c3c-468d-8fe5-a8c177e0c44f)
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.provisioner entering provisioner task loop; using provisioner pool with 16 workers
+controller-0: 2025-06-05 13:15:10 INFO juju.worker.provisioner provisioning in zones: [juju366]
+controller-0: 2025-06-05 13:15:13 INFO juju.worker.logforwarder config change - log forwarding not enabled
+controller-0: 2025-06-05 13:15:18 INFO juju.worker.provisioner provisioning in zones: [juju366]
+controller-0: 2025-06-05 13:15:18 INFO juju.worker.provisioner found machine pending provisioning id:0, details:0
+controller-0: 2025-06-05 13:15:19 INFO juju.worker.provisioner trying machine 0 StartInstance in availability zone juju366
+controller-0: 2025-06-05 13:15:21 INFO juju.worker.provisioner started machine 0 as instance juju-e0c44f-0 with hardware "arch=amd64 cores=0 mem=0M virt-type=container", network config [], volumes [], volume attachments map[], subnets to zones [], lxd profiles []
+controller-0: 2025-06-05 13:15:21 INFO juju.worker.instancemutater.environ no changes necessary to machine-0 lxd profiles ([default juju-test8])
+controller-0: 2025-06-05 13:15:22 INFO juju.worker.instancepoller machine "0" (instance ID "juju-e0c44f-0") instance status changed from {"running" "Container started"} to {"running" "Running"}
+controller-0: 2025-06-05 13:15:22 INFO juju.worker.instancepoller machine "0" (instance ID "juju-e0c44f-0") has new addresses: [local-cloud:10.176.3.148@alpha]
+machine-0: 2025-06-05 13:15:44 INFO juju.cmd running jujud [3.6.6 48f295cccb79738cc30a3d280da011a027cd4d16 gc go1.24.2]
+machine-0: 2025-06-05 13:15:44 DEBUG juju.cmd   args: []string{"/var/lib/juju/tools/machine-0/jujud", "machine", "--data-dir", "/var/lib/juju", "--machine-id", "0", "--debug"}
+machine-0: 2025-06-05 13:15:44 DEBUG juju.utils setting GOMAXPROCS to 12
+machine-0: 2025-06-05 13:15:44 DEBUG juju.agent read agent config, format "2.0"
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.upgradesteps upgrade steps for 3.6.6 have already been run.
+machine-0: 2025-06-05 13:15:44 DEBUG juju.cmd.jujud start "engine"
+machine-0: 2025-06-05 13:15:44 INFO juju.cmd.jujud start "engine"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-steps-gate" manifold worker started at 2025-06-05 11:15:44.601717171 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "termination-signal-handler" manifold worker started at 2025-06-05 11:15:44.601957549 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "agent" manifold worker started at 2025-06-05 11:15:44.602110184 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "syslog" manifold worker started at 2025-06-05 11:15:44.602208472 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "charmhub-http-client" manifold worker started at 2025-06-05 11:15:44.60227162 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-check-gate" manifold worker started at 2025-06-05 11:15:44.602859764 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "clock" manifold worker started at 2025-06-05 11:15:44.604654403 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.apicaller connecting with old password
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "state-config-watcher" manifold worker started at 2025-06-05 11:15:44.604855412 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-check-flag" manifold worker started at 2025-06-05 11:15:44.605710738 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-steps-flag" manifold worker started at 2025-06-05 11:15:44.606258218 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.introspection introspection worker listening on "/var/lib/juju/agents/machine-0/introspection.socket"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.cmd.jujud "engine" started
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.introspection stats worker now serving
+machine-0: 2025-06-05 13:15:44 DEBUG juju.api successfully dialed "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+machine-0: 2025-06-05 13:15:44 INFO juju.api connection established to "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "api-config-watcher" manifold worker started at 2025-06-05 11:15:44.611850335 +0000 UTC
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.apicaller [3753b0] "machine-0" successfully connected to "wss://10.176.3.204:17070"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.apicaller changing password...
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "is-controller-flag" manifold worker started at 2025-06-05 11:15:44.615767958 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "is-not-controller-flag" manifold worker started at 2025-06-05 11:15:44.61613028 +0000 UTC
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.apicaller [3753b0] password changed for "machine-0"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.api RPC connection died
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "api-caller" manifold worker stopped: restart immediately
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.apicaller connecting with current password
+machine-0: 2025-06-05 13:15:44 DEBUG juju.api successfully dialed "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+machine-0: 2025-06-05 13:15:44 INFO juju.api connection established to "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.apicaller [3753b0] "machine-0" successfully connected to "wss://10.176.3.204:17070"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "api-caller" manifold worker started at 2025-06-05 11:15:44.642251092 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrader" manifold worker started at 2025-06-05 11:15:44.651667399 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "migration-inactive-flag" manifold worker started at 2025-06-05 11:15:44.654986423 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-steps-runner" manifold worker started at 2025-06-05 11:15:44.655452216 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-steps-runner" manifold worker completed successfully
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.upgrader desired agent binary version: 3.6.6
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-check-flag" manifold worker stopped: gate unlocked
+stack trace:
+github.com/juju/juju/internal/worker/gate.init:95: gate unlocked
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "valid-credential-flag" manifold worker started at 2025-06-05 11:15:44.677000197 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-check-flag" manifold worker started at 2025-06-05 11:15:44.67994215 +0000 UTC
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.deployer new context: units "", stopped ""
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "deployer" manifold worker started at 2025-06-05 11:15:44.689262536 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "migration-fortress" manifold worker started at 2025-06-05 11:15:44.690389518 +0000 UTC
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.deployer checking unit "postgresql/0"
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.deployer deploying unit "postgresql/0"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "migration-minion" manifold worker started at 2025-06-05 11:15:44.701530713 +0000 UTC
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.deployer creating new agent config for "postgresql/0"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.agent read agent config, format "2.0"
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.deployer starting workers for "postgresql/0"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.deployer start "postgresql/0"
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.deployer start "postgresql/0"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.deployer created rotating log file "/var/log/juju/unit-postgresql-0.log" with max size 100 MB and max backups 2
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju Starting unit workers for "postgresql/0"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.introspection introspection worker listening on "/var/lib/juju/agents/unit-postgresql-0/introspection.socket"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.deployer "postgresql/0" started
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.introspection stats worker now serving
+machine-0: 2025-06-05 13:15:44 DEBUG juju.api successfully dialed "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+machine-0: 2025-06-05 13:15:44 INFO juju.api connection established to "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.migrationminion migration migration phase is now: NONE
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.machinesetup Starting machine setup requiring an API connection
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "reboot-executor" manifold worker started at 2025-06-05 11:15:44.71373285 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.fanconfigurer Processing new fan config
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.logger initial log config: "<root>=DEBUG"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "host-key-reporter" manifold worker started at 2025-06-05 11:15:44.713863947 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "state-converter" manifold worker started at 2025-06-05 11:15:44.713925101 +0000 UTC
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.logger logger worker started
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "log-sender" manifold worker started at 2025-06-05 11:15:44.713945147 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "storage-provisioner" manifold worker started at 2025-06-05 11:15:44.713955507 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "upgrade-series" manifold worker started at 2025-06-05 11:15:44.713967933 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "ssh-authkeys-updater" manifold worker started at 2025-06-05 11:15:44.713977066 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "proxy-config-updater" manifold worker started at 2025-06-05 11:15:44.713992125 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "disk-manager" manifold worker started at 2025-06-05 11:15:44.714005589 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "api-address-updater" manifold worker started at 2025-06-05 11:15:44.714016848 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "machine-action-runner" manifold worker started at 2025-06-05 11:15:44.714025375 +0000 UTC
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "logging-config-updater" manifold worker started at 2025-06-05 11:15:44.714036654 +0000 UTC
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.apicaller [3753b0] "unit-postgresql-0" successfully connected to "wss://10.176.3.204:17070"
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.apicaller [3753b0] password changed for "unit-postgresql-0"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.api RPC connection died
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "agent-config-updater" manifold worker stopped: resource permanently unavailable
+stack trace:
+resource permanently unavailable
+github.com/juju/juju/internal/worker/fortress.Occupy:63:
+github.com/juju/juju/cmd/jujud/agent/engine.Housing.Decorate.occupyStart.func1:93:
+machine-0: 2025-06-05 13:15:44 DEBUG juju.api successfully dialed "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+machine-0: 2025-06-05 13:15:44 INFO juju.api connection established to "wss://10.176.3.204:17070/model/3753b024-4c3c-468d-8fe5-a8c177e0c44f/api"
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.apicaller [3753b0] "unit-postgresql-0" successfully connected to "wss://10.176.3.204:17070"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.network cannot get "lxdbr0" addresses: route ip+net: no such network interface (ignoring)
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.fanconfigurer Fan not enabled
+machine-0: 2025-06-05 13:15:44 DEBUG juju.network cannot get "virbr0" addresses: route ip+net: no such network interface (ignoring)
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.dependency "kvm-container-provisioner" manifold worker stopped: container types not yet available
+stack trace:
+github.com/juju/juju/internal/worker/provisioner.ContainerManifoldConfig.machineSupportsContainers:175: container types not yet available
+github.com/juju/juju/internal/worker/fortress.Occupy:63:
+github.com/juju/juju/cmd/jujud/agent/engine.Housing.Decorate.occupyStart.func1:93:
+machine-0: 2025-06-05 13:15:44 DEBUG juju.network including address local-cloud:10.176.3.204 for machine
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.logger reconfiguring logging from "<root>=DEBUG" to "<root>=INFO;unit=DEBUG"
+machine-0: 2025-06-05 13:15:44 DEBUG juju.network including address local-machine:127.0.0.1 for machine
+machine-0: 2025-06-05 13:15:44 DEBUG juju.network including address local-machine:::1 for machine
+machine-0: 2025-06-05 13:15:44 DEBUG juju.network addresses after filtering: [local-cloud:10.176.3.204 local-machine:127.0.0.1 local-machine:::1]
+machine-0: 2025-06-05 13:15:44 DEBUG juju.worker.apiaddressupdater updating API hostPorts to [[10.176.3.204:17070 127.0.0.1:17070 [::1]:17070]]
+machine-0: 2025-06-05 13:15:44 DEBUG juju.agent API server address details [["10.176.3.204:17070" "127.0.0.1:17070" "[::1]:17070"]] written to agent config as ["10.176.3.204:17070"]
+machine-0: 2025-06-05 13:15:44 ERROR juju.worker.dependency "kvm-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-0: 2025-06-05 13:15:44 ERROR juju.worker.dependency "lxd-container-provisioner" manifold worker returned unexpected error: container types not yet available
+machine-0: 2025-06-05 13:15:44 INFO juju.container.lxd Availability zone will be empty for this container manager
+machine-0: 2025-06-05 13:15:44 INFO juju.container unused config option: "container-networking-method" -> "local"
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.upgrader no waiter, upgrader is done
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.upgradeseries no series upgrade lock present
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.machiner setting addresses for "machine-0" to [local-machine:127.0.0.1 local-cloud:10.176.3.148 local-machine:::1]
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.migrationminion migration migration phase is now: NONE
+machine-0: 2025-06-05 13:15:44 WARNING juju.worker.machinesetup determining kvm support: INFO: /dev/kvm does not exist
+HINT:   sudo modprobe kvm_intel
+modprobe: FATAL: Module msr not found in directory /lib/modules/6.8.0-60-generic
+: exit status 1
+no kvm containers possible
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.authenticationworker "machine-0" key updater worker started
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.logger logger worker started
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.leadership postgresql/0 promoted to leadership of postgresql
+machine-0: 2025-06-05 13:15:44 INFO juju.worker.machiner "machine-0" started
+unit-postgresql-0: 2025-06-05 13:15:44 ERROR juju.worker.meterstatus error running "meter-status-changed": charm missing from disk
+machine-0: 2025-06-05 13:15:44 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-postgresql-0
+machine-0: 2025-06-05 13:15:44 INFO juju.agent.tools was a symlink, now looking at /var/lib/juju/tools/3.6.6-ubuntu-amd64
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.uniter unit "postgresql/0" started
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.uniter resuming charm install
+unit-postgresql-0: 2025-06-05 13:15:44 INFO juju.worker.uniter.charm downloading ch:amd64/postgresql-771 from API server
+machine-0: 2025-06-05 13:15:44 INFO juju.downloader downloading from ch:amd64/postgresql-771
+machine-0: 2025-06-05 13:15:44 WARNING juju.worker.s3caller Response has no supported checksum. Not validating response payload.%!(EXTRA []interface {}=[])
+machine-0: 2025-06-05 13:15:44 INFO juju.downloader download complete ("ch:amd64/postgresql-771")
+machine-0: 2025-06-05 13:15:44 INFO juju.downloader download verified ("ch:amd64/postgresql-771")
+machine-0: 2025-06-05 13:15:48 INFO juju.worker.kvmprovisioner machine-0 does not support kvm container
+unit-postgresql-0: 2025-06-05 13:15:53 INFO juju.worker.uniter hooks are retried true
+unit-postgresql-0: 2025-06-05 13:15:56 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:15:56 DEBUG unit.postgresql/0.juju-log Using local storage: not a Kubernetes podspec charm
+unit-postgresql-0: 2025-06-05 13:15:56 DEBUG unit.postgresql/0.juju-log Initializing SQLite local storage: /var/lib/juju/agents/unit-postgresql-0/charm/.unit-state.db.
+unit-postgresql-0: 2025-06-05 13:15:56 INFO unit.postgresql/0.juju-log charm_refresh:Charm revision 771 (CharmVersion('16/1.18.0')) installed at 1749122144.992298
+unit-postgresql-0: 2025-06-05 13:15:56 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:15:56 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:15:56 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='498e1dae68734f1b6b99a2f51eed1b7b'.
+unit-postgresql-0: 2025-06-05 13:15:56 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event archive_storage_attached.
+unit-postgresql-0: 2025-06-05 13:15:57 INFO juju.worker.uniter.operation ran "archive-storage-attached" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:15:57 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:15:57 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:15:57 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:15:57 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='f15425372b1f21002c851ed4c186533e'.
+unit-postgresql-0: 2025-06-05 13:15:57 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event data_storage_attached.
+unit-postgresql-0: 2025-06-05 13:15:58 INFO juju.worker.uniter.operation ran "data-storage-attached" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:15:58 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:15:58 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:15:58 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:15:58 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='585d12d4d767eaab7d9f1c978904d787'.
+unit-postgresql-0: 2025-06-05 13:15:58 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event temp_storage_attached.
+unit-postgresql-0: 2025-06-05 13:15:59 INFO juju.worker.uniter.operation ran "temp-storage-attached" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:15:59 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:15:59 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:15:59 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:15:59 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='390695fa5a5d94eda7a6b4f06e174867'.
+unit-postgresql-0: 2025-06-05 13:15:59 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event logs_storage_attached.
+unit-postgresql-0: 2025-06-05 13:15:59 INFO juju.worker.uniter.operation ran "logs-storage-attached" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:15:59 INFO juju.worker.uniter.storage initial storage attachments ready
+unit-postgresql-0: 2025-06-05 13:16:00 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:00 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:00 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:00 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='d4a1e343c6540dbdd6d816ffcc5ec7a0'.
+unit-postgresql-0: 2025-06-05 13:16:00 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event install.
+unit-postgresql-0: 2025-06-05 13:16:00 DEBUG unit.postgresql/0.juju-log __main__:Install start time: 2025-06-05 11:16:00.543180
+unit-postgresql-0: 2025-06-05 13:16:00 INFO unit.postgresql/0.juju-log charms.operator_libs_linux.v2.snap:Installing snap charmed-postgresql, revision 170, tracking
+unit-postgresql-0: 2025-06-05 13:16:35 INFO unit.postgresql/0.juju-log charms.operator_libs_linux.v2.snap:The snap installation completed successfully
+unit-postgresql-0: 2025-06-05 13:16:35 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7f0187a49160>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:36 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:36 INFO unit.postgresql/0.juju-log restart:1: httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:36 INFO unit.postgresql/0.juju-log restart:1: charm_refresh:Snap refreshed to (or installed at) revision 170
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['next_unit_allowed_to_refresh_if_this_units_snap_revision_and_databag_are_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['installed_snap_revision'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:36 INFO unit.postgresql/0.juju-log restart:1: charm_refresh:Refresh peer relation ready
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:16:36 INFO unit.postgresql/0.juju-log restart:1: charm_refresh:Saved versions to app databag for next refresh: _OriginalVersions(workload='16.8', workload_container='170', installed_workload_container_matched_pinned_container=True, charm=CharmVersion('16/1.18.0'), charm_revision_raw='ch:amd64/postgresql-771')
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7f0187a6ab10>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:36 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:37 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:37 INFO unit.postgresql/0.juju-log restart:1: httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:37 INFO unit.postgresql/0.juju-log restart:1: charm_refresh:Allowed next unit to refresh if this unit's snap revision (170) & databag are up-to-date and if permitted by pause_after_unit_refresh config option or resume-refresh action
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['next_unit_allowed_to_refresh_if_this_units_snap_revision_and_databag_are_up_to_date'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: tracing:Starting root trace with id='484f708343339840ff2117403a2dd413'.
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log restart:1: root:Emitting Juju event restart_relation_created.
+unit-postgresql-0: 2025-06-05 13:16:37 INFO juju.worker.uniter.operation ran "restart-relation-created" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log database-peers:2: ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:37 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7e84d6730aa0>
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:38 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:38 INFO unit.postgresql/0.juju-log database-peers:2: httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: tracing:Starting root trace with id='d8763386a88e099161526840ee015c70'.
+unit-postgresql-0: 2025-06-05 13:16:38 DEBUG unit.postgresql/0.juju-log database-peers:2: root:Emitting Juju event database_peers_relation_created.
+unit-postgresql-0: 2025-06-05 13:16:38 INFO juju.worker.uniter.operation ran "database-peers-relation-created" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7c5c5338c980>
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:39 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:39 INFO unit.postgresql/0.juju-log refresh-v-three:0: httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: tracing:Starting root trace with id='5939be1dc427b603dcaf4b8edda02ce3'.
+unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: root:Emitting Juju event refresh_v_three_relation_created.
+unit-postgresql-0: 2025-06-05 13:16:39 INFO juju.worker.uniter.operation ran "refresh-v-three-relation-created" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:16:40 INFO juju.worker.uniter found queued "leader-elected" hook
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x71e9e5278860>
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:40 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:40 INFO unit.postgresql/0.juju-log httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='ebe3bfc2c61e99e9f2a99ed5918a4be9'.
+unit-postgresql-0: 2025-06-05 13:16:40 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event leader_elected.
+unit-postgresql-0: 2025-06-05 13:16:41 INFO unit.postgresql/0.juju-log __main__:Generated new password for operator-password
+unit-postgresql-0: 2025-06-05 13:16:41 INFO unit.postgresql/0.juju-log __main__:Generated new password for replication-password
+unit-postgresql-0: 2025-06-05 13:16:41 INFO unit.postgresql/0.juju-log __main__:Generated new password for rewind-password
+unit-postgresql-0: 2025-06-05 13:16:41 INFO unit.postgresql/0.juju-log __main__:Generated new password for monitoring-password
+unit-postgresql-0: 2025-06-05 13:16:41 INFO unit.postgresql/0.juju-log __main__:Generated new password for raft-password
+unit-postgresql-0: 2025-06-05 13:16:41 INFO unit.postgresql/0.juju-log __main__:Generated new password for patroni-password
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No SANs found in certificate
+unit-postgresql-0: 2025-06-05 13:16:41 WARNING unit.postgresql/0.juju-log relations.tls:Internal peer CA generated. Please use a proper TLS operator if possible.
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No SANs found in certificate
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No relation: peer-certificates
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No relation: peer-certificates
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.postgresql_k8s.v0.postgresql:Building PostgreSQL parameters for profile='production' and available_memory=33647349760
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log relations.async_replication:Partner addresses: set()
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log __main__:Early exit update_config: Workload not started yet
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.postgresql_k8s.v0.postgresql:Building PostgreSQL parameters for profile='production' and available_memory=33647349760
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:16:41 DEBUG unit.postgresql/0.juju-log relations.async_replication:Partner addresses: set()
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log __main__:Early exit update_config: Workload not started yet
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log __main__:Early exit on_leader_elected: Cluster not initialized
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log backups:Cannot set pgBackRest configurations, PostgreSQL has not yet started.
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log ops.framework:Deferring <LeaderElectedEvent via PostgresqlOperatorCharm/on/leader_elected[41]>.
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log charms.rolling_ops.v0.rollingops:Lock state: LockState.IDLE LockState.IDLE
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log charms.rolling_ops.v0.rollingops:Lock state: LockState.IDLE LockState.IDLE
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log charms.rolling_ops.v0.rollingops:Lock state: LockState.IDLE LockState.IDLE
+unit-postgresql-0: 2025-06-05 13:16:42 INFO juju.worker.uniter.operation ran "leader-elected" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:42 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7b66babd3560>
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:43 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:43 INFO unit.postgresql/0.juju-log httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='127444bc2954349f19707dcbe705816c'.
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log ops.framework:Re-emitting deferred event <LeaderElectedEvent via PostgresqlOperatorCharm/on/leader_elected[41]>.
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log backups:Cannot set pgBackRest configurations, PostgreSQL has not yet started.
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log ops.framework:Deferring <LeaderElectedEvent via PostgresqlOperatorCharm/on/leader_elected[41]>.
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event config_changed.
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log __main__:Updating relation endpoints addresses
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log __main__:Defer on_config_changed: cluster not initialised yet
+unit-postgresql-0: 2025-06-05 13:16:43 DEBUG unit.postgresql/0.juju-log ops.framework:Deferring <ConfigChangedEvent via PostgresqlOperatorCharm/on/config_changed[46]>.
+unit-postgresql-0: 2025-06-05 13:16:43 INFO juju.worker.uniter.operation ran "config-changed" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:16:43 INFO juju.worker.uniter found queued "start" hook
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x724b3db2b860>
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:44 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:44 INFO unit.postgresql/0.juju-log httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='8dabd320831baab72e001c094c241852'.
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log ops.framework:Re-emitting deferred event <LeaderElectedEvent via PostgresqlOperatorCharm/on/leader_elected[41]>.
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log backups:Cannot set pgBackRest configurations, PostgreSQL has not yet started.
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log ops.framework:Deferring <LeaderElectedEvent via PostgresqlOperatorCharm/on/leader_elected[41]>.
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log ops.framework:Re-emitting deferred event <ConfigChangedEvent via PostgresqlOperatorCharm/on/config_changed[46]>.
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log __main__:Updating relation endpoints addresses
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log __main__:Defer on_config_changed: cluster not initialised yet
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log ops.framework:Deferring <ConfigChangedEvent via PostgresqlOperatorCharm/on/config_changed[46]>.
+unit-postgresql-0: 2025-06-05 13:16:44 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event start.
+unit-postgresql-0: 2025-06-05 13:16:45 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:52 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log __main__:Active workload time: 2025-06-05 11:16:53.610373
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:53 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:54 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:16:54 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x74ef5ca62300>
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:16:55 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:16:55 INFO unit.postgresql/0.juju-log refresh-v-three:0: httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:16:55 INFO unit.postgresql/0.juju-log refresh-v-three:0: root:Starting cluster topology observer process
+unit-postgresql-0: 2025-06-05 13:16:55 INFO unit.postgresql/0.juju-log refresh-v-three:0: root:Started cluster topology observer process with PID 9562
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: tracing:Starting root trace with id='1d63f775e8923535105fb7b9012f9c18'.
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: ops.framework:Re-emitting deferred event <LeaderElectedEvent via PostgresqlOperatorCharm/on/leader_elected[41]>.
+unit-postgresql-0: 2025-06-05 13:16:55 WARNING unit.postgresql/0.juju-log refresh-v-three:0: backups:Missing required S3 parameters in relation with S3 integrator: ['bucket', 'access-key', 'secret-key']
+unit-postgresql-0: 2025-06-05 13:16:55 WARNING unit.postgresql/0.juju-log refresh-v-three:0: backups:Cannot set pgBackRest configurations due to missing S3 parameters: ['bucket', 'access-key', 'secret-key']
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: backups:Cannot set pgBackRest configurations, missing configurations.
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: ops.framework:Re-emitting deferred event <ConfigChangedEvent via PostgresqlOperatorCharm/on/config_changed[46]>.
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: __main__:Updating relation endpoints addresses
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:55 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charms.postgresql_k8s.v0.postgresql:Building PostgreSQL parameters for profile='production' and available_memory=33647349760
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: __main__:LDAP is not enabled
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: relations.async_replication:Partner addresses: set()
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "PATCH /config HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:16:56 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "POST /reload HTTP/1.1" 202 None
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:16:57 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:00 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:00 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:00 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:00 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:03 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:03 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:03 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:03 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:06 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:06 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:06 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:06 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:17:09 WARNING unit.postgresql/0.refresh-v-three-relation-changed error: snap "charmed-postgresql" has no "exporter" configuration option
+unit-postgresql-0: 2025-06-05 13:17:09 WARNING unit.postgresql/0.juju-log refresh-v-three:0: __main__:Early exit: Trying to reset metrics service with no configuration set
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:09 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: __main__:Stopping LDAP sync service
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "PATCH /config HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:10 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: root:Emitting Juju event refresh_v_three_relation_changed.
+unit-postgresql-0: 2025-06-05 13:17:10 INFO juju.worker.uniter.operation ran "refresh-v-three-relation-changed" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x73073d2719a0>
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:17:11 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:17:11 INFO unit.postgresql/0.juju-log database-peers:2: httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: tracing:Starting root trace with id='a665179eac88b88b310ea6ce62eb8f59'.
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: root:Emitting Juju event database_peers_relation_changed.
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: __main__:Early exit add_members: Patroni members equal Juju hosts
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:11 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: charms.postgresql_k8s.v0.postgresql:Building PostgreSQL parameters for profile='production' and available_memory=33647349760
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: __main__:LDAP is not enabled
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: relations.async_replication:Partner addresses: set()
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "PATCH /config HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "POST /reload HTTP/1.1" 202 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:12 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:15 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:15 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:15 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:16 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:19 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:19 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:19 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:19 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:22 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:22 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:22 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:22 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: charms.tls_certificates_interface.v4.tls_certificates:No relation: client-certificates
+unit-postgresql-0: 2025-06-05 13:17:25 WARNING unit.postgresql/0.database-peers-relation-changed error: snap "charmed-postgresql" has no "exporter" configuration option
+unit-postgresql-0: 2025-06-05 13:17:25 WARNING unit.postgresql/0.juju-log database-peers:2: __main__:Early exit: Trying to reset metrics service with no configuration set
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:25 DEBUG unit.postgresql/0.juju-log database-peers:2: __main__:Stopping LDAP sync service
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:17:26 DEBUG unit.postgresql/0.juju-log database-peers:2: urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:17:27 INFO juju.worker.uniter.operation ran "database-peers-relation-changed" hook (via hook dispatching script: dispatch)
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log ops 2.22.0 up and running.
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Called set_app_workload_version('16.8')
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['refresh_started_if_this_units_databag_is_up_to_date'] = 'false'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['last_refresh_to_up_to_date_charm_code_version'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.started path='/run/snapd.socket' timeout=5.0 socket_options=None
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.connection:connect_unix_socket.complete return_value=<httpcore._backends.sync.SyncStream object at 0x70210064e8d0>
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_headers.complete
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:send_request_body.complete
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json'), (b'Date', b'Thu, 05 Jun 2025 11:20:23 GMT'), (b'Transfer-Encoding', b'chunked')])
+unit-postgresql-0: 2025-06-05 13:20:23 INFO unit.postgresql/0.juju-log httpx:HTTP Request: GET http://localhost/v2/snaps?snaps=charmed-postgresql "HTTP/1.1 200 OK"
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:receive_response_body.complete
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.started
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log httpcore.http11:response_closed.complete
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app=Unit('postgresql/0'))['_unused_last_completed_refresh'] = '{"charm_revision": "ch:amd64/postgresql-771", "time_of_refresh": 1749122144.992298}'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_version'] = '"16.8"'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_workload_container_version'] = '"170"'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_installed_workload_container_matched_pinned_container'] = 'true'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_version'] = '"16/1.18.0"'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charm_:Set _WriteableDatabag(relation_id=0, unit_or_app='postgresql')['original_charm_revision'] = '"ch:amd64/postgresql-771"'
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log charms.grafana_agent.v0.cos_agent:no relation on 'cos-agent': tracing not ready
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log tracing:Starting root trace with id='ed7f1cf96d7f8add3a7507f1e50dbc17'.
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log root:Emitting Juju event update_status.
+unit-postgresql-0: 2025-06-05 13:20:23 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /health HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:Starting new HTTPS connection (1): 10.176.3.148:8008
+unit-postgresql-0: 2025-06-05 13:20:24 DEBUG unit.postgresql/0.juju-log urllib3.connectionpool:https://10.176.3.148:8008 "GET /cluster HTTP/1.1" 200 None
+unit-postgresql-0: 2025-06-05 13:20:24 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)

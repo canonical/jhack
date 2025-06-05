@@ -52,7 +52,9 @@ def model_loglevel(model: str = None):
         lc = JPopen(f"juju model-config {_model}logging-config".split())
         lc.wait()
         if lc.returncode != 0:
-            logger.info("no model config: maybe there is no current model? defaulting to WARNING")
+            logger.info(
+                "no model config: maybe there is no current model? defaulting to WARNING"
+            )
             return "WARNING"  # the default
 
         logging_config = lc.stdout.read().decode("utf-8")
@@ -69,7 +71,9 @@ def model_loglevel(model: str = None):
                 return val
 
     except Exception as e:
-        logger.error(f"failed to determine model loglevel: {e}. Guessing `WARNING` for now.")
+        logger.error(
+            f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
+        )
     return "WARNING"  # the default
 
 
@@ -320,11 +324,20 @@ def _random_color():
 
 
 class LogLineParser:
-    base_pattern = (
+    jdl_root_pattern = (
         r"^(?P<pod_name>\S+): (?P<timestamp>\S+(\s*\S+)?) (?P<loglevel>\S+) "
-        r"unit\.(?P<unit>\S+)\.juju-log (root:)?( )?"
+        r"unit\.(?P<unit>\S+)\.juju-log "
     )
-    base_relation_pattern = base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): "
+    # the data platform team decided to mess with the root logger and add a `module_name:`
+    # prefix to all their juju debug-logs. Then they opened a bug because jhack tail broke.
+    # I fixed it thinking it was a VM/k8s divergence bug, but turns out it really is their fault.
+    # keeping this not to break any promises, but
+    _optional_prefix = "(\S+)?( )?"
+    base_pattern = jdl_root_pattern + _optional_prefix
+
+    base_relation_pattern = (
+        base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): " + _optional_prefix
+    )
 
     operator_event_suffix = "Charm called itself via hooks/(?P<event>\S+)\."
     operator_event = re.compile(base_pattern + operator_event_suffix)
@@ -336,9 +349,7 @@ class LogLineParser:
     # modifiers
     jhack_fire_evt_suffix = "The previous (?P<event>\S+) was fired by jhack\."
     event_fired_jhack = re.compile(base_pattern + jhack_fire_evt_suffix)
-    jhack_replay_evt_suffix = (
-        "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
-    )
+    jhack_replay_evt_suffix = "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
     event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
 
     event_repr = r"<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
@@ -360,13 +371,19 @@ class LogLineParser:
 
     reemitted_suffix_old = "Re-emitting " + event_repr  # ops < 2.1
     event_reemitted_old = re.compile(base_pattern + reemitted_suffix_old)
-    event_reemitted_from_relation_old = re.compile(base_relation_pattern + reemitted_suffix_old)
+    event_reemitted_from_relation_old = re.compile(
+        base_relation_pattern + reemitted_suffix_old
+    )
 
     reemitted_suffix_new = "Re-emitting deferred event " + event_repr  # ops >= 2.1
     event_reemitted_new = re.compile(base_pattern + reemitted_suffix_new)
-    event_reemitted_from_relation_new = re.compile(base_relation_pattern + reemitted_suffix_new)
+    event_reemitted_from_relation_new = re.compile(
+        base_relation_pattern + reemitted_suffix_new
+    )
 
-    lobotomy_suffix = "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
+    lobotomy_suffix = (
+        "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
+    )
     lobotomy_skipped_event = re.compile(base_pattern + lobotomy_suffix)
 
     uniter_operation_prefix = (
@@ -448,11 +465,14 @@ class LogLineParser:
             return match
 
         if self.uniter_events_only:
+            print("returning uniter events emission matcher")
             return self._match(msg, self.uniter_event) or self._match(
                 msg, self.uniter_debug_hooks_evt
             )
 
         matchers = [
+            # self.uniter_event,
+            # self.uniter_debug_hooks_evt,
             self.event_emitted,
             self.lobotomy_skipped_event,
             self.event_emitted_from_relation,
@@ -534,7 +554,9 @@ def _get_event_text(event: EventLogMsg, ascii=False):
             if "source" in event.tags:
                 event_text += " (↑)"
             elif "replayed" in event.tags:
-                event_text += f" ({_replay_symbol}:{event.jhack_replayed_evt_timestamp} ↓)"
+                event_text += (
+                    f" ({_replay_symbol}:{event.jhack_replayed_evt_timestamp} ↓)"
+                )
 
     if "failed" in event.tags:
         event_text += f" {_bomb_symbol}"
@@ -601,7 +623,9 @@ class PoorPrinter(Printer):
 
         if any(new_cols):
             # print header
-            header = "TIMESTAMP | " + " | ".join(map(_pad_header, col_titles[1:])) + "\n"
+            header = (
+                "TIMESTAMP | " + " | ".join(map(_pad_header, col_titles[1:])) + "\n"
+            )
             self._out_stream.write(header)
 
         def _pad(x):
@@ -636,7 +660,7 @@ class PoorPrinter(Printer):
         count = self._count_events(events)
         # counter has a .total() method since python 3.10
         print(
-            f"Jhack tail v0.4:  captured {sum(count.values())} events in {len(count.keys())} units."
+            f"Jhack tail {VERSION}:  captured {sum(count.values())} events in {len(count.keys())} units."
         )
         if not self._live:
             if self._output:
@@ -750,7 +774,9 @@ class RichPrinter(Printer):
             if traces_shown:
                 trace_id = event.trace_id
                 trace_rndr = (
-                    Text(trace_id, style=Style(color=_trace_id_color)) if trace_id else Text("-")
+                    Text(trace_id, style=Style(color=_trace_id_color))
+                    if trace_id
+                    else Text("-")
                 )
                 event_row.append(trace_rndr)
 
@@ -788,7 +814,11 @@ class RichPrinter(Printer):
             table.add_row(
                 "Currently deferred:",
                 *(
-                    "\n".join(f"{e.n}:{e.event}" for e in currently_deferred if e.unit == target)
+                    "\n".join(
+                        f"{e.n}:{e.event}"
+                        for e in currently_deferred
+                        if e.unit == target
+                    )
                     for target in targets
                 ),
             )
@@ -847,7 +877,9 @@ class RichPrinter(Printer):
         self.live.refresh()
         self.live.stop()
         self.live.console.print(
-            Align.center(Text("The end.", style=Style(color="red", bold=True, blink=True)))
+            Align.center(
+                Text("The end.", style=Style(color="red", bold=True, blink=True))
+            )
         )
 
         if not output:
@@ -894,7 +926,9 @@ class Processor:
 
         if printer == "raw":
             if flip or (color != "auto"):
-                logger.warning("'flip' and 'color' args unavailable in this printer mode.")
+                logger.warning(
+                    "'flip' and 'color' args unavailable in this printer mode."
+                )
             self.printer = PoorPrinter(
                 live=True,
                 output=self.output,
@@ -926,7 +960,9 @@ class Processor:
         self._next_msg_fail = False
         self._has_just_emitted = False
         self._warned_about_orphans = False
-        self.parser = LogLineParser(model=model, capture_operator_events=show_operator_events)
+        self.parser = LogLineParser(
+            model=model, capture_operator_events=show_operator_events
+        )
 
     def _warn_about_orphaned_event(self, evt):
         if self._warned_about_orphans:
@@ -944,7 +980,9 @@ class Processor:
     def _defer(self, deferred: EventDeferredLogMsg):
         # find the original message we're deferring
         found = None
-        for captured in filter(lambda e: e.unit == deferred.unit, self._captured_logs[::-1]):
+        for captured in filter(
+            lambda e: e.unit == deferred.unit, self._captured_logs[::-1]
+        ):
             if captured.event == deferred.event:
                 found = captured
                 break
@@ -962,7 +1000,9 @@ class Processor:
                 deferred=DeferralStatus.deferred,
             )
             self._captured_logs.append(found)
-            logger.debug(f"Mocking {found}: we're deferring it but we've not seen it before.")
+            logger.debug(
+                f"Mocking {found}: we're deferring it but we've not seen it before."
+            )
 
         currently_deferred_ns = {d.n for d in self._currently_deferred}
         is_already_deferred = deferred.n in currently_deferred_ns
@@ -1003,7 +1043,9 @@ class Processor:
             )
 
             self._defer(deferred)
-            logger.debug(f"mocking {deferred}: we're reemitting it but we've not seen it before.")
+            logger.debug(
+                f"mocking {deferred}: we're reemitting it but we've not seen it before."
+            )
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more to pretend we've seen it.
 
@@ -1052,7 +1094,9 @@ class Processor:
             return EventLogMsg(**match, mocked=False)
 
     def _apply_jhack_mod(self, msg: EventLogMsg):
-        def _get_referenced_msg(event: Optional[str], unit: str) -> Optional[EventLogMsg]:
+        def _get_referenced_msg(
+            event: Optional[str], unit: str
+        ) -> Optional[EventLogMsg]:
             # this is the message we're referring to, the one we're modifying
             logs = self._captured_logs
             if not event:
@@ -1224,10 +1268,16 @@ def tail_events(
         help="Track by app name instead of by unit name. Meaningless without targets.",
     ),
     level: LEVELS = "DEBUG",
-    replay: bool = typer.Option(False, "--replay", "-r", help="Start from the beginning of time."),
-    dry_run: bool = typer.Option(False, help="Only print what you would have done, exit."),
+    replay: bool = typer.Option(
+        False, "--replay", "-r", help="Start from the beginning of time."
+    ),
+    dry_run: bool = typer.Option(
+        False, help="Only print what you would have done, exit."
+    ),
     framerate: float = typer.Option(0.5, help="Framerate cap."),
-    length: int = typer.Option(10, "-l", "--length", help="Maximum history length to show."),
+    length: int = typer.Option(
+        10, "-l", "--length", help="Maximum history length to show."
+    ),
     show_defer: bool = typer.Option(
         False, "-d", "--show-defer", help="Visualize the defer graph."
     ),
@@ -1279,7 +1329,9 @@ def tail_events(
         "  -f '(?!update)' --> all events except those starting with 'update'."
         "  -f 'ingress' --> all events starting with 'ingress'.",
     ),
-    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
     output: str = typer.Option(
         None,
         "-o",
@@ -1368,9 +1420,7 @@ def _tail_events(
     if output:
         logger.debug("output mode. Overriding watch.")
         watch = False
-        auto_bump_loglevel = (
-            False  # it's too late for that, we're replaying the history and transforming it.
-        )
+        auto_bump_loglevel = False  # it's too late for that, we're replaying the history and transforming it.
 
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -1441,7 +1491,9 @@ def _tail_events(
             processor.process(line.decode("utf-8").strip())
 
         logger.debug("replay complete")
-        logger.debug(f"captured: {processor.printer._count_events(processor._captured_logs)}")
+        logger.debug(
+            f"captured: {processor.printer._count_events(processor._captured_logs)}"
+        )
 
     try:
         if files:
