@@ -332,24 +332,24 @@ class LogLineParser:
     # prefix to all their juju debug-logs. Then they opened a bug because jhack tail broke.
     # I fixed it thinking it was a VM/k8s divergence bug, but turns out it really is their fault.
     # keeping this not to break any promises, but
-    _optional_prefix = "(\S+)?( )?"
+    _optional_prefix = r"(\S+)?( )?"
     base_pattern = jdl_root_pattern + _optional_prefix
 
     base_relation_pattern = (
-        base_pattern + "(?P<endpoint>\S+):(?P<endpoint_id>\S+): " + _optional_prefix
+        base_pattern + r"(?P<endpoint>\S+):(?P<endpoint_id>\S+): " + _optional_prefix
     )
 
-    operator_event_suffix = "Charm called itself via hooks/(?P<event>\S+)\."
+    operator_event_suffix = r"Charm called itself via hooks/(?P<event>\S+)\."
     operator_event = re.compile(base_pattern + operator_event_suffix)
 
-    event_suffix = "Emitting Juju event (?P<event>\S+)\."
+    event_suffix = r"Emitting Juju event (?P<event>\S+)\."
     event_emitted = re.compile(base_pattern + event_suffix)
     event_emitted_from_relation = re.compile(base_relation_pattern + event_suffix)
 
     # modifiers
-    jhack_fire_evt_suffix = "The previous (?P<event>\S+) was fired by jhack\."
+    jhack_fire_evt_suffix = r"The previous (?P<event>\S+) was fired by jhack\."
     event_fired_jhack = re.compile(base_pattern + jhack_fire_evt_suffix)
-    jhack_replay_evt_suffix = "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
+    jhack_replay_evt_suffix = r"(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
     event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
 
     event_repr = r"<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
@@ -382,7 +382,7 @@ class LogLineParser:
     )
 
     lobotomy_suffix = (
-        "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
+        r"(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
     )
     lobotomy_skipped_event = re.compile(base_pattern + lobotomy_suffix)
 
