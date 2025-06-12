@@ -465,7 +465,6 @@ class LogLineParser:
             return match
 
         if self.uniter_events_only:
-            print("returning uniter events emission matcher")
             return self._match(msg, self.uniter_event) or self._match(
                 msg, self.uniter_debug_hooks_evt
             )
