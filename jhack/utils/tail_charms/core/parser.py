@@ -15,7 +15,8 @@ class LogLineParser:
     # the data platform team decided to mess with the root logger and add a `module_name:`
     # prefix to all their juju debug-logs. Then they opened a bug because jhack tail broke.
     # I fixed it thinking it was a VM/k8s divergence bug, but turns out it really is their fault.
-    # keeping this not to break any promises, but
+    # keeping this not to break any promises, but this isn't scalable and further changes won't be
+    # supported unless they're led by ops (or Alex Lutay applies enough flattery).
     _optional_prefix = "(\S+)?( )?"
     base_pattern = jdl_root_pattern + _optional_prefix
 
