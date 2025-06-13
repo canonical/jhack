@@ -69,7 +69,7 @@ def main():
     from jhack.utils.simulate_event import simulate_event as fire
     from jhack.utils.sitrep import sitrep
     from jhack.utils.sync import sync as sync_deployed_charm
-    from jhack.utils.tail_charms import tail_events
+    from jhack.utils.tail_charms.cli import tail_events
     from jhack.utils.tail_logs import tail_logs
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity, vanity_2
@@ -196,7 +196,9 @@ def main():
             for command in obj.registered_commands:
                 if command.hidden:
                     continue
-                print(f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}")
+                print(
+                    f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}"
+                )
             for group in obj.registered_groups:
                 print(
                     f"{prefix + group.typer_instance.info.name:<22} {group.typer_instance.info.help.splitlines()[0]}"

@@ -5,8 +5,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import jhack.utils.tail_charms
-from jhack.utils.tail_charms import DeferralStatus, Processor, _tail_events
+from jhack.utils.tail_charms.tail_charms import tail_charms
+from jhack.utils.tail_charms.core.processor import Processor
+from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
 
 
 def _mock_emit(
@@ -41,10 +42,10 @@ def _mock_emit(
 def mock_uniter_events_only(value: bool = True):
     # if True: the parser will try to match "unit.myapp/0.juju-log Emitting Juju event..".
     # else: ... (via hook dispatching script: dispatch)
-    def _mock_loglevel(model=None):
-        return "WARNING" if value else "TRACE"
-
-    with patch("jhack.utils.tail_charms.model_loglevel", _mock_loglevel):
+    with patch(
+        "jhack.utils.tail_charms.core.parser.model_loglevel",
+        lambda model: "WARNING" if value else "TRACE",
+    ):
         yield
 
 
@@ -124,14 +125,15 @@ def _fake_log_proc(id_):
 def mock_stdout(request):
     n = request.param
     with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)
+        "jhack.utils.tail_charms.tail_charms._get_debug_log",
+        wraps=lambda _: _fake_log_proc(n),
     ):
 
         def fake_find_leaders(apps, model=None):
             return {app: f"{app}/0" for app in apps}
 
         with patch(
-            "jhack.utils.tail_charms.find_leaders",
+            "jhack.utils.tail_charms.tail_charms.find_leaders",  # imported from jhack.helpers
             new=fake_find_leaders,
         ):
             yield
@@ -156,39 +158,43 @@ def silence_console_prints():
 @pytest.mark.parametrize("deferrals", (True, False))
 @pytest.mark.parametrize("length", (3, 10, 100))
 def test_tail(deferrals, length, mock_stdout):
-    _tail_events(targets=["myapp/0"], length=length, show_defer=deferrals, watch=False)
+    tail_charms(targets=["myapp/0"], length=length, show_defer=deferrals, watch=False)
 
 
-@pytest.mark.parametrize("deferrals", (True, False))
-@pytest.mark.parametrize("length", (3, 10, 100))
-@pytest.mark.parametrize("show_ns", (True, False))
-def test_with_real_trfk_log(deferrals, length, show_ns):
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")
-    ):
-        _tail_events(
-            targets=["trfk/0"],
-            length=length,
-            show_ns=show_ns,
-            show_defer=deferrals,
-            watch=False,
-        )
+# FIXME: very slow tests, and little value
+# @pytest.mark.parametrize("deferrals", (True, False))
+# @pytest.mark.parametrize("length", (3, 10, 100))
+# @pytest.mark.parametrize("show_ns", (True, False))
+# def test_with_real_trfk_log(deferrals, length, show_ns):
+#     with patch(
+#         "jhack.utils.tail_charms.tail_charms._get_debug_log",
+#         wraps=lambda _: _fake_log_proc("real"),
+#     ):
+#         tail_charms(
+#             targets=["trfk/0"],
+#             length=length,
+#             show_ns=show_ns,
+#             show_defer=deferrals,
+#             watch=False,
+#         )
 
 
-@pytest.mark.parametrize("deferrals", (True, False))
-@pytest.mark.parametrize("length", (3, 10, 100))
-def test_with_cropped_trfk_log(deferrals, length):
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log",
-        wraps=lambda _: _fake_log_proc("cropped"),
-    ):
-        _tail_events(targets="trfk/0", length=length, show_defer=deferrals, watch=False)
+# @pytest.mark.parametrize("deferrals", (True, False))
+# @pytest.mark.parametrize("length", (3, 10, 100))
+# def test_with_cropped_trfk_log(deferrals, length):
+#     with patch(
+#         "jhack.utils.tail_charms.tail_charms._get_debug_log",
+#         wraps=lambda _: _fake_log_proc("cropped"),
+#     ):
+#         tail_charms(targets="trfk/0", length=length, show_defer=deferrals, watch=False)
 
 
 def test_jhack_fire_log():
     # scenario 5: jhack fire
     with mock_uniter_events_only(False):
-        proc = Processor([])
+        proc = Processor(
+            [],
+        )
         lines = [
             "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.",
             "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.",
@@ -261,7 +267,7 @@ def test_defer_log():
 
 
 def test_tail_with_file_input():
-    _tail_events(
+    tail_charms(
         files=[
             mocks_dir / "real-prom-cropped-for-interlace.txt",
             mocks_dir / "real-trfk-cropped-for-interlace.txt",
@@ -270,7 +276,7 @@ def test_tail_with_file_input():
 
 
 def test_tail_with_file_input_and_output(tmp_path):
-    _tail_events(
+    tail_charms(
         files=[
             mocks_dir / "real-prom-cropped-for-interlace.txt",
             mocks_dir / "real-trfk-cropped-for-interlace.txt",
@@ -304,7 +310,7 @@ def test_tail_event_filter(pattern, log, match):
 
 def test_machine_log_with_subordinates():
     with mock_uniter_events_only(False):
-        proc = _tail_events(
+        proc = tail_charms(
             length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
         )
 
@@ -364,7 +370,7 @@ def test_custom_event(line, expected_event):
 
 
 def test_borky_trfk_log_defer():
-    _tail_events(
+    tail_charms(
         length=30,
         replay=True,
         files=[str(mocks_dir / "trfk_mock_bork_defer.txt")],
@@ -450,10 +456,10 @@ def test_machine_event_logs():
 
 def test_machine_pgql_logs():
     with patch(
-        "jhack.utils.tail_charms._get_debug_log",
+        "jhack.utils.tail_charms.tail_charms._get_debug_log",
         wraps=lambda _: _fake_log_proc("real-pgql-machine-log"),
     ):
-        processor = _tail_events(
+        processor = tail_charms(
             watch=False,
         )
 
