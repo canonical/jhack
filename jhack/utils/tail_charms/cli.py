@@ -14,7 +14,15 @@ from jhack.utils.tail_charms.core.juju_model_loglevel import (
 from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
 from jhack.utils.tail_charms.tail_charms import tail_charms
 from jhack.utils.tail_charms.ui import colors, symbols
-from jhack.utils.tail_charms.ui.printer import Color
+
+
+class _Color(str, enum.Enum):
+    auto = "auto"
+    standard = "standard"
+    # 256 = "256"
+    truecolor = "truecolor"
+    windows = "windows"
+    no = "no"
 
 
 class _Printer(str, enum.Enum):
@@ -136,16 +144,10 @@ def tail_events(
         help="Track by app name instead of by unit name. Meaningless without targets.",
     ),
     level: LEVELS = "DEBUG",
-    replay: bool = typer.Option(
-        False, "--replay", "-r", help="Start from the beginning of time."
-    ),
-    dry_run: bool = typer.Option(
-        False, help="Only print what you would have done, exit."
-    ),
+    replay: bool = typer.Option(False, "--replay", "-r", help="Start from the beginning of time."),
+    dry_run: bool = typer.Option(False, help="Only print what you would have done, exit."),
     framerate: float = typer.Option(0.5, help="Framerate cap."),
-    length: int = typer.Option(
-        10, "-l", "--length", help="Maximum history length to show."
-    ),
+    length: int = typer.Option(10, "-l", "--length", help="Maximum history length to show."),
     show_defer: bool = typer.Option(
         False, "-d", "--show-defer", help="Visualize the defer graph."
     ),
@@ -173,7 +175,7 @@ def tail_events(
         "Supported printers are 'rich' and 'raw'. "
         "Rich is prettier and has way more features, but is also slower.",
     ),
-    color: Color = typer.Option(
+    color: _Color = typer.Option(
         "auto",
         "-c",
         "--color",
@@ -197,9 +199,7 @@ def tail_events(
         "  -f '(?!update)' --> all events except those starting with 'update'."
         "  -f 'ingress' --> all events starting with 'ingress'.",
     ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
+    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
     output: str = typer.Option(
         None,
         "-o",

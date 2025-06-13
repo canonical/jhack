@@ -34,7 +34,9 @@ class LogLineParser:
     # modifiers
     jhack_fire_evt_suffix = "The previous (?P<event>\S+) was fired by jhack\."
     event_fired_jhack = re.compile(base_pattern + jhack_fire_evt_suffix)
-    jhack_replay_evt_suffix = "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
+    jhack_replay_evt_suffix = (
+        "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
+    )
     event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
 
     event_repr = r"<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
@@ -56,19 +58,13 @@ class LogLineParser:
 
     reemitted_suffix_old = "Re-emitting " + event_repr  # ops < 2.1
     event_reemitted_old = re.compile(base_pattern + reemitted_suffix_old)
-    event_reemitted_from_relation_old = re.compile(
-        base_relation_pattern + reemitted_suffix_old
-    )
+    event_reemitted_from_relation_old = re.compile(base_relation_pattern + reemitted_suffix_old)
 
     reemitted_suffix_new = "Re-emitting deferred event " + event_repr  # ops >= 2.1
     event_reemitted_new = re.compile(base_pattern + reemitted_suffix_new)
-    event_reemitted_from_relation_new = re.compile(
-        base_relation_pattern + reemitted_suffix_new
-    )
+    event_reemitted_from_relation_new = re.compile(base_relation_pattern + reemitted_suffix_new)
 
-    lobotomy_suffix = (
-        "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
-    )
+    lobotomy_suffix = "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
     lobotomy_skipped_event = re.compile(base_pattern + lobotomy_suffix)
 
     uniter_operation_prefix = (

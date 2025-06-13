@@ -144,15 +144,19 @@ def juju_log(unit: str, msg: str, model: str = None, debug=True):
 
 
 def juju_status(app_name=None, model: str = None, json: bool = False):
-    cmd = f"juju status{' ' + app_name if app_name else ''} --relations"
+    cmd = f"juju status{' ' + app_name if app_name else ''}"
     if model:
         cmd += f" -m {model}"
+
     if json:
         cmd += " --format json"
+    else:
+        cmd += " --relations"
+
     proc = subprocess.run(shlex.split(cmd), capture_output=True, text=True)
     if err := proc.stderr:
         # bubble up the error
-        logger.error(err)
+        logger.error(err.strip())
 
     raw = proc.stdout
 
@@ -161,7 +165,10 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
         if model:
             logger.error(f"This usually means that the model {model!r} you passed does not exist")
         else:
-            logger.error("This usually means that the juju client isn't reachable")
+            logger.error(
+                "This usually means that the juju client isn't reachable, or the "
+                "model you're currently switched to doesn't exist (anymore)."
+            )
 
         if IS_SNAPPED:
             logger.warning(
@@ -772,7 +779,7 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
 
     if not status.get("applications"):
         logger.error(
-            "no applications in the current model: cannot find leaders. "
+            "no applications in the current model: cannot find_leaders. "
             "Is the model still bootstrapping?"
         )
         return {}

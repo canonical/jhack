@@ -1,5 +1,4 @@
 import re
-import typing
 from pathlib import Path
 from typing import (
     Callable,
@@ -9,6 +8,7 @@ from typing import (
 )
 
 import jhack.utils.tail_charms.ui.printer
+from jhack import helpers
 from jhack.helpers import JPopen, find_leaders
 from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
@@ -57,7 +57,9 @@ def tail_charms(
     if output:
         logger.debug("output mode. Overriding watch.")
         watch = False
-        auto_bump_loglevel = False  # it's too late for that, we're replaying the history and transforming it.
+        auto_bump_loglevel = (
+            False  # it's too late for that, we're replaying the history and transforming it.
+        )
 
     if isinstance(level, str):
         level = getattr(LEVELS, level.upper())
@@ -94,7 +96,20 @@ def tail_charms(
 
     previous_loglevel = ""
     if auto_bump_loglevel:
-        previous_loglevel = bump_loglevel()
+        previous_loglevel = bump_loglevel(model=model)
+
+    if previous_loglevel is None:
+        # this usually means the model doesn't exist.
+        try:
+            helpers.juju_status(model=model)
+        except helpers.GetStatusError:
+            if model:
+                exit(
+                    f"unable to connect to model {model}. "
+                    f"Does the model exist on the current controller?"
+                )
+            else:
+                exit("unable to connect to current juju model. Are you switched to one?")
 
     event_filter_pattern = re.compile(event_filter) if event_filter else None
     leaders = find_leaders(targets, model=model)
@@ -106,6 +121,8 @@ def tail_charms(
             live=True,
             output=Path(output) if output else None,
         )
+        # poor printer won't display a 'listening for events...' message.
+        logger.info("[raw printer] listening for events...")
 
     elif printer == "rich":
         printer = RichPrinter(
@@ -148,9 +165,7 @@ def tail_charms(
             processor.process(line.decode("utf-8").strip())
 
         logger.debug("replay complete")
-        logger.debug(
-            f"captured: {processor.printer._count_events(processor._captured_logs)}"
-        )
+        logger.debug(f"captured: {processor.printer._count_events(processor._captured_logs)}")
 
     try:
         if files:
@@ -213,7 +228,7 @@ def tail_charms(
         pass  # quit
     finally:
         if auto_bump_loglevel and previous_loglevel:
-            debump_loglevel(previous_loglevel)
+            debump_loglevel(previous_loglevel, model=model)
 
         processor.quit()
 

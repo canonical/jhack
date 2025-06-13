@@ -21,14 +21,12 @@ class LEVELS(enum.Enum):
 
 
 def model_loglevel(model: str = None):
-    _model = f"-m {model} " if model else ""
+    _model = f" -m {model} " if model else ""
     try:
-        lc = JPopen(f"juju model-config {_model}logging-config".split())
+        lc = JPopen(f"juju model-config{_model} logging-config".split())
         lc.wait()
         if lc.returncode != 0:
-            logger.info(
-                "no model config: maybe there is no current model? defaulting to WARNING"
-            )
+            logger.info("no model config: maybe there is no current model? defaulting to WARNING")
             return "WARNING"  # the default
 
         logging_config = lc.stdout.read().decode("utf-8")
@@ -45,14 +43,14 @@ def model_loglevel(model: str = None):
                 return val
 
     except Exception as e:
-        logger.error(
-            f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
-        )
+        logger.error(f"failed to determine model loglevel: {e}. Guessing `WARNING` for now.")
     return "WARNING"  # the default
 
 
-def bump_loglevel() -> Optional[str]:
-    cmd = "juju model-config logging-config"
+def bump_loglevel(model: Optional[str] = None) -> Optional[str]:
+    """Try to bump the model loglevel"""
+    _model = f" --model {model}" if model else ""
+    cmd = f"juju model-config{_model} logging-config"
     old_config = getoutput(cmd).strip()
     cfgs = old_config.split(";")
     new_config = []
@@ -60,7 +58,7 @@ def bump_loglevel() -> Optional[str]:
     for cfg in cfgs:
         if "ERROR" in cfg:
             logger.error(f"failed bumping loglevel to unit=DEBUG: {cfg}")
-            return
+            return None
 
         n, lvl = cfg.split("=")
         if n == "unit":
@@ -75,6 +73,7 @@ def bump_loglevel() -> Optional[str]:
     return old_config
 
 
-def debump_loglevel(previous: str):
-    cmd = f"juju model-config logging-config={previous!r}"
+def debump_loglevel(previous: str, model: Optional[str] = None):
+    _model = f" --model {model}" if model else ""
+    cmd = f"juju model-config{_model} logging-config={previous!r}"
     run(shlex.split(cmd))

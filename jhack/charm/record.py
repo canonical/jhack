@@ -9,7 +9,7 @@ from jhack.helpers import get_current_model
 from jhack.logger import logger
 from jhack.utils.show_relation import RelationData, get_relation_data, get_relations
 from jhack.utils.tail_charms.tail_charms import tail_charms
-from jhack.utils.tail_charms.core.parser import EventLogMsg
+from jhack.utils.tail_charms.core.processor import EventLogMsg
 
 KeyValueMapping = Dict[str, str]
 
@@ -42,9 +42,7 @@ class Recorder:
         self._output = output
 
     def record(self):
-        tail_charms(
-            [self._unit], replay=False, add_new_targets=False, _on_event=self._on_event
-        )
+        tail_charms([self._unit], replay=False, add_new_targets=False, _on_event=self._on_event)
         self._dump_json()
         return self._state_history
 
@@ -64,10 +62,7 @@ class Recorder:
         app = self._app
         for relation in get_relations(model):
             logger.debug(f"found relation {relation}")
-            if (
-                relation.requirer.split(":")[0] == app
-                or relation.provider.split(":")[0] == app
-            ):
+            if relation.requirer.split(":")[0] == app or relation.provider.split(":")[0] == app:
                 relation_data = get_relation_data(
                     provider_endpoint=relation.provider,
                     requirer_endpoint=relation.requirer,
