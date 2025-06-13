@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 from jhack.utils.tail_charms.core.juju_model_loglevel import (
     model_loglevel,
     BEST_LOGLEVELS,
+    Level,
 )
 
 
@@ -34,9 +35,7 @@ class LogLineParser:
     # modifiers
     jhack_fire_evt_suffix = "The previous (?P<event>\S+) was fired by jhack\."
     event_fired_jhack = re.compile(base_pattern + jhack_fire_evt_suffix)
-    jhack_replay_evt_suffix = (
-        "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
-    )
+    jhack_replay_evt_suffix = "(?P<event>\S+) \((?P<jhack_replayed_evt_timestamp>\S+(\s*\S+)?)\) was replayed by jhack\."
     event_replayed_jhack = re.compile(base_pattern + jhack_replay_evt_suffix)
 
     event_repr = r"<(?P<event_cls>\S+) via (?P<charm_name>\S+)/on/(?P<event>\S+)\[(?P<n>\d+)\]>\."
@@ -58,13 +57,19 @@ class LogLineParser:
 
     reemitted_suffix_old = "Re-emitting " + event_repr  # ops < 2.1
     event_reemitted_old = re.compile(base_pattern + reemitted_suffix_old)
-    event_reemitted_from_relation_old = re.compile(base_relation_pattern + reemitted_suffix_old)
+    event_reemitted_from_relation_old = re.compile(
+        base_relation_pattern + reemitted_suffix_old
+    )
 
     reemitted_suffix_new = "Re-emitting deferred event " + event_repr  # ops >= 2.1
     event_reemitted_new = re.compile(base_pattern + reemitted_suffix_new)
-    event_reemitted_from_relation_new = re.compile(base_relation_pattern + reemitted_suffix_new)
+    event_reemitted_from_relation_new = re.compile(
+        base_relation_pattern + reemitted_suffix_new
+    )
 
-    lobotomy_suffix = "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
+    lobotomy_suffix = (
+        "(?:selective|full) lobotomy ACTIVE: event hooks\/(?P<event>\S+) ignored."
+    )
     lobotomy_skipped_event = re.compile(base_pattern + lobotomy_suffix)
 
     uniter_operation_prefix = (
@@ -99,13 +104,13 @@ class LogLineParser:
         event_failed: ("failed",),
     }
 
-    def __init__(self, model: str = None, capture_operator_events: bool = False):
+    def __init__(
+        self,
+        capture_operator_events: bool = False,
+        uniter_events_only: bool = False,
+    ):
         self._capture_operator_events = capture_operator_events
-        self._loglevel = model_loglevel(model=model)
-
-    @property
-    def uniter_events_only(self) -> bool:
-        return self._loglevel not in BEST_LOGLEVELS
+        self._uniter_events_only = uniter_events_only
 
     @staticmethod
     def _sanitize_match_dict(dct: Dict[str, str]):
@@ -137,7 +142,7 @@ class LogLineParser:
         return None
 
     def match_event_deferred(self, msg):
-        if self.uniter_events_only:
+        if self._uniter_events_only:
             return None
         return self._match(msg, self.event_deferred, self.event_deferred_from_relation)
 
@@ -145,7 +150,7 @@ class LogLineParser:
         if match := self._match(msg, self.lobotomy_skipped_event):
             return match
 
-        if self.uniter_events_only:
+        if self._uniter_events_only:
             return self._match(msg, self.uniter_event) or self._match(
                 msg, self.uniter_debug_hooks_evt
             )
@@ -169,7 +174,7 @@ class LogLineParser:
         # matches certain loglines that modify the meaning of previously parsed loglines.
         # some may also be emitted by jhack, for example fire/replay
         mods = [self.event_failed]
-        if not self.uniter_events_only:
+        if not self._uniter_events_only:
             mods.extend((self.event_fired_jhack, self.event_replayed_jhack))
             if trace_id:
                 # don't search for trace ids unless they are enabled
@@ -178,7 +183,7 @@ class LogLineParser:
         return match
 
     def match_event_reemitted(self, msg):
-        if self.uniter_events_only:
+        if self._uniter_events_only:
             return None
         return self._match(
             msg,

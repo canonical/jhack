@@ -1,8 +1,10 @@
+import contextlib
 import enum
 import shlex
 from subprocess import getoutput, run
 from typing import Optional
 
+from jhack import helpers
 from jhack.conf.conf import CONFIG
 from jhack.helpers import JPopen
 from jhack.logger import logger as jhack_logger
@@ -13,11 +15,12 @@ BEST_LOGLEVELS = frozenset(("DEBUG", "TRACE"))
 AUTO_BUMP_LOGLEVEL_DEFAULT = CONFIG.get("tail", "automatically_bump_loglevel")
 
 
-class LEVELS(enum.Enum):
+class Level(enum.Enum):
     DEBUG = "DEBUG"
     TRACE = "TRACE"
     INFO = "INFO"
     ERROR = "ERROR"
+    WARNING = "WARNING"
 
 
 def model_loglevel(model: str = None):
@@ -26,7 +29,9 @@ def model_loglevel(model: str = None):
         lc = JPopen(f"juju model-config{_model} logging-config".split())
         lc.wait()
         if lc.returncode != 0:
-            logger.info("no model config: maybe there is no current model? defaulting to WARNING")
+            logger.info(
+                "no model config: maybe there is no current model? defaulting to WARNING"
+            )
             return "WARNING"  # the default
 
         logging_config = lc.stdout.read().decode("utf-8")
@@ -43,7 +48,9 @@ def model_loglevel(model: str = None):
                 return val
 
     except Exception as e:
-        logger.error(f"failed to determine model loglevel: {e}. Guessing `WARNING` for now.")
+        logger.error(
+            f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
+        )
     return "WARNING"  # the default
 
 
@@ -77,3 +84,29 @@ def debump_loglevel(previous: str, model: Optional[str] = None):
     _model = f" --model {model}" if model else ""
     cmd = f"juju model-config{_model} logging-config={previous!r}"
     run(shlex.split(cmd))
+
+
+@contextlib.contextmanager
+def juju_loglevel_bumpctx(model: str, flag: bool):
+    if flag:
+        pre = bump_loglevel(model)
+        if pre is None:
+            # this usually means the model doesn't exist.
+            try:
+                helpers.juju_status(model=model)
+            except helpers.GetStatusError:
+                if model:
+                    exit(
+                        f"unable to connect to model {model}. "
+                        f"Does the model exist on the current controller?"
+                    )
+                else:
+                    exit(
+                        "unable to connect to current juju model. Are you switched to one?"
+                    )
+        try:
+            yield
+        finally:
+            debump_loglevel(pre, model)
+    else:
+        yield

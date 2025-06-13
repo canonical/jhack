@@ -34,12 +34,16 @@ def _get_event_text(event: "EventLogMsg", ascii=False):
         if "lobotomy" in event.tags:
             event_text += f" {symbols.lobotomy_symbol}"
         if "fire" in event.tags:
-            event_text += f" {symbols.fire_symbol_ascii if ascii else symbols.fire_symbol}"
+            event_text += (
+                f" {symbols.fire_symbol_ascii if ascii else symbols.fire_symbol}"
+            )
         if "replay" in event.tags:
             if "source" in event.tags:
                 event_text += " (↑)"
             elif "replayed" in event.tags:
-                event_text += f" ({symbols.replay_symbol}:{event.jhack_replayed_evt_timestamp} ↓)"
+                event_text += (
+                    f" ({symbols.replay_symbol}:{event.jhack_replayed_evt_timestamp} ↓)"
+                )
 
     if "failed" in event.tags:
         event_text += f" {symbols.bomb_symbol}"
@@ -47,7 +51,8 @@ def _get_event_text(event: "EventLogMsg", ascii=False):
 
 
 class Printer:
-    def _count_events(self, events: List["EventLogMsg"]):
+    @staticmethod
+    def count_events(events: List["EventLogMsg"]):
         return Counter((e.unit for e in events))
 
     def render(
@@ -106,7 +111,9 @@ class PoorPrinter(Printer):
 
         if any(new_cols):
             # print header
-            header = "TIMESTAMP | " + " | ".join(map(_pad_header, col_titles[1:])) + "\n"
+            header = (
+                "TIMESTAMP | " + " | ".join(map(_pad_header, col_titles[1:])) + "\n"
+            )
             self._out_stream.write(header)
 
         def _pad(x):
@@ -138,7 +145,7 @@ class PoorPrinter(Printer):
         self,
         events: List["EventLogMsg"],
     ):
-        count = self._count_events(events)
+        count = self.count_events(events)
         print(
             f"Jhack tail {VERSION}:  captured {count.total()} events in {len(count.keys())} units."
         )
@@ -294,7 +301,11 @@ class RichPrinter(Printer):
             table.add_row(
                 "Currently deferred:",
                 *(
-                    "\n".join(f"{e.n}:{e.event}" for e in currently_deferred if e.unit == target)
+                    "\n".join(
+                        f"{e.n}:{e.event}"
+                        for e in currently_deferred
+                        if e.unit == target
+                    )
                     for target in targets
                 ),
             )
@@ -335,13 +346,12 @@ class RichPrinter(Printer):
         )
         table = cast(Table, rendered.renderable)
         table.rows[-1].end_section = True
-        evt_count = self._count_events(events)
 
         nevents = []
         tgt_names = []
-        count = self._count_events(events)
+        count = self.count_events(events)
         for tgt in sorted(count):
-            nevents.append(str(evt_count[tgt]))
+            nevents.append(str(count[tgt]))
             text = Text(tgt, style="bold")
             tgt_names.append(text)
 
@@ -353,7 +363,9 @@ class RichPrinter(Printer):
         self.live.refresh()
         self.live.stop()
         self.live.console.print(
-            Align.center(Text("The end.", style=Style(color="red", bold=True, blink=True)))
+            Align.center(
+                Text("The end.", style=Style(color="red", bold=True, blink=True))
+            )
         )
 
         if not output:

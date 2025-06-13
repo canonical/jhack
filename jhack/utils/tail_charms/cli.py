@@ -8,7 +8,7 @@ from rich.table import Table
 from rich.text import Text
 
 from jhack.utils.tail_charms.core.juju_model_loglevel import (
-    LEVELS,
+    Level,
     AUTO_BUMP_LOGLEVEL_DEFAULT,
 )
 from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
@@ -143,11 +143,23 @@ def tail_events(
         "-a",
         help="Track by app name instead of by unit name. Meaningless without targets.",
     ),
-    level: LEVELS = "DEBUG",
-    replay: bool = typer.Option(False, "--replay", "-r", help="Start from the beginning of time."),
-    dry_run: bool = typer.Option(False, help="Only print what you would have done, exit."),
+    level: Optional[Level] = typer.Option(
+        None,
+        "--level",
+        "-v",
+        help="Loglevel at which the logs being streamed to stdin were captured. "
+        "Omitting it may print duplicate events.",
+    ),
+    replay: bool = typer.Option(
+        False, "--replay", "-r", help="Start from the beginning of time."
+    ),
+    dry_run: bool = typer.Option(
+        False, help="Only print what you would have done, exit."
+    ),
     framerate: float = typer.Option(0.5, help="Framerate cap."),
-    length: int = typer.Option(10, "-l", "--length", help="Maximum history length to show."),
+    length: int = typer.Option(
+        10, "-l", "--length", help="Maximum history length to show."
+    ),
     show_defer: bool = typer.Option(
         False, "-d", "--show-defer", help="Visualize the defer graph."
     ),
@@ -199,7 +211,9 @@ def tail_events(
         "  -f '(?!update)' --> all events except those starting with 'update'."
         "  -f 'ingress' --> all events starting with 'ingress'.",
     ),
-    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
+    model: str = typer.Option(
+        None, "-m", "--model", help="Which model to apply the command to."
+    ),
     output: str = typer.Option(
         None,
         "-o",
