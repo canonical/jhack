@@ -65,11 +65,12 @@ def main():
     from jhack.utils.print_env import print_env
     from jhack.utils.propaganda import leader_set as elect
     from jhack.utils.show_relation import sync_show_relation
+    from jhack.utils.this_is_fine import this_is_fine
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event as fire
     from jhack.utils.sitrep import sitrep
     from jhack.utils.sync import sync as sync_deployed_charm
-    from jhack.utils.tail_charms import tail_events
+    from jhack.utils.tail_charms.cli import tail_events
     from jhack.utils.tail_logs import tail_logs
     from jhack.utils.unbork_juju import unbork_juju
     from jhack.utils.unleash import vanity, vanity_2
@@ -104,6 +105,7 @@ def main():
         sync_deployed_charm,
         test_devmode,
         unbork_juju,
+        this_is_fine,
     }:
         doc_devmode_only(devmode_only_command)
 
@@ -120,6 +122,7 @@ def main():
     utils.command(name="pull-cmr", no_args_is_help=True)(pull_cmr)
     utils.command(name="elect", no_args_is_help=True)(elect)
     utils.command(name="pebble", no_args_is_help=True)(pebble)
+    utils.command(name="this-is-fine", no_args_is_help=True)(this_is_fine)
 
     charm = typer.Typer(name="charm", help="Charmcrafting utilities.")
     charm.command(name="update")(update)

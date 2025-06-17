@@ -8,7 +8,8 @@ import typer
 from jhack.helpers import get_current_model
 from jhack.logger import logger
 from jhack.utils.show_relation import RelationData, get_relation_data, get_relations
-from jhack.utils.tail_charms import EventLogMsg, _tail_events
+from jhack.utils.tail_charms.tail_charms import tail_charms
+from jhack.utils.tail_charms.core.processor import EventLogMsg
 
 KeyValueMapping = Dict[str, str]
 
@@ -41,7 +42,7 @@ class Recorder:
         self._output = output
 
     def record(self):
-        _tail_events([self._unit], replay=False, add_new_targets=False, _on_event=self._on_event)
+        tail_charms([self._unit], replay=False, add_new_targets=False, _on_event=self._on_event)
         self._dump_json()
         return self._state_history
 

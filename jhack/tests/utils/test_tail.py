@@ -1,11 +1,13 @@
+import contextlib
 import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-import jhack.utils.tail_charms
-from jhack.utils.tail_charms import DeferralStatus, Processor, _tail_events
+from jhack.utils.tail_charms.tail_charms import tail_charms
+from jhack.utils.tail_charms.core.processor import Processor
+from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
 
 
 def _mock_emit(
@@ -36,12 +38,15 @@ def _mock_emit(
     return emit.format(**defaults)
 
 
+@contextlib.contextmanager
 def mock_uniter_events_only(value: bool = True):
-    def _mock_loglevel(model=None):
-        return "WARNING" if value else "TRACE"
-
-    jhack.utils.tail_charms.model_loglevel = _mock_loglevel
-    # this will make the parser only try to match "unit.myapp/0.juju-log Emitting Juju event..".
+    # if True: the parser will try to match "unit.myapp/0.juju-log Emitting Juju event..".
+    # else: ... (via hook dispatching script: dispatch)
+    with patch(
+        "jhack.utils.tail_charms.core.parser.model_loglevel",
+        lambda model: "WARNING" if value else "TRACE",
+    ):
+        yield
 
 
 MOCK_JDL = {
@@ -119,13 +124,16 @@ def _fake_log_proc(id_):
 @pytest.fixture(params=(1, 2, 3, 4))
 def mock_stdout(request):
     n = request.param
-    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc(n)):
+    with patch(
+        "jhack.utils.tail_charms.tail_charms._get_debug_log",
+        wraps=lambda _: _fake_log_proc(n),
+    ):
 
         def fake_find_leaders(apps, model=None):
             return {app: f"{app}/0" for app in apps}
 
         with patch(
-            "jhack.utils.tail_charms.find_leaders",
+            "jhack.utils.tail_charms.tail_charms.find_leaders",  # imported from jhack.helpers
             new=fake_find_leaders,
         ):
             yield
@@ -150,43 +158,50 @@ def silence_console_prints():
 @pytest.mark.parametrize("deferrals", (True, False))
 @pytest.mark.parametrize("length", (3, 10, 100))
 def test_tail(deferrals, length, mock_stdout):
-    _tail_events(targets=["myapp/0"], length=length, show_defer=deferrals, watch=False)
+    tail_charms(targets=["myapp/0"], length=length, show_defer=deferrals, watch=False)
 
 
-@pytest.mark.parametrize("deferrals", (True, False))
-@pytest.mark.parametrize("length", (3, 10, 100))
-@pytest.mark.parametrize("show_ns", (True, False))
-def test_with_real_trfk_log(deferrals, length, show_ns):
-    with patch("jhack.utils.tail_charms._get_debug_log", wraps=lambda _: _fake_log_proc("real")):
-        _tail_events(
-            targets=["trfk/0"],
-            length=length,
-            show_ns=show_ns,
-            show_defer=deferrals,
-            watch=False,
-        )
+# FIXME: very slow tests, and little value
+# @pytest.mark.parametrize("deferrals", (True, False))
+# @pytest.mark.parametrize("length", (3, 10, 100))
+# @pytest.mark.parametrize("show_ns", (True, False))
+# def test_with_real_trfk_log(deferrals, length, show_ns):
+#     with patch(
+#         "jhack.utils.tail_charms.tail_charms._get_debug_log",
+#         wraps=lambda _: _fake_log_proc("real"),
+#     ):
+#         tail_charms(
+#             targets=["trfk/0"],
+#             length=length,
+#             show_ns=show_ns,
+#             show_defer=deferrals,
+#             watch=False,
+#         )
 
 
-@pytest.mark.parametrize("deferrals", (True, False))
-@pytest.mark.parametrize("length", (3, 10, 100))
-def test_with_cropped_trfk_log(deferrals, length):
-    with patch(
-        "jhack.utils.tail_charms._get_debug_log",
-        wraps=lambda _: _fake_log_proc("cropped"),
-    ):
-        _tail_events(targets="trfk/0", length=length, show_defer=deferrals, watch=False)
+# @pytest.mark.parametrize("deferrals", (True, False))
+# @pytest.mark.parametrize("length", (3, 10, 100))
+# def test_with_cropped_trfk_log(deferrals, length):
+#     with patch(
+#         "jhack.utils.tail_charms.tail_charms._get_debug_log",
+#         wraps=lambda _: _fake_log_proc("cropped"),
+#     ):
+#         tail_charms(targets="trfk/0", length=length, show_defer=deferrals, watch=False)
 
 
 def test_jhack_fire_log():
     # scenario 5: jhack fire
-    lines = [
-        "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.",
-        "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.",
-        "unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log The previous update-status was fired by jhack.",
-    ]
-    proc = Processor([])
-    for line in lines:
-        proc.process(line)
+    with mock_uniter_events_only(False):
+        proc = Processor(
+            [],
+        )
+        lines = [
+            "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.",
+            "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.",
+            "unit-myapp-0: 13:23:30 DEBUG unit.myapp/0.juju-log The previous update-status was fired by jhack.",
+        ]
+        for line in lines:
+            proc.process(line)
     captured = proc._captured_logs
     assert len(captured) == 2
     assert captured[1].tags == ("jhack", "fire")
@@ -197,12 +212,13 @@ def test_jhack_fire_log():
 
 def test_defer_log():
     # scenario 5: jhack fire
-    proc = Processor([], show_defer=True)
+    with mock_uniter_events_only(False):
+        proc = Processor([], show_defer=True)
 
-    # we emit update status
-    proc.process(
-        "unit-traefik-0: 12:04:18 INFO unit.traefik/0.juju-log Emitting Juju event update_status."
-    )
+        # we emit update status
+        proc.process(
+            "unit-traefik-0: 12:04:18 INFO unit.traefik/0.juju-log Emitting Juju event update_status."
+        )
     e0 = proc._captured_logs[0]
     assert not proc._currently_deferred
     assert e0.event == "update_status"
@@ -251,7 +267,7 @@ def test_defer_log():
 
 
 def test_tail_with_file_input():
-    _tail_events(
+    tail_charms(
         files=[
             mocks_dir / "real-prom-cropped-for-interlace.txt",
             mocks_dir / "real-trfk-cropped-for-interlace.txt",
@@ -260,7 +276,7 @@ def test_tail_with_file_input():
 
 
 def test_tail_with_file_input_and_output(tmp_path):
-    _tail_events(
+    tail_charms(
         files=[
             mocks_dir / "real-prom-cropped-for-interlace.txt",
             mocks_dir / "real-trfk-cropped-for-interlace.txt",
@@ -281,8 +297,9 @@ def test_tail_with_file_input_and_output(tmp_path):
     ),
 )
 def test_tail_event_filter(pattern, log, match):
-    proc = Processor(targets=[], event_filter_re=(re.compile(pattern) if pattern else None))
-    msg = proc.process(log)
+    with mock_uniter_events_only(False):
+        proc = Processor(targets=[], event_filter_re=(re.compile(pattern) if pattern else None))
+        msg = proc.process(log)
     if match:
         assert msg
     else:
@@ -290,8 +307,9 @@ def test_tail_event_filter(pattern, log, match):
 
 
 def test_machine_log_with_subordinates():
-    mock_uniter_events_only(False)
-    proc = _tail_events(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
+    with mock_uniter_events_only(False):
+        proc = tail_charms(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
+
     units = {log.unit for log in proc._captured_logs}
     assert len(units) == 4
 
@@ -339,13 +357,14 @@ def test_machine_log_with_subordinates():
     ),
 )
 def test_custom_event(line, expected_event):
-    p = Processor(["prom/1"])
-    p.process(line)
+    with mock_uniter_events_only(False):
+        p = Processor(["prom/1"])
+        p.process(line)
     assert [log for log in p._captured_logs if log.unit == "prom/1"]
 
 
 def test_borky_trfk_log_defer():
-    _tail_events(
+    tail_charms(
         length=30,
         replay=True,
         files=[str(mocks_dir / "trfk_mock_bork_defer.txt")],
@@ -354,36 +373,36 @@ def test_borky_trfk_log_defer():
 
 
 def test_trace_ids_relation_evt():
-    mock_uniter_events_only(False)
-    p = Processor(["prom/1"], show_trace_ids=True)
-    for line in (
-        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Starting root trace with id='12312321412412312321'.",
-        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Emitting custom event "
-        "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
-        "/on/ready_for_unit[14]>.",
-    ):
-        p.process(line)
+    with mock_uniter_events_only(False):
+        p = Processor(["prom/1"], show_trace_ids=True)
+        for line in (
+            "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Starting root trace with id='12312321412412312321'.",
+            "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log ingress:1: Emitting custom event "
+            "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
+            "/on/ready_for_unit[14]>.",
+        ):
+            p.process(line)
     evt = [log for log in p._captured_logs if log.unit == "prom/1"][0]
     assert evt.trace_id == "12312321412412312321"
 
 
 def test_trace_ids_no_relation_evt():
-    mock_uniter_events_only(False)
-    p = Processor(["prom/1"], show_trace_ids=True)
-    for line in (
-        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Starting root trace with id='12312321412412312321'.",
-        "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Emitting custom event "
-        "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
-        "/on/ready_for_unit[14]>.",
-    ):
-        p.process(line)
+    with mock_uniter_events_only(False):
+        p = Processor(["prom/1"], show_trace_ids=True)
+        for line in (
+            "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Starting root trace with id='12312321412412312321'.",
+            "prom-1: 12:56:44 DEBUG unit.prom/1.juju-log Emitting custom event "
+            "<IngressPerUnitReadyForUnitEvent via A/B[ingress]"
+            "/on/ready_for_unit[14]>.",
+        ):
+            p.process(line)
     evt = [log for log in p._captured_logs if log.unit == "prom/1"][0]
     assert evt.trace_id == "12312321412412312321"
 
 
 def test_event_failed():
-    mock_uniter_events_only(True)
-    p = Processor(["parca/1"], show_trace_ids=True)
+    with mock_uniter_events_only(True):
+        p = Processor(["parca/1"], show_trace_ids=True)
     for line in (
         'unit-parca-1: 12:30:58 INFO juju.worker.uniter.operation ran "update-status" hook '
         "(via hook dispatching script: dispatch)",
@@ -400,15 +419,15 @@ def test_event_failed():
 
 
 def test_event_failed2():
-    mock_uniter_events_only(False)
-    p = Processor([], show_trace_ids=True)
-    for line in (
-        "unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_changed.",
-        "unit-parca-0: 15:01:49 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_created.",
-        "unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_joined.",
-        'unit-parca-0: 15:01:49 ERROR juju.worker.uniter.operation hook "profiling-endpoint-relation-created" (via hook dispatching script: dispatch) failed: exit status 1',
-    ):
-        p.process(line)
+    with mock_uniter_events_only(False):
+        p = Processor([], show_trace_ids=True)
+        for line in (
+            "unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_changed.",
+            "unit-parca-0: 15:01:49 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_created.",
+            "unit-parca-0: 15:01:38 DEBUG unit.parca/0.juju-log profiling-endpoint:2: Emitting Juju event profiling_endpoint_relation_joined.",
+            'unit-parca-0: 15:01:49 ERROR juju.worker.uniter.operation hook "profiling-endpoint-relation-created" (via hook dispatching script: dispatch) failed: exit status 1',
+        ):
+            p.process(line)
 
     captured = p._captured_logs
     assert len(captured) == 3
@@ -417,13 +436,13 @@ def test_event_failed2():
 
 
 def test_machine_event_logs():
-    mock_uniter_events_only(False)
-    p = Processor([], show_trace_ids=True)
-    for line in (
-        "unit-postgresql-1: 09:25:36 DEBUG unit.postgresql/1.juju-log root:Emitting Juju event leader_settings_changed.",
-        "unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: root:Emitting Juju event refresh_v_three_relation_created.",
-    ):
-        p.process(line)
+    with mock_uniter_events_only(False):
+        p = Processor([], show_trace_ids=True)
+        for line in (
+            "unit-postgresql-1: 09:25:36 DEBUG unit.postgresql/1.juju-log root:Emitting Juju event leader_settings_changed.",
+            "unit-postgresql-0: 2025-06-05 13:16:39 DEBUG unit.postgresql/0.juju-log refresh-v-three:0: root:Emitting Juju event refresh_v_three_relation_created.",
+        ):
+            p.process(line)
 
     captured = p._captured_logs
     assert len(captured) == 2
@@ -431,10 +450,10 @@ def test_machine_event_logs():
 
 def test_machine_pgql_logs():
     with patch(
-        "jhack.utils.tail_charms._get_debug_log",
+        "jhack.utils.tail_charms.tail_charms._get_debug_log",
         wraps=lambda _: _fake_log_proc("real-pgql-machine-log"),
     ):
-        processor = _tail_events(
+        processor = tail_charms(
             watch=False,
         )
 

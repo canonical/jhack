@@ -49,6 +49,7 @@ class IntegrationMatrix:
         apps: str = None,
         model: str = None,
         include_peers: bool = False,
+        hide_active: bool = False,
         color: RichSupportedColorOptions = "auto",
     ):
         self._model: str = model or get_current_model()
@@ -56,6 +57,7 @@ class IntegrationMatrix:
         self._endpoints = gather_endpoints(model, apps or (), include_peers=include_peers)
         self._apps = tuple(sorted(self._endpoints))
         self._include_peers = include_peers
+        self._hide_active = hide_active
 
         if apps:
             apps_re = re.compile(apps)
@@ -198,6 +200,8 @@ class IntegrationMatrix:
 
             for binding in bindings:
                 if binding.active:
+                    if self._hide_active:
+                        continue
                     symtail, symhead = ">-", "->"
                     color = self.active_cell_text_style
                 else:
@@ -211,16 +215,70 @@ class IntegrationMatrix:
                 t.add_row(Text(fmt_obj, style=color))
             return t
 
-    def render(self, refresh: bool = False):
+    def render(self, refresh: bool = False, simple: bool = False):
         if refresh:
             self.refresh()
+
+        return self._render_simple() if simple else self._render_rich()
+
+    def _render_simple(self):
+        table = Table(
+            "provider:endpoint",
+            "requirer:endpoint",
+            "interface",
+            "active",
+            title="integration  v0.2",
+            expand=True,
+            box=None,
+        )
+        apps = self._apps
+        for provider in apps:
+            provider_idx = apps.index(provider)
+            for requirer in apps:
+                requirer_idx = apps.index(requirer)
+                bindings: Union[List[PeerBinding], List[RelationBinding]] = self.matrix[
+                    provider_idx
+                ][requirer_idx]
+                if not bindings:
+                    # txt += f"{provider} --> {requirer}: - no interfaces -\n"
+                    continue
+
+                if provider_idx == requirer_idx and self._include_peers:
+                    for endpoint, interface in bindings:
+                        table.add_row(
+                            f"{provider}:{endpoint}",
+                            "↻",
+                            interface,
+                            "yes",
+                            style=self.peer_cell_text_style,
+                        )
+                else:
+                    bindings: List[RelationBinding]
+                    for binding in bindings:
+                        if binding.active:
+                            if self._hide_active:
+                                continue
+                            color = self.active_cell_text_style
+                        else:
+                            color = self.inactive_cell_text_style
+
+                        table.add_row(
+                            f"{provider}:{binding.provider_endpoint}",
+                            f"{requirer}:{binding.requirer_endpoint}",
+                            binding.interface,
+                            "yes" if binding.active else "no",
+                            style=color,
+                        )
+
+        return table
+
+    def _render_rich(self):
         table = Table(title="integration  v0.2", expand=True)
         table.add_column(r"providers\requirers")
-
-        for app in self._apps:
-            table.add_column(app)
-
         apps = self._apps
+
+        for app in apps:
+            table.add_column(app)
 
         rendered_matrix = [
             [
@@ -234,9 +292,9 @@ class IntegrationMatrix:
             table.add_row(app, *row)
         return Align.center(table)
 
-    def pprint(self):
+    def pprint(self, simple: bool = False):
         c = Console(color_system=self._color)
-        c.print(self.render())
+        c.print(self.render(simple=simple))
 
     def watch(self, refresh_rate=0.2):
         rrate = refresh_rate or 0.2
@@ -431,6 +489,12 @@ def show(
     refresh_rate: float = typer.Option(
         None, "--refresh-rate", "-r", help="Refresh rate for watch."
     ),
+    simple_output: bool = typer.Option(
+        False,
+        "--simple",
+        "-s",
+        help="Narrow output mode (for large models, or small shells).",
+    ),
     model: str = typer.Option(None, "--model", "-m", help="Model in which to apply this command."),
     show_peers: bool = typer.Option(
         None,
@@ -439,14 +503,25 @@ def show(
         help="Include peer relations in the matrix.",
         is_flag=True,
     ),
+    hide_active: bool = typer.Option(
+        False,
+        "--hide-active",
+        help="Hide active relations from the matrix.",
+    ),
     color: Optional[str] = ColorOption,
 ):
     """Display the avaiable integrations between any number of juju applications in a matrix."""
-    mtrx = IntegrationMatrix(apps=apps, model=model, color=color, include_peers=show_peers)
+    mtrx = IntegrationMatrix(
+        apps=apps,
+        model=model,
+        color=color,
+        include_peers=show_peers,
+        hide_active=hide_active,
+    )
     if watch:
         mtrx.watch(refresh_rate=refresh_rate)
     else:
-        mtrx.pprint()
+        mtrx.pprint(simple=simple_output)
 
 
 def cmr(remote, local=None, dry_run: bool = False):
