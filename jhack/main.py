@@ -65,6 +65,7 @@ def main():
     from jhack.utils.print_env import print_env
     from jhack.utils.propaganda import leader_set as elect
     from jhack.utils.show_relation import sync_show_relation
+    from jhack.utils.this_is_fine import this_is_fine
     from jhack.utils.show_stored import show_stored
     from jhack.utils.simulate_event import simulate_event as fire
     from jhack.utils.sitrep import sitrep
@@ -104,6 +105,7 @@ def main():
         sync_deployed_charm,
         test_devmode,
         unbork_juju,
+        this_is_fine,
     }:
         doc_devmode_only(devmode_only_command)
 
@@ -120,6 +122,7 @@ def main():
     utils.command(name="pull-cmr", no_args_is_help=True)(pull_cmr)
     utils.command(name="elect", no_args_is_help=True)(elect)
     utils.command(name="pebble", no_args_is_help=True)(pebble)
+    utils.command(name="this-is-fine", no_args_is_help=True)(this_is_fine)
 
     charm = typer.Typer(name="charm", help="Charmcrafting utilities.")
     charm.command(name="update")(update)
@@ -196,7 +199,9 @@ def main():
             for command in obj.registered_commands:
                 if command.hidden:
                     continue
-                print(f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}")
+                print(
+                    f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}"
+                )
             for group in obj.registered_groups:
                 print(
                     f"{prefix + group.typer_instance.info.name:<22} {group.typer_instance.info.help.splitlines()[0]}"
