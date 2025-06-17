@@ -41,9 +41,7 @@ def _do_replay(processor: Processor, model: str):
         processor.process(line.decode("utf-8").strip())
 
     logger.debug("replay complete")
-    logger.debug(
-        f"captured: {processor.printer.count_events(processor._captured_logs)}"
-    )
+    logger.debug(f"captured: {processor.printer.count_events(processor._captured_logs)}")
 
 
 def _logs_from_stdin() -> Callable[[], str]:
@@ -143,7 +141,9 @@ def tail_charms(
     if output:
         logger.debug("output mode. Overriding watch.")
         watch = False
-        auto_bump_loglevel = False  # it's too late for that, we're replaying the history and transforming it.
+        auto_bump_loglevel = (
+            False  # it's too late for that, we're replaying the history and transforming it.
+        )
 
     read_from_stdin = not sys.stdin.isatty()
     level = _validate_level(level)
@@ -168,9 +168,7 @@ def tail_charms(
 
     # right now we only accept one input stream at a time:
     # either a live juju model, or logfiles, or stdin.
-    n_input_streams = len(
-        tuple(filter(None, (read_from_stdin, files, (replay or watch))))
-    )
+    n_input_streams = len(tuple(filter(None, (read_from_stdin, files, (replay or watch)))))
     if n_input_streams > 1:
         exit("only one input stream at a time is supported")
 

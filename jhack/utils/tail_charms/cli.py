@@ -150,16 +150,10 @@ def tail_events(
         help="Loglevel at which the logs being streamed to stdin were captured. "
         "Omitting it may print duplicate events.",
     ),
-    replay: bool = typer.Option(
-        False, "--replay", "-r", help="Start from the beginning of time."
-    ),
-    dry_run: bool = typer.Option(
-        False, help="Only print what you would have done, exit."
-    ),
+    replay: bool = typer.Option(False, "--replay", "-r", help="Start from the beginning of time."),
+    dry_run: bool = typer.Option(False, help="Only print what you would have done, exit."),
     framerate: float = typer.Option(0.5, help="Framerate cap."),
-    length: int = typer.Option(
-        10, "-l", "--length", help="Maximum history length to show."
-    ),
+    length: int = typer.Option(10, "-l", "--length", help="Maximum history length to show."),
     show_defer: bool = typer.Option(
         False, "-d", "--show-defer", help="Visualize the defer graph."
     ),
@@ -211,9 +205,7 @@ def tail_events(
         "  -f '(?!update)' --> all events except those starting with 'update'."
         "  -f 'ingress' --> all events starting with 'ingress'.",
     ),
-    model: str = typer.Option(
-        None, "-m", "--model", help="Which model to apply the command to."
-    ),
+    model: str = typer.Option(None, "-m", "--model", help="Which model to apply the command to."),
     output: str = typer.Option(
         None,
         "-o",

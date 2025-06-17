@@ -29,9 +29,7 @@ def model_loglevel(model: str = None):
         lc = JPopen(f"juju model-config{_model} logging-config".split())
         lc.wait()
         if lc.returncode != 0:
-            logger.info(
-                "no model config: maybe there is no current model? defaulting to WARNING"
-            )
+            logger.info("no model config: maybe there is no current model? defaulting to WARNING")
             return "WARNING"  # the default
 
         logging_config = lc.stdout.read().decode("utf-8")
@@ -48,9 +46,7 @@ def model_loglevel(model: str = None):
                 return val
 
     except Exception as e:
-        logger.error(
-            f"failed to determine model loglevel: {e}. Guessing `WARNING` for now."
-        )
+        logger.error(f"failed to determine model loglevel: {e}. Guessing `WARNING` for now.")
     return "WARNING"  # the default
 
 
@@ -101,9 +97,7 @@ def juju_loglevel_bumpctx(model: str, flag: bool):
                         f"Does the model exist on the current controller?"
                     )
                 else:
-                    exit(
-                        "unable to connect to current juju model. Are you switched to one?"
-                    )
+                    exit("unable to connect to current juju model. Are you switched to one?")
         try:
             yield
         finally:
