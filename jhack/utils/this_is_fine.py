@@ -22,11 +22,13 @@ def _unit_in_error(status: dict, target: str) -> bool:
 
 
 def _matches(targets: List[str], tgt):
-    for target in targets:
+    def _match(target):
         if "/" in target:
             return tgt.unit_name == target
         else:
             return tgt.app == target.split("/")[0]
+
+    return any(map(_match, targets))
 
 
 def _resolve_targets(targets: List[str], model: Optional[str]) -> List[Target]:

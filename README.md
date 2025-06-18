@@ -1045,3 +1045,15 @@ You can enter **focus mode** (only show logs for specified containers or pebble 
 
 `jhack pebble -c tempo tempo/0 plan` becomes:
 `juju ssh tempo/0 PEBBLE_SOCKET=/charm/containers/tempo/pebble.socket /charm/bin/pebble plan`
+
+# `jhack utils this-is-fine`
+
+Are you tired of doing `watch -n 1 "juju resolve foo/n"`, and for all 100 units you have in your model? 
+To that we say: "NO MORE"!
+
+`jhack utils this-is-fine` is a command that watches in the background for any unit that goes to error status and immediately slaps it with a `juju resolve`. That'll teach 'em!
+
+Like most other jhack commands, this is potentially destructive and has a few handy properties:
+- `jhack utils this-is-fine` will monitor and when necessary bamboozle all units and apps.
+- `jhack utils this-is-fine myapp` same, but only units of `myapp`
+- `jhack utils this-is-fine myapp/0` same, but only `myapp/0`
