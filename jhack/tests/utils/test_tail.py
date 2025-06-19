@@ -155,8 +155,7 @@ def test_jdl_cos_lite():
             "jhack.utils.tail_charms.tail_charms.find_leaders",  # imported from jhack.helpers
             new=fake_find_leaders,
         ):
-            processor = tail_charms()
-            print("pr")
+            tail_charms()
 
 
 @pytest.fixture(autouse=True)
