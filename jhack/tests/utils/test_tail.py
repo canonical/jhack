@@ -5,9 +5,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from jhack.utils.tail_charms.core.juju_model_loglevel import Level
 from jhack.utils.tail_charms.tail_charms import tail_charms
 from jhack.utils.tail_charms.core.processor import Processor
 from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
+
+
+@pytest.fixture(autouse=True, scope="module")
+def patch_stdin():
+    with patch("sys.stdin"):
+        yield
 
 
 def _mock_emit(
@@ -43,7 +50,7 @@ def mock_uniter_events_only(value: bool = True):
     # if True: the parser will try to match "unit.myapp/0.juju-log Emitting Juju event..".
     # else: ... (via hook dispatching script: dispatch)
     with patch(
-        "jhack.utils.tail_charms.core.parser.model_loglevel",
+        "jhack.utils.tail_charms.core.juju_model_loglevel.model_loglevel",
         lambda model: "WARNING" if value else "TRACE",
     ):
         yield
@@ -102,22 +109,18 @@ MOCK_JDL_UNITER_EVTS_ONLY = {
 }
 
 mocks_dir = Path(__file__).parent / "tail_mocks"
-with open(mocks_dir / "real-trfk-log.txt", mode="rb") as f:
-    logs = f.read()
-    MOCK_JDL["real"] = logs
-
-with open(mocks_dir / "real-trfk-cropped.txt", mode="rb") as f:
-    logs = f.read()
-    MOCK_JDL["cropped"] = logs
-
-with open(mocks_dir / "real-pgql-machine-log.txt", mode="rb") as f:
-    logs = f.read()
-    MOCK_JDL["real-pgql-machine-log"] = logs
+MOCK_JDL["real"] = (mocks_dir / "real-trfk-log.txt").read_bytes()
+MOCK_JDL["cropped"] = (mocks_dir / "real-trfk-cropped.txt").read_bytes()
+MOCK_JDL["clite"] = (mocks_dir / "jdl_cos_lite.txt").read_bytes()
+MOCK_JDL["real-pgql-machine-log"] = (
+    mocks_dir / "real-pgql-machine-log.txt"
+).read_bytes()
 
 
 def _fake_log_proc(id_):
+    data = MOCK_JDL[id_].split(b"\n")
     proc = MagicMock()
-    proc.stdout.readlines.return_value = MOCK_JDL[id_].split(b"\n")
+    proc.stdout.readline.side_effect = data
     return proc
 
 
@@ -137,6 +140,23 @@ def mock_stdout(request):
             new=fake_find_leaders,
         ):
             yield
+
+
+def test_jdl_cos_lite():
+    with patch(
+        "jhack.utils.tail_charms.tail_charms._get_debug_log",
+        wraps=lambda _: _fake_log_proc("clite"),
+    ):
+
+        def fake_find_leaders(apps, model=None):
+            return {app: f"{app}/0" for app in apps}
+
+        with patch(
+            "jhack.utils.tail_charms.tail_charms.find_leaders",  # imported from jhack.helpers
+            new=fake_find_leaders,
+        ):
+            processor = tail_charms()
+            print("pr")
 
 
 @pytest.fixture(autouse=True)
@@ -166,17 +186,19 @@ def test_tail(deferrals, length, mock_stdout):
 # @pytest.mark.parametrize("length", (3, 10, 100))
 # @pytest.mark.parametrize("show_ns", (True, False))
 # def test_with_real_trfk_log(deferrals, length, show_ns):
-#     with patch(
-#         "jhack.utils.tail_charms.tail_charms._get_debug_log",
-#         wraps=lambda _: _fake_log_proc("real"),
-#     ):
-#         tail_charms(
-#             targets=["trfk/0"],
-#             length=length,
-#             show_ns=show_ns,
-#             show_defer=deferrals,
-#             watch=False,
-#         )
+#     with mock_uniter_events_only(False):
+#         with patch(
+#             "jhack.utils.tail_charms.tail_charms._get_debug_log",
+#             wraps=lambda _: _fake_log_proc("real"),
+#         ):
+#             tail_charms(
+#                 targets=["trfk/0"],
+#                 length=length,
+#                 show_ns=show_ns,
+#                 show_defer=deferrals,
+#                 watch=False,
+#                 level=Level.DEBUG,
+#             )
 
 
 # @pytest.mark.parametrize("deferrals", (True, False))
@@ -192,9 +214,7 @@ def test_tail(deferrals, length, mock_stdout):
 def test_jhack_fire_log():
     # scenario 5: jhack fire
     with mock_uniter_events_only(False):
-        proc = Processor(
-            [],
-        )
+        proc = Processor([], level=Level.DEBUG)
         lines = [
             "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.",
             "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.",
@@ -286,6 +306,20 @@ def test_tail_with_file_input_and_output(tmp_path):
 
 
 @pytest.mark.parametrize(
+    "log",
+    (
+        "unit-trfk-0: 10:08:01 DEBUG unit.trfk/0.juju-log Emitting Juju event leader_elected.",
+        "unit-postgresql-11: 2025-06-16 11:18:48 DEBUG unit.postgresql/11.juju-log restart:15: root:Emitting Juju event restart_relation_joined.",
+    ),
+)
+def test_match_emitted(log):
+    with mock_uniter_events_only(False):
+        proc = Processor([])
+        msg = proc.process(log)
+        assert msg
+
+
+@pytest.mark.parametrize(
     "pattern, log, match",
     (
         (None, _mock_emit("foo"), True),
@@ -298,7 +332,9 @@ def test_tail_with_file_input_and_output(tmp_path):
 )
 def test_tail_event_filter(pattern, log, match):
     with mock_uniter_events_only(False):
-        proc = Processor(targets=[], event_filter_re=(re.compile(pattern) if pattern else None))
+        proc = Processor(
+            targets=[], event_filter_re=(re.compile(pattern) if pattern else None)
+        )
         msg = proc.process(log)
     if match:
         assert msg
@@ -308,7 +344,9 @@ def test_tail_event_filter(pattern, log, match):
 
 def test_machine_log_with_subordinates():
     with mock_uniter_events_only(False):
-        proc = tail_charms(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
+        proc = tail_charms(
+            length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
+        )
 
     units = {log.unit for log in proc._captured_logs}
     assert len(units) == 4
@@ -320,7 +358,9 @@ def test_machine_log_with_subordinates():
         "testing_mock"
     ]  # mock event we added
     assert [
-        log.event for log in proc._captured_logs if log.unit == "prometheus-node-exporter/0"
+        log.event
+        for log in proc._captured_logs
+        if log.unit == "prometheus-node-exporter/0"
     ] == [
         "install",
         "juju_info_relation_created",

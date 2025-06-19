@@ -34,12 +34,16 @@ def _get_event_text(event: "EventLogMsg", ascii=False):
         if "lobotomy" in event.tags:
             event_text += f" {symbols.lobotomy_symbol}"
         if "fire" in event.tags:
-            event_text += f" {symbols.fire_symbol_ascii if ascii else symbols.fire_symbol}"
+            event_text += (
+                f" {symbols.fire_symbol_ascii if ascii else symbols.fire_symbol}"
+            )
         if "replay" in event.tags:
             if "source" in event.tags:
                 event_text += " (↑)"
             elif "replayed" in event.tags:
-                event_text += f" ({symbols.replay_symbol}:{event.jhack_replayed_evt_timestamp} ↓)"
+                event_text += (
+                    f" ({symbols.replay_symbol}:{event.jhack_replayed_evt_timestamp} ↓)"
+                )
 
     if "failed" in event.tags:
         event_text += f" {symbols.bomb_symbol}"
@@ -107,7 +111,9 @@ class PoorPrinter(Printer):
 
         if any(new_cols):
             # print header
-            header = "TIMESTAMP | " + " | ".join(map(_pad_header, col_titles[1:])) + "\n"
+            header = (
+                "TIMESTAMP | " + " | ".join(map(_pad_header, col_titles[1:])) + "\n"
+            )
             self._out_stream.write(header)
 
         def _pad(x):
@@ -295,7 +301,11 @@ class RichPrinter(Printer):
             table.add_row(
                 "Currently deferred:",
                 *(
-                    "\n".join(f"{e.n}:{e.event}" for e in currently_deferred if e.unit == target)
+                    "\n".join(
+                        f"{e.n}:{e.event}"
+                        for e in currently_deferred
+                        if e.unit == target
+                    )
                     for target in targets
                 ),
             )
@@ -340,7 +350,14 @@ class RichPrinter(Printer):
         nevents = []
         tgt_names = []
         count = self.count_events(events)
+        # count also includes events captured from units that have since been cropped
+        # from the table as they were too long ago
+        targets_in_view = set(col.header for col in table.columns)
+
         for tgt in sorted(count):
+            if tgt not in targets_in_view:
+                continue
+
             nevents.append(str(count[tgt]))
             text = Text(tgt, style="bold")
             tgt_names.append(text)
@@ -353,7 +370,9 @@ class RichPrinter(Printer):
         self.live.refresh()
         self.live.stop()
         self.live.console.print(
-            Align.center(Text("The end.", style=Style(color="red", bold=True, blink=True)))
+            Align.center(
+                Text("The end.", style=Style(color="red", bold=True, blink=True))
+            )
         )
 
         if not output:

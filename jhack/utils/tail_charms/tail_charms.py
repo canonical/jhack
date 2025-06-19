@@ -41,7 +41,9 @@ def _do_replay(processor: Processor, model: str):
         processor.process(line.decode("utf-8").strip())
 
     logger.debug("replay complete")
-    logger.debug(f"captured: {processor.printer.count_events(processor._captured_logs)}")
+    logger.debug(
+        f"captured: {processor.printer.count_events(processor._captured_logs)}"
+    )
 
 
 def _logs_from_stdin() -> Callable[[], str]:
@@ -138,12 +140,14 @@ def tail_charms(
     printer: Literal["rich", "raw"] = "rich",
     auto_bump_loglevel: bool = False,
 ):
+    """Tail charms."""
+
+    targets = targets or []
+
     if output:
         logger.debug("output mode. Overriding watch.")
         watch = False
-        auto_bump_loglevel = (
-            False  # it's too late for that, we're replaying the history and transforming it.
-        )
+        auto_bump_loglevel = False  # it's too late for that, we're replaying the history and transforming it.
 
     read_from_stdin = not sys.stdin.isatty()
     level = _validate_level(level)
@@ -151,7 +155,7 @@ def tail_charms(
         if read_from_stdin:
             logger.warning(
                 "jhack cannot know what loglevel the logs being streamed to stdin "
-                "were captured at."
+                "were captured at. "
                 "We'll assume it was WARNING. Which means you'll only see hook events, "
                 "even if the model was set to a more verbose loglevel. "
                 "Pass the loglevel explicitly to `--level`."
@@ -168,9 +172,23 @@ def tail_charms(
 
     # right now we only accept one input stream at a time:
     # either a live juju model, or logfiles, or stdin.
-    n_input_streams = len(tuple(filter(None, (read_from_stdin, files, (replay or watch)))))
-    if n_input_streams > 1:
-        exit("only one input stream at a time is supported")
+    # stdin has precedence.
+    if read_from_stdin:
+        if files:
+            # the user asked something we just can't support at the moment
+            exit("only one input stream at a time is supported")
+        if replay:
+            # this defaults to False, which means the user passed --replay;
+            # this option only makes sense if the user passed --watch, which doesn't make sense if
+            # we're reading from stdin.
+            # be tolerant and let it slip with a warning.
+            logger.warn("when you pass logs over stdin, --replay is implied")
+            replay = False
+        if watch:
+            # this defaults to True, which means we have to be lenient.
+            # when you pass logs over stdin, you cannot --watch: the tail stops when stdin ends
+            logger.debug("reading from stdin: overriding --watch option.")
+            watch = False
 
     cmd = (
         ["juju", "debug-log"]

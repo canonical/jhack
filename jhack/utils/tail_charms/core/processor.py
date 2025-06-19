@@ -82,7 +82,7 @@ class Processor:
         output: str = None,
         # only available in rich printing mode
         flip: bool = False,
-        level: Optional[Level] = None,
+        level: Level = Level.DEBUG,
     ):
         self.targets = list(targets) if targets else []
         self.printer = printer or PoorPrinter()
@@ -105,7 +105,7 @@ class Processor:
 
         self.parser = LogLineParser(
             capture_operator_events=show_operator_events,
-            uniter_events_only=level not in BEST_LOGLEVELS,
+            uniter_events_only=level.value not in BEST_LOGLEVELS,
         )
 
     def _warn_about_orphaned_event(self, evt):
@@ -124,7 +124,9 @@ class Processor:
     def _defer(self, deferred: EventDeferredLogMsg):
         # find the original message we're deferring
         found = None
-        for captured in filter(lambda e: e.unit == deferred.unit, self._captured_logs[::-1]):
+        for captured in filter(
+            lambda e: e.unit == deferred.unit, self._captured_logs[::-1]
+        ):
             if captured.event == deferred.event:
                 found = captured
                 break
@@ -142,7 +144,9 @@ class Processor:
                 deferred=DeferralStatus.deferred,
             )
             self._captured_logs.append(found)
-            logger.debug(f"Mocking {found}: we're deferring it but we've not seen it before.")
+            logger.debug(
+                f"Mocking {found}: we're deferring it but we've not seen it before."
+            )
 
         currently_deferred_ns = {d.n for d in self._currently_deferred}
         is_already_deferred = deferred.n in currently_deferred_ns
@@ -183,7 +187,9 @@ class Processor:
             )
 
             self._defer(deferred)
-            logger.debug(f"mocking {deferred}: we're reemitting it but we've not seen it before.")
+            logger.debug(
+                f"mocking {deferred}: we're reemitting it but we've not seen it before."
+            )
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more to pretend we've seen it.
 
@@ -232,7 +238,9 @@ class Processor:
             return EventLogMsg(**match, mocked=False)
 
     def _apply_jhack_mod(self, msg: EventLogMsg):
-        def _get_referenced_msg(event: Optional[str], unit: str) -> Optional[EventLogMsg]:
+        def _get_referenced_msg(
+            event: Optional[str], unit: str
+        ) -> Optional[EventLogMsg]:
             # this is the message we're referring to, the one we're modifying
             logs = self._captured_logs
             if not event:
