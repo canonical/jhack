@@ -1,0 +1,558 @@
+controller-0: 08:35:16 INFO juju.worker.apicaller [fc2632] "controller-0" successfully connected to "wss://localhost:17070"
+controller-0: 08:35:16 INFO juju.worker.logforwarder config change - log forwarding not enabled
+controller-0: 08:35:16 INFO juju.worker.logger logger worker started
+controller-0: 08:35:16 INFO juju.worker.pruner.statushistory pruner config: max age: 336h0m0s, max collection size 5120M for foo (fc2632bc-48ca-46d0-8fca-5b0bd9a5e216)
+controller-0: 08:35:16 INFO juju.worker.pruner.action pruner config: max age: 336h0m0s, max collection size 5120M for foo (fc2632bc-48ca-46d0-8fca-5b0bd9a5e216)
+model-fc2632bc-48ca-46d0-8fca-5b0bd9a5e216: 08:35:18 INFO juju.worker.caasupgrader abort check blocked until version event received
+model-fc2632bc-48ca-46d0-8fca-5b0bd9a5e216: 08:35:18 INFO juju.worker.caasupgrader unblocking abort check
+model-fc2632bc-48ca-46d0-8fca-5b0bd9a5e216: 08:35:18 INFO juju.worker.muxhttpserver starting http server on [::]:17071
+model-fc2632bc-48ca-46d0-8fca-5b0bd9a5e216: 08:35:18 INFO juju.worker.caasadmission ensuring model k8s webhook configurations
+controller-0: 08:35:31 INFO juju.worker.caasapplicationprovisioner.runner start "alertmanager"
+controller-0: 08:35:31 INFO juju.worker.caasapplicationprovisioner.alertmanager scaling application "alertmanager" to desired scale 1
+controller-0: 08:35:31 INFO juju.worker.caasapplicationprovisioner.alertmanager scaling application "alertmanager" to desired scale 1
+controller-0: 08:35:32 INFO juju.worker.caasapplicationprovisioner.runner start "catalogue"
+controller-0: 08:35:33 INFO juju.worker.caasapplicationprovisioner.catalogue scaling application "catalogue" to desired scale 1
+controller-0: 08:35:33 INFO juju.worker.caasapplicationprovisioner.runner start "grafana"
+controller-0: 08:35:34 INFO juju.worker.caasapplicationprovisioner.grafana scaling application "grafana" to desired scale 1
+controller-0: 08:35:34 INFO juju.worker.caasapplicationprovisioner.runner start "loki"
+controller-0: 08:35:34 INFO juju.worker.caasapplicationprovisioner.grafana scaling application "grafana" to desired scale 1
+controller-0: 08:35:35 INFO juju.worker.caasapplicationprovisioner.runner start "prometheus"
+controller-0: 08:35:36 INFO juju.worker.caasapplicationprovisioner.catalogue scaling application "catalogue" to desired scale 1
+controller-0: 08:35:36 INFO juju.worker.caasapplicationprovisioner.grafana scaling application "grafana" to desired scale 1
+controller-0: 08:35:36 INFO juju.worker.caasapplicationprovisioner.runner start "traefik"
+controller-0: 08:35:37 INFO juju.worker.caasapplicationprovisioner.loki scaling application "loki" to desired scale 1
+controller-0: 08:35:37 INFO juju.worker.caasapplicationprovisioner.grafana scaling application "grafana" to desired scale 1
+controller-0: 08:35:37 INFO juju.worker.caasapplicationprovisioner.loki scaling application "loki" to desired scale 1
+controller-0: 08:35:39 INFO juju.worker.caasapplicationprovisioner.prometheus scaling application "prometheus" to desired scale 1
+controller-0: 08:35:40 INFO juju.worker.caasapplicationprovisioner.grafana scaling application "grafana" to desired scale 1
+controller-0: 08:35:40 INFO juju.worker.caasapplicationprovisioner.loki scaling application "loki" to desired scale 1
+controller-0: 08:35:41 INFO juju.worker.caasapplicationprovisioner.prometheus scaling application "prometheus" to desired scale 1
+controller-0: 08:35:41 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+controller-0: 08:35:42 INFO juju.worker.caasapplicationprovisioner.prometheus scaling application "prometheus" to desired scale 1
+controller-0: 08:35:43 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+controller-0: 08:35:44 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+controller-0: 08:35:44 INFO juju.worker.caasapplicationprovisioner.loki scaling application "loki" to desired scale 1
+controller-0: 08:35:45 INFO juju.worker.caasapplicationprovisioner.prometheus scaling application "prometheus" to desired scale 1
+controller-0: 08:35:47 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+controller-0: 08:35:49 INFO juju.worker.caasapplicationprovisioner.prometheus scaling application "prometheus" to desired scale 1
+controller-0: 08:35:51 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+controller-0: 08:35:52 INFO juju.worker.caasapplicationprovisioner.prometheus scaling application "prometheus" to desired scale 1
+controller-0: 08:35:53 INFO juju.worker.caasapplicationprovisioner.catalogue scaling application "catalogue" to desired scale 1
+controller-0: 08:35:54 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+controller-0: 08:35:57 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+controller-0: 08:35:58 INFO juju.worker.caasapplicationprovisioner.alertmanager scaling application "alertmanager" to desired scale 1
+controller-0: 08:36:01 INFO juju.worker.caasapplicationprovisioner.grafana scaling application "grafana" to desired scale 1
+controller-0: 08:36:15 INFO juju.worker.caasapplicationprovisioner.prometheus scaling application "prometheus" to desired scale 1
+unit-catalogue-0: 08:36:16 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-catalogue-0: 08:36:16 INFO juju.cmd.containeragent.unit start "unit"
+unit-catalogue-0: 08:36:16 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-catalogue-0: 08:36:16 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-alertmanager-0: 08:36:16 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-alertmanager-0: 08:36:16 INFO juju.cmd.containeragent.unit start "unit"
+unit-alertmanager-0: 08:36:16 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-grafana-0: 08:36:16 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-grafana-0: 08:36:16 INFO juju.cmd.containeragent.unit start "unit"
+unit-grafana-0: 08:36:16 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-alertmanager-0: 08:36:16 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-grafana-0: 08:36:16 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-catalogue-0: 08:36:16 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-catalogue-0: 08:36:16 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-catalogue-0: 08:36:16 INFO juju.worker.apicaller [fc2632] "unit-catalogue-0" successfully connected to "wss://10.152.183.64:17070"
+unit-alertmanager-0: 08:36:16 INFO juju.api connection established to "wss://controller-service.controller-mk8s.svc.cluster.local:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-grafana-0: 08:36:16 INFO juju.api connection established to "wss://controller-service.controller-mk8s.svc.cluster.local:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-alertmanager-0: 08:36:16 INFO juju.worker.apicaller [fc2632] "unit-alertmanager-0" successfully connected to "wss://controller-service.controller-mk8s.svc.cluster.local:17070"
+unit-grafana-0: 08:36:16 INFO juju.worker.apicaller [fc2632] "unit-grafana-0" successfully connected to "wss://controller-service.controller-mk8s.svc.cluster.local:17070"
+unit-grafana-0: 08:36:16 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-grafana-0: 08:36:16 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-catalogue-0: 08:36:16 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-grafana-0: 08:36:16 INFO juju.worker.apicaller [fc2632] "unit-grafana-0" successfully connected to "wss://10.152.183.64:17070"
+unit-catalogue-0: 08:36:16 INFO juju.worker.logger logger worker started
+unit-catalogue-0: 08:36:16 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-catalogue-0: 08:36:16 INFO juju.worker.leadership catalogue/0 promoted to leadership of catalogue
+unit-alertmanager-0: 08:36:16 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-alertmanager-0: 08:36:16 INFO juju.worker.logger logger worker started
+unit-alertmanager-0: 08:36:16 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-alertmanager-0: 08:36:16 INFO juju.worker.leadership alertmanager/0 promoted to leadership of alertmanager
+unit-catalogue-0: 08:36:16 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-catalogue-0: 08:36:16 INFO juju.worker.caasupgrader unblocking abort check
+unit-alertmanager-0: 08:36:16 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-alertmanager-0: 08:36:16 INFO juju.worker.caasupgrader unblocking abort check
+unit-grafana-0: 08:36:16 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-grafana-0: 08:36:16 INFO juju.worker.logger logger worker started
+unit-grafana-0: 08:36:16 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-catalogue-0: 08:36:16 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-catalogue-0
+unit-grafana-0: 08:36:16 INFO juju.worker.leadership grafana/0 promoted to leadership of grafana
+unit-alertmanager-0: 08:36:16 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-alertmanager-0
+unit-catalogue-0: 08:36:16 INFO juju.worker.uniter unit "catalogue/0" started
+unit-catalogue-0: 08:36:16 INFO juju.worker.uniter resuming charm install
+unit-catalogue-0: 08:36:16 INFO juju.worker.uniter.charm downloading ch:amd64/catalogue-k8s-82 from API server
+unit-catalogue-0: 08:36:16 INFO juju.downloader downloading from ch:amd64/catalogue-k8s-82
+unit-alertmanager-0: 08:36:16 INFO juju.worker.uniter unit "alertmanager/0" started
+unit-grafana-0: 08:36:16 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-grafana-0: 08:36:16 INFO juju.worker.caasupgrader unblocking abort check
+unit-grafana-0: 08:36:16 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-grafana-0
+unit-alertmanager-0: 08:36:16 INFO juju.worker.uniter resuming charm install
+unit-alertmanager-0: 08:36:16 INFO juju.worker.uniter.charm downloading ch:amd64/alertmanager-k8s-160 from API server
+unit-alertmanager-0: 08:36:16 INFO juju.downloader downloading from ch:amd64/alertmanager-k8s-160
+unit-grafana-0: 08:36:16 INFO juju.worker.uniter unit "grafana/0" started
+unit-grafana-0: 08:36:16 INFO juju.worker.uniter resuming charm install
+unit-grafana-0: 08:36:16 INFO juju.worker.uniter.charm downloading ch:amd64/grafana-k8s-143 from API server
+unit-grafana-0: 08:36:16 INFO juju.downloader downloading from ch:amd64/grafana-k8s-143
+unit-alertmanager-0: 08:36:16 INFO juju.downloader download complete ("ch:amd64/alertmanager-k8s-160")
+unit-alertmanager-0: 08:36:16 INFO juju.downloader download verified ("ch:amd64/alertmanager-k8s-160")
+unit-catalogue-0: 08:36:16 INFO juju.downloader download complete ("ch:amd64/catalogue-k8s-82")
+unit-catalogue-0: 08:36:16 INFO juju.downloader download verified ("ch:amd64/catalogue-k8s-82")
+unit-grafana-0: 08:36:16 INFO juju.downloader download complete ("ch:amd64/grafana-k8s-143")
+unit-grafana-0: 08:36:16 INFO juju.downloader download verified ("ch:amd64/grafana-k8s-143")
+unit-loki-0: 08:36:20 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-loki-0: 08:36:20 INFO juju.cmd.containeragent.unit start "unit"
+unit-loki-0: 08:36:20 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-loki-0: 08:36:20 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-loki-0: 08:36:20 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-loki-0: 08:36:20 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-loki-0: 08:36:20 INFO juju.worker.apicaller [fc2632] "unit-loki-0" successfully connected to "wss://10.152.183.64:17070"
+unit-loki-0: 08:36:20 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-loki-0: 08:36:20 INFO juju.worker.logger logger worker started
+unit-loki-0: 08:36:20 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-loki-0: 08:36:20 INFO juju.worker.leadership loki/0 promoted to leadership of loki
+unit-loki-0: 08:36:20 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-loki-0: 08:36:20 INFO juju.worker.caasupgrader unblocking abort check
+unit-loki-0: 08:36:20 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-loki-0
+unit-loki-0: 08:36:20 INFO juju.worker.uniter unit "loki/0" started
+unit-loki-0: 08:36:20 INFO juju.worker.uniter resuming charm install
+unit-loki-0: 08:36:20 INFO juju.worker.uniter.charm downloading ch:amd64/loki-k8s-192 from API server
+unit-loki-0: 08:36:20 INFO juju.downloader downloading from ch:amd64/loki-k8s-192
+unit-loki-0: 08:36:20 INFO juju.downloader download complete ("ch:amd64/loki-k8s-192")
+unit-loki-0: 08:36:20 INFO juju.downloader download verified ("ch:amd64/loki-k8s-192")
+unit-prometheus-0: 08:36:22 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-prometheus-0: 08:36:22 INFO juju.cmd.containeragent.unit start "unit"
+unit-prometheus-0: 08:36:22 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-prometheus-0: 08:36:22 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-prometheus-0: 08:36:22 INFO juju.api connection established to "wss://controller-service.controller-mk8s.svc.cluster.local:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-prometheus-0: 08:36:22 INFO juju.worker.apicaller [fc2632] "unit-prometheus-0" successfully connected to "wss://controller-service.controller-mk8s.svc.cluster.local:17070"
+unit-prometheus-0: 08:36:22 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-prometheus-0: 08:36:22 INFO juju.worker.logger logger worker started
+unit-prometheus-0: 08:36:22 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-prometheus-0: 08:36:22 INFO juju.worker.leadership prometheus/0 promoted to leadership of prometheus
+unit-prometheus-0: 08:36:22 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-prometheus-0: 08:36:22 INFO juju.worker.caasupgrader unblocking abort check
+unit-prometheus-0: 08:36:22 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-prometheus-0
+unit-prometheus-0: 08:36:22 INFO juju.worker.uniter unit "prometheus/0" started
+unit-prometheus-0: 08:36:22 INFO juju.worker.uniter resuming charm install
+unit-prometheus-0: 08:36:22 INFO juju.worker.uniter.charm downloading ch:amd64/prometheus-k8s-234 from API server
+unit-prometheus-0: 08:36:22 INFO juju.downloader downloading from ch:amd64/prometheus-k8s-234
+unit-prometheus-0: 08:36:22 INFO juju.downloader download complete ("ch:amd64/prometheus-k8s-234")
+unit-prometheus-0: 08:36:22 INFO juju.downloader download verified ("ch:amd64/prometheus-k8s-234")
+controller-0: 08:36:26 INFO juju.worker.caasapplicationprovisioner.loki scaling application "loki" to desired scale 1
+unit-alertmanager-0: 08:36:28 INFO juju.worker.uniter hooks are retried true
+unit-alertmanager-0: 08:36:28 INFO juju.worker.uniter found queued "install" hook
+unit-traefik-0: 08:36:30 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-traefik-0: 08:36:30 INFO juju.cmd.containeragent.unit start "unit"
+unit-traefik-0: 08:36:30 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-traefik-0: 08:36:30 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-traefik-0: 08:36:30 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-traefik-0: 08:36:30 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-traefik-0: 08:36:30 INFO juju.worker.apicaller [fc2632] "unit-traefik-0" successfully connected to "wss://10.152.183.64:17070"
+unit-traefik-0: 08:36:30 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-traefik-0: 08:36:30 INFO juju.worker.logger logger worker started
+unit-traefik-0: 08:36:30 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-traefik-0: 08:36:30 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-traefik-0: 08:36:30 INFO juju.worker.caasupgrader unblocking abort check
+unit-traefik-0: 08:36:30 INFO juju.worker.leadership traefik/0 promoted to leadership of traefik
+unit-traefik-0: 08:36:30 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-traefik-0
+unit-traefik-0: 08:36:30 INFO juju.worker.uniter unit "traefik/0" started
+unit-traefik-0: 08:36:30 INFO juju.worker.uniter resuming charm install
+unit-traefik-0: 08:36:30 INFO juju.worker.uniter.charm downloading ch:amd64/traefik-k8s-236 from API server
+unit-traefik-0: 08:36:30 INFO juju.downloader downloading from ch:amd64/traefik-k8s-236
+unit-traefik-0: 08:36:30 INFO juju.downloader download complete ("ch:amd64/traefik-k8s-236")
+unit-alertmanager-0: 08:36:30 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-traefik-0: 08:36:30 INFO juju.downloader download verified ("ch:amd64/traefik-k8s-236")
+unit-alertmanager-0: 08:36:30 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:31 WARNING unit.alertmanager/0.juju-log self-metrics-endpoint:17: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:31 INFO juju.worker.uniter.operation ran "self-metrics-endpoint-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:32 WARNING unit.alertmanager/0.juju-log grafana-source:14: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:32 INFO juju.worker.uniter.operation ran "grafana-source-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:33 WARNING unit.alertmanager/0.juju-log alerting:15: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:33 INFO juju.worker.uniter.operation ran "alerting-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:34 WARNING unit.alertmanager/0.juju-log ingress:10: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:34 INFO juju.worker.uniter.operation ran "ingress-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:35 WARNING unit.alertmanager/0.juju-log grafana-dashboard:22: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:35 INFO juju.worker.uniter.operation ran "grafana-dashboard-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:36 WARNING unit.alertmanager/0.juju-log replicas:0: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:36 INFO juju.worker.uniter.operation ran "replicas-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:37 WARNING unit.alertmanager/0.juju-log alerting:11: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:37 INFO juju.worker.uniter.operation ran "alerting-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:38 WARNING unit.alertmanager/0.juju-log catalogue:26: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:38 INFO juju.worker.uniter.operation ran "catalogue-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:38 INFO juju.worker.uniter found queued "leader-elected" hook
+unit-alertmanager-0: 08:36:39 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:39 INFO juju.worker.uniter.operation ran "leader-elected" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:40 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:40 INFO juju.worker.uniter.operation ran "data-storage-attached" hook (via hook dispatching script: dispatch)
+controller-0: 08:36:41 INFO juju.worker.caasapplicationprovisioner.traefik scaling application "traefik" to desired scale 1
+unit-alertmanager-0: 08:36:41 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:41 WARNING unit.alertmanager/0.juju-log No 'certificates' relation found. Cannot generate csr.
+unit-alertmanager-0: 08:36:41 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:36:41 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:36:41 INFO unit.alertmanager/0.juju-log HTTP Request: PATCH https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager?fieldManager=ResourcePatcher "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:36:41 INFO unit.alertmanager/0.juju-log Kubernetes resources for app 'alertmanager', container 'alertmanager' patched successfully: ResourceRequirements(claims=None, limits={}, requests={'cpu': '0.25', 'memory': '200Mi'})
+unit-alertmanager-0: 08:36:41 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:36:41 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/api/v1/namespaces/foo/pods/alertmanager-0 "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:36:42 INFO juju.worker.uniter.operation ran "config-changed" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:42 INFO juju.worker.uniter found queued "start" hook
+unit-alertmanager-0: 08:36:42 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:42 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:36:42 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/api/v1/namespaces/foo/pods/alertmanager-0 "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:36:43 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:43 INFO juju.worker.uniter hooks are retried true
+unit-catalogue-0: 08:36:43 INFO juju.worker.uniter found queued "install" hook
+unit-catalogue-0: 08:36:44 INFO unit.catalogue/0.juju-log Running legacy hooks/install.
+unit-catalogue-0: 08:36:44 WARNING unit.catalogue/0.juju-log <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:45 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:45 WARNING unit.alertmanager/0.juju-log catalogue:26: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:45 WARNING unit.catalogue/0.juju-log catalogue:25: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:46 INFO juju.worker.uniter.operation ran "catalogue-relation-joined" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:46 INFO juju.worker.uniter.operation ran "catalogue-relation-created" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:46 WARNING unit.catalogue/0.juju-log catalogue:26: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:46 WARNING unit.alertmanager/0.juju-log catalogue:26: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:46 INFO juju.worker.uniter.operation ran "catalogue-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:47 INFO juju.worker.uniter.operation ran "catalogue-relation-changed" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:47 WARNING unit.catalogue/0.juju-log ingress:23: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:47 INFO juju.worker.uniter.operation ran "ingress-relation-created" hook (via hook dispatching script: dispatch)
+unit-grafana-0: 08:36:47 INFO juju.worker.uniter hooks are retried true
+unit-grafana-0: 08:36:47 INFO juju.worker.uniter found queued "install" hook
+unit-catalogue-0: 08:36:48 WARNING unit.catalogue/0.juju-log replicas:1: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:48 INFO juju.worker.uniter.operation ran "replicas-relation-created" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:49 WARNING unit.catalogue/0.juju-log catalogue:24: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-grafana-0: 08:36:49 INFO unit.grafana/0.juju-log Running legacy hooks/install.
+unit-catalogue-0: 08:36:49 INFO juju.worker.uniter.operation ran "catalogue-relation-created" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:49 INFO juju.worker.uniter found queued "leader-elected" hook
+unit-alertmanager-0: 08:36:49 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:49 INFO juju.worker.caasunitterminationworker terminating due to SIGTERM
+unit-catalogue-0: 08:36:50 WARNING unit.catalogue/0.juju-log <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:36:50 WARNING juju.worker.uniter.operation hook "alertmanager-pebble-ready" was terminated
+unit-alertmanager-0: 08:36:50 ERROR juju.worker.uniter pebble poll failed for container "alertmanager": failed to send pebble-ready event: terminated
+unit-grafana-0: 08:36:50 WARNING unit.grafana/0.juju-log <class '__main__.GrafanaCharm'>.server_cert is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:50 INFO juju.worker.uniter.operation ran "leader-elected" hook (via hook dispatching script: dispatch)
+unit-grafana-0: 08:36:50 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:50 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:51 WARNING unit.catalogue/0.juju-log <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:51 WARNING unit.catalogue/0.juju-log No 'certificates' relation found. Cannot generate csr.
+unit-alertmanager-0: 08:36:51 INFO juju.worker.uniter.operation ran "stop" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:36:51 INFO juju.worker.uniter unit "alertmanager/0" shutting down: agent should be terminated
+unit-catalogue-0: 08:36:51 INFO juju.worker.uniter.operation ran "config-changed" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:51 INFO juju.worker.uniter found queued "start" hook
+unit-catalogue-0: 08:36:52 INFO unit.catalogue/0.juju-log Running legacy hooks/start.
+unit-grafana-0: 08:36:52 WARNING unit.grafana/0.juju-log grafana-source:13: <class '__main__.GrafanaCharm'>.server_cert is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:53 WARNING unit.catalogue/0.juju-log <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-prometheus-0: 08:36:53 INFO juju.worker.uniter hooks are retried true
+unit-catalogue-0: 08:36:53 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-grafana-0: 08:36:53 INFO juju.worker.uniter.operation ran "grafana-source-relation-created" hook (via hook dispatching script: dispatch)
+unit-prometheus-0: 08:36:53 INFO juju.worker.uniter found queued "install" hook
+unit-catalogue-0: 08:36:53 WARNING unit.catalogue/0.juju-log catalogue:24: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-grafana-0: 08:36:54 WARNING unit.grafana/0.juju-log grafana-dashboard:21: <class '__main__.GrafanaCharm'>.server_cert is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:54 INFO juju.worker.uniter.operation ran "catalogue-relation-joined" hook (via hook dispatching script: dispatch)
+unit-prometheus-0: 08:36:54 INFO unit.prometheus/0.juju-log Running legacy hooks/install.
+unit-grafana-0: 08:36:54 INFO juju.worker.uniter.operation ran "grafana-dashboard-relation-created" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:54 WARNING unit.catalogue/0.juju-log catalogue:24: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:55 INFO juju.worker.uniter.operation ran "catalogue-relation-changed" hook (via hook dispatching script: dispatch)
+unit-grafana-0: 08:36:55 WARNING unit.grafana/0.juju-log grafana-dashboard:20: <class '__main__.GrafanaCharm'>.server_cert is None; sending traces over INSECURE connection.
+unit-prometheus-0: 08:36:55 WARNING unit.prometheus/0.juju-log <class '__main__.PrometheusCharm'>.server_cert is None; sending traces over INSECURE connection.
+unit-catalogue-0: 08:36:55 WARNING unit.catalogue/0.juju-log catalogue:26: <class '__main__.CatalogueCharm'>.server_ca_cert_path is None; sending traces over INSECURE connection.
+unit-prometheus-0: 08:36:56 INFO juju.worker.uniter.operation ran "install" hook (via hook dispatching script: dispatch)
+unit-catalogue-0: 08:36:56 INFO juju.worker.uniter.operation ran "catalogue-relation-changed" hook (via hook dispatching script: dispatch)
+unit-grafana-0: 08:36:56 INFO juju.worker.uniter.operation ran "grafana-dashboard-relation-created" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:08 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-alertmanager-0: 08:37:08 INFO juju.cmd.containeragent.unit start "unit"
+unit-alertmanager-0: 08:37:08 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-alertmanager-0: 08:37:08 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-alertmanager-0: 08:37:08 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-alertmanager-0: 08:37:08 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-alertmanager-0: 08:37:08 INFO juju.worker.apicaller [fc2632] "unit-alertmanager-0" successfully connected to "wss://10.152.183.64:17070"
+unit-alertmanager-0: 08:37:08 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-alertmanager-0: 08:37:08 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-alertmanager-0: 08:37:08 INFO juju.worker.apicaller [fc2632] "unit-alertmanager-0" successfully connected to "wss://10.152.183.64:17070"
+unit-alertmanager-0: 08:37:08 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-alertmanager-0: 08:37:08 INFO juju.worker.logger logger worker started
+unit-alertmanager-0: 08:37:08 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-alertmanager-0: 08:37:08 INFO juju.worker.leadership alertmanager/0 promoted to leadership of alertmanager
+unit-alertmanager-0: 08:37:08 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-alertmanager-0
+unit-alertmanager-0: 08:37:08 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-alertmanager-0: 08:37:08 INFO juju.worker.caasupgrader unblocking abort check
+unit-alertmanager-0: 08:37:08 INFO juju.worker.uniter unit "alertmanager/0" started
+unit-alertmanager-0: 08:37:08 INFO juju.worker.uniter hooks are retried true
+unit-alertmanager-0: 08:37:08 INFO juju.worker.uniter.charm downloading ch:amd64/alertmanager-k8s-160 from API server
+unit-alertmanager-0: 08:37:08 INFO juju.downloader downloading from ch:amd64/alertmanager-k8s-160
+unit-alertmanager-0: 08:37:08 INFO juju.downloader download complete ("ch:amd64/alertmanager-k8s-160")
+unit-alertmanager-0: 08:37:08 INFO juju.downloader download verified ("ch:amd64/alertmanager-k8s-160")
+unit-alertmanager-0: 08:37:16 INFO juju.worker.uniter found queued "upgrade-charm" hook
+unit-alertmanager-0: 08:37:18 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:18 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:18 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/api/v1/namespaces/foo/pods/alertmanager-0 "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:20 WARNING unit.alertmanager/0.juju-log config remained the same after a reload
+unit-alertmanager-0: 08:37:20 INFO juju.worker.uniter.operation ran "upgrade-charm" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:20 INFO juju.worker.uniter found queued "config-changed" hook
+unit-alertmanager-0: 08:37:21 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:21 WARNING unit.alertmanager/0.juju-log No 'certificates' relation found. Cannot generate csr.
+unit-alertmanager-0: 08:37:21 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:21 INFO unit.alertmanager/0.juju-log Kubernetes resources for app 'alertmanager', container 'alertmanager' patched successfully: ResourceRequirements(claims=None, limits={}, requests={'cpu': '0.25', 'memory': '200Mi'})
+unit-alertmanager-0: 08:37:21 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:21 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/api/v1/namespaces/foo/pods/alertmanager-0 "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:24 WARNING unit.alertmanager/0.config-changed rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-alertmanager-0: 08:37:25 INFO juju.worker.uniter.operation ran "config-changed" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:25 INFO juju.worker.uniter reboot detected; triggering implicit start hook to notify charm
+unit-alertmanager-0: 08:37:26 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:26 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:26 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/api/v1/namespaces/foo/pods/alertmanager-0 "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:28 WARNING unit.alertmanager/0.start rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-alertmanager-0: 08:37:29 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:30 WARNING unit.alertmanager/0.juju-log <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:30 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/apis/apps/v1/namespaces/foo/statefulsets/alertmanager "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:30 INFO unit.alertmanager/0.juju-log HTTP Request: GET https://10.152.183.1/api/v1/namespaces/foo/pods/alertmanager-0 "HTTP/1.1 200 OK"
+unit-alertmanager-0: 08:37:31 INFO juju.worker.uniter.operation ran "alertmanager-pebble-ready" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:32 WARNING unit.alertmanager/0.juju-log grafana-dashboard:22: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:32 INFO juju.worker.uniter.operation ran "grafana-dashboard-relation-joined" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:33 WARNING unit.alertmanager/0.juju-log self-metrics-endpoint:17: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:33 INFO juju.worker.uniter.operation ran "self-metrics-endpoint-relation-joined" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:34 WARNING unit.alertmanager/0.juju-log alerting:11: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:34 INFO juju.worker.uniter.operation ran "alerting-relation-joined" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:35 WARNING unit.alertmanager/0.juju-log self-metrics-endpoint:17: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:35 INFO juju.worker.uniter.operation ran "self-metrics-endpoint-relation-changed" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:36 WARNING unit.alertmanager/0.juju-log grafana-dashboard:22: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:36 INFO juju.worker.uniter.operation ran "grafana-dashboard-relation-changed" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:37 WARNING unit.alertmanager/0.juju-log grafana-source:14: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:37 INFO juju.worker.uniter.operation ran "grafana-source-relation-joined" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:38 WARNING unit.alertmanager/0.juju-log grafana-source:14: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:39 INFO juju.worker.uniter.operation ran "grafana-source-relation-changed" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:39 WARNING unit.alertmanager/0.juju-log ingress:10: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:40 INFO juju.worker.uniter.operation ran "ingress-relation-joined" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:40 WARNING unit.alertmanager/0.juju-log ingress:10: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:41 INFO juju.worker.uniter.operation ran "ingress-relation-changed" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:46 WARNING unit.alertmanager/0.juju-log alerting:11: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:46 INFO juju.worker.uniter.operation ran "alerting-relation-changed" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:47 WARNING unit.alertmanager/0.juju-log alerting:15: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:47 INFO juju.worker.uniter.operation ran "alerting-relation-joined" hook (via hook dispatching script: dispatch)
+unit-alertmanager-0: 08:37:48 WARNING unit.alertmanager/0.juju-log alerting:15: <class '__main__.AlertmanagerCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-alertmanager-0: 08:37:48 INFO juju.worker.uniter.operation ran "alerting-relation-changed" hook (via hook dispatching script: dispatch)
+unit-grafana-0: 08:38:31 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-grafana-0: 08:38:31 INFO juju.cmd.containeragent.unit start "unit"
+unit-grafana-0: 08:38:31 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-grafana-0: 08:38:31 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-grafana-0: 08:38:33 INFO juju.api connection established to "wss://controller-service.controller-mk8s.svc.cluster.local:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-grafana-0: 08:38:33 INFO juju.worker.apicaller [fc2632] "unit-grafana-0" successfully connected to "wss://controller-service.controller-mk8s.svc.cluster.local:17070"
+unit-grafana-0: 08:38:33 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-grafana-0: 08:38:33 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-grafana-0: 08:38:33 INFO juju.worker.apicaller [fc2632] "unit-grafana-0" successfully connected to "wss://10.152.183.64:17070"
+unit-grafana-0: 08:38:33 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-grafana-0: 08:38:33 INFO juju.worker.logger logger worker started
+unit-grafana-0: 08:38:33 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-grafana-0: 08:38:33 INFO juju.worker.leadership grafana/0 promoted to leadership of grafana
+unit-grafana-0: 08:38:33 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-grafana-0
+unit-grafana-0: 08:38:33 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-grafana-0: 08:38:33 INFO juju.worker.caasupgrader unblocking abort check
+unit-grafana-0: 08:38:33 INFO juju.worker.uniter unit "grafana/0" started
+unit-grafana-0: 08:38:33 INFO juju.worker.uniter hooks are retried true
+unit-grafana-0: 08:38:33 INFO juju.worker.uniter.charm downloading ch:amd64/grafana-k8s-143 from API server
+unit-grafana-0: 08:38:33 INFO juju.downloader downloading from ch:amd64/grafana-k8s-143
+unit-grafana-0: 08:38:33 INFO juju.downloader download complete ("ch:amd64/grafana-k8s-143")
+unit-grafana-0: 08:38:33 INFO juju.downloader download verified ("ch:amd64/grafana-k8s-143")
+unit-prometheus-0: 08:38:44 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-prometheus-0: 08:38:44 INFO juju.cmd.containeragent.unit start "unit"
+unit-prometheus-0: 08:38:44 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-prometheus-0: 08:38:44 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-prometheus-0: 08:38:44 INFO juju.api connection established to "wss://controller-service.controller-mk8s.svc.cluster.local:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-prometheus-0: 08:38:44 INFO juju.worker.apicaller [fc2632] "unit-prometheus-0" successfully connected to "wss://controller-service.controller-mk8s.svc.cluster.local:17070"
+unit-prometheus-0: 08:38:44 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-prometheus-0: 08:38:44 INFO juju.worker.logger logger worker started
+unit-prometheus-0: 08:38:44 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-prometheus-0: 08:38:44 INFO juju.worker.leadership prometheus/0 promoted to leadership of prometheus
+unit-prometheus-0: 08:38:44 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-prometheus-0
+unit-prometheus-0: 08:38:44 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-prometheus-0: 08:38:44 INFO juju.worker.caasupgrader unblocking abort check
+unit-prometheus-0: 08:38:45 INFO juju.worker.uniter unit "prometheus/0" started
+unit-prometheus-0: 08:38:45 INFO juju.worker.uniter hooks are retried true
+unit-prometheus-0: 08:38:45 INFO juju.worker.uniter.charm downloading ch:amd64/prometheus-k8s-234 from API server
+unit-prometheus-0: 08:38:45 INFO juju.downloader downloading from ch:amd64/prometheus-k8s-234
+unit-prometheus-0: 08:38:45 INFO juju.downloader download complete ("ch:amd64/prometheus-k8s-234")
+unit-prometheus-0: 08:38:45 INFO juju.downloader download verified ("ch:amd64/prometheus-k8s-234")
+unit-grafana-0: 08:38:59 INFO juju.worker.uniter found queued "upgrade-charm" hook
+unit-loki-0: 08:39:19 INFO juju.cmd running containerAgent [3.6.3 5663cfc1e2d69950fde8188dac3948f783545849 gc go1.23.6]
+unit-loki-0: 08:39:19 INFO juju.cmd.containeragent.unit start "unit"
+unit-loki-0: 08:39:19 INFO juju.worker.upgradesteps upgrade steps for 3.6.3 have already been run.
+unit-loki-0: 08:39:19 INFO juju.worker.probehttpserver starting http server on 127.0.0.1:65301
+unit-loki-0: 08:39:19 INFO juju.api cannot resolve "controller-service.controller-mk8s.svc.cluster.local": lookup controller-service.controller-mk8s.svc.cluster.local: operation was canceled
+unit-loki-0: 08:39:19 INFO juju.api connection established to "wss://10.152.183.64:17070/model/fc2632bc-48ca-46d0-8fca-5b0bd9a5e216/api"
+unit-loki-0: 08:39:19 INFO juju.worker.apicaller [fc2632] "unit-loki-0" successfully connected to "wss://10.152.183.64:17070"
+unit-loki-0: 08:39:19 INFO juju.worker.migrationminion migration migration phase is now: NONE
+unit-loki-0: 08:39:19 INFO juju.worker.logger logger worker started
+unit-loki-0: 08:39:19 WARNING juju.worker.proxyupdater unable to set snap core settings [proxy.http= proxy.https= proxy.store=]: exec: "snap": executable file not found in $PATH, output: ""
+unit-loki-0: 08:39:19 INFO juju.agent.tools ensure jujuc symlinks in /var/lib/juju/tools/unit-loki-0
+unit-loki-0: 08:39:19 INFO juju.worker.leadership loki/0 promoted to leadership of loki
+unit-loki-0: 08:39:19 INFO juju.worker.caasupgrader abort check blocked until version event received
+unit-loki-0: 08:39:19 INFO juju.worker.caasupgrader unblocking abort check
+unit-loki-0: 08:39:19 INFO juju.worker.uniter unit "loki/0" started
+unit-loki-0: 08:39:19 INFO juju.worker.uniter hooks are retried true
+unit-loki-0: 08:39:19 INFO juju.worker.uniter.charm downloading ch:amd64/loki-k8s-192 from API server
+unit-loki-0: 08:39:19 INFO juju.downloader downloading from ch:amd64/loki-k8s-192
+unit-loki-0: 08:39:19 INFO juju.downloader download complete ("ch:amd64/loki-k8s-192")
+unit-loki-0: 08:39:20 INFO juju.downloader download verified ("ch:amd64/loki-k8s-192")
+unit-loki-0: 08:39:24 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:29 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:30 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:34 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:36 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:39 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:42 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:44 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:48 INFO juju.worker.uniter found queued "upgrade-charm" hook
+unit-loki-0: 08:39:48 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:49 INFO unit.loki/0.juju-log Running legacy hooks/upgrade-charm.
+unit-loki-0: 08:39:49 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:52 WARNING unit.loki/0.upgrade-charm rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-loki-0: 08:39:52 WARNING unit.loki/0.juju-log <class '__main__.LokiOperatorCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-loki-0: 08:39:53 INFO unit.loki/0.juju-log Pushed new configuration
+unit-loki-0: 08:39:54 INFO unit.loki/0.juju-log Loki restarted. There was a change to the configuration.
+unit-loki-0: 08:39:54 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:54 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:39:54 INFO juju.worker.uniter.operation ran "upgrade-charm" hook (via hook dispatching script: dispatch)
+unit-loki-0: 08:39:54 INFO juju.worker.uniter found queued "config-changed" hook
+unit-loki-0: 08:39:58 WARNING unit.loki/0.config-changed rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-loki-0: 08:39:58 WARNING unit.loki/0.juju-log <class '__main__.LokiOperatorCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-loki-0: 08:39:58 INFO unit.loki/0.juju-log Kubernetes resources for app 'loki', container 'loki' patched successfully: ResourceRequirements(claims=None, limits={}, requests={'cpu': '0.25', 'memory': '200Mi'})
+unit-loki-0: 08:39:58 WARNING unit.loki/0.juju-log No 'certificates' relation found. Cannot generate csr.
+unit-loki-0: 08:39:59 INFO juju.worker.uniter.operation ran "config-changed" hook (via hook dispatching script: dispatch)
+unit-loki-0: 08:39:59 INFO juju.worker.uniter reboot detected; triggering implicit start hook to notify charm
+unit-loki-0: 08:39:59 INFO unit.loki/0.juju-log Running legacy hooks/start.
+unit-loki-0: 08:39:59 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:00 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:02 WARNING unit.loki/0.start rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-loki-0: 08:40:02 WARNING unit.loki/0.juju-log <class '__main__.LokiOperatorCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-loki-0: 08:40:03 INFO juju.worker.uniter.operation ran "start" hook (via hook dispatching script: dispatch)
+unit-loki-0: 08:40:04 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:06 WARNING unit.loki/0.loki-pebble-ready rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-loki-0: 08:40:06 WARNING unit.loki/0.juju-log <class '__main__.LokiOperatorCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-loki-0: 08:40:06 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:06 INFO juju.worker.uniter.operation ran "loki-pebble-ready" hook (via hook dispatching script: dispatch)
+unit-loki-0: 08:40:09 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:09 WARNING unit.loki/0.grafana-source-relation-changed rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-loki-0: 08:40:09 WARNING unit.loki/0.juju-log grafana-source:13: <class '__main__.LokiOperatorCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-loki-0: 08:40:10 INFO juju.worker.uniter.operation ran "grafana-source-relation-changed" hook (via hook dispatching script: dispatch)
+unit-loki-0: 08:40:12 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:12 WARNING unit.loki/0.ingress-relation-changed rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-loki-0: 08:40:13 WARNING unit.loki/0.juju-log ingress:8: <class '__main__.LokiOperatorCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-loki-0: 08:40:13 INFO unit.loki/0.juju-log ingress:8: Skipping notice (LokiOperatorCharm/on/ingress_relation_changed[26]/LokiOperatorCharm/IngressPerUnitRequirer[ingress]/_handle_relation) - already in the queue.
+unit-loki-0: 08:40:13 WARNING unit.loki/0.juju-log ingress:8: 'app' expected but not received.
+unit-loki-0: 08:40:13 WARNING unit.loki/0.juju-log ingress:8: 'app_name' expected in snapshot but not found.
+unit-loki-0: 08:40:13 WARNING unit.loki/0.juju-log ingress:8: 'app_name' expected in snapshot but not found.
+unit-loki-0: 08:40:13 INFO juju.worker.uniter.operation ran "ingress-relation-changed" hook (via hook dispatching script: dispatch)
+unit-loki-0: 08:40:14 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:18 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:19 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:24 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:24 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:29 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:30 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:34 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:36 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:39 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:42 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:44 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:48 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:49 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:54 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:54 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:40:59 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:00 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:04 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:06 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:09 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:12 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:14 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:18 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:19 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:24 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:24 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:29 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:30 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:34 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:36 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:39 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:42 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:44 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:48 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:49 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:54 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:54 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:41:59 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:00 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:04 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:06 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:09 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:12 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:14 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:18 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:19 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:24 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:24 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:29 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:30 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:34 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:36 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:39 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:42 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:44 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:48 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:49 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:54 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:54 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:42:59 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:00 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:04 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:06 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:09 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:12 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:14 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:18 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:19 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:24 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:24 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:29 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:30 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:34 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:36 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:39 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:42 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:44 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:48 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:49 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:54 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:54 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:43:59 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:00 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:04 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:06 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:09 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:12 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:14 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:18 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:19 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:24 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:24 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:29 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:30 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:34 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:34 WARNING unit.loki/0.update-status rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+unit-loki-0: 08:44:34 WARNING unit.loki/0.juju-log <class '__main__.LokiOperatorCharm'>._charm_tracing_ca_cert is None; sending traces over INSECURE connection.
+unit-loki-0: 08:44:35 INFO juju.worker.uniter.operation ran "update-status" hook (via hook dispatching script: dispatch)
+unit-loki-0: 08:44:36 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:39 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:42 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:44 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:48 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:49 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:54 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:54 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:44:59 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:45:00 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:45:04 ERROR juju.worker.uniter pebble poll failed for container "node-exporter": failed to get pebble info: cannot obtain system details: cannot communicate with server: Get "http://localhost/v1/system-info": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
+unit-loki-0: 08:45:06 ERROR juju.worker.uniter container "node-exporter": WaitNotices error, waiting 1s: cannot communicate with server: Get "http://localhost/v1/notices?timeout=30s": dial unix /charm/containers/node-exporter/pebble.socket: connect: connection refused
