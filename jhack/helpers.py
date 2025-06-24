@@ -163,7 +163,7 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
     if not raw:
         logger.error(f"{cmd} produced no output.")
         if model:
-            logger.error(f"This usually means that the model {model!r} you passed does not exist")
+            logger.error(f"This usually means that the model {model!r} does not exist")
         else:
             logger.error(
                 "This usually means that the juju client isn't reachable, or the "
