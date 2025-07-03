@@ -1,4 +1,4 @@
-# jhack - Make charming charming again!
+# jhack - Make charming charming!
 
 [![jhack](https://snapcraft.io/jhack/badge.svg)](https://snapcraft.io/jhack) [![foo](https://img.shields.io/badge/everything-charming-blueviolet)](https://github.com/PietroPasotti/jhack) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://discourse.charmhub.io/t/visualizing-relation-databags-for-development-and-debugging/5991)
 
@@ -851,6 +851,24 @@ In a nutshell, `state-apply` _can_ only do:
   - [ ] `scenario recorder replay`
   - [ ] integrate with Theatre to see the graph expand in real time
 
+
+# deploy
+
+`jhack deploy` is a utility to 'deploy the charm at ./'.
+99% of the charms I work with are like this:
+- they are called `something-k8s`
+- they have `upstream-source` declarations in `charmcraft.yaml` 
+
+and usually when I want to deploy them, I used to:
+
+> `juju deploy ./something-k8s_ubuntu@24.04-amd64.charm --resource a=ubuntu/a:1.24-24.04_beta --resource b=ubuntu/b:1.24-24.04_beta ... something`
+
+And that's bad for the lifespan of my keyboard, hence the shortcut: `jhack deploy`.
+
+It will:
+- find the charm in ./, if more are detected, prompt you to pick one.
+- assign all resources as defined in charmcraft.yaml.
+- remove any -k8s or -operator suffixes and deploy the charm as that application name
 
 # eval
 `jhack eval` is a command that allows you to evaluate simple one-line expressions in the context of a live charm (or multiple units thereof).

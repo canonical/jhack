@@ -112,9 +112,7 @@ mocks_dir = Path(__file__).parent / "tail_mocks"
 MOCK_JDL["real"] = (mocks_dir / "real-trfk-log.txt").read_bytes()
 MOCK_JDL["cropped"] = (mocks_dir / "real-trfk-cropped.txt").read_bytes()
 MOCK_JDL["clite"] = (mocks_dir / "jdl_cos_lite.txt").read_bytes()
-MOCK_JDL["real-pgql-machine-log"] = (
-    mocks_dir / "real-pgql-machine-log.txt"
-).read_bytes()
+MOCK_JDL["real-pgql-machine-log"] = (mocks_dir / "real-pgql-machine-log.txt").read_bytes()
 
 
 def _fake_log_proc(id_):
@@ -331,9 +329,7 @@ def test_match_emitted(log):
 )
 def test_tail_event_filter(pattern, log, match):
     with mock_uniter_events_only(False):
-        proc = Processor(
-            targets=[], event_filter_re=(re.compile(pattern) if pattern else None)
-        )
+        proc = Processor(targets=[], event_filter_re=(re.compile(pattern) if pattern else None))
         msg = proc.process(log)
     if match:
         assert msg
@@ -343,9 +339,7 @@ def test_tail_event_filter(pattern, log, match):
 
 def test_machine_log_with_subordinates():
     with mock_uniter_events_only(False):
-        proc = tail_charms(
-            length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")]
-        )
+        proc = tail_charms(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
 
     units = {log.unit for log in proc._captured_logs}
     assert len(units) == 4
@@ -357,9 +351,7 @@ def test_machine_log_with_subordinates():
         "testing_mock"
     ]  # mock event we added
     assert [
-        log.event
-        for log in proc._captured_logs
-        if log.unit == "prometheus-node-exporter/0"
+        log.event for log in proc._captured_logs if log.unit == "prometheus-node-exporter/0"
     ] == [
         "install",
         "juju_info_relation_created",

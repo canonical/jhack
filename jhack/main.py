@@ -199,9 +199,7 @@ def main():
             for command in obj.registered_commands:
                 if command.hidden:
                     continue
-                print(
-                    f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}"
-                )
+                print(f"{prefix + command.name:<15} {command.callback.__doc__.splitlines()[0]:<}")
             for group in obj.registered_groups:
                 print(
                     f"{prefix + group.typer_instance.info.name:<22} {group.typer_instance.info.help.splitlines()[0]}"

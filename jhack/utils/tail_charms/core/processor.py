@@ -1,4 +1,5 @@
 import re
+from collections import namedtuple
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -67,6 +68,9 @@ class EventReemittedLogMsg(EventDeferredLogMsg):
     type = "reemitted"
 
 
+_TraceInfo = namedtuple("_TraceInfo", "traceid, unit_name")
+
+
 class Processor:
     def __init__(
         self,
@@ -98,7 +102,8 @@ class Processor:
         self._show_defer = show_defer
         self._flip = flip
         self._show_trace_ids = show_trace_ids
-        self._next_msg_trace_id: Optional[str] = None
+        # trace ID and unit name of the trace
+        self._next_msg_trace_info: Optional[_TraceInfo] = None
         self._next_msg_fail = False
         self._has_just_emitted = False
         self._warned_about_orphans = False
@@ -124,9 +129,7 @@ class Processor:
     def _defer(self, deferred: EventDeferredLogMsg):
         # find the original message we're deferring
         found = None
-        for captured in filter(
-            lambda e: e.unit == deferred.unit, self._captured_logs[::-1]
-        ):
+        for captured in filter(lambda e: e.unit == deferred.unit, self._captured_logs[::-1]):
             if captured.event == deferred.event:
                 found = captured
                 break
@@ -144,9 +147,7 @@ class Processor:
                 deferred=DeferralStatus.deferred,
             )
             self._captured_logs.append(found)
-            logger.debug(
-                f"Mocking {found}: we're deferring it but we've not seen it before."
-            )
+            logger.debug(f"Mocking {found}: we're deferring it but we've not seen it before.")
 
         currently_deferred_ns = {d.n for d in self._currently_deferred}
         is_already_deferred = deferred.n in currently_deferred_ns
@@ -187,9 +188,7 @@ class Processor:
             )
 
             self._defer(deferred)
-            logger.debug(
-                f"mocking {deferred}: we're reemitting it but we've not seen it before."
-            )
+            logger.debug(f"mocking {deferred}: we're reemitting it but we've not seen it before.")
             # the 'happy path' would have been: _emit, _defer, _emit, _reemit,
             # so we need to _emit it once more to pretend we've seen it.
 
@@ -238,9 +237,7 @@ class Processor:
             return EventLogMsg(**match, mocked=False)
 
     def _apply_jhack_mod(self, msg: EventLogMsg):
-        def _get_referenced_msg(
-            event: Optional[str], unit: str
-        ) -> Optional[EventLogMsg]:
+        def _get_referenced_msg(event: Optional[str], unit: str) -> Optional[EventLogMsg]:
             # this is the message we're referring to, the one we're modifying
             logs = self._captured_logs
             if not event:
@@ -286,7 +283,7 @@ class Processor:
         elif "trace_id" in msg.tags:
             # the NEXT logged event of this type was traced by Tempo's trace_charm library.
             # tag the event message with the trace id.
-            self._next_msg_trace_id = msg.trace_id
+            self._next_msg_trace_info = _TraceInfo(msg.trace_id, msg.unit)
 
         elif "replay" in msg.tags:
             # the previous event of this type was replayed by jhack.
@@ -345,12 +342,12 @@ class Processor:
             self._apply_jhack_mod(msg)
 
         if mode in {"reemit", "emit"} or (mode == "jhack-mod" and "replay" in msg.tags):
-            if self._next_msg_trace_id:
+            if (tid := self._next_msg_trace_info) and msg.unit == tid.unit_name:
                 # the trace id is one of the first thing the lib logs.
                 # Therefore, it actually occurs BEFORE the logline presenting the event is emitted.
                 # so we have to store it and pop it when the emission event logline comes in.
-                msg.trace_id = self._next_msg_trace_id
-                self._next_msg_trace_id = None
+                msg.trace_id = tid.traceid
+                self._next_msg_trace_info = None
 
         self.printer.render(
             events=self._captured_logs,

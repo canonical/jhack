@@ -15,9 +15,7 @@ logger = jhack_logger.getChild("this-is-fine")
 
 def _unit_in_error(status: dict, target: str) -> bool:
     app_name = target.split("/")[0]
-    unit_meta = (
-        status.get("applications", {}).get(app_name, {"units": {}})["units"].get(target)
-    )
+    unit_meta = status.get("applications", {}).get(app_name, {"units": {}})["units"].get(target)
     return unit_meta["workload-status"]["current"] == "error"
 
 
@@ -44,9 +42,7 @@ def _resolve_targets(targets: List[str], model: Optional[str]) -> List[Target]:
     return out
 
 
-def _bamboozle(
-    units: List[Target], model: Optional[str], dry_run: bool, no_retry: bool = False
-):
+def _bamboozle(units: List[Target], model: Optional[str], dry_run: bool, no_retry: bool = False):
     _model = f" -m {model}" if model else ""
     _no_retry = " --no-retry" if no_retry else ""
 
@@ -140,9 +136,7 @@ def this_is_fine(
     Everything is fine.
     """
 
-    _this_is_fine(
-        target=target, watch=watch, model=model, dry_run=dry_run, no_retry=no_retry
-    )
+    _this_is_fine(target=target, watch=watch, model=model, dry_run=dry_run, no_retry=no_retry)
 
 
 if __name__ == "__main__":
