@@ -8,8 +8,8 @@ lobotomy_symbol = "✂"
 replay_symbol = "⟳"
 
 deferral_status_to_symbol = {
-    DeferralStatus.null: "●",  # "●•⭘" not all alternatives supported on all consoles
+    DeferralStatus.bounced: "●",  # "●•⭘" not all alternatives supported on all consoles
     DeferralStatus.deferred: "❮",
     DeferralStatus.reemitted: "❯",
-    DeferralStatus.bounced: "",
+    DeferralStatus.null: "",
 }

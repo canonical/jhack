@@ -41,7 +41,9 @@ def _do_replay(processor: Processor, model: str):
         processor.process(line.decode("utf-8").strip())
 
     logger.debug("replay complete")
-    logger.debug(f"captured: {processor.printer.count_events(processor._captured_logs)}")
+    logger.debug(
+        f"captured: {processor.printer.count_events(processor._captured_logs)}"
+    )
 
 
 def _logs_from_stdin() -> Callable[[], str]:
@@ -145,11 +147,12 @@ def tail_charms(
     if output:
         logger.debug("output mode. Overriding watch.")
         watch = False
-        auto_bump_loglevel = (
-            False  # it's too late for that, we're replaying the history and transforming it.
-        )
+        auto_bump_loglevel = False  # it's too late for that, we're replaying the history and transforming it.
 
+    # FIXME: when debugging, this heuristic is incorrect.
     read_from_stdin = not sys.stdin.isatty()
+    # read_from_stdin = False
+
     level = _validate_level(level)
     if level is None:
         if read_from_stdin:
@@ -160,7 +163,7 @@ def tail_charms(
                 "even if the model was set to a more verbose loglevel. "
                 "Pass the loglevel explicitly to `--level`."
             )
-        level = Level.WARNING
+            level = Level.WARNING
 
     if (read_from_stdin or files) and auto_bump_loglevel:
         logger.debug("static input mode. Overriding auto loglevel bumping.")
@@ -219,7 +222,7 @@ def tail_charms(
         # loglevel at which the logs we're going to parse were emitted;
         # if it's being passed by the caller we don't have to get it ourselves from the live model.
         # handy if there isn't a live model to begin with.
-        loglevel = level or model_loglevel(model=model)
+        loglevel = Level(level or model_loglevel(model=model))
 
         processor = Processor(
             targets,
@@ -322,19 +325,26 @@ def _build_printer(
 
 
 if __name__ == "__main__":
-    import cProfile
-    import io
-    import pstats
-    from pstats import SortKey
 
-    pr = cProfile.Profile()
-    pr.enable()
-    try:
+    def profile():
+        import cProfile
+        import io
+        import pstats
+        from pstats import SortKey
+
+        pr = cProfile.Profile()
+        pr.enable()
+        try:
+            tail_charms(length=30, replay=True)
+        finally:
+            pr.disable()
+            s = io.StringIO()
+            sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            print(s.getvalue())
+
+    def run():
         tail_charms(length=30, replay=True)
-    finally:
-        pr.disable()
-        s = io.StringIO()
-        sortby = SortKey.CUMULATIVE
-        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-        ps.print_stats()
-        print(s.getvalue())
+
+    run()
