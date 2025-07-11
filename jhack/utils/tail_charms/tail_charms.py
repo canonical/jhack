@@ -6,7 +6,6 @@ from typing import (
     List,
     Literal,
     Union,
-    Optional,
 )
 
 import jhack.utils.tail_charms.ui.printer
@@ -14,9 +13,7 @@ from jhack.helpers import JPopen, find_leaders
 from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 from jhack.utils.tail_charms.core.juju_model_loglevel import (
-    Level,
     juju_loglevel_bumpctx,
-    model_loglevel,
 )
 from jhack.utils.tail_charms.core.processor import Processor, EventLogMsg
 from jhack.utils.tail_charms.ui.printer import PoorPrinter, RichPrinter
@@ -100,24 +97,9 @@ def _logs_from_jdl(cmd: List[str]) -> Callable[[], str]:
     return next_line
 
 
-def _validate_level(level: Optional[Union[str, Level]]) -> Optional[Level]:
-    if level is None:
-        return None
-    if isinstance(level, str):
-        level = getattr(Level, level.upper())
-    if not isinstance(level, Level):
-        raise ValueError(level)
-
-    if level not in {Level.DEBUG, Level.TRACE}:
-        logger.debug(f"we won't be able to track events with level={level}")
-
-    return level
-
-
 def tail_charms(
     targets: List[str] = None,
     add_new_units: bool = True,
-    level: Level = None,
     replay: bool = True,  # listen from beginning of time?
     dry_run: bool = False,
     framerate: float = 0.5,
@@ -152,18 +134,6 @@ def tail_charms(
     # FIXME: when debugging, this heuristic is incorrect.
     read_from_stdin = not sys.stdin.isatty()
     # read_from_stdin = False
-
-    level = _validate_level(level)
-    if level is None:
-        if read_from_stdin:
-            logger.warning(
-                "jhack cannot know what loglevel the logs being streamed to stdin "
-                "were captured at. "
-                "We'll assume it was WARNING. Which means you'll only see hook events, "
-                "even if the model was set to a more verbose loglevel. "
-                "Pass the loglevel explicitly to `--level`."
-            )
-            level = Level.WARNING
 
     if (read_from_stdin or files) and auto_bump_loglevel:
         logger.debug("static input mode. Overriding auto loglevel bumping.")
@@ -219,11 +189,6 @@ def tail_charms(
 
         leaders = {} if files or read_from_stdin else find_leaders(targets, model=model)
 
-        # loglevel at which the logs we're going to parse were emitted;
-        # if it's being passed by the caller we don't have to get it ourselves from the live model.
-        # handy if there isn't a live model to begin with.
-        loglevel = Level(level or model_loglevel(model=model))
-
         processor = Processor(
             targets,
             leaders=leaders,
@@ -236,7 +201,6 @@ def tail_charms(
             event_filter_re=re.compile(event_filter) if event_filter else None,
             flip=flip,
             output=output,
-            level=loglevel,
         )
 
         if replay:

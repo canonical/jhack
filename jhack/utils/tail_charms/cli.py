@@ -8,7 +8,6 @@ from rich.table import Table
 from rich.text import Text
 
 from jhack.utils.tail_charms.core.juju_model_loglevel import (
-    Level,
     AUTO_BUMP_LOGLEVEL_DEFAULT,
 )
 from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
@@ -143,13 +142,6 @@ def tail_events(
         "-a",
         help="Track by app name instead of by unit name. Meaningless without targets.",
     ),
-    level: Optional[Level] = typer.Option(
-        None,
-        "--level",
-        "-v",
-        help="Loglevel at which the logs being streamed to stdin were captured. "
-        "Omitting it may print duplicate events.",
-    ),
     replay: bool = typer.Option(False, "--replay", "-r", help="Start from the beginning of time."),
     dry_run: bool = typer.Option(False, help="Only print what you would have done, exit."),
     framerate: float = typer.Option(0.5, help="Framerate cap."),
@@ -241,7 +233,6 @@ def tail_events(
     return tail_charms(
         targets=target,
         add_new_units=add_new_units,
-        level=level,
         replay=replay,
         show_operator_events=show_operator_events,
         printer=printer.value,  # type:ignore

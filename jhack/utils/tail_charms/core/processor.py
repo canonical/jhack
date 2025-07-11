@@ -7,10 +7,6 @@ from typing import Sequence, Dict, List, Set, Optional, Tuple
 
 from jhack.logger import logger as jhack_logger
 from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
-from jhack.utils.tail_charms.core.juju_model_loglevel import (
-    Level,
-    BEST_LOGLEVELS,
-)
 from jhack.utils.tail_charms.core.parser import (
     LogLineParser,
 )
@@ -86,7 +82,6 @@ class Processor:
         output: str = None,
         # only available in rich printing mode
         flip: bool = False,
-        level: Level = Level.DEBUG,
     ):
         self.targets = list(targets) if targets else []
         self.printer = printer or PoorPrinter()
@@ -110,7 +105,6 @@ class Processor:
 
         self.parser = LogLineParser(
             capture_operator_events=show_operator_events,
-            uniter_events_only=level.value not in BEST_LOGLEVELS,
         )
 
     def _warn_about_orphaned_event(self, evt):
@@ -223,14 +217,11 @@ class Processor:
             return EventReemittedLogMsg(**match, mocked=False)
 
     def _match_event_emitted(self, log: str) -> Optional[EventLogMsg]:
-        if "Emitting" in log:
-            match = self.parser.match_event_emitted(log)
-            if match:
-                if not self._match_filter(match["event"]):
-                    return None
-                return EventLogMsg(**match, mocked=False)
-            else:
-                print(f"not matched: {log}")
+        match = self.parser.match_event_emitted(log)
+        if match:
+            if not self._match_filter(match["event"]):
+                return None
+            return EventLogMsg(**match, mocked=False)
         return None
 
     def _match_jhack_modifiers(self, log: str) -> Optional[EventLogMsg]:

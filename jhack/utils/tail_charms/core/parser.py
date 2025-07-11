@@ -1,5 +1,8 @@
 import re
 from typing import Dict, Any, Optional
+from jhack.logger import logger as jhack_logger
+
+logger = jhack_logger.getChild(__file__)
 
 
 class LogLineParser:
@@ -97,10 +100,10 @@ class LogLineParser:
     def __init__(
         self,
         capture_operator_events: bool = False,
-        uniter_events_only: bool = False,
     ):
         self._capture_operator_events = capture_operator_events
-        self._uniter_events_only = uniter_events_only
+        # initially, we assume we'll only receive uniter events (because the loglevel is WARNING)
+        self._uniter_events_only = True
 
     @staticmethod
     def _sanitize_match_dict(dct: Dict[str, str]):
@@ -128,6 +131,16 @@ class LogLineParser:
             if match := matcher.match(msg):
                 dct: Dict[str, Any] = self._sanitize_match_dict(match.groupdict())
                 dct["tags"] = self.tags.get(matcher, ())
+                if self._uniter_events_only and dct.get("loglevel") in {
+                    "DEBUG",
+                    "TRACE",
+                }:
+                    print("uniter only = False")
+                    self._uniter_events_only = False
+                    logger.debug(
+                        "found event with loglevel<=DEBUG: _uniter_events_only set to False"
+                    )
+
                 return dct
         return None
 
@@ -141,8 +154,11 @@ class LogLineParser:
             return match
 
         if self._uniter_events_only:
-            return self._match(msg, self.uniter_event) or self._match(
-                msg, self.uniter_debug_hooks_evt
+            return self._match(
+                msg,
+                self.uniter_event,
+                self.uniter_debug_hooks_evt,
+                self.event_emitted,  # give it a chance
             )
 
         matchers = [
