@@ -269,6 +269,7 @@ You can run `jhack utils tail --file=prom.txt --file=trfk.txt` to see the events
 └────────────────┴──────────────────────────────────────┴─────────────────────────┘
 ```
 
+Alternatively, you can also pipe from stdin: `cat ./log.txt | jhack tail`.
 
 ## show-relation
 
