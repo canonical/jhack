@@ -38,9 +38,7 @@ def _do_replay(processor: Processor, model: str):
         processor.process(line.decode("utf-8").strip())
 
     logger.debug("replay complete")
-    logger.debug(
-        f"captured: {processor.printer.count_events(processor._captured_logs)}"
-    )
+    logger.debug(f"captured: {processor.printer.count_events(processor._captured_logs)}")
 
 
 def _logs_from_stdin() -> Callable[[], str]:
@@ -130,7 +128,9 @@ def tail_charms(
     if output:
         logger.debug("output mode. Overriding watch.")
         watch = False
-        auto_bump_loglevel = False  # it's too late for that, we're replaying the history and transforming it.
+        auto_bump_loglevel = (
+            False  # it's too late for that, we're replaying the history and transforming it.
+        )
 
     # FIXME: when debugging, this heuristic is incorrect.
     read_from_stdin = not sys.stdin.isatty()

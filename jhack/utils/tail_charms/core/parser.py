@@ -135,11 +135,8 @@ class LogLineParser:
                     "DEBUG",
                     "TRACE",
                 }:
-                    print("uniter only = False")
+                    logger.debug("uniter-only set to False")
                     self._uniter_events_only = False
-                    logger.debug(
-                        "found event with loglevel<=DEBUG: _uniter_events_only set to False"
-                    )
 
                 return dct
         return None

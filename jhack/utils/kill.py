@@ -241,6 +241,7 @@ def _kill(
 
     if host_kill:
         host_pid = _get_host_pid(pinfo[0], dry_run=dry_run)
+        print(f"Found host PID {host_pid}.")
         _kill_running_process(
             host_pid,
             target,
@@ -250,8 +251,10 @@ def _kill(
             dry_run=dry_run,
         )
     else:
+        pid = pinfo[0].pid
+        print(f"Found PID {pid}.")
         _kill_running_process(
-            int(pinfo[0].pid),
+            int(pid),
             target,
             host=False,
             model=model,

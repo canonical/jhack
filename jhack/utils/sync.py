@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import os
 import re
 import time
@@ -419,7 +420,9 @@ async def push_to_remote_juju_unit(
     if dry_run:
         return
 
-    print(f"synced {file} -> {unit}:{remote_file_path}")
+    ts = time.time()
+    timestamp = datetime.datetime.fromtimestamp(ts).strftime("%H:%M:%S")
+    print(f"{timestamp}: synced {file} -> {unit}:{remote_file_path}")
 
 
 if __name__ == "__main__":
