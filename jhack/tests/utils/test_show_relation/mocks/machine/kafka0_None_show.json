@@ -1,0 +1,66 @@
+{
+  "kafka/0": {
+    "machine": "0",
+    "opened-ports": [],
+    "public-address": "10.202.33.94",
+    "charm": "ch:amd64/jammy/kafka-116",
+    "leader": true,
+    "life": "alive",
+    "relation-info": [
+      {
+        "relation-id": 0,
+        "endpoint": "restart",
+        "related-endpoint": "restart",
+        "application-data": {},
+        "local-unit": {
+          "in-scope": true,
+          "data": {
+            "egress-subnets": "10.202.33.94/32",
+            "ingress-address": "10.202.33.94",
+            "private-address": "10.202.33.94"
+          }
+        }
+      },
+      {
+        "relation-id": 1,
+        "endpoint": "cluster",
+        "related-endpoint": "cluster",
+        "application-data": {
+          "admin-password": "R8Uq7ec71jGUF20RiJjvAVlFGvFkMDoY",
+          "sync-password": "NxUqfnhuaxNGPHVPjOJD4zWpv1yZLF1z"
+        },
+        "local-unit": {
+          "in-scope": true,
+          "data": {
+            "egress-subnets": "10.202.33.94/32",
+            "ingress-address": "10.202.33.94",
+            "private-address": "10.202.33.94"
+          }
+        }
+      },
+      {
+        "relation-id": 5,
+        "endpoint": "zookeeper",
+        "related-endpoint": "zookeeper",
+        "application-data": {
+          "chroot": "/kafka",
+          "endpoints": "10.202.33.167",
+          "password": "ffE2s04EmaesrrQy98E4fN2R83WNFvBs",
+          "tls": "disabled",
+          "uris": "10.202.33.167:2181/kafka",
+          "username": "relation-5"
+        },
+        "related-units": {
+          "zookeeper/0": {
+            "in-scope": true,
+            "data": {
+              "egress-subnets": "10.202.33.167/32",
+              "ingress-address": "10.202.33.167",
+              "private-address": "10.202.33.167"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

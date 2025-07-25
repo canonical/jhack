@@ -29,7 +29,7 @@ _CACHING = True
 
 _JUJU_DATA_CACHE = {}
 
-_JUJU_KEYS = ("egress-subnets", "ingress-address", "private-address")
+_JUJU_RELDATA_DEFAULT_KEYS = ("egress-subnets", "ingress-address", "private-address")
 _UNIT_ID_RE = re.compile(r"/\d")
 _RELATIONS_RE = re.compile(r"([\w\-]+):([\w\-]+)\s+([\w\-]+):([\w\-]+)\s+([\w\-]+)\s+([\w\-]+).*")
 
@@ -125,10 +125,10 @@ class InterfaceNotFoundError(RuntimeError):
     pass
 
 
-def purge(data: dict):
-    for key in _JUJU_KEYS:
-        if key in data:
-            del data[key]
+def purge(purge: bool, data: dict):
+    if not purge:
+        return data
+    return {k: v for k, v in data.items() if k not in _JUJU_RELDATA_DEFAULT_KEYS}
 
 
 @lru_cache
@@ -278,7 +278,6 @@ def get_relation_by_endpoint(
 
 @dataclass
 class Metadata:
-    scale: int
     units: Tuple[int, ...]
     leader_id: int
 
@@ -321,8 +320,6 @@ def get_metadata_from_status(
             f"subordinate or an app that is not done deploying yet?"
         )
 
-    scale = len(units)
-
     leader_id: int = -1
     unit_ids: List[int] = []
 
@@ -340,7 +337,7 @@ def get_metadata_from_status(
             )
         leader_id = unit_ids[0]
         logger.debug(f"no leader elected yet, guessing it's the only unit out there: {leader_id}")
-    return Metadata(scale, tuple(unit_ids), leader_id)
+    return Metadata(tuple(unit_ids), leader_id)
 
 
 def get_units_and_meta(
@@ -356,86 +353,74 @@ def get_units_and_meta(
     return units, meta
 
 
+def _get_unit_id(unit_name: str) -> int:
+    return int(unit_name.split("/")[1])
+
+
+def _get_app_name(unit_name: str) -> str:
+    return unit_name.split("/")[0]
+
+
 def get_databag_content(
-    obj: RelationEndpointURL,
-    other_obj: RelationEndpointURL,
-    relation: "Relation",
-    obj_model: str,
-    other_obj_model: str,
+    status: Dict,
+    units: List[str],
+    remote_unit: str,
+    endpoint: str,
+    remote_endpoint: str,
+    model: str,
     include_default_juju_keys: bool = False,
 ) -> AppRelationData:
-    """Get the content of the databag of `obj`, as seen from `other_obj`."""
-    # in k8s there's always a 0 unit, in machine that's not the case.
-    # so even though we need 'any' remote unit name, we still need to query the status
-    # to find out what units there are.
-    status = _juju_status(model=other_obj_model, json=True)
-    units, meta = get_units_and_meta(other_obj, other_obj_model)
-    other_app_status = status["applications"][other_obj.app_name]
+    """Get the content of the databags of `units`, as seen from `remote_app` (which lives in `model`)."""
 
-    if primaries := other_app_status.get("subordinate-to"):
-        # the remote end is a subordinate!
-        # primary is our `obj`.
-        if obj.app_name in primaries:
-            # this app is primary, other is subordinate
-            sub_unit_found = ""
-            for unit in status["applications"][obj.app_name]["units"].values():
-                subs = unit["subordinates"]
-                for sub in subs:
-                    if sub.startswith(other_obj.app_name + "/"):
-                        sub_unit_found = sub
-                        break
-                if sub_unit_found:
-                    break
+    # relation info as seen from remote unit
+    relation_info = _show_unit(remote_unit, endpoint=remote_endpoint, model=model)[
+        remote_unit
+    ].get("relation-info")
+    if not relation_info:
+        raise ValueError(f"no binding on endpoint {endpoint}")
 
-            if not sub_unit_found:
-                raise RuntimeError(
-                    f"unable to find primary with a subordinate unit of {other_obj.app_name}"
-                )
-            other_unit_id = RelationEndpointURL(sub_unit_found).unit_id
+    app = _get_app_name(units[0])
 
-        else:
-            # this app is sub and related to some other app or viceversa
-            other_units = other_app_status.get("units")
-            if other_units:
-                other_unit_id = RelationEndpointURL(next(iter(other_units))).unit_id
-            else:
-                # we need to get the units of the primary.
-                primary_units = status["applications"][primaries[0]]["units"]
-                other_unit_id = RelationEndpointURL(next(iter(primary_units))).unit_id
+    def _any_app(_in):
+        return _get_app_name(next(iter(_in)))
 
-    else:
-        other_unit_id = RelationEndpointURL(next(iter(other_app_status["units"]))).unit_id
-        # we might have a different number of units and other units, and it doesn't
-        # matter which 'other' we pass to get the databags for 'this one'.
+    rel_meta = None
+    for candidate in relation_info:
+        # find the one relation in relation-info such that:
+        # - its related-enpdoint matches our remote-endpoint and
+        # - its related-units are units of our app (not possible if cross-model)
+        if candidate["related-endpoint"] == endpoint and (
+            candidate.get("cross-model") or (_any_app(candidate["related-units"]) == app)
+        ):
+            rel_meta = candidate
+            break
 
-    app_data = None
+    if not rel_meta:
+        raise ValueError(f"no relation found on {remote_unit} with related-endpoint=={endpoint}")
 
-    units_data = {}
-    r_id = None
-    for unit_id in units:
-        obj_with_uid = obj.with_unit_id(unit_id)
+    related_units = rel_meta["related-units"]
+    units_data = {
+        _get_unit_id(unit): purge(not include_default_juju_keys, unit_meta.get("data", {}))
+        for unit, unit_meta in related_units.items()
+    }
 
-        unit_data, app_data, r_id_ = _get_databags(
-            obj_with_uid,
-            other_obj.with_unit_id(other_unit_id),  # any unit will do
-            model=other_obj_model,
-            relation=relation,
-        )
-
-        if r_id is not None:
-            assert r_id == r_id_, f"mismatching relation IDs: {r_id, r_id_}"
-        r_id = r_id_
-        if not include_default_juju_keys:
-            purge(unit_data)
-        units_data[obj_with_uid.unit_name] = unit_data
+    def _get_leader_id(app_name: str) -> Optional[int]:
+        for unit, unit_meta in status["applications"][app_name]["units"].items():
+            if unit_meta.get("leader"):
+                return _get_unit_id(unit)
+        logger.info(f"leader not found for {app_name}")
+        return None
 
     return AppRelationData(
-        url=obj,
-        meta=meta,
-        application_data=app_data,
+        url=RelationEndpointURL(f"{app}:{endpoint}"),
+        meta=Metadata(
+            units=tuple(map(_get_unit_id, units)),
+            leader_id=_get_leader_id(app),
+        ),
+        application_data=rel_meta["application-data"],
         units_data=units_data,
-        relation_id=r_id,
-        model=obj_model,
+        relation_id=rel_meta["relation-id"],
+        model=model,
     )
 
 
@@ -482,7 +467,11 @@ def _get_databags(
         unit_data = raw_data["related-units"][obj.unit_name]["data"]
 
     app_data = raw_data.get("application-data", {})
-    return unit_data, app_data, raw_data["relation-id"]
+    return (
+        {_get_unit_id(u): d for u, d in unit_data.items()},
+        app_data,
+        raw_data["relation-id"],
+    )
 
 
 @dataclass
@@ -508,11 +497,9 @@ def get_peer_relation_data(
         any_unit,
         relation,
     )
-
-    if not include_default_juju_keys:
-        for unit_data in units_data.values():
-            purge(unit_data)
-
+    units_data = {
+        u: purge(not include_default_juju_keys, unit_data) for u, unit_data in units_data.items()
+    }
     return AppRelationData(
         url=obj,
         meta=meta,
@@ -521,6 +508,13 @@ def get_peer_relation_data(
         relation_id=r_id,
         model=model,
     )
+
+
+def _get_units(status, app: str):
+    # in k8s there's always a 0 unit, in machine that's not the case.
+    # so even though we need 'any' remote unit name, we still need to query the status
+    # to find out what units there are.
+    return list(status["applications"][app]["units"])
 
 
 def get_relation_data(
@@ -538,22 +532,30 @@ def get_relation_data(
     requirer_model = relation.requirer_saas_url.model if relation.requirer_saas_url else model
     provider_model = relation.provider_saas_url.model if relation.provider_saas_url else model
 
-    provider_data = get_databag_content(
-        obj=relation.provider_url,
-        obj_model=provider_model,
-        other_obj=relation.requirer_url,
-        other_obj_model=requirer_model,
-        relation=relation,
+    requirer_status = _juju_status(json=True, model=requirer_model)
+    provider_status = _juju_status(json=True, model=provider_model)
+
+    provider_units = _get_units(provider_status, relation.provider)
+    requirer_units = _get_units(requirer_status, relation.requirer)
+
+    requirer_data = get_databag_content(
+        requirer_status,
+        requirer_units,
+        provider_units[0],  # any unit will do
+        relation.requirer_endpoint,
+        relation.provider_endpoint,
+        model=requirer_model,
         include_default_juju_keys=include_default_juju_keys,
     )
 
     # flip around prov/req
-    requirer_data = get_databag_content(
-        obj=relation.requirer_url,
-        obj_model=requirer_model,
-        other_obj=relation.provider_url,
-        other_obj_model=provider_model,
-        relation=relation,
+    provider_data = get_databag_content(
+        provider_status,
+        provider_units,
+        requirer_units[0],  # any unit will do
+        relation.provider_endpoint,
+        relation.requirer_endpoint,
+        model=provider_model,
         include_default_juju_keys=include_default_juju_keys,
     )
     return RelationData(provider=provider_data, requirer=requirer_data)
@@ -587,10 +589,12 @@ def get_relations(model: str = None) -> List[Relation]:
     return relations
 
 
-def _render_unit(obj: Optional[Tuple[int, Dict]], source: AppRelationData):
-    unit_name, unit_data = obj
-    unit_id = int(unit_name.split("/")[1])
-    return _render_databag(unit_name, unit_data, leader=(unit_id == source.meta.leader_id))
+def _render_unit(source: AppRelationData, unit_id: int, unit_data: dict):
+    return _render_databag(
+        f"{source.url.app_name}/{unit_id}",
+        unit_data,
+        leader=(unit_id == source.meta.leader_id),
+    )
 
 
 def _render_databag(unit_name, dct, leader=False, hide_empty_databags: bool = False):
@@ -902,12 +906,12 @@ def _rich_format_table(
     unit_databags = []
 
     for i, entity in enumerate(entities):
-        units = entity.units_data.items()
+        unit = entity.units_data.items()
         if len(unit_databags) < (i + 1):
             unit_databags.append([])
         bucket = unit_databags[i]
-        for _, (unit, data) in enumerate(units):
-            bucket.append(_render_unit((unit, data), entity))
+        for _, (unit_id, unit_data) in enumerate(unit):
+            bucket.append(_render_unit(entity, unit_id, unit_data))
 
     if any(any(x) for x in unit_databags):
         table.add_row("unit data", *(Columns(x) for x in unit_databags))
@@ -1035,6 +1039,4 @@ def _sync_show_relation(
 
 
 if __name__ == "__main__":
-    _sync_show_relation(
-        "pgql:cos-o",
-    )
+    _sync_show_relation("pyroscope", "otelcol")
