@@ -441,7 +441,7 @@ def _exec_crpc_script(
             "CHARM_RPC_ENV": _encode(crpc_env),
             "CHARM_RPC_MODULE_NAME": crpc_module_name,
             "CHARM_RPC_ENTRYPOINT": entrypoint,
-            "CHARM_RPC_CHARM_NAME": charm_name,
+            "CHARM_RPC_CHARM_NAME": charm_name or "",
             "CHARM_RPC_OUTPUT_PATH": OUTPUT_PATH_FILENAME,
             "CHARM_RPC_LOGLEVEL": os.getenv("LOGLEVEL", "WARNING"),
             "PYTHONPATH": get_pythonpath(target.unit_name, model=model),
