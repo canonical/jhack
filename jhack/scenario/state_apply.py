@@ -182,7 +182,7 @@ def _gather_juju_exec_cmds(include, state):
     return j_exec_cmds
 
 
-def _gather_raw_calls(include, state, target):
+def _gather_raw_calls(include, state: State, target):
     def if_include(key, fn):
         if include is None or key in include:
             return fn()
@@ -195,7 +195,7 @@ def _gather_raw_calls(include, state, target):
     if_include("c", lambda: set_config(state.config, target))
     cmds += if_include("k", lambda: set_containers(state.containers))
     cmds += if_include("d", lambda: set_deferred_events(state.deferred))
-    cmds += if_include("t", lambda: set_stored_state(state.stored_state))
+    cmds += if_include("t", lambda: set_stored_state(state.stored_states))
     return cmds
 
 
@@ -260,7 +260,7 @@ def _state_apply(
 
     j_exec_cmds = _gather_juju_exec_cmds(include, state)
     cmds = _gather_raw_calls(include, state, target) + _gather_push_file_calls(
-        state.containers,
+        list(state.containers),
         target,
         model,
     )

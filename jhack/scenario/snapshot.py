@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shlex
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -15,13 +16,27 @@ from importlib import metadata
 from itertools import chain
 from pathlib import Path
 from subprocess import run
-from typing import Any, BinaryIO, Dict, Iterable, List, Optional, TextIO, Tuple, Union
+from typing import (
+    Any,
+    BinaryIO,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    TextIO,
+    Tuple,
+    Union,
+    Protocol,
+    Sequence,
+    cast,
+)
 
 import ops.pebble
 import typer
 import yaml
-from ops.storage import SQLiteStorage
-from scenario.runtime import UnitStateDB
+from ops.storage import SQLiteStorage, _SimpleLoader
+from scenario import DeferredEvent
+from scenario._ops_main_mock import UnitStateDB, EVENT_REGEX
 from scenario.state import (
     Address,
     BindAddress,
@@ -34,10 +49,11 @@ from scenario.state import (
     Secret,
     State,
     _EntityStatus,
-    _Event,
+    _Event, StoredState,
 )
 
 from jhack.conf.conf import check_destructive_commands_allowed
+from jhack.helpers import fetch_file, FetchError
 from jhack.logger import logger as jhack_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
 from jhack.scenario.integrations.darkroom import ops_port_to_scenario
@@ -340,7 +356,9 @@ class RemotePebbleClient:
         _model = f" -m {self.model}" if self.model else ""
 
         # charm container commands go straight to the charm container's pebble; no need to set a socket.
-        socket_var = f" PEBBLE_SOCKET={self.socket_path}" if self.container != "charm" else ""
+        socket_var = (
+            f" PEBBLE_SOCKET={self.socket_path}" if self.container != "charm" else ""
+        )
         command = f"juju ssh{_model} {self.target.unit_name}{socket_var} /charm/bin/pebble {cmd}"
 
         if self._dry_run:
@@ -413,23 +431,6 @@ class RemotePebbleClient:
         raise NotImplementedError()
 
 
-def fetch_file(
-    *,
-    target: JujuUnitName,
-    remote_path: Union[Path, str],
-    container_name: str,
-    local_path: Union[Path, str],
-    model: Optional[str] = None,
-) -> None:
-    """Download a file from a live unit to a local path."""
-    model_arg = f" -m {model}" if model else ""
-    scp_cmd = (
-        f"juju scp --container {container_name}{model_arg} "
-        f"{target.unit_name}:{remote_path} {local_path}"
-    )
-    run(shlex.split(scp_cmd))
-
-
 def get_mounts(
     target: JujuUnitName,
     model: Optional[str],
@@ -482,7 +483,7 @@ def get_mounts(
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         try:
             fetch_file(
-                target=target,
+                unit=target,
                 container_name=container_name,
                 model=model,
                 remote_path=remote_path,
@@ -630,6 +631,7 @@ def get_config(
         "int": int,
         "integer": int,  # fixme: which one is it?
         "number": float,
+        "float": float,
         "boolean": lambda x: x == "true",
         "attrs": lambda x: x,  # fixme: wot?
     }
@@ -640,7 +642,11 @@ def get_config(
             try:
                 converter = converters[option["type"]]
             except KeyError:
-                raise ValueError(f"unrecognized type {option['type']}")
+                logger.error(
+                    f"unrecognized type {option['type']}: "
+                    f"cannot deserialize config option {name}"
+                )
+                continue
             cfg[name] = converter(value)
 
         else:
@@ -823,34 +829,114 @@ def get_charm_version(target: JujuUnitName, juju_status: Dict) -> str:
     )
 
 
-class RemoteUnitStateDB(UnitStateDB):
-    """Represents a remote unit's state db."""
+class _BasicStorageProtocol(Protocol):
+    def notices(self) -> Sequence[Tuple[str,str,str]]: ...
+    def load_snapshot(self, key: str) -> Any: ...
+
+
+class _RemoteControllerStorage:
+    notices_key = "#notices#"
 
     def __init__(self, model: Optional[str], target: JujuUnitName):
-        self._tempfile = tempfile.NamedTemporaryFile()
-        super().__init__(self._tempfile.name)
-
         self._model = model
         self._target = target
 
+    def _state_get(self, key=""):
+        raw = subprocess.run(
+            shlex.split(f"juju exec --unit {self._target} state-get {key}"),
+            text=True, capture_output=True, check=True
+        ).stdout
+        return yaml.safe_load(raw)
+
+    def _py_parse(self, val):
+        return yaml.load(val, Loader=_SimpleLoader)
+
+    def notices(self):
+        return self._py_parse(self._state_get(f"'{self.notices_key}'")[self.notices_key])
+
+    def load_snapshot(self, key: str):
+        return self._state_get(key)
+
+    def get_stored_states(self) -> List[StoredState]:
+        stored_states:List[StoredState] = []
+        for key, val in self._state_get().items():
+            if key == self.notices_key:
+                continue
+            stored_state_key_re = re.compile(r"(\S+)\[(\S+)]")
+            path, name = stored_state_key_re.match(key).groups()
+            ss = StoredState(name=name, owner_path=path, content=self._py_parse(val))
+            stored_states.append(ss)
+        return stored_states
+
+
+class RemoteUnitStateDB:
+    """Represents a remote unit's state db."""
+
+    def __init__(self, model: Optional[str], target: JujuUnitName):
+        self._model = model
+        self._target = target
+
+        self._tempfile = tempfile.NamedTemporaryFile()
+        self._db_path = Path(self._tempfile.name)
+        self._db: Union[_RemoteControllerStorage, SQLiteStorage] = self.get_db()
+
     def _fetch_state(self):
         fetch_file(
-            target=self._target,
+            unit=self._target,
             remote_path=self._target.remote_charm_root / ".unit-state.db",
             container_name="charm",
-            local_path=self._state_file,
+            local_path=self._db_path,
             model=self._model,
         )
 
     @property
     def _has_state(self):
         """Whether the state file exists."""
-        return self._state_file.exists() and self._state_file.read_bytes()
+        return self._db_path.exists() and self._db_path.read_bytes()
 
-    def _open_db(self) -> SQLiteStorage:
+    def get_db(self) -> Union[_RemoteControllerStorage, SQLiteStorage] :
         if not self._has_state:
-            self._fetch_state()
-        return super()._open_db()
+            try:
+                self._fetch_state()
+            except FetchError:
+                logger.debug("failed fetching unit-state db file; is this charm using controller storage?")
+                return _RemoteControllerStorage(
+                    target=self._target,
+                    model=self._model
+                )
+        return SQLiteStorage(self._db_path)
+
+    def get_deferred_events(self) -> list[DeferredEvent]:
+        """Load any DeferredEvent data structures from the db."""
+        db = cast(_BasicStorageProtocol, self._db)
+        deferred: list[DeferredEvent] = []
+        # this works for both controller storage and local storage.
+        # with jhack snapshot we don't quite care as it's always local.
+        for handle, owner, observer in db.notices():
+            if EVENT_REGEX.match(handle):
+                try:
+                    snapshot_data = db.load_snapshot(handle)
+                except ops.storage.NoSnapshotError:
+                    snapshot_data: dict[str, Any] = {}
+
+                event = DeferredEvent(
+                    handle_path=handle,
+                    owner=owner,
+                    observer=observer,
+                    snapshot_data=snapshot_data,
+                )
+                deferred.append(event)
+        return deferred
+
+    def get_stored_states(self) -> Iterable[StoredState]:
+        """Load any StoredState data structures from the db."""
+        db = self._db
+        if isinstance(db, _RemoteControllerStorage):
+            return list(db.get_stored_states())
+        # db is SQLiteStorage
+        usdb = UnitStateDB(db)
+        return usdb.get_stored_states()
+
 
 
 def get_scenario_version():
@@ -1118,7 +1204,7 @@ if __name__ == "__main__":
         _snapshot(
             "traefik/0",
             format_=FormatOption.state,
-            include="r",
+            include="d",
             # fetch_files={
             #     "traefik": [
             #         Path("/opt/traefik/juju/certificates.yaml"),

@@ -74,7 +74,7 @@ def check_command_available(cmd: str):
     return proc.returncode == 0
 
 
-def get_substrate(model: str = None) -> Literal["k8s", "machine"]:
+def get_substrate(model: Optional[str] = None) -> Literal["k8s", "machine"]:
     """Attempts to guess whether we're talking k8s or machine."""
     cmd = f"juju show-model{f' {model}' if model else ''} --format=json"
     proc = JPopen(cmd.split())
@@ -137,13 +137,13 @@ def _JPopen(args: Tuple[str], wait: bool, silent_fail: bool = False, **kwargs): 
     return proc
 
 
-def juju_log(unit: str, msg: str, model: str = None, debug=True):
+def juju_log(unit: str, msg: str, model: Optional[str] = None, debug=True):
     m = f" -m {model}" if model else ""
     d = " --debug" if debug else ""
     JPopen(f"juju exec -u {unit}{m} -- juju-log{d}".split() + [msg])
 
 
-def juju_status(app_name=None, model: str = None, json: bool = False):
+def juju_status(app_name=None, model: Optional[str] = None, json: bool = False):
     cmd = f"juju status{' ' + app_name if app_name else ''}"
     if model:
         cmd += f" -m {model}"
@@ -183,7 +183,7 @@ def juju_status(app_name=None, model: str = None, json: bool = False):
 
 
 @lru_cache
-def cached_juju_status(app_name=None, model: str = None, json: bool = False):
+def cached_juju_status(app_name=None, model: Optional[str] = None, json: bool = False):
     return juju_status(
         app_name=app_name,
         model=model,
@@ -238,10 +238,12 @@ def get_models(include_controller=False):
     data = json.loads(proc.stdout.read().decode("utf-8"))
     if include_controller:
         return [model["short-name"] for model in data["models"]]
-    return [model["short-name"] for model in data["models"] if not model["is-controller"]]
+    return [
+        model["short-name"] for model in data["models"] if not model["is-controller"]
+    ]
 
 
-def show_unit(unit: str, model: str = None):
+def show_unit(unit: str, model: Optional[str] = None):
     _model = f"-m {model} " if model else ""
     cmd = f"juju show-unit {_model}{unit} --format json".split()
     logger.debug(cmd)
@@ -250,7 +252,7 @@ def show_unit(unit: str, model: str = None):
     return raw[unit]
 
 
-def show_application(application: str, model: str = None):
+def show_application(application: str, model: Optional[str] = None):
     _model = f"-m {model} " if model else ""
     proc = JPopen(f"juju show-application {application} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
@@ -314,7 +316,7 @@ def _push_file_k8s_cmd(
     remote_path: str,
     is_full_path: bool = False,
     container: Optional[str] = None,
-    model: str = None,
+    model: Optional[str] = None,
     mkdir_remote: bool = False,
 ):
     container_arg = f" --container {container}" if container else ""
@@ -328,9 +330,7 @@ def _push_file_k8s_cmd(
 
     cmd = f"juju scp{model_arg}{container_arg} {local_path} {unit}:{full_remote_path}"
     if mkdir_remote:
-        mkdir_cmd = (
-            f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
-        )
+        mkdir_cmd = f"juju ssh{model_arg}{container_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -341,7 +341,7 @@ def _push_file_machine_cmd(
     local_path: Path,
     remote_path: str,
     is_full_path: bool = False,
-    model: str = None,
+    model: Optional[str] = None,
     mkdir_remote: bool = False,
 ):
     model_arg = f" -m {model}" if model else ""
@@ -362,7 +362,9 @@ def _push_file_machine_cmd(
     )
 
     if mkdir_remote:
-        mkdir_cmd = f"juju ssh{model_arg} {unit} mkdir -p {Path(full_remote_path).parent}"
+        mkdir_cmd = (
+            f"juju ssh{model_arg} {unit} sudo mkdir -p {Path(full_remote_path).parent}"
+        )
         return f"{mkdir_cmd} && {cmd}"
 
     return cmd
@@ -374,7 +376,7 @@ def push_string(
     remote_path: str,
     is_full_path: bool = False,
     container: Optional[str] = None,
-    model: str = None,
+    model: Optional[str] = None,
     dry_run: bool = False,
     mkdir_remote: bool = False,
 ):
@@ -399,7 +401,7 @@ def push_file(
     remote_path: str,
     is_full_path: bool = False,
     container: Optional[str] = None,
-    model: str = None,
+    model: Optional[str] = None,
     dry_run: bool = False,
     mkdir_remote: bool = False,
 ):
@@ -434,14 +436,18 @@ def push_file(
         logger.error(f"{cmd} errored with code {retcode}: ")
         raise RuntimeError(
             f"Failed to push {local_path} to {unit} with {cmd!r}."
-            + (" (verify that the path is readable by the jhack snap)" if IS_SNAPPED else "")
+            + (
+                " (verify that the path is readable by the jhack snap)"
+                if IS_SNAPPED
+                else ""
+            )
         )
 
 
 def rm_file(
     unit: str,
     remote_path: str,
-    model: str = None,
+    model: Optional[str] = None,
     is_path_relative=True,
     dry_run=False,
     force: bool = False,
@@ -466,20 +472,27 @@ def rm_file(
         raise RuntimeError(f"Failed to remove {full_remote_path} from {unit}.") from e
 
 
+class FetchError(RuntimeError):
+    """Raised when fetching a file fails."""
+
+
 def fetch_file(
     unit: str,
     remote_path: Union[Path, str],
     local_path: Optional[Union[Path, str]] = None,
-    model: str = None,
+    model: Optional[str] = None,
+    container_name: str = "charm",
 ) -> Optional[str]:
     model_arg = f" -m {model}" if model else ""
     charm_path = charm_root_path(unit) / remote_path
-    cmd = f"juju ssh{model_arg} {unit} cat {charm_path}"
+    cmd = f"juju ssh{model_arg} --container {container_name} {unit} cat {charm_path}"
     try:
-        raw = subprocess.run(shlex.split(cmd), text=True, capture_output=True, check=True).stdout
+        raw = subprocess.run(
+            shlex.split(cmd), text=True, capture_output=True, check=True
+        ).stdout
     except CalledProcessError:
         logger.debug(f"error fetching {charm_path} from {unit}@{model}:", exc_info=True)
-        raise RuntimeError(f"Failed to fetch {charm_path} from {unit}.")
+        raise FetchError(f"Failed to fetch {charm_path} from {unit}.")
 
     if not local_path:
         return raw
@@ -528,7 +541,9 @@ def pull_metadata(unit: str, model: str):
             try:
                 fetch_file(unit, charmcraft_path, tf.name, model=model)
             except RuntimeError as e:
-                raise RuntimeError(f"cannot find charmcraft nor metadata in {unit}") from e
+                raise RuntimeError(
+                    f"cannot find charmcraft nor metadata in {unit}"
+                ) from e
 
         return yaml.safe_load(Path(tf.name).read_text())
 
@@ -649,10 +664,12 @@ class Target:
         return self._machine_id
 
 
-def get_all_units(model: str = None) -> Tuple[Target, ...]:
+def get_all_units(model: Optional[str] = None) -> Tuple[Target, ...]:
     status = juju_status(json=True, model=model)
     # sub charms don't have units or applications
-    return tuple(chain(*(_get_units(app, status) for app in status.get("applications", {}))))
+    return tuple(
+        chain(*(_get_units(app, status) for app in status.get("applications", {})))
+    )
 
 
 def _get_units(
@@ -699,7 +716,7 @@ def _get_units(
     return units
 
 
-def get_units(*apps, model: str = None) -> Sequence[Target]:
+def get_units(*apps, model: Optional[str] = None) -> Sequence[Target]:
     status = juju_status(json=True, model=model)
     if not apps:
         apps = status.get("applications", {}).keys()
@@ -711,13 +728,13 @@ def get_units(*apps, model: str = None) -> Sequence[Target]:
     return list(chain(*(_get_units(app, status) for app in apps)))
 
 
-def get_leader_unit(app, model: str = None) -> Optional[Target]:
+def get_leader_unit(app, model: Optional[str] = None) -> Optional[Target]:
     status = juju_status(json=True, model=model)
     leaders = _get_units(app, status, predicate=lambda unit: unit.get("leader"))
     return leaders[0] if leaders else None
 
 
-def parse_target(target: str, model: str = None) -> List[Target]:
+def parse_target(target: str, model: Optional[str] = None) -> List[Target]:
     if target == "*":
         return list(get_units(model=model))
 
@@ -740,7 +757,7 @@ def parse_target(target: str, model: str = None) -> List[Target]:
     return unit_targets
 
 
-def get_notices(unit: str, container_name: str, model: str = None):
+def get_notices(unit: str, container_name: str, model: Optional[str] = None):
     _model = f"{model} " if model else ""
     cmd = (
         f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
@@ -749,7 +766,7 @@ def get_notices(unit: str, container_name: str, model: str = None):
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 
-def get_checks(unit: str, container_name: str, model: str = None):
+def get_checks(unit: str, container_name: str, model: Optional[str] = None):
     _model = f"{model} " if model else ""
     cmd = (
         f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
@@ -758,13 +775,13 @@ def get_checks(unit: str, container_name: str, model: str = None):
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 
-def get_secrets(model: str = None) -> dict:
+def get_secrets(model: Optional[str] = None) -> dict:
     _model = f"{model} " if model else ""
     cmd = f"juju secrets {_model} --format=json"
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
 
 
-def show_secret(secret_id, model: str = None) -> dict:
+def show_secret(secret_id, model: Optional[str] = None) -> dict:
     _model = f"{model} " if model else ""
     cmd = f"juju show-secret {_model} {secret_id} --format=json"
     return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
@@ -785,7 +802,9 @@ def find_leaders(targets: List[str] = None, model: Optional[str] = None):
         return {}
 
     apps = (
-        set(t.split("/")[0] for t in targets) if targets else list(status.get("applications", []))
+        set(t.split("/")[0] for t in targets)
+        if targets
+        else list(status.get("applications", []))
     )
 
     leaders = {}
