@@ -349,7 +349,7 @@ wheels = [
 
 [[package]]
 name = "jhack"
-version = "0.4.4.0.21"
+version = "0.4.4.0.22"
 source = { editable = "." }
 dependencies = [
     { name = "asttokens" },
@@ -384,7 +384,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'" },
     { name = "coverage", extras = ["toml"], marker = "extra == 'dev'" },
     { name = "isort", marker = "extra == 'dev'" },
-    { name = "ops", extras = ["testing"], specifier = "==3.0.0" },
+    { name = "ops", extras = ["testing"], specifier = ">=3.0.0" },
     { name = "parse", specifier = "==1.19.0" },
     { name = "pep8-naming", marker = "extra == 'dev'" },
     { name = "pyproject-flake8", marker = "extra == 'dev'" },
@@ -394,7 +394,7 @@ requires-dist = [
     { name = "rich", specifier = "==13.3.0" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "toml" },
-    { name = "typer", specifier = "==0.16.0" },
+    { name = "typer", specifier = "==0.18.0" },
     { name = "urllib3", specifier = "==1.26.20" },
 ]
 provides-extras = ["dev"]
@@ -816,7 +816,7 @@ wheels = [
 
 [[package]]
 name = "typer"
-version = "0.16.0"
+version = "0.18.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -824,9 +824,9 @@ dependencies = [
     { name = "shellingham" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/8c/7d682431efca5fd290017663ea4588bf6f2c6aad085c7f108c5dbc316e70/typer-0.16.0.tar.gz", hash = "sha256:af377ffaee1dbe37ae9440cb4e8f11686ea5ce4e9bae01b84ae7c63b87f1dd3b", size = 102625, upload-time = "2025-05-26T14:30:31.824Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/f2/8214025e8fd1ada825d1b2183bd5895148b42b88ffe3ea3eed1224568ed0/typer-0.18.0.tar.gz", hash = "sha256:342049be1a608c972b0f77dd2b2573e74366b83465cfd5ebd3fede187e1f885e", size = 103878, upload-time = "2025-09-19T19:21:32.856Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/42/3efaf858001d2c2913de7f354563e3a3a2f0decae3efe98427125a8f441e/typer-0.16.0-py3-none-any.whl", hash = "sha256:1f79bed11d4d02d4310e3c1b7ba594183bcedb0ac73b27a9e5f28f6fb5b98855", size = 46317, upload-time = "2025-05-26T14:30:30.523Z" },
+    { url = "https://files.pythonhosted.org/packages/55/cc/c476930fbb1649658cb2195144dac1a9899e474bb6433bf35bf37b6946cb/typer-0.18.0-py3-none-any.whl", hash = "sha256:e0f91cc4bc0761f739c74ffd92aab3c8df279c4cab271b0dba1f302afa0b5a84", size = 46753, upload-time = "2025-09-19T19:21:30.993Z" },
 ]
 
 [[package]]
