@@ -31,9 +31,7 @@ _JUJU_DATA_CACHE = {}
 
 _JUJU_RELDATA_DEFAULT_KEYS = ("egress-subnets", "ingress-address", "private-address")
 _UNIT_ID_RE = re.compile(r"/\d")
-_RELATIONS_RE = re.compile(
-    r"([\w\-]+):([\w\-]+)\s+([\w\-]+):([\w\-]+)\s+([\w\-]+)\s+([\w\-]+).*"
-)
+_RELATIONS_RE = re.compile(r"([\w\-]+):([\w\-]+)\s+([\w\-]+):([\w\-]+)\s+([\w\-]+)\s+([\w\-]+).*")
 
 # strings in the format: mk8s:admin/foo.parca
 _SAAS_URL_RE = re.compile(r"([\w\-]+):([\w\-]+)/([\w\-]+).([\w\-]+)")
@@ -145,9 +143,7 @@ def _juju_status(*args, **kwargs):
     return juju_status(*args, **kwargs)
 
 
-def _show_unit(
-    unit_name, related_to: str = None, endpoint: str = None, model: str = None
-):
+def _show_unit(unit_name, related_to: str = None, endpoint: str = None, model: str = None):
     args = ["juju", "show-unit", "--format", "json"]
     if model:
         args.extend(["-m", model])
@@ -173,9 +169,7 @@ def _get_unit_info(
             f"no unit info could be grabbed for {unit_name}; are you sure it's a valid unit name?"
         )
     if unit_name not in data:
-        raise KeyError(
-            f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}"
-        )
+        raise KeyError(f"{unit_name} not in {data!r}: {unit_name} is not related to {related_to}")
 
     unit_data = data[unit_name]
     return unit_data
@@ -234,9 +228,7 @@ def get_relation_by_endpoint(
     if relation.type == RelationType.peer:
         matches = [r for r in relations if r["endpoint"] == relation.requirer_endpoint]
         if len(matches) != 1:
-            raise ValueError(
-                f"Would expect a single peer on {relation.requirer_endpoint}"
-            )
+            raise ValueError(f"Would expect a single peer on {relation.requirer_endpoint}")
         return matches[0]
 
     local_endpoint = obj.endpoint
@@ -265,8 +257,7 @@ def get_relation_by_endpoint(
         matches = [
             r
             for r in matches
-            if obj.unit_name in r.get("related-units", set())
-            and not r.get("cross-model")
+            if obj.unit_name in r.get("related-units", set()) and not r.get("cross-model")
         ]
 
     if not matches:
@@ -345,9 +336,7 @@ def get_metadata_from_status(
                 f"You might need to wait for all units to be allocated."
             )
         leader_id = unit_ids[0]
-        logger.debug(
-            f"no leader elected yet, guessing it's the only unit out there: {leader_id}"
-        )
+        logger.debug(f"no leader elected yet, guessing it's the only unit out there: {leader_id}")
     return Metadata(tuple(unit_ids), leader_id)
 
 
@@ -385,9 +374,9 @@ def get_databag_content(
     """Get the content of the databags of `units`, as seen from `remote_app` (which lives in `model`)."""
 
     # relation info as seen from remote unit
-    relation_info = _show_unit(
-        remote_unit, endpoint=remote_endpoint, model=remote_model
-    )[remote_unit].get("relation-info")
+    relation_info = _show_unit(remote_unit, endpoint=remote_endpoint, model=remote_model)[
+        remote_unit
+    ].get("relation-info")
     if not relation_info:
         raise ValueError(f"no binding on endpoint {endpoint}")
 
@@ -402,22 +391,17 @@ def get_databag_content(
         # - its related-enpdoint matches our remote-endpoint and
         # - its related-units are units of our app (not possible if cross-model)
         if candidate["related-endpoint"] == endpoint and (
-            candidate.get("cross-model")
-            or (_any_app(candidate["related-units"]) == app)
+            candidate.get("cross-model") or (_any_app(candidate["related-units"]) == app)
         ):
             rel_meta = candidate
             break
 
     if not rel_meta:
-        raise ValueError(
-            f"no relation found on {remote_unit} with related-endpoint=={endpoint}"
-        )
+        raise ValueError(f"no relation found on {remote_unit} with related-endpoint=={endpoint}")
 
     related_units = rel_meta["related-units"]
     units_data = {
-        _get_unit_id(unit): purge(
-            not include_default_juju_keys, unit_meta.get("data", {})
-        )
+        _get_unit_id(unit): purge(not include_default_juju_keys, unit_meta.get("data", {}))
         for unit, unit_meta in related_units.items()
     }
 
@@ -515,8 +499,7 @@ def get_peer_relation_data(
         relation,
     )
     units_data = {
-        u: purge(not include_default_juju_keys, unit_data)
-        for u, unit_data in units_data.items()
+        u: purge(not include_default_juju_keys, unit_data) for u, unit_data in units_data.items()
     }
     return AppRelationData(
         url=obj,
@@ -547,12 +530,8 @@ def get_relation_data(
     >>> get_relation_data('prometheus:ingress', 'traefik')
     >>> get_relation_data('prometheus', 'traefik')
     """
-    requirer_model = (
-        relation.requirer_saas_url.model if relation.requirer_saas_url else model
-    )
-    provider_model = (
-        relation.provider_saas_url.model if relation.provider_saas_url else model
-    )
+    requirer_model = relation.requirer_saas_url.model if relation.requirer_saas_url else model
+    provider_model = relation.provider_saas_url.model if relation.provider_saas_url else model
 
     requirer_status = _juju_status(json=True, model=requirer_model)
     provider_status = _juju_status(json=True, model=provider_model)
@@ -664,9 +643,7 @@ def _match_requirer(rel: Relation, ep: Optional[RelationEndpointURL]):
     )
 
 
-def _match_endpoint(
-    rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]
-):
+def _match_endpoint(rel: Relation, ep1: RelationEndpointURL, ep2: Optional[RelationEndpointURL]):
     if rel.type is RelationType.peer:
         # we could use _match_provider as well, they should be equivalent
         # so long as the peer relation is consistent
@@ -737,7 +714,9 @@ def _coalesce_endpoint_and_n(endpoint1, endpoint2, n, model: Optional[str]) -> R
                 apps_not_found.append(ep_url.app_name)
 
         if apps_not_found:
-            msg += f" apps {apps_not_found!r} not found in model {model or '<the current model>'!r}."
+            msg += (
+                f" apps {apps_not_found!r} not found in model {model or '<the current model>'!r}."
+            )
             raise RuntimeError(msg)
 
         raise RuntimeError(msg)
@@ -803,9 +782,7 @@ async def render_relation(
     )
 
     if format == Format.auto:
-        return _rich_format_table(
-            entities, relation, hide_empty_databags=hide_empty_databags
-        )
+        return _rich_format_table(entities, relation, hide_empty_databags=hide_empty_databags)
 
     elif format == Format.json:
         return _format_json(entities, relation.type)
@@ -878,12 +855,8 @@ def _rich_format_table(
         # omit the "=" in column 2
         table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"))
         table.add_row("interface", Text(relation.interface, style="blue bold"))
-        table.add_row(
-            "model", Text(entities[0].model or "the current model", style="yellow bold")
-        )
-        table.add_row(
-            "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold")
-        )
+        table.add_row("model", Text(entities[0].model or "the current model", style="yellow bold"))
+        table.add_row("relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"))
 
     else:
         table.add_row(Text("type", style="pink"), Text(type_, style="bold cyan"), "=")
@@ -909,14 +882,10 @@ def _rich_format_table(
                 Text(entities[0].model or "the current model", style="yellow bold"),
                 "=",
             )
-            table.add_row(
-                "relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"), "="
-            )
+            table.add_row("relation ID", Text(str(relation_id), style="rgb(200,30,140) bold"), "=")
 
     if not is_peer:
-        table.add_row(
-            "role", *(Text(role, style="white") for role in ["provider", "requirer"])
-        )
+        table.add_row("role", *(Text(role, style="white") for role in ["provider", "requirer"]))
 
     table.add_row(
         "endpoint",
@@ -932,9 +901,7 @@ def _rich_format_table(
     table.add_row(
         "application data",
         *(
-            _render_databag(
-                "", entity.application_data, hide_empty_databags=hide_empty_databags
-            )
+            _render_databag("", entity.application_data, hide_empty_databags=hide_empty_databags)
             for entity in entities
         ),
     )
@@ -984,9 +951,7 @@ def sync_show_relation(
     hide_empty_databags: bool = typer.Option(
         False, "--hide-empty", "-h", help="Do not show empty databags."
     ),
-    watch: bool = typer.Option(
-        False, "-w", "--watch", help="Keep watching for changes."
-    ),
+    watch: bool = typer.Option(False, "-w", "--watch", help="Keep watching for changes."),
     model: str = typer.Option(None, "-m", "--model", help="Which model to look into."),
     color: Optional[str] = ColorOption,
     format: Format = FormatOption,

@@ -474,8 +474,10 @@ def _simulate_event(
 
 
 def simulate_event(
-    target: Annotated[str, typer.Argument(
-        help="""
+    target: Annotated[
+        str,
+        typer.Argument(
+            help="""
         The target on which you'd like this event to be fired.
         Can be:
         
@@ -484,14 +486,18 @@ def simulate_event(
         - an app name followed by ``*`` or ``leader`` (will fire the event on 
           the leader unit only); for example ``myapp/*``
         """,
-    )],
-    event: Annotated[str, typer.Argument(
-        help="The name of the event to fire. "
-        "Needs to be a valid event name for the unit; e.g."
-        " - 'start'"
-        " - 'config-changed' # no underscores"
-        " - 'my-relation-name-relation-joined' # write it out in full",
-    )],
+        ),
+    ],
+    event: Annotated[
+        str,
+        typer.Argument(
+            help="The name of the event to fire. "
+            "Needs to be a valid event name for the unit; e.g."
+            " - 'start'"
+            " - 'config-changed' # no underscores"
+            " - 'my-relation-name-relation-joined' # write it out in full",
+        ),
+    ],
     relation_remote: str = typer.Option(
         None,
         help="Name of the remote app that a relation event should be interpreted against."

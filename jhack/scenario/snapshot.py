@@ -49,7 +49,8 @@ from scenario.state import (
     Secret,
     State,
     _EntityStatus,
-    _Event, StoredState,
+    _Event,
+    StoredState,
 )
 
 from jhack.conf.conf import check_destructive_commands_allowed
@@ -356,9 +357,7 @@ class RemotePebbleClient:
         _model = f" -m {self.model}" if self.model else ""
 
         # charm container commands go straight to the charm container's pebble; no need to set a socket.
-        socket_var = (
-            f" PEBBLE_SOCKET={self.socket_path}" if self.container != "charm" else ""
-        )
+        socket_var = f" PEBBLE_SOCKET={self.socket_path}" if self.container != "charm" else ""
         command = f"juju ssh{_model} {self.target.unit_name}{socket_var} /charm/bin/pebble {cmd}"
 
         if self._dry_run:
@@ -643,8 +642,7 @@ def get_config(
                 converter = converters[option["type"]]
             except KeyError:
                 logger.error(
-                    f"unrecognized type {option['type']}: "
-                    f"cannot deserialize config option {name}"
+                    f"unrecognized type {option['type']}: cannot deserialize config option {name}"
                 )
                 continue
             cfg[name] = converter(value)
@@ -830,7 +828,7 @@ def get_charm_version(target: JujuUnitName, juju_status: Dict) -> str:
 
 
 class _BasicStorageProtocol(Protocol):
-    def notices(self) -> Sequence[Tuple[str,str,str]]: ...
+    def notices(self) -> Sequence[Tuple[str, str, str]]: ...
     def load_snapshot(self, key: str) -> Any: ...
 
 
@@ -844,7 +842,9 @@ class _RemoteControllerStorage:
     def _state_get(self, key=""):
         raw = subprocess.run(
             shlex.split(f"juju exec --unit {self._target} state-get {key}"),
-            text=True, capture_output=True, check=True
+            text=True,
+            capture_output=True,
+            check=True,
         ).stdout
         return yaml.safe_load(raw)
 
@@ -858,7 +858,7 @@ class _RemoteControllerStorage:
         return self._state_get(key)
 
     def get_stored_states(self) -> List[StoredState]:
-        stored_states:List[StoredState] = []
+        stored_states: List[StoredState] = []
         for key, val in self._state_get().items():
             if key == self.notices_key:
                 continue
@@ -894,16 +894,15 @@ class RemoteUnitStateDB:
         """Whether the state file exists."""
         return self._db_path.exists() and self._db_path.read_bytes()
 
-    def get_db(self) -> Union[_RemoteControllerStorage, SQLiteStorage] :
+    def get_db(self) -> Union[_RemoteControllerStorage, SQLiteStorage]:
         if not self._has_state:
             try:
                 self._fetch_state()
             except FetchError:
-                logger.debug("failed fetching unit-state db file; is this charm using controller storage?")
-                return _RemoteControllerStorage(
-                    target=self._target,
-                    model=self._model
+                logger.debug(
+                    "failed fetching unit-state db file; is this charm using controller storage?"
                 )
+                return _RemoteControllerStorage(target=self._target, model=self._model)
         return SQLiteStorage(self._db_path)
 
     def get_deferred_events(self) -> list[DeferredEvent]:
@@ -936,7 +935,6 @@ class RemoteUnitStateDB:
         # db is SQLiteStorage
         usdb = UnitStateDB(db)
         return usdb.get_stored_states()
-
 
 
 def get_scenario_version():

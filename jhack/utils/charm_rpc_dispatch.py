@@ -37,9 +37,11 @@ except ImportError:
 
     try:
         from ops.jujucontext import _JujuContext
+
         ctx = _JujuContext.from_dict(os.environ)
     except ImportError:  # ops >= 3.3.0
         from ops.jujucontext import JujuContext as _JujuContext
+
         ctx = _JujuContext._from_dict(os.environ)
 
     _Dispatcher = partial(_Dispatcher, juju_context=ctx)
@@ -52,7 +54,9 @@ def _decode(expr: str) -> str:
     return base64.b64decode(expr.encode("utf-8")).decode("ascii")
 
 
-def _deserialize_env(s: str) -> Dict[str, str]:
+def _deserialize_env(s: Optional[str]) -> Dict[str, str]:
+    if not s:
+        return {}
     env = dict((pair.split("=") for pair in _decode(s).split(" ")))
     return env
 
@@ -60,7 +64,7 @@ def _deserialize_env(s: str) -> Dict[str, str]:
 ENV: Dict[str, str] = _deserialize_env(os.getenv("CHARM_RPC_ENV"))
 MODULE_NAME = os.getenv("CHARM_RPC_MODULE_NAME")  # string
 ENTRYPOINT = os.getenv("CHARM_RPC_ENTRYPOINT")  # string
-LOGLEVEL = os.getenv("CHARM_RPC_LOGLEVEL")  # string
+LOGLEVEL = os.getenv("CHARM_RPC_LOGLEVEL", "DEBUG")  # string
 EVAL_EXPR = os.getenv("CHARM_RPC_EXPR")  # string
 CHARM_NAME = os.getenv("CHARM_RPC_CHARM_NAME")  # string
 OUTPUT_PATH = os.getenv("CHARM_RPC_OUTPUT_PATH")  # string
@@ -199,11 +203,20 @@ def load_charm_type() -> Type[ops.charm.CharmBase]:
     logger.debug(f"found charm types {charm_subclasses}")
 
     if charm_name:
-        by_name = [obj for i, obj in charm_subclasses if i == charm_name]
+        candidates = [obj for i, obj in charm_subclasses if i == charm_name]
     else:
-        by_name = [obj for _, obj in charm_subclasses]
+        candidates = [obj for _, obj in charm_subclasses]
 
-    if len(by_name) < 1:
+    # we can further prune the possible charms by taking the root of the inheritance tree.
+    # assumption: if there's more than one charm type in charm.py, it's probably because someone
+    # is doing inheritance; and we can probably safely assume that in that case they're calling
+    # ops.main() on the root of that tree.
+    mros = set()
+    for c in candidates:
+        mros.update(c.mro()[1:])
+    candidates = [ctype for ctype in candidates if ctype not in mros]
+
+    if len(candidates) < 1:
         if charm_name and charm_subclasses:
             options = ", ".join((a[0] for a in charm_subclasses))
             raise RuntimeError(
@@ -211,7 +224,7 @@ def load_charm_type() -> Type[ops.charm.CharmBase]:
             )
         raise RuntimeError("couldn't find any charm type in charm.py")
 
-    if len(by_name) > 1 and not charm_name:
+    if len(candidates) > 1 and not charm_name:
         options = ", ".join((a[0] for a in charm_subclasses))
 
         raise RuntimeError(
@@ -219,7 +232,7 @@ def load_charm_type() -> Type[ops.charm.CharmBase]:
             f"to help us narrow down the search. Found: {options}."
         )
 
-    return by_name[0]
+    return candidates[0]
 
 
 def main():
