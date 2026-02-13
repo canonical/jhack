@@ -163,11 +163,14 @@ def juju_status(app_name=None, model: Optional[str] = None, json: bool = False):
     if not raw:
         logger.error(f"{cmd} produced no output.")
         if model:
-            logger.error(f"This usually means that the model {model!r} does not exist")
+            logger.error(
+                f"This usually means that the model {model!r} or "
+                f"currently selected controller does not exist"
+            )
         else:
             logger.error(
                 "This usually means that the juju client isn't reachable, or the "
-                "model you're currently switched to doesn't exist (anymore)."
+                "model/controller you're currently switched to doesn't exist (anymore)."
             )
 
         if IS_SNAPPED:
@@ -776,8 +779,12 @@ def show_secret(secret_id, model: Optional[str] = None) -> dict:
 
 
 def find_leaders(targets: List[str] = None, model: Optional[str] = None):
-    """Find the leader units for these applications"""
+    """Find the leader units for these applications.
+
+    May raise GetStatusError if juju status fails, or return an empty dict if it succeeds but can't find any leaders.
+    """
     status = juju_status(model=model, json=True)
+
     if not status:
         logger.error(f"`juju status -m {model}` returned an empty response.")
         return {}

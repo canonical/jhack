@@ -223,7 +223,7 @@ def test_jhack_fire_log():
     assert len(captured) == 2
     assert captured[1].tags == ("jhack", "fire")
 
-    out = proc.printer.render(proc._captured_logs, _debug=True)
+    proc.printer.render(proc._captured_logs, _debug=True)
     # out.columns[1].cells
 
 

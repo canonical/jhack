@@ -1,5 +1,4 @@
 """Vendored TestingModelBackend from ops, so we're no longer reliant on the ops implementation being public."""
-
 # Copyright 2021 Canonical Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Infrastructure to build unit tests for charms using the ops library."""
 
 import dataclasses
 import datetime
@@ -34,6 +31,7 @@ from ops import charm, model, pebble
 from ops.jujucontext import _JujuContext
 from ops.model import Container, RelationNotFoundError, StatusName, _NetworkDict
 from ops.pebble import ExecProcess
+from ops._private.harness import ReadableBuffer
 from typing import (
     Any,
     AnyStr,
@@ -53,6 +51,8 @@ from typing import (
     Union,
     cast,
 )
+
+"""Infrastructure to build unit tests for charms using the ops library."""
 
 _RelationEntities = TypedDict("_RelationEntities", {"app": str, "units": List[str]})
 

@@ -9,7 +9,7 @@ from typing import (
 )
 
 import jhack.utils.tail_charms.ui.printer
-from jhack.helpers import JPopen, find_leaders
+from jhack.helpers import JPopen, find_leaders, GetStatusError
 from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 from jhack.utils.tail_charms.core.juju_model_loglevel import (
@@ -122,6 +122,58 @@ def tail_charms(
     auto_bump_loglevel: bool = False,
 ):
     """Tail charms."""
+    # catch-all try/except to make sure we restore the terminal to a sane state if something goes wrong.
+    try:
+        return _tail_charms(
+            targets=targets,
+            add_new_units=add_new_units,
+            replay=replay,
+            dry_run=dry_run,
+            framerate=framerate,
+            length=length,
+            show_defer=show_defer,
+            show_ns=show_ns,
+            show_operator_events=show_operator_events,
+            flip=flip,
+            show_trace_ids=show_trace_ids,
+            watch=watch,
+            color=color,
+            files=files,
+            event_filter=event_filter,
+            _on_event=_on_event,
+            model=model,
+            output=output,
+            printer=printer,
+            auto_bump_loglevel=auto_bump_loglevel,
+        )
+    except:
+        logger.exception("uncaught exception in tail_charms")
+        raise
+
+
+def _tail_charms(
+    targets: List[str] = None,
+    add_new_units: bool = True,
+    replay: bool = True,  # listen from beginning of time?
+    dry_run: bool = False,
+    framerate: float = 0.5,
+    length: int = 10,
+    show_defer: bool = False,
+    show_ns: bool = False,
+    show_operator_events: bool = False,
+    flip: bool = False,
+    show_trace_ids: bool = False,
+    watch: bool = True,
+    color: jhack.utils.tail_charms.ui.printer.Color = "auto",
+    files: List[Union[str, Path]] = None,
+    event_filter: str = None,
+    # for script use only
+    _on_event: Callable[["EventLogMsg"], None] = None,
+    model: str = None,
+    output: str = None,
+    printer: Literal["rich", "raw"] = "rich",
+    auto_bump_loglevel: bool = False,
+):
 
     targets = targets or []
 
@@ -176,6 +228,14 @@ def tail_charms(
         return
 
     with juju_loglevel_bumpctx(model, auto_bump_loglevel):
+        # do this before instantiating the printer so that we don't have to worry about the printer messing up the terminal
+        try:
+            leaders = {} if files or read_from_stdin else find_leaders(targets, model=model)
+        except GetStatusError:
+            exit(
+                f"`juju status -m {model}` raised an error. Are you sure the model exists and is accessible?"
+            )
+
         printer = _build_printer(
             color=color,
             flip=flip,
@@ -187,8 +247,6 @@ def tail_charms(
             show_ns=show_ns,
             show_trace_ids=show_trace_ids,
         )
-
-        leaders = {} if files or read_from_stdin else find_leaders(targets, model=model)
 
         processor = Processor(
             targets,
@@ -239,9 +297,7 @@ def tail_charms(
 
                     # if we've been called with the --output flag we exit here
                     if output:
-                        # todo: consider doing a break here instead of exit()
-                        exit()
-
+                        break
                     continue
 
         except KeyboardInterrupt:

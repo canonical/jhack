@@ -1,5 +1,7 @@
 import itertools
 import re
+import signal
+import sys
 import time
 from collections import defaultdict
 from functools import partial
@@ -300,6 +302,9 @@ class IntegrationMatrix:
         rrate = refresh_rate or 0.2
         live = Live(get_renderable=partial(self.render, refresh=True), refresh_per_second=rrate)
         live.start()
+        # ensure we stop the live display on exit, else the terminal will be left in a weird state
+        signal.signal(signal.SIGTERM, lambda _, __: (live.stop(), sys.exit(signal.SIGTERM)))  # noqa: F821
+        signal.signal(signal.SIGINT, lambda _, __: (live.stop(), sys.exit(signal.SIGINT)))  # noqa: F821
 
         try:
             while True:
