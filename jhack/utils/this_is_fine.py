@@ -62,9 +62,9 @@ def _bamboozle(units: List[Target], model: Optional[str], dry_run: bool, no_retr
         elif stderr := proc.stderr:
             logger.error(f"[{cmd}] {stderr=}")
         else:
-            msg = f"{unit.unit_name=} bamboozled."
-            if no_retry:
-                msg += " Extremely so."
+            no_retry = "super" if no_retry else ""
+
+            msg = f"{unit.unit_name=} {no_retry}bamboozled."
             print(msg)
 
 

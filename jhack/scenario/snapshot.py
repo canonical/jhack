@@ -280,10 +280,10 @@ def get_network(target: JujuUnitName, model: Optional[str], endpoint: str) -> Ne
 
 
 def get_secrets(
-    target: JujuUnitName,  # noqa: U100
-    model: Optional[str],  # noqa: U100
-    metadata: Dict,  # noqa: U100
-    relations: Tuple[str, ...] = (),  # noqa: U100
+    target: JujuUnitName,
+    model: Optional[str],
+    metadata: Dict,
+    relations: Tuple[str, ...] = (),
 ) -> List[Secret]:
     """Get Secret list from the charm."""
     logger.warning("Secrets snapshotting not implemented yet. Also, are you *sure*?")
@@ -402,18 +402,18 @@ class RemotePebbleClient:
 
     def pull(
         self,
-        path: str,  # noqa: U100
+        path: str,
         *,
-        encoding: Optional[str] = "utf-8",  # noqa: U100
+        encoding: Optional[str] = "utf-8",
     ) -> Union[BinaryIO, TextIO]:
         raise NotImplementedError()
 
     def list_files(
         self,
-        path: str,  # noqa: U100
+        path: str,
         *,
-        pattern: Optional[str] = None,  # noqa: U100
-        itself: bool = False,  # noqa: U100
+        pattern: Optional[str] = None,
+        itself: bool = False,
     ) -> List[ops.pebble.FileInfo]:
         raise NotImplementedError()
 

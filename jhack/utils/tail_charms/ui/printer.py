@@ -11,6 +11,7 @@ from rich.live import Live
 from rich.style import Style
 from rich.table import Table
 from rich.text import Text
+import signal
 
 from jhack.conf import conf
 from jhack.utils.tail_charms.ui import colors, symbols
@@ -182,10 +183,15 @@ class RichPrinter(Printer):
         )
         self.live = live = Live(
             console=console,
+            screen=True,
             refresh_per_second=conf.CONFIG.get("tail", "refresh_per_second"),
         )
         live.update("Listening for events...", refresh=True)
         live.start()
+
+        # ensure we stop the live display on exit, else the terminal will be left in a weird state
+        signal.signal(signal.SIGTERM, lambda _, __: (live.stop(), sys.exit(signal.SIGTERM)))
+        signal.signal(signal.SIGINT, lambda _, __: (live.stop(), sys.exit(signal.SIGINT)))
 
     def _n_color(self, n: int):
         if n not in self._n_colors:
@@ -322,6 +328,7 @@ class RichPrinter(Printer):
         """Print a goodbye message and output a summary to file if requested."""
         if not self._rendered:
             self.live.update("No events caught.", refresh=True)
+            self.live.stop()
             return
 
         output = self._output

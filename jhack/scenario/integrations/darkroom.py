@@ -32,6 +32,7 @@ in `charm.py`:
 >>>     from darkroom import Darkroom
 >>>     traces = []
 >>>     Darkroom.install(traces, live=True)
+>>>     Darkroom.install(traces, live=True)
 >>>     initial_state = Darkroom().capture()
 >>>
 >>>     from ops.main import main

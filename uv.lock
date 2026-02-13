@@ -349,7 +349,7 @@ wheels = [
 
 [[package]]
 name = "jhack"
-version = "0.4.4.0.22"
+version = "0.4.4.0.24"
 source = { editable = "." }
 dependencies = [
     { name = "asttokens" },

@@ -1,5 +1,6 @@
 import importlib
 import re
+import signal
 import sys
 import tempfile
 import time
@@ -160,6 +161,10 @@ class StorageView:
         if live:
             live = Live(console=console)
             live.start()
+            # ensure we stop the live display on exit, else the terminal will be left in a weird state
+            signal.signal(signal.SIGTERM, lambda _, __: (live.stop(), sys.exit(signal.SIGTERM)))
+            signal.signal(signal.SIGINT, lambda _, __: (live.stop(), sys.exit(signal.SIGINT)))
+
             live.update("Fetching state...", refresh=True)
 
         else:
