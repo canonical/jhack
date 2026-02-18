@@ -1,4 +1,4 @@
-# jhack - Make charming charming!
+# jhack - Make charming charminger!
 
 [![jhack](https://snapcraft.io/jhack/badge.svg)](https://snapcraft.io/jhack) [![foo](https://img.shields.io/badge/everything-charming-blueviolet)](https://github.com/PietroPasotti/jhack) [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://discourse.charmhub.io/t/visualizing-relation-databags-for-development-and-debugging/5991)
 
@@ -93,11 +93,11 @@ To disable that one, set `[nuke]ask_for_confirmation` to `false`.
 # utils
 ## sync
 
-`jhack utils sync application-name/0 -s ./src -s ./lib`
+`jhack sync application-name/0 -s ./src -s ./lib`
 
 Will watch the `./src` and `./lib` folders (recursively, by default) for changes and push any to the `application-name/0` unit.
 
-Pro tip: `jhack utils sync application-name -s ./src` will sync to all units of `application-name`!
+Pro tip: `jhack sync application-name -s ./src` will sync to all units of `application-name`!
 
 Pro-pro tip: `jhack sync * -s ./lib` will sync to all applications in the current model! Handy when you're working on shared (relation interface, for example) libraries.
 
