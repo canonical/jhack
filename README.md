@@ -36,14 +36,16 @@ The last binding is only necessary if you work on LXD models and use commands th
 #### Usage:
 
 ```shell
-jhack [category] [command]
+jhack [category] [command] # most commands
+jhack [command] # shortcut for the most commonly used tools
 ```
 
 for example:
 
 ```shell
-jhack utils tail
+jhack scenario snapshot
 jhack model rm
+jhack tail
 ```
 
 #### Troubleshooting:
