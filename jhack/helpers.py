@@ -279,6 +279,14 @@ def is_dispatch_aware(unit, model=None) -> bool:
     except CalledProcessError as e:
         if e.returncode == 1:
             return False
+        if e.returncode == 255:
+            raise RuntimeError(
+                f"SSH access to {unit!r} failed (exit code 255). "
+                "SSH is not configured by default in Juju 4+. "
+                "To fix this, add your SSH key to Juju:\n"
+                "  1. If you don't have an SSH key yet: ssh-keygen -b 4096\n"
+                '  2. juju add-ssh-key "$(cat ~/.ssh/id_rsa.pub)"'
+            ) from e
         raise e
 
 
