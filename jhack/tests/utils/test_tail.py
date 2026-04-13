@@ -1,11 +1,11 @@
 import contextlib
 import re
+import signal
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from jhack.utils.tail_charms.core.juju_model_loglevel import Level
 from jhack.utils.tail_charms.tail_charms import tail_charms
 from jhack.utils.tail_charms.core.processor import Processor
 from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
@@ -14,6 +14,22 @@ from jhack.utils.tail_charms.core.deferral_status import DeferralStatus
 @pytest.fixture(autouse=True, scope="module")
 def patch_stdin():
     with patch("sys.stdin"):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def disable_signal_handlers():
+    """Prevent RichPrinter from installing SIGTERM/SIGINT handlers that call sys.exit during tests."""
+    with patch("signal.signal") as mock_signal:
+        # Allow getting the current handler but block setting new ones for SIGTERM/SIGINT
+        original_signal = signal.signal
+
+        def safe_signal(sig, handler):
+            if sig in (signal.SIGTERM, signal.SIGINT):
+                return signal.SIG_DFL
+            return original_signal(sig, handler)
+
+        mock_signal.side_effect = safe_signal
         yield
 
 
@@ -49,10 +65,15 @@ def _mock_emit(
 def mock_uniter_events_only(value: bool = True):
     # if True: the parser will try to match "unit.myapp/0.juju-log Emitting Juju event..".
     # else: ... (via hook dispatching script: dispatch)
-    with patch(
-        "jhack.utils.tail_charms.core.juju_model_loglevel.model_loglevel",
-        lambda model: "WARNING" if value else "TRACE",
-    ):
+    from jhack.utils.tail_charms.core.parser import LogLineParser
+
+    original_init = LogLineParser.__init__
+
+    def patched_init(self, capture_operator_events=False):
+        original_init(self, capture_operator_events=capture_operator_events)
+        self._uniter_events_only = value
+
+    with patch.object(LogLineParser, "__init__", patched_init):
         yield
 
 
@@ -119,6 +140,7 @@ def _fake_log_proc(id_):
     data = MOCK_JDL[id_].split(b"\n")
     proc = MagicMock()
     proc.stdout.readline.side_effect = data
+    proc.stdout.readlines.return_value = data
     return proc
 
 
@@ -211,7 +233,7 @@ def test_tail(deferrals, length, mock_stdout):
 def test_jhack_fire_log():
     # scenario 5: jhack fire
     with mock_uniter_events_only(False):
-        proc = Processor([], level=Level.DEBUG)
+        proc = Processor([])
         lines = [
             "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event start.",
             "unit-myapp-0: 12:04:18 INFO unit.myapp/0.juju-log Emitting Juju event update_status.",
@@ -297,7 +319,8 @@ def test_tail_with_file_input():
         files=[
             mocks_dir / "real-prom-cropped-for-interlace.txt",
             mocks_dir / "real-trfk-cropped-for-interlace.txt",
-        ]
+        ],
+        watch=False,
     )
 
 
@@ -348,7 +371,9 @@ def test_tail_event_filter(pattern, log, match):
 
 def test_machine_log_with_subordinates():
     with mock_uniter_events_only(False):
-        proc = tail_charms(length=30, replay=True, files=[str(mocks_dir / "machine-sub-log.txt")])
+        proc = tail_charms(
+            length=30, replay=True, watch=False, files=[str(mocks_dir / "machine-sub-log.txt")]
+        )
 
     units = {log.unit for log in proc._captured_logs}
     assert len(units) == 4
@@ -407,6 +432,7 @@ def test_borky_trfk_log_defer():
     tail_charms(
         length=30,
         replay=True,
+        watch=False,
         files=[str(mocks_dir / "trfk_mock_bork_defer.txt")],
         show_defer=True,
     )
@@ -489,9 +515,15 @@ def test_machine_event_logs():
 
 
 def test_machine_pgql_logs():
-    with patch(
-        "jhack.utils.tail_charms.tail_charms._get_debug_log",
-        wraps=lambda _: _fake_log_proc("real-pgql-machine-log"),
+    with (
+        patch(
+            "jhack.utils.tail_charms.tail_charms._get_debug_log",
+            wraps=lambda _: _fake_log_proc("real-pgql-machine-log"),
+        ),
+        patch(
+            "jhack.utils.tail_charms.tail_charms.find_leaders",
+            new=lambda apps, model=None: {app: f"{app}/0" for app in apps},
+        ),
     ):
         processor = tail_charms(
             watch=False,

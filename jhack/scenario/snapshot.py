@@ -54,7 +54,7 @@ from scenario.state import (
 )
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import fetch_file, FetchError
+from jhack.helpers import fetch_file, FetchError, JSubprocess
 from jhack.logger import logger as jhack_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
 from jhack.scenario.integrations.darkroom import ops_port_to_scenario
@@ -221,7 +221,7 @@ def _juju_run(cmd: str, model=None) -> Dict[str, Any]:
 def _juju_ssh(target: JujuUnitName, cmd: str, model: Optional[str] = None) -> str:
     _model = f" -m {model}" if model else ""
     command = f"juju ssh{_model} {target.unit_name} {cmd}"
-    raw = run(shlex.split(command), capture_output=True, text=True).stdout
+    raw = JSubprocess.run(shlex.split(command), capture_output=True, text=True).stdout
     return raw
 
 
@@ -234,7 +234,7 @@ def _juju_exec(target: JujuUnitName, model: Optional[str], cmd: str) -> str:
     """
     _model = f" -m {model}" if model else ""
     _target = f" -u {target}" if target else ""
-    return run(
+    return JSubprocess.run(
         shlex.split(f"juju exec{_model}{_target} -- {cmd}"),
         capture_output=True,
         text=True,
@@ -366,7 +366,7 @@ class RemotePebbleClient:
         else:
             check_destructive_commands_allowed("sync", dry_run_cmd=command)
 
-        proc = run(shlex.split(command), capture_output=True, text=True)
+        proc = JSubprocess.run(shlex.split(command), capture_output=True, text=True)
         if proc.returncode == 0:
             return proc.stdout
 
@@ -840,7 +840,7 @@ class _RemoteControllerStorage:
         self._target = target
 
     def _state_get(self, key=""):
-        raw = subprocess.run(
+        raw = JSubprocess.run(
             shlex.split(f"juju exec --unit {self._target} state-get {key}"),
             text=True,
             capture_output=True,

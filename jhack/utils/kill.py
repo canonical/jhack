@@ -2,13 +2,13 @@ import json
 import shlex
 import subprocess
 from json import JSONDecodeError
-from subprocess import CalledProcessError, check_call, check_output, getoutput
+from subprocess import CalledProcessError
 from typing import List, NamedTuple, Optional
 
 import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import InvalidUnitNameError, Target
+from jhack.helpers import InvalidUnitNameError, JSubprocess, Target
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("kill")
@@ -64,7 +64,9 @@ def _install_dependencies(
         print("Installing dependencies...")
 
     try:
-        check_call(shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        JSubprocess.check_call(
+            shlex.split(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        )
     except CalledProcessError:
         logger.exception(f"failed to install procps and gdb on {target.unit_name}")
         exit(1)
@@ -118,13 +120,13 @@ def _get_running_process_info(
         print("Searching for charm process...")
 
     try:
-        out = getoutput(cmd)
+        out = JSubprocess.getoutput(cmd)
     except CalledProcessError:
         logger.exception(f"failed to run ps -aux on {target.unit_name}")
         exit(1)
 
     if out.startswith("ERROR"):
-        ps_aux = getoutput(_eval_cmd(target, model, "ps -aux"))
+        ps_aux = JSubprocess.getoutput(_eval_cmd(target, model, "ps -aux"))
         logger.error("no charm process found in")
         print(ps_aux)
         exit(
@@ -171,7 +173,7 @@ def _kill_running_process(
         exit(0)
     else:
         try:
-            check_output(shlex.split(cmd))
+            JSubprocess.check_output(shlex.split(cmd))
         except CalledProcessError:
             logger.exception(f"failed to kill charm process with {cmd!r}")
             exit("could not terminate charm process")

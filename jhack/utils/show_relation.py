@@ -16,7 +16,7 @@ from jhack.helpers import (
     Format,
     FormatOption,
     FormatUnavailable,
-    JPopen,
+    JSubprocess,
     RichSupportedColorOptions,
     juju_status,
 )
@@ -152,7 +152,7 @@ def _show_unit(unit_name, related_to: str = None, endpoint: str = None, model: s
     if endpoint:
         args.extend(["--endpoint", endpoint])
     args.append(unit_name)
-    proc = JPopen(args)
+    proc = JSubprocess.popen(args)
     raw = proc.stdout.read().decode("utf-8").strip()
     return json.loads(raw)
 

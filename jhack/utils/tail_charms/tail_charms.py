@@ -9,7 +9,7 @@ from typing import (
 )
 
 import jhack.utils.tail_charms.ui.printer
-from jhack.helpers import JPopen, find_leaders, GetStatusError
+from jhack.helpers import JSubprocess, find_leaders, GetStatusError
 from jhack.logger import logger as jhack_logger
 from jhack.utils.debug_log_interlacer import DebugLogInterlacer
 from jhack.utils.tail_charms.core.juju_model_loglevel import (
@@ -23,7 +23,7 @@ logger = jhack_logger.getChild(__file__)
 
 def _get_debug_log(cmd):
     # to easily allow mocking in tests
-    return JPopen(cmd)
+    return JSubprocess.popen(cmd)
 
 
 def _do_replay(processor: Processor, model: str):
@@ -174,7 +174,6 @@ def _tail_charms(
     printer: Literal["rich", "raw"] = "rich",
     auto_bump_loglevel: bool = False,
 ):
-
     targets = targets or []
 
     if output:

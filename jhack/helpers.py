@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError, check_call, check_output
+from subprocess import PIPE, CalledProcessError
 from typing import Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import typer
@@ -62,9 +62,139 @@ ColorOption = typer.Option(
 )
 
 
+class JujuSSHError(RuntimeError):
+    """Raised when a juju command fails due to SSH access issues (exit code 255)."""
+
+
+# Commands that require SSH access to juju units.
+_JUJU_SSH_COMMANDS = {"ssh", "scp", "exec"}
+
+_SSH_ERROR_MSG = (
+    "SSH access failed (exit code 255).\n"
+    "SSH is not configured by default in Juju 4+.\n"
+    "To fix this, add your SSH key to Juju:\n"
+    "  1. If you don't have an SSH key yet: ssh-keygen -b 4096\n"
+    '  2. juju add-ssh-key "$(cat ~/.ssh/id_rsa.pub)"'
+)
+
+
+def _is_juju_ssh_cmd(args) -> bool:
+    """Check if args represent a juju ssh/scp/exec command."""
+    if isinstance(args, str):
+        tokens = args.split()
+    elif isinstance(args, (list, tuple)):
+        tokens = [str(a) for a in args]
+    else:
+        return False
+    # look for "juju" followed by one of the SSH-dependent subcommands
+    for i, token in enumerate(tokens):
+        if token.endswith("juju") and i + 1 < len(tokens):
+            if tokens[i + 1] in _JUJU_SSH_COMMANDS:
+                return True
+    return False
+
+
+def _check_ssh_failure(returncode: int, args, stderr: str = ""):
+    """Raise JujuSSHError if this looks like a juju SSH failure."""
+    if returncode == 255 and _is_juju_ssh_cmd(args):
+        raise JujuSSHError(_SSH_ERROR_MSG)
+
+
+class JSubprocess:
+    """Subprocess wrapper that intercepts juju SSH failures.
+
+    Provides static methods mirroring subprocess.Popen, subprocess.run,
+    subprocess.check_call, subprocess.check_output, and subprocess.getoutput.
+
+    Any juju ssh/scp/exec command that exits with code 255 will raise
+    JujuSSHError with an actionable message about configuring SSH keys.
+    """
+
+    @staticmethod
+    def popen(args, wait=False, silent_fail: bool = False, **kwargs):
+        """Env-passing-down Popen wrapper.
+
+        Drop-in replacement for the old JPopen/_JPopen.
+        """
+        proc = subprocess.Popen(
+            args,
+            env=kwargs.pop("env", os.environ),
+            stderr=kwargs.pop("stderr", PIPE),
+            stdout=kwargs.pop("stdout", PIPE),
+            **kwargs,
+        )
+        if wait:
+            proc.wait()
+
+        # this will presumably only ever branch if wait==True
+        if proc.returncode not in {0, None}:
+            _check_ssh_failure(proc.returncode, args)
+
+            msg = f"failed to invoke command ({args}, {kwargs})"
+            if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
+                msg += (
+                    " If you see an ERROR above saying something like "
+                    "'open ~/.local/share/juju/ssh: permission denied',"
+                    "you might have forgotten to "
+                    "'sudo snap connect jhack:dot-local-share-juju snapd'"
+                )
+                logger.error(msg)
+            elif not silent_fail:
+                logger.error(msg)
+
+        return proc
+
+    @staticmethod
+    def run(args, **kwargs):
+        """Wraps subprocess.run with SSH error detection."""
+        try:
+            result = subprocess.run(args, **kwargs)
+        except CalledProcessError as e:
+            _check_ssh_failure(e.returncode, args)
+            raise
+        if result.returncode:
+            _check_ssh_failure(result.returncode, args)
+        return result
+
+    @staticmethod
+    def check_call(args, **kwargs):
+        """Wraps subprocess.check_call with SSH error detection."""
+        try:
+            return subprocess.check_call(args, **kwargs)
+        except CalledProcessError as e:
+            _check_ssh_failure(e.returncode, args)
+            raise
+
+    @staticmethod
+    def check_output(args, **kwargs):
+        """Wraps subprocess.check_output with SSH error detection."""
+        try:
+            return subprocess.check_output(args, **kwargs)
+        except CalledProcessError as e:
+            _check_ssh_failure(e.returncode, args)
+            raise
+
+    @staticmethod
+    def getoutput(cmd):
+        """Wraps subprocess.getoutput with SSH error detection.
+
+        Unlike subprocess.getoutput, this checks the return code and
+        raises JujuSSHError on SSH failure.
+        """
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode:
+            _check_ssh_failure(result.returncode, cmd)
+        return result.stdout
+
+
 def check_command_available(cmd: str):
     try:
-        proc = JPopen(f"which {cmd}".split())
+        proc = JSubprocess.popen(f"which {cmd}".split())
         proc.wait()
     except Exception as e:
         logger.error(e, exc_info=True)
@@ -77,7 +207,7 @@ def check_command_available(cmd: str):
 def get_substrate(model: Optional[str] = None) -> Literal["k8s", "machine"]:
     """Attempts to guess whether we're talking k8s or machine."""
     cmd = f"juju show-model{f' {model}' if model else ''} --format=json"
-    proc = JPopen(cmd.split())
+    proc = JSubprocess.popen(cmd.split())
     raw = proc.stdout.read().decode("utf-8")
     model_info = jsn.loads(raw)
 
@@ -104,43 +234,10 @@ def get_local_charm() -> Path:
         raise FileNotFoundError(f"could not find a .charm file in {cwd}")
 
 
-def JPopen(args: List[str], wait=False, **kwargs):  # noqa
-    return _JPopen(tuple(args), wait, **kwargs)
-
-
-def _JPopen(args: Tuple[str], wait: bool, silent_fail: bool = False, **kwargs):  # noqa
-    # Env-passing-down Popen
-    proc = subprocess.Popen(
-        args,
-        env=kwargs.pop("env", os.environ),
-        stderr=kwargs.pop("stderr", PIPE),
-        stdout=kwargs.pop("stdout", PIPE),
-        **kwargs,
-    )
-    if wait:
-        proc.wait()
-
-    # this will presumably only ever branch if wait==True
-    if proc.returncode not in {0, None}:
-        msg = f"failed to invoke command ({args}, {kwargs})"
-        if IS_SNAPPED and "ssh client keys" in proc.stderr.read().decode("utf-8"):
-            msg += (
-                " If you see an ERROR above saying something like "
-                "'open ~/.local/share/juju/ssh: permission denied',"
-                "you might have forgotten to "
-                "'sudo snap connect jhack:dot-local-share-juju snapd'"
-            )
-            logger.error(msg)
-        elif not silent_fail:
-            logger.error(msg)
-
-    return proc
-
-
 def juju_log(unit: str, msg: str, model: Optional[str] = None, debug=True):
     m = f" -m {model}" if model else ""
     d = " --debug" if debug else ""
-    JPopen(f"juju exec -u {unit}{m} -- juju-log{d}".split() + [msg])
+    JSubprocess.popen(f"juju exec -u {unit}{m} -- juju-log{d}".split() + [msg])
 
 
 def juju_status(app_name=None, model: Optional[str] = None, json: bool = False):
@@ -214,7 +311,7 @@ def is_k8s_model(status):
 
 @lru_cache
 def juju_client_version() -> Tuple[int, ...]:
-    proc = JPopen("juju version".split())
+    proc = JSubprocess.popen("juju version".split())
     raw = proc.stdout.read().decode("utf-8").strip()
     version = raw.split("-")[0]
     return tuple(map(int, version.split(".")))
@@ -223,7 +320,7 @@ def juju_client_version() -> Tuple[int, ...]:
 @lru_cache
 def juju_agent_version() -> Optional[Tuple[int, ...]]:
     try:
-        proc = JPopen("juju controllers --format json".split())
+        proc = JSubprocess.popen("juju controllers --format json".split())
         raw = json.loads(proc.stdout.read().decode("utf-8"))
     except FileNotFoundError:
         logger.error("juju not found")
@@ -236,7 +333,7 @@ def juju_agent_version() -> Optional[Tuple[int, ...]]:
 
 def get_models(include_controller=False):
     cmd = "juju models --format json"
-    proc = JPopen(cmd.split())
+    proc = JSubprocess.popen(cmd.split())
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
     if include_controller:
@@ -248,21 +345,21 @@ def show_unit(unit: str, model: Optional[str] = None):
     _model = f"-m {model} " if model else ""
     cmd = f"juju show-unit {_model}{unit} --format json".split()
     logger.debug(cmd)
-    proc = JPopen(cmd)
+    proc = JSubprocess.popen(cmd)
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[unit]
 
 
 def show_application(application: str, model: Optional[str] = None):
     _model = f"-m {model} " if model else ""
-    proc = JPopen(f"juju show-application {application} --format json".split())
+    proc = JSubprocess.popen(f"juju show-application {application} --format json".split())
     raw = json.loads(proc.stdout.read().decode("utf-8"))
     return raw[application]
 
 
 def get_current_model() -> Optional[str]:
     cmd = "juju models --format json"
-    proc = JPopen(cmd.split())
+    proc = JSubprocess.popen(cmd.split())
     proc.wait()
     data = json.loads(proc.stdout.read().decode("utf-8"))
     return data.get("current-model", None)
@@ -274,7 +371,7 @@ def is_dispatch_aware(unit, model=None) -> bool:
     cmd = f"juju ssh{_model} {unit} cat /var/lib/juju/agents/{unit_sanitized}/charm/dispatch"
     logger.debug(f"running {cmd}")
     try:
-        check_call(shlex.split(cmd), stdout=PIPE, stderr=PIPE)
+        JSubprocess.check_call(shlex.split(cmd), stdout=PIPE, stderr=PIPE)
         return True
     except CalledProcessError as e:
         if e.returncode == 1:
@@ -295,7 +392,7 @@ def modify_remote_file(unit: str, path: str):
             "cat",
             path,
         ]
-        buf = check_output(cmd)
+        buf = JSubprocess.check_output(cmd)
         f = Path(tf.name)
         f.write_bytes(buf)
 
@@ -308,7 +405,7 @@ def modify_remote_file(unit: str, path: str):
             tf.name,
             f"{unit}:{path}",
         ]
-        check_call(cmd)
+        JSubprocess.check_call(cmd)
 
 
 def _push_file_k8s_cmd(
@@ -430,7 +527,7 @@ def push_file(
         print(f"would run {cmd}")
         return
 
-    proc = JPopen([cmd], shell=True)
+    proc = JSubprocess.popen([cmd], shell=True)
     proc.wait()
     retcode = proc.returncode
     if retcode != 0:
@@ -464,7 +561,7 @@ def rm_file(
         print(f"would run: {cmd}")
         return
     try:
-        check_output(shlex.split(cmd))
+        JSubprocess.check_output(shlex.split(cmd))
     except CalledProcessError as e:
         raise RuntimeError(f"Failed to remove {full_remote_path} from {unit}.") from e
 
@@ -484,7 +581,7 @@ def fetch_file(
     charm_path = charm_root_path(unit) / remote_path
     cmd = f"juju ssh{model_arg} --container {container_name} {unit} cat {charm_path}"
     try:
-        raw = subprocess.run(shlex.split(cmd), text=True, capture_output=True, check=True).stdout
+        raw = JSubprocess.run(shlex.split(cmd), text=True, capture_output=True, check=True).stdout
     except CalledProcessError:
         logger.debug(f"error fetching {charm_path} from {unit}@{model}:", exc_info=True)
         raise FetchError(f"Failed to fetch {charm_path} from {unit}.")
@@ -502,7 +599,7 @@ JujuVersion = namedtuple("JujuVersion", ("version", "build"))
 
 
 def juju_version() -> JujuVersion:
-    proc = JPopen("juju version".split())
+    proc = JSubprocess.popen("juju version".split())
     out = proc.stdout.read().decode("utf-8")
     if "-" in out:
         v, tag = out.split("-", 1)
@@ -588,7 +685,7 @@ def get_libinfo(app: str, model: str, machine: bool = False) -> List[LibInfo]:
 
 
 def _exec_and_parse_libinfo(cmd: str):
-    proc = JPopen(shlex.split(cmd))
+    proc = JSubprocess.popen(shlex.split(cmd))
     out = proc.stdout.read().decode("utf-8")
     libs = out.strip().split("\n")
 
@@ -754,7 +851,7 @@ def get_notices(unit: str, container_name: str, model: Optional[str] = None):
         f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
         f"/pebble.socket http://localhost/v1/notices"
     )
-    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
+    return json.loads(JSubprocess.popen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 
 def get_checks(unit: str, container_name: str, model: Optional[str] = None):
@@ -763,19 +860,19 @@ def get_checks(unit: str, container_name: str, model: Optional[str] = None):
         f"juju ssh {_model}{unit} curl --unix-socket /charm/containers/{container_name}"
         f"/pebble.socket http://localhost/v1/checks"
     )
-    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())["result"]
+    return json.loads(JSubprocess.popen(shlex.split(cmd), text=True).stdout.read())["result"]
 
 
 def get_secrets(model: Optional[str] = None) -> dict:
     _model = f"{model} " if model else ""
     cmd = f"juju secrets {_model} --format=json"
-    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
+    return json.loads(JSubprocess.popen(shlex.split(cmd), text=True).stdout.read())
 
 
 def show_secret(secret_id, model: Optional[str] = None) -> dict:
     _model = f"{model} " if model else ""
     cmd = f"juju show-secret {_model} {secret_id} --format=json"
-    return json.loads(JPopen(shlex.split(cmd), text=True).stdout.read())
+    return json.loads(JSubprocess.popen(shlex.split(cmd), text=True).stdout.read())
 
 
 def find_leaders(targets: List[str] = None, model: Optional[str] = None):
@@ -827,7 +924,7 @@ def get_venv_location(unit: str, model: Optional[str] = None):
     _model = f" --model {model}" if model else ""
     charm_root_path = Target.from_name(unit).charm_root_path
     cmd = f"juju ssh {unit}{_model} {charm_root_path}/venv/bin/python --version"
-    out = subprocess.run(
+    out = JSubprocess.run(
         shlex.split(cmd),
         text=True,
         capture_output=True,

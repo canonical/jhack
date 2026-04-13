@@ -16,7 +16,7 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 
-from jhack.helpers import Target, fetch_file
+from jhack.helpers import JSubprocess, Target, fetch_file
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("tail_logs")
@@ -53,7 +53,7 @@ class SvcLogTable(Table):
         /charm/bin/pebble logs {self.service} | tail -n {available_lines}"
 
         try:
-            out = subprocess.getoutput(cmd)
+            out = JSubprocess.getoutput(cmd)
         except CalledProcessError:
             logger.exception()
             exit(f"error executing {cmd}")
@@ -92,7 +92,7 @@ class JujuLogTable(Table):
         cmd = rf"juju debug-log --include {self.target.unit_name} | tail -n {available_lines}"
 
         try:
-            out = subprocess.getoutput(cmd)
+            out = JSubprocess.getoutput(cmd)
         except CalledProcessError:
             logger.exception()
             exit(f"error executing {cmd}")
@@ -117,8 +117,7 @@ def _pebble(target: Target, *, command: str, container: str = "charm"):
     )
     cmd = shlex.split(rf"juju ssh {target.unit_name}{container_var} /charm/bin/pebble {command}")
     try:
-        proc = subprocess.Popen(cmd, bufsize=1000, stdout=subprocess.PIPE)
-        proc.wait()
+        proc = JSubprocess.popen(cmd, wait=True)
 
     except CalledProcessError:
         logger.error("")

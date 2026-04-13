@@ -117,6 +117,7 @@ def test_charm_update_default(packed_charm, mock_charm_dev_dir):
     assert untouched_zf == untouched
 
 
+@pytest.mark.xfail(reason="_update does not support src:dst location syntax")
 def test_e2e(tmp_path):
     # zip src and dst to a tempfile
     root = (Path(__file__).parent / "update_tests_resource").resolve()

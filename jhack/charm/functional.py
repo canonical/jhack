@@ -12,7 +12,7 @@ from ops.model import StatusBase
 from typer import Option
 
 from jhack.charm.update import update
-from jhack.helpers import JPopen
+from jhack.helpers import JSubprocess
 from jhack.logger import logger
 
 RESOURCE_ROOT = Path(__file__).parent / "resources" / "functional-charm"
@@ -186,7 +186,7 @@ def run(
         if dry_run:
             print(f"would run: {cmd}")
             return
-        proc = JPopen(cmd.split(), cwd=charm_package.parent.absolute())
+        proc = JSubprocess.popen(cmd.split(), cwd=charm_package.parent.absolute())
         proc.wait()
 
     print("all done.")

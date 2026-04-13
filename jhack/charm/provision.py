@@ -8,7 +8,7 @@ import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.config import get_jhack_data_path
-from jhack.helpers import JPopen, is_k8s_model, juju_status
+from jhack.helpers import JSubprocess, is_k8s_model, juju_status
 from jhack.logger import logger as jhack_logger
 
 logger = jhack_logger.getChild("provision")
@@ -65,19 +65,19 @@ def _provision_unit(
     try:
         logger.info("setting workload status to maintenance...")
         wl_status = status["applications"][app_name]["units"][unit]["workload-status"]
-        proc = JPopen(
+        proc = JSubprocess.popen(
             f"juju exec --unit {unit} -- status-set maintenance provisioning... &".split()
         )
         proc.wait()
 
         logger.info(f"dropping {tf_script} to {unit}:provision")
-        proc = JPopen(f"juju scp {tf_script.absolute()} {unit}:/provision".split())
+        proc = JSubprocess.popen(f"juju scp {tf_script.absolute()} {unit}:/provision".split())
         proc.wait()
 
         container_arg = f" --container {container}" if (container and is_k8s_model(status)) else ""
         cmd = f"juju ssh{container_arg} {unit} /provision"
         logger.debug(f"cmd: {cmd}")
-        proc = JPopen(cmd.split())
+        proc = JSubprocess.popen(cmd.split())
         proc.wait(timeout=timeout)
 
         while proc.returncode is None:
@@ -96,7 +96,7 @@ def _provision_unit(
         try:
             # failsafe-try to reset status
             # todo: if status changed in the meantime, don't overwrite it!
-            proc = JPopen(
+            proc = JSubprocess.popen(
                 f"juju exec --unit {unit} -- "
                 f"status-set {wl_status['current']} "
                 f"{wl_status.get('message', '')} &".split()

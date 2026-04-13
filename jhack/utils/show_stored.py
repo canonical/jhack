@@ -19,7 +19,7 @@ from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
-from jhack.helpers import JPopen, get_substrate
+from jhack.helpers import JSubprocess, get_substrate
 from jhack.logger import logger
 
 Adapter = Callable[[Any], RenderableType]
@@ -316,7 +316,7 @@ def get_local_storage(unit_name: str, model: str = None):
         ) as tf:
             cmd = base_cmd + [tf.name]
 
-            proc = JPopen(cmd)
+            proc = JSubprocess.popen(cmd)
             proc.wait(10)
 
             if not proc.returncode == 0:
@@ -335,7 +335,7 @@ def get_controller_storage(unit_name: str, model: str = None):
         with tempfile.NamedTemporaryFile(
             suffix=".db", prefix="controller-state-", dir=expanduser("~")
         ) as tf:
-            proc = JPopen(cmd)
+            proc = JSubprocess.popen(cmd)
             proc.wait(10)
 
             if not proc.returncode == 0:

@@ -7,7 +7,7 @@ import os
 import shlex
 import sys
 from pathlib import Path
-from subprocess import CalledProcessError, run
+from subprocess import CalledProcessError
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 import typer
@@ -23,6 +23,7 @@ from scenario.state import (
 )
 
 from jhack.conf.conf import check_destructive_commands_allowed
+from jhack.helpers import JSubprocess
 from jhack.logger import logger as jhack_root_logger
 from jhack.scenario.dict_to_state import dict_to_state
 from jhack.scenario.errors import InvalidTargetUnitName, StateApplyError
@@ -140,7 +141,7 @@ def exec_in_unit(target: JujuUnitName, model: str, cmds: List[str]):
     for cmd in cmds:
         j_exec_cmd = f"juju exec -u {target}{_model} -- {cmd}"
         try:
-            run(shlex.split(j_exec_cmd))
+            JSubprocess.run(shlex.split(j_exec_cmd))
         except CalledProcessError as e:
             raise StateApplyError(
                 f"Failed to apply state: process exited with {e.returncode}; "
@@ -153,7 +154,7 @@ def run_commands(cmds: List[str]):
     logger.info("Applying remaining state...")
     for cmd in cmds:
         try:
-            run(shlex.split(cmd))
+            JSubprocess.run(shlex.split(cmd))
         except CalledProcessError as e:
             # todo: should we log and continue instead?
             raise StateApplyError(
