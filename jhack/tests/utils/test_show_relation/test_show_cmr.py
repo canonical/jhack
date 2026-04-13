@@ -33,6 +33,7 @@ def test_get_databag_content_remote():
         endpoint="ingress",
         remote_endpoint="ingress",
         model="clite",
+        remote_model=None,
     )
 
     assert db_contents.url == "alertmanager:ingress"

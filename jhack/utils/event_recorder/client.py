@@ -3,13 +3,13 @@ import json
 import sys
 import tempfile
 from pathlib import Path
-from subprocess import PIPE, CalledProcessError, check_call
+from subprocess import PIPE, CalledProcessError
 from typing import Optional, Union
 
 import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import fetch_file, juju_log, modify_remote_file
+from jhack.helpers import JSubprocess, fetch_file, juju_log, modify_remote_file
 from jhack.logger import logger
 from jhack.utils.event_recorder.memo_tools import (
     DECORATE_MODEL,
@@ -216,7 +216,7 @@ def _copy_recorder_script(unit: str):
         f"juju scp {RECORDER_SOURCE} "
         f"{unit}:/var/lib/juju/agents/unit-{unit_sanitized}/charm/src/recorder.py"
     )
-    check_call(cmd.split())
+    JSubprocess.check_call(cmd.split())
 
 
 def _inject_memoizer(unit: str):
@@ -268,7 +268,7 @@ def _insert_record_current_event_call(unit):
         _inject_record_current_event_call(Path(f))
 
     # restore permissions:
-    check_call(["juju", "ssh", unit, "chmod", "+x", charm_path])
+    JSubprocess.check_call(["juju", "ssh", unit, "chmod", "+x", charm_path])
 
 
 def _is_installed(unit: str):
@@ -276,7 +276,7 @@ def _is_installed(unit: str):
     cmd = f"juju ssh {unit} ls /var/lib/juju/agents/unit-{unit_sanitized}/charm/src/recorder.py"
 
     try:
-        check_call(cmd.split(), stderr=PIPE, stdout=PIPE)
+        JSubprocess.check_call(cmd.split(), stderr=PIPE, stdout=PIPE)
     except CalledProcessError:
         return False
     return True

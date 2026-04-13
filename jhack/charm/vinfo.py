@@ -14,7 +14,7 @@ from rich.text import Text
 
 from jhack.helpers import (
     ColorOption,
-    JPopen,
+    JSubprocess,
     RichSupportedColorOptions,
     cached_juju_status,
     check_command_available,
@@ -27,7 +27,7 @@ logger = jhack_logger.getChild(__file__)
 
 
 def _get_charmcraft_lib_info(charm_name):
-    out = JPopen(f"charmcraft list-lib {charm_name} --format=json".split())
+    out = JSubprocess.popen(f"charmcraft list-lib {charm_name} --format=json".split())
     return json.loads(out.stdout.read().decode("utf-8"))
 
 

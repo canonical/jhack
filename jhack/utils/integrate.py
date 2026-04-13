@@ -20,7 +20,7 @@ from rich.text import Text
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import (
     ColorOption,
-    JPopen,
+    JSubprocess,
     RichSupportedColorOptions,
     get_current_model,
 )
@@ -413,7 +413,7 @@ class IntegrationMatrix:
         sym = "<-X->" if verb == "disconnect" else "<-->"
         t = Table(show_header=False, show_edge=False, show_lines=False, show_footer=False)
         for cmd, (ep1, _, ep2) in zip(cmd_list, target_bindings):
-            proc = JPopen(cmd.split(), wait=True, silent_fail=True)
+            proc = JSubprocess.popen(cmd.split(), wait=True, silent_fail=True)
             color = "red" if proc.returncode == 0 else "green"
             t.add_row(
                 Align(Text(ep1), align="right"),
@@ -708,7 +708,7 @@ def _pull_cmrs(
     # else juju will complain that you can't modify an offer that already has some
     # connected consumers
     for cmd in setup_scripts + relate_scripts:
-        if JPopen(cmd.split()).wait() != 0:
+        if JSubprocess.popen(cmd.split()).wait() != 0:
             print(f"{cmd} failed")
             continue
 

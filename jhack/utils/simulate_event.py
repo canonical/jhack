@@ -8,7 +8,7 @@ import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import (
-    JPopen,
+    JSubprocess,
     get_checks,
     get_current_model,
     get_notices,
@@ -376,7 +376,7 @@ def _juju_exec_cmd(
 ):
     cmd, unit_name = args
     logger.info(cmd)
-    proc = JPopen(cmd.split(), text=True)
+    proc = JSubprocess.popen(cmd.split(), text=True)
     proc.wait()
 
     if proc.returncode != 0:

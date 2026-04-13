@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import JPopen
+from jhack.helpers import JSubprocess
 
 
 def unbork_juju(
@@ -46,5 +46,5 @@ def unbork_juju(
 
     check_destructive_commands_allowed("unbork-juju")
 
-    proc = JPopen(cmd)
+    proc = JSubprocess.popen(cmd)
     proc.wait()

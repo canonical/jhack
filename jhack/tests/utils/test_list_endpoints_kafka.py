@@ -53,4 +53,5 @@ def mock_stdout():
 
 @pytest.mark.parametrize("show_versions", (True, False))
 def test_list_endpoints(show_versions):
-    _list_endpoints("kafka", show_versions=show_versions)
+    extra_fields = ["v"] if show_versions else []
+    _list_endpoints("kafka", extra_fields=extra_fields)

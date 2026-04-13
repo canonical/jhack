@@ -10,13 +10,13 @@ from functools import partial
 from importlib.util import module_from_spec, spec_from_file_location
 from multiprocessing import Pool
 from pathlib import Path
-from subprocess import getoutput
 from typing import List, Optional
 
 import typer
 
 from jhack.conf.conf import check_destructive_commands_allowed
 from jhack.helpers import (
+    JSubprocess,
     Target,
     fetch_file,
     get_units,
@@ -483,7 +483,7 @@ def _run_crpc(target, env, crpc_dispatch_name, model: str = None):
     )
 
     logger.debug(f"crpc script={exec_dispatch_cmd}")
-    out = getoutput(exec_dispatch_cmd)
+    out = JSubprocess.getoutput(exec_dispatch_cmd)
     return out
 
 

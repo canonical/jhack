@@ -17,7 +17,7 @@ from rich.text import Text
 
 from jhack.conf.conf import CONFIG, check_destructive_commands_allowed
 from jhack.helpers import (
-    JPopen,
+    JSubprocess,
     Target,
     get_leader_unit,
     get_substrate,
@@ -57,7 +57,7 @@ def _patch_machine(
         print(f"would run: {cmd}")
         return
 
-    JPopen(shlex.split(cmd))
+    JSubprocess.popen(shlex.split(cmd))
 
 
 def _wait_for_leader(unit, dry_run: bool = False):
@@ -212,7 +212,7 @@ def _patch_k8s(
         "-c",
         f'"{add_layer} && {containeragent_cmd} && {server_cmd_pebble} && {server_cmd_k8s}"',
     ]
-    JPopen(cmd, wait=True)
+    JSubprocess.popen(cmd, wait=True)
 
     if cleanup:
         logger.debug("cleaning up layer file...")

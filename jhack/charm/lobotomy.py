@@ -2,7 +2,7 @@ import shlex
 import subprocess
 import tempfile
 from pathlib import Path
-from subprocess import CalledProcessError, check_output
+from subprocess import CalledProcessError
 from typing import List, Optional, Tuple, Union
 
 import typer
@@ -11,7 +11,14 @@ from rich.table import Table
 from rich.text import Text
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import Target, get_all_units, get_substrate, parse_target, push_file
+from jhack.helpers import (
+    JSubprocess,
+    Target,
+    get_all_units,
+    get_substrate,
+    parse_target,
+    push_file,
+)
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -34,7 +41,7 @@ def _get_lobo_details(target: Target) -> Tuple[Union[bool, List[str]], str]:
     # if dispatch.ori is present; dispatch is lobo dispatch (or cleanup failed; either way)
     cmd = f"juju ssh {target.unit_name} cat {target.charm_root_path / 'dispatch'} | grep -A1 DISABLED= "
     try:
-        out = check_output(shlex.split(cmd), stderr=subprocess.PIPE, text=True).strip()
+        out = JSubprocess.check_output(shlex.split(cmd), stderr=subprocess.PIPE, text=True).strip()
         disabled, exitcode = out.split("\n") if out else (None, None)
         return _parse_disabled(disabled), _parse_exit_code(exitcode)
     except CalledProcessError:
@@ -157,7 +164,7 @@ def _do_lobotomy(
         )
 
         try:
-            check_output(shlex.split(move_cmd))
+            JSubprocess.check_output(shlex.split(move_cmd))
         except CalledProcessError:
             logger.exception(move_cmd)
             # going on would leave us in an inconsistent state, especially if we're applying
@@ -182,7 +189,7 @@ def _do_lobotomy(
 
         cmd = f"juju ssh {target.unit_name}{sudo} chmod +x {target.charm_root_path / 'dispatch'}"
         try:
-            subprocess.check_call(shlex.split(cmd))
+            JSubprocess.check_call(shlex.split(cmd))
         except CalledProcessError:
             logger.exception(cmd)
             exit("failed to make dispatch executable! charm is bork.")

@@ -15,7 +15,7 @@ from rich.text import Text
 from jhack.conf.conf import CONFIG, check_destructive_commands_allowed
 from jhack.helpers import (
     GetStatusError,
-    JPopen,
+    JSubprocess,
     get_current_model,
     get_models,
     juju_status,
@@ -274,7 +274,7 @@ def _fire(nukeable: Nukeable, nuke: str):
 
     # todo split model nukes to a separate process and pass there shell=True
     logger.debug(f"nuking {nukeable} with {nuke}")
-    proc = JPopen(nuke.split(" "))
+    proc = JSubprocess.popen(nuke.split(" "))
     proc.wait()
     while proc.returncode is None:
         sleep(0.1)

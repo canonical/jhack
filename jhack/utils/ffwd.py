@@ -3,7 +3,7 @@ import time
 
 import typer
 
-from jhack.helpers import JPopen
+from jhack.helpers import JSubprocess
 
 
 def fast_forward(
@@ -20,7 +20,9 @@ def fast_forward(
     ),
 ):
     """Temporarily speed up update-status hook interval."""
-    cmd = JPopen(f"juju model-config update-status-hook-interval={fast_interval}s".split(" "))
+    cmd = JSubprocess.popen(
+        f"juju model-config update-status-hook-interval={fast_interval}s".split(" ")
+    )
     cmd.wait()
     start = datetime.datetime.now()
     ping = start
@@ -52,5 +54,7 @@ def fast_forward(
     except KeyboardInterrupt:
         print("(aborted)")
 
-    cmd = JPopen(f"juju model-config update-status-hook-interval={slow_interval}".split(" "))
+    cmd = JSubprocess.popen(
+        f"juju model-config update-status-hook-interval={slow_interval}".split(" ")
+    )
     cmd.wait()
