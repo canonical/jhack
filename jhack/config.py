@@ -17,9 +17,17 @@ def get_home_dir() -> Path:
     # First, we get the user in a reliable way
     user = getpass.getuser()
 
-    # We then expand the path of the user we found
-    # (otherwise snap will pick $HOME == /home/<user>/snap/jhack/current/)
-    return Path(f"~{user}").expanduser().absolute()
+    try:
+        # We then expand the path of the user we found
+        # (otherwise snap will pick $HOME == /home/<user>/snap/jhack/current/)
+        # Note: expanduser() can fail when the username contains special
+        # characters (e.g. '@' in email-style usernames in snap environments),
+        # so we fall back to constructing the path manually.
+        home_dir = Path(f"~{user}").expanduser().absolute()
+    except Exception:
+        home_dir = Path("/home") / user
+    return home_dir
+
 
 
 def get_jhack_data_path() -> Path:
