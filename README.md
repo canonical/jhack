@@ -26,7 +26,7 @@ pip install git+https://github.com/canonical/jhack
 ##### as snap:
 
 ```shell
-sudo snap install --edge jhack
+sudo snap install --channel=latest/edge jhack
 sudo snap connect jhack:dot-local-share-juju snapd
 sudo snap connect jhack:ssh-read snapd
 ```
