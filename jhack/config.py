@@ -24,7 +24,11 @@ def get_home_dir() -> Path:
         # characters (e.g. '@' in email-style usernames in snap environments),
         # so we fall back to constructing the path manually.
         home_dir = Path(f"~{user}").expanduser().absolute()
-    except Exception:
+    except RuntimeError:
+        logger.warning(
+            f"Could not expand home directory for user {user!r}; "
+            f"falling back to /home/{user}"
+        )
         home_dir = Path("/home") / user
     return home_dir
 
