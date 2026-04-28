@@ -62,12 +62,16 @@ class Config:
     def _load(self):
         try:
             self._data = toml.load(self._path.open())
-        except PermissionError as e:
-            logger.error(
-                f"Unable to open config file at {self._path}."
-                f"Try `sudo snap connect jhack:dot-config-jhack snapd`."
+        except (PermissionError, OSError) as e:
+            logger.warning(
+                f"Unable to open config file at {self._path}: {e}. "
+                f"Falling back to default config. "
+                f"Your config has not been persisted. "
+                f"If you want to unblock this, check the permissions on {self._path}. "
+                f"Snap users: try `sudo snap connect jhack:dot-config-jhack snapd`."
             )
-            raise e
+            self._data = toml.load(self._DEFAULTS.open())
+            self.is_default = True
 
     @property
     def data(self):
