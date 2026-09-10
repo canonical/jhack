@@ -1,18 +1,21 @@
 import asyncio
+import configparser
 import datetime
 import os
 import re
+import shlex
 import time
 import typing
 from itertools import product
 from pathlib import Path
 from typing import List, Optional
 
+import toml
 import typer
 import yaml
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import _get_units, juju_status, push_file
+from jhack.helpers import JSubprocess, _get_units, get_substrate, juju_status, push_file
 from jhack.logger import logger
 
 logger = logger.getChild(__file__)
@@ -132,6 +135,97 @@ def walk(
     return walked
 
 
+def _resolve_package_name(pkg_path: Path) -> str:
+    """Resolve the importable package name from a local Python package directory.
+
+    Looks for pyproject.toml ``[project].name`` or ``[tool.poetry].name``,
+    then setup.cfg ``[metadata].name``.  Normalizes per PEP 503
+    (lowercase, hyphens → underscores).  Falls back to the directory name.
+    """
+    pyproject = pkg_path / "pyproject.toml"
+    if pyproject.is_file():
+        try:
+            data = toml.load(pyproject)
+            name = data.get("project", {}).get("name") or data.get("tool", {}).get(
+                "poetry", {}
+            ).get("name")
+            if name:
+                return re.sub(r"[-_.]+", "_", name).lower()
+        except Exception as e:
+            logger.warning(f"failed to parse {pyproject}: {e}")
+
+    setup_cfg = pkg_path / "setup.cfg"
+    if setup_cfg.is_file():
+        try:
+            cfg = configparser.ConfigParser()
+            cfg.read(str(setup_cfg))
+            name = cfg.get("metadata", "name", fallback=None)
+            if name:
+                return re.sub(r"[-_.]+", "_", name).lower()
+        except Exception as e:
+            logger.warning(f"failed to parse {setup_cfg}: {e}")
+
+    logger.info(
+        f"no pyproject.toml/setup.cfg found in {pkg_path}; "
+        f"using directory name {pkg_path.name!r} as package name"
+    )
+    return pkg_path.name
+
+
+def _discover_remote_python_version(
+    unit: str,
+    model: Optional[str],
+    container_name: str,
+    venv_lib_path: str,
+) -> str:
+    """Discover the python3.X directory inside the remote charm venv.
+
+    Lists ``<venv_lib_path>/`` via ``juju ssh`` and returns the first entry
+    matching ``python3.*`` (highest version if multiple are found).
+    """
+    model_arg = f" -m {model}" if model else ""
+
+    substrate = get_substrate(model)
+    if substrate == "k8s":
+        container_arg = f" --container {container_name}" if container_name else ""
+        cmd = f"juju ssh{model_arg}{container_arg} {unit} ls {venv_lib_path}"
+    else:
+        cmd = f"juju ssh{model_arg} {unit} ls {venv_lib_path}"
+
+    proc = JSubprocess.popen(shlex.split(cmd), wait=True)
+    stdout = proc.stdout.read().decode("utf-8").strip()
+    if proc.returncode:
+        stderr = proc.stderr.read().decode("utf-8").strip()
+        exit(
+            f"Failed to list remote venv lib directory ({venv_lib_path}) on {unit}.\n"
+            f"  stderr: {stderr}\n"
+            f"Is the charm deployed with a virtualenv?"
+        )
+
+    candidates = sorted(
+        [
+            line.strip().rstrip("/")
+            for line in stdout.splitlines()
+            if line.strip().startswith("python3")
+        ],
+        reverse=True,
+    )
+    if not candidates:
+        exit(
+            f"No python3.X directory found in {venv_lib_path} on {unit}.\n"
+            f"  ls output: {stdout!r}\n"
+            f"Is the charm deployed with a virtualenv?"
+        )
+
+    if len(candidates) > 1:
+        logger.warning(
+            f"multiple python directories found in remote venv: {candidates}; "
+            f"using {candidates[0]}"
+        )
+
+    return candidates[0]
+
+
 # TODO: add --watch flag to switch between the one-shot force-feed functionality and the
 #  legacy 'sync' mode
 #  - plus change warning
@@ -150,6 +244,7 @@ def _sync(
     initial_sync: bool = False,
     include_files: str = ".*\.py$",
     venv: Optional[Path] = None,
+    single_dependency: Optional[Path] = None,
 ):
     status = juju_status(json=True, model=model)
     apps_status = status.get("applications")
@@ -190,6 +285,45 @@ def _sync(
     if not units:
         exit("No targets found.")
 
+    local_root_override = None
+
+    if single_dependency:
+        dep_path = Path(single_dependency).expanduser().resolve()
+        if not dep_path.is_dir():
+            exit(f"--single-dependency: not a directory: {single_dependency}")
+
+        pkg_name = _resolve_package_name(dep_path)
+        print(f"Resolved package name: {pkg_name!r}")
+
+        # Pick the first unit to probe the remote venv structure.
+        first_unit = next(iter(units))
+        app, _, unit_id = first_unit.rpartition("/")
+
+        venv_lib_path = f"/var/lib/juju/agents/unit-{app}-{unit_id}/charm/venv/lib"
+        python_dir = _discover_remote_python_version(
+            first_unit,
+            model,
+            container_name,
+            venv_lib_path,
+        )
+        print(f"Detected remote Python: {python_dir}")
+
+        # Build the remote root so that files inside dep_path are pushed to
+        # <venv>/lib/<python_dir>/site-packages/<pkg_name>/...
+        #
+        # push_to_remote_juju_unit (with local_root_override) strips
+        # the dep_path prefix from each file's absolute path, leaving only
+        # the sub-path *within* the package.  remote_root already ends with
+        # <pkg_name>/, so the final remote path becomes:
+        #   <site_packages>/<pkg_name>/<sub_path>
+        site_packages = (
+            "/var/lib/juju/agents/unit-{{app}}-{{unit_id}}/charm/venv/"
+            f"lib/{python_dir}/site-packages/"
+        )
+        remote_root = site_packages + pkg_name + "/"
+        local_root_override = str(dep_path)
+        source_dirs = [str(single_dependency)]
+
     venv = venv.expanduser().absolute() if venv else None
 
     remote_root = remote_root or "/var/lib/juju/agents/unit-{app}-{unit_id}/charm/"
@@ -212,6 +346,7 @@ def _sync(
                         unit=unit,
                         container_name=container_name,
                         dry_run=dry_run,
+                        local_root_override=local_root_override,
                     )
                 )
 
@@ -233,6 +368,7 @@ def _sync(
                         model=model,
                         container_name=container_name,
                         dry_run=dry_run,
+                        local_root_override=local_root_override,
                     )
                     for unit, changed in product(units, changed_files)
                 )
@@ -334,6 +470,15 @@ def sync(
         "--touch",
         help="Only push these files and exit. Overrules --skip-initial-sync and --source-dirs",
     ),
+    single_dependency: Optional[Path] = typer.Option(
+        None,
+        "--single-dependency",
+        "-d",
+        help="Watch a local Python package directory and sync changes into the "
+        "charm's remote venv site-packages. The package name is auto-detected "
+        "from pyproject.toml/setup.cfg, or inferred from the directory name. "
+        "Mutually exclusive with --venv, --remote-root, and --source.",
+    ),
 ):
     """Syncs a local folder to a remote juju unit via juju scp.
 
@@ -351,6 +496,24 @@ def sync(
       control over.
     """
     check_destructive_commands_allowed("sync")
+
+    if single_dependency:
+        if venv is not None:
+            exit(
+                "Error: --single-dependency is mutually exclusive with --venv. "
+                "--single-dependency already syncs into the charm's venv."
+            )
+        if remote_root is not None:
+            exit(
+                "Error: --single-dependency is mutually exclusive with --remote-root. "
+                "--single-dependency automatically targets the charm's venv site-packages."
+            )
+        # Detect if --source was explicitly provided (differs from default)
+        if source_dirs != ["./src", "./lib"]:
+            exit(
+                "Error: --single-dependency is mutually exclusive with --source. "
+                "--single-dependency sets its own watch directory."
+            )
 
     if skip_initial_sync:
         logger.warning(
@@ -373,6 +536,7 @@ def sync(
         include_files=include_files,
         initial_sync=initial_sync,
         venv=venv,
+        single_dependency=single_dependency,
     )
 
 
@@ -385,6 +549,7 @@ async def push_to_remote_juju_unit(
     container_name: str,
     model: str = None,
     dry_run: bool = False,
+    local_root_override: str = None,
 ):
     app, _, unit_id = unit.rpartition("/")
 
@@ -403,7 +568,8 @@ async def push_to_remote_juju_unit(
 
         remote_file_path = (remote_venv_root + pkg_path).format(unit_id=unit_id, app=app)
     else:
-        remote_file_path = (remote_root + str(file.absolute())[len(os.getcwd()) + 1 :]).format(
+        local_root = local_root_override or os.getcwd()
+        remote_file_path = (remote_root + str(file.absolute())[len(local_root) + 1 :]).format(
             unit_id=unit_id, app=app
         )
 
