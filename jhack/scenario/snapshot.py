@@ -54,7 +54,7 @@ from scenario.state import (
 )
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import fetch_file, FetchError, JSubprocess
+from jhack.helpers import fetch_blob, fetch_file, FetchError, JSubprocess
 from jhack.logger import logger as jhack_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
 from jhack.scenario.integrations.darkroom import ops_port_to_scenario
@@ -881,7 +881,7 @@ class RemoteUnitStateDB:
         self._db: Union[_RemoteControllerStorage, SQLiteStorage] = self.get_db()
 
     def _fetch_state(self):
-        fetch_file(
+        fetch_blob(
             unit=self._target,
             remote_path=self._target.remote_charm_root / ".unit-state.db",
             container_name="charm",
