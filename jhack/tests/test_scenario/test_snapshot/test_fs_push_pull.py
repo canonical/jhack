@@ -2,9 +2,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+from ops.storage import SQLiteStorage
 from scenario import Container, Mount
 
-from jhack.scenario.snapshot import get_container
+from jhack.scenario.snapshot import RemoteUnitStateDB, get_container
 from jhack.scenario.state_apply import _gather_push_file_calls
 from jhack.scenario.utils import JujuUnitName
 
@@ -65,3 +66,38 @@ def test_gather_push_file_calls():
         f"juju scp -m model {mount_path}/bar.baz unit/0:/opt/bar.baz",
         f"juju scp -m model {mount_path}/subdir/qux.txt unit/0:/opt/subdir/qux.txt",
     }
+
+
+def _make_unit_state_db(path: Path):
+    storage = SQLiteStorage(path)
+    event_handle = "MyCharm/on/update_status[1]"
+    storage.save_notice(event_handle, "MyCharm", "_on_update_status")
+    storage.save_snapshot(
+        "MyCharm/StoredStateData[_stored]", {"counter": 5, "msg": "hi"}
+    )
+    storage.commit()
+    storage.close()
+
+
+def test_get_deferred_events():
+    def _fetch_blob(*args, **kwargs):
+        _make_unit_state_db(Path(kwargs["local_path"]))
+
+    with patch("jhack.scenario.snapshot.fetch_blob", new=_fetch_blob):
+        # RemoteUnitStateDB stores the db file to a temporary directory
+        # already.
+        db = RemoteUnitStateDB(None, JujuUnitName("foo/0"))
+        deferred = db.get_deferred_events()
+        stored_states = list(db.get_stored_states())
+
+    assert len(deferred) == 1
+    event = deferred[0]
+    assert event.handle_path == "MyCharm/on/update_status[1]"
+    assert event.owner == "MyCharm"
+    assert event.observer == "_on_update_status"
+
+    assert len(stored_states) == 1
+    stored_state = stored_states[0]
+    assert stored_state.owner_path == "MyCharm"
+    assert stored_state.name == "_stored"
+    assert stored_state.content == {"counter": 5, "msg": "hi"}

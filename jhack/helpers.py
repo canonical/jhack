@@ -570,6 +570,35 @@ class FetchError(RuntimeError):
     """Raised when fetching a file fails."""
 
 
+def fetch_blob(
+    unit: str,
+    remote_path: Union[Path, str],
+    local_path: Optional[Union[Path, str]] = None,
+    model: Optional[str] = None,
+    container_name: Optional[str] = "charm",
+) -> Optional[bytes]:
+    """Fetch a binary file, selecting a container only when requested."""
+    charm_path = charm_root_path(unit) / remote_path
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        if local_path is None:
+            scp_dest = Path(tmp_dir) / "blob"
+        else:
+            scp_dest = Path(local_path)
+
+        model_arg = f"-m {model}" if model else ""
+        containter_arg = f"--container {container_name}" if container_name else ""
+
+        cmd = f"juju scp {model_arg} {containter_arg} {unit}:{charm_path} {str(scp_dest)}"
+        try:
+            JSubprocess.run(shlex.split(cmd), text=True, capture_output=True, check=True)
+        except CalledProcessError as exc:
+            logger.debug(f"error fetching {charm_path} from {unit}@{model}", exc_info=True)
+            raise FetchError(f"Failed to fetch {charm_path} from {unit}.") from exc
+
+        if local_path is None:
+            return scp_dest.read_bytes()
+
+
 def fetch_file(
     unit: str,
     remote_path: Union[Path, str],
