@@ -852,14 +852,21 @@ class _RemoteControllerStorage:
         return yaml.load(val, Loader=_SimpleLoader)
 
     def notices(self):
-        return self._py_parse(self._state_get(f"'{self.notices_key}'")[self.notices_key])
+        raw = self._state_get(f"'{self.notices_key}'")
+        if raw is None:
+            return []
+        return self._py_parse(raw[self.notices_key])
 
     def load_snapshot(self, key: str):
         return self._state_get(key)
 
     def get_stored_states(self) -> List[StoredState]:
         stored_states: List[StoredState] = []
-        for key, val in self._state_get().items():
+        state_get_val = self._state_get()
+        if state_get_val is None:
+            return []
+
+        for key, val in state_get_val.items():
             if key == self.notices_key:
                 continue
             stored_state_key_re = re.compile(r"(\S+)\[(\S+)]")
@@ -872,9 +879,10 @@ class _RemoteControllerStorage:
 class RemoteUnitStateDB:
     """Represents a remote unit's state db."""
 
-    def __init__(self, model: Optional[str], target: JujuUnitName):
+    def __init__(self, model: Optional[str], target: JujuUnitName, is_k8s: bool = True):
         self._model = model
         self._target = target
+        self._is_k8s = is_k8s
 
         self._tempfile = tempfile.NamedTemporaryFile()
         self._db_path = Path(self._tempfile.name)
@@ -884,7 +892,7 @@ class RemoteUnitStateDB:
         fetch_blob(
             unit=self._target,
             remote_path=self._target.remote_charm_root / ".unit-state.db",
-            container_name="charm",
+            container_name="charm" if self._is_k8s else None,
             local_path=self._db_path,
             model=self._model,
         )
@@ -982,11 +990,17 @@ def _snapshot(
 
     metadata = get_metadata(target, state_model)
     if not metadata:
-        logger.critical(f"could not fetch metadata from {target}.")
+        logger.critical(
+            "could not fetch metadata from %s. Does %s exist in your model?",
+            target, 
+            target,
+        )
         sys.exit(1)
 
+    is_k8s = state_model.type == "kubernetes"
+
     try:
-        unit_state_db = RemoteUnitStateDB(model, target)
+        unit_state_db = RemoteUnitStateDB(model, target, is_k8s=is_k8s)
         juju_status = get_juju_status(model)
         endpoints = get_endpoints(juju_status, target)
         status = get_status(juju_status, target=target)
