@@ -99,10 +99,10 @@ def build_event_env(
     glue: str = " ",
     check_name: str = None,
 ):
-    current_model = get_current_model()
+    model = model or get_current_model()
     env = {
         "JUJU_DISPATCH_PATH": f"hooks/{event}",
-        "JUJU_MODEL_NAME": current_model,
+        "JUJU_MODEL_NAME": model,
         "JUJU_UNIT_NAME": unit,
     }
 
@@ -341,6 +341,7 @@ def _build_command(
         relation_remote=relation_remote,
         notice_id=notice_id,
         relation_id=relation_id,
+        model=model,
         secret_id_or_label=secret_id_or_label,
         override=env_override,
         operator_dispatch=operator_dispatch,
