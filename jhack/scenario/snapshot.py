@@ -7,7 +7,6 @@ import json
 import os
 import re
 import shlex
-import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -284,10 +283,10 @@ def get_secrets(
     model: Optional[str],
     metadata: Dict,
     relations: Tuple[str, ...] = (),
-) -> List[Secret]:
+) -> frozenset[Secret]:
     """Get Secret list from the charm."""
     logger.warning("Secrets snapshotting not implemented yet. Also, are you *sure*?")
-    return []
+    return frozenset()
 
 
 def get_networks(
@@ -296,10 +295,10 @@ def get_networks(
     metadata: Dict,
     include_dead: bool = False,
     relations: Tuple[str, ...] = (),
-) -> Dict[str, Network]:
+) -> frozenset[Network]:
     """Get all Networks from this unit."""
     logger.info("getting networks...")
-    networks = {"juju-info": get_network(target, model, "juju-info")}
+    networks = {get_network(target, model, "juju-info")}
 
     endpoints = relations  # only alive relations
     if include_dead:
@@ -311,8 +310,9 @@ def get_networks(
 
     for endpoint in endpoints:
         logger.debug(f"  getting network for endpoint {endpoint!r}")
-        networks[endpoint] = get_network(target, model, endpoint)
-    return networks
+        networks.add(get_network(target, model, endpoint))
+
+    return frozenset(networks)
 
 
 def get_metadata(target: JujuUnitName, model: Model):

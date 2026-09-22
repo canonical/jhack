@@ -13,8 +13,10 @@ from scenario import Model, State
 from scenario.state import (
     Address,
     BindAddress,
+    CheckInfo,
     Container,
     DeferredEvent,
+    Exec,
     Network,
     PeerRelation,
     Port,
@@ -67,9 +69,32 @@ def _dict_to_network(value: Dict) -> Network:
     return Network(**value)
 
 
+def _dict_to_check_info(value: Dict) -> CheckInfo:
+    if level_val := value.get("level"):
+        value["level"] = pebble.CheckLevel(level_val)
+
+    if startup_val := value.get("startup"):
+        value["startup"] = pebble.CheckStartup(startup_val)
+
+    if status_val := value.get("status"):
+        value["status"] = pebble.CheckStatus(status_val)
+
+    if change_id_val := value.get("change_id"):
+        value["change_id"] = pebble.ChangeID(change_id_val)
+
+    return CheckInfo(**value)
+
+
 def _dict_to_container(value: Dict) -> Container:
     if layers := value.get("layers"):
         value["layers"] = {l_name: pebble.Layer(l_raw) for l_name, l_raw in layers.items()}
+
+    execs = value.get("execs", frozenset())
+    value["execs"] = frozenset([Exec(**e) for e in execs])
+
+    check_infos = value.get("check_infos", frozenset())
+    value["check_infos"] = frozenset([_dict_to_check_info(c) for c in check_infos])
+
     return Container(**value)
 
 
