@@ -53,7 +53,7 @@ from scenario.state import (
 )
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import fetch_blob, fetch_file, FetchError, JSubprocess
+from jhack.helpers import fetch_blob, FetchError, JSubprocess
 from jhack.logger import logger as jhack_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
 from jhack.scenario.integrations.darkroom import ops_port_to_scenario
@@ -481,7 +481,7 @@ def get_mounts(
         filepath = Path(mount.location).joinpath(*remote_path.parts[1:])
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         try:
-            fetch_file(
+            fetch_blob(
                 unit=target,
                 container_name=container_name,
                 model=model,

@@ -10,7 +10,7 @@ from jhack.scenario.state_apply import _gather_push_file_calls
 from jhack.scenario.utils import JujuUnitName
 
 
-def _fetch_file(*args, **kwargs):
+def _fetch_blob(*args, **kwargs):
     local_path = kwargs["local_path"]
     Path(local_path).write_text("hello world")
 
@@ -19,7 +19,7 @@ def _get_plan(*args, **kwargs):
     return {"foo": "bar"}
 
 
-@patch("jhack.scenario.snapshot.fetch_file", new=_fetch_file)
+@patch("jhack.scenario.snapshot.fetch_blob", new=_fetch_blob)
 @patch("jhack.scenario.snapshot.RemotePebbleClient.get_plan", new=_get_plan)
 @patch("jhack.scenario.snapshot.RemotePebbleClient.can_connect", return_value=True)
 def test_get_container(can_connect):
