@@ -435,7 +435,7 @@ def get_mounts(
     model: Optional[str],
     container_name: str,
     container_meta: Dict,
-    fetch_files: Optional[Dict[Path, Path]] = None,
+    fetch_files: Optional[List[Path]] = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
 ) -> Dict[str, Mount]:
     """Get named Mounts from a container's metadata, and download specified files from the unit."""
@@ -958,7 +958,7 @@ def _snapshot(
     include_dead_relation_networks=False,
     format_: FormatOption = "state",
     event_name: Optional[str] = None,
-    fetch_files: Optional[Dict[str, Dict[Path, Path]]] = None,
+    fetch_files: Optional[Dict[str, List[Path]]] = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
 ):
     """see snapshot's docstring"""
@@ -1191,7 +1191,13 @@ def snapshot(
     Usage: snapshot myapp/0 > ./tests/scenario/case1.py
     """
 
-    fetch_files = json.loads(fetch.read_text()) if fetch else None
+    fetch_files: Optional[Dict[str, List[Path]]] = None
+    if fetch is not None:
+        fetch_file_json = json.loads(fetch.read_text())
+
+        fetch_files = {}
+        for container_name, paths in fetch_file_json.items():
+            fetch_files[container_name] = [Path(p) for p in paths]
 
     return _snapshot(
         target=target,
