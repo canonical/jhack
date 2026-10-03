@@ -490,7 +490,10 @@ def get_mounts(
             )
 
         except RuntimeError:
-            logger.exception()
+            logger.exception(
+                f"failed to fetch {remote_path!r} from {target} (container "
+                f"{container_name}, model {model!r})",
+            )
 
     return mounts
 
