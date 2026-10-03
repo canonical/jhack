@@ -72,7 +72,7 @@ except FileNotFoundError as e:
     raise Exception("cannot run jhack from a deleted folder") from e
 
 
-SNAPSHOT_OUTPUT_DIR = (Path(getcwd).parent / "snapshot_storage").absolute()
+SNAPSHOT_OUTPUT_DIR = (Path(getcwd) / "snapshot_storage").absolute()
 CHARM_SUBCLASS_REGEX = re.compile(r"class (\D+)\(CharmBase\):")
 
 
