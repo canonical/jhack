@@ -478,12 +478,12 @@ def get_mounts(
 
         # populate the local tempdir
         # The file will be stored relative to the local tempdir,
-        # indentical to how it is relative to the mount location in the container.
+        # identical to how it is relative to the mount location in the container.
         #
         # For example: postgresql-k8s has a mount called `data`` at /var/lib/data
         # in the charm container. We want to fetch `/var/lib/data/boo/test.yaml`.
         # The file will be stored locally into `<temp_dir_base_path>/boo/test.yaml`.
-        # In this case Mount.location is `/var/lib/data`. Mount.source is `<temp_dir_base_bath>`.
+        # In this case Mount.location is `/var/lib/data`. Mount.source is `<temp_dir_base_path>`.
         # Each mount will have a different <temp_dir_base_path>, and the returns State object
         # will always point to the same <temp_dir_base_path>s that it was generated against.
         filepath = Path(mount.source) / remote_path.relative_to(mount.location)
