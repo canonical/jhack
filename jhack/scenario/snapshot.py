@@ -459,8 +459,12 @@ def get_mounts(
     for remote_path in fetch_files or ():
         found = None
         for mn, mt in mount_spec.items():
-            if str(remote_path).startswith(mt):
-                found = mn, mt
+            location = Path(mt)
+            if not remote_path.is_relative_to(location):
+                continue
+            # Pick the most specific mount location for remote_path.
+            if found is None or len(location.parts) > len(found[1].parts):
+                found = mn, location
 
         if not found:
             logger.error(
@@ -469,16 +473,25 @@ def get_mounts(
             )
             continue
 
-        mount_name, src = found
+        mount_name, mount_location = found
         mount = mounts.get(mount_name)
         if not mount:
             # create the mount obj and tempdir
-            location = tempfile.TemporaryDirectory(dir=str(temp_dir_base_path)).name
-            mount = Mount(source=src, location=location)
+            local_mount_loc = tempfile.TemporaryDirectory(dir=str(temp_dir_base_path)).name
+            mount = Mount(source=local_mount_loc, location=mount_location)
             mounts[mount_name] = mount
 
         # populate the local tempdir
-        filepath = Path(mount.location).joinpath(*remote_path.parts[1:])
+        # The file will be stored relative to the local tempdir,
+        # indentical to how it is relative to the mount location in the container.
+        #
+        # For example: postgresql-k8s has a mount called `data`` at /var/lib/data
+        # in the charm container. We want to fetch `/var/lib/data/boo/test.yaml`.
+        # The file will be stored locally into `<temp_dir_base_path>/boo/test.yaml`.
+        # In this case Mount.location is `/var/lib/data`. Mount.source is `<temp_dir_base_bath>`.
+        # Each mount will have a different <temp_dir_base_path>, and the returns State object
+        # will always point to the same <temp_dir_base_path>s that it was generated against.
+        filepath = Path(mount.source) / remote_path.relative_to(mount.location)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         try:
             fetch_blob(
@@ -1193,6 +1206,13 @@ def snapshot(
 
     Usage: snapshot myapp/0 > ./tests/scenario/case1.py
     """
+    # output_dir is only used to store fetched files, so only require it then.
+    if fetch is not None:
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True, exist_ok=True)
+        elif not output_dir.is_dir():
+            logger.critical(f"output directory {output_dir} exists but is not a directory.")
+            sys.exit(1)
 
     fetch_files: Optional[Dict[str, List[Path]]] = None
     if fetch is not None:
