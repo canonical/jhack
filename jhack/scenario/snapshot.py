@@ -9,6 +9,7 @@ import re
 import shlex
 import sys
 import tempfile
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from importlib import metadata
@@ -18,24 +19,17 @@ from subprocess import run
 from typing import (
     Any,
     BinaryIO,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    TextIO,
-    Tuple,
-    Union,
     Protocol,
-    Sequence,
+    TextIO,
     cast,
 )
 
 import ops.pebble
 import typer
 import yaml
-from ops.storage import SQLiteStorage, _SimpleLoader
+from ops.storage import NoSnapshotError, SQLiteStorage, _SimpleLoader
 from scenario import DeferredEvent
-from scenario._ops_main_mock import UnitStateDB, EVENT_REGEX
+from scenario._ops_main_mock import EVENT_REGEX, UnitStateDB
 from scenario.state import (
     Address,
     BindAddress,
@@ -47,13 +41,13 @@ from scenario.state import (
     Relation,
     Secret,
     State,
+    StoredState,
     _EntityStatus,
     _Event,
-    StoredState,
 )
 
 from jhack.conf.conf import check_destructive_commands_allowed
-from jhack.helpers import fetch_blob, fetch_file, FetchError, JSubprocess
+from jhack.helpers import FetchError, JSubprocess, fetch_blob
 from jhack.logger import logger as jhack_logger
 from jhack.scenario.errors import InvalidTargetModelName, InvalidTargetUnitName
 from jhack.scenario.integrations.darkroom import ops_port_to_scenario
@@ -72,13 +66,14 @@ except FileNotFoundError as e:
     raise Exception("cannot run jhack from a deleted folder") from e
 
 
-SNAPSHOT_OUTPUT_DIR = (Path(getcwd).parent / "snapshot_storage").absolute()
+SNAPSHOT_OUTPUT_DIR = (Path(getcwd) / "snapshot_storage").absolute()
 CHARM_SUBCLASS_REGEX = re.compile(r"class (\D+)\(CharmBase\):")
 
 
 def _try_format(string: str):
     try:
         import black
+        import black.parsing
 
         try:
             return black.format_str(string, mode=black.Mode())
@@ -152,7 +147,7 @@ def bind_event_to_state(event: _Event, state: State):
         return dataclasses.replace(event, secret=secrets[0])
 
     if event._is_storage_event and not event.storage:  # noqa
-        storages = state.get_storages(entity_name)
+        storages = [s for s in state.storages if s.name == entity_name]
         if len(storages) < 1:
             raise BindFailedError(
                 f"no storages called {entity_name} found in state",
@@ -187,9 +182,9 @@ def bind_event_to_state(event: _Event, state: State):
 
 def format_test_case(
     state: State,
-    charm_type_name: str = None,
-    event_name: str = None,
-    juju_version: str = None,
+    charm_type_name: str | None = None,
+    event_name: str | None = None,
+    juju_version: str | None = None,
 ):
     """Format this State as a pytest test case."""
     ct = charm_type_name or "CHARM_TYPE,  # TODO: replace with charm type name"
@@ -209,7 +204,7 @@ def format_test_case(
     )
 
 
-def _juju_run(cmd: str, model=None) -> Dict[str, Any]:
+def _juju_run(cmd: str, model=None) -> dict[str, Any]:
     """Execute juju {command} in a given model."""
     _model = f" -m {model}" if model else ""
     cmd = f"juju {cmd}{_model} --format json"
@@ -217,14 +212,14 @@ def _juju_run(cmd: str, model=None) -> Dict[str, Any]:
     return json.loads(raw)
 
 
-def _juju_ssh(target: JujuUnitName, cmd: str, model: Optional[str] = None) -> str:
+def _juju_ssh(target: JujuUnitName, cmd: str, model: str | None = None) -> str:
     _model = f" -m {model}" if model else ""
     command = f"juju ssh{_model} {target.unit_name} {cmd}"
     raw = JSubprocess.run(shlex.split(command), capture_output=True, text=True).stdout
     return raw
 
 
-def _juju_exec(target: JujuUnitName, model: Optional[str], cmd: str) -> str:
+def _juju_exec(target: JujuUnitName, model: str | None, cmd: str) -> str:
     """Execute a juju command.
 
     Notes:
@@ -240,13 +235,13 @@ def _juju_exec(target: JujuUnitName, model: Optional[str], cmd: str) -> str:
     ).stdout
 
 
-def get_leader(target: JujuUnitName, model: Optional[str]):
+def get_leader(target: JujuUnitName, model: str | None):
     # could also get it from _juju_run('status')...
     logger.info("getting leader...")
     return _juju_exec(target, model, "is-leader") == "True"
 
 
-def get_network(target: JujuUnitName, model: Optional[str], endpoint: str) -> Network:
+def get_network(target: JujuUnitName, model: str | None, endpoint: str) -> Network:
     """Get the Network data structure for this endpoint."""
     raw = _juju_exec(target, model, f"network-get {endpoint}")
     json_data = yaml.safe_load(raw)
@@ -280,9 +275,9 @@ def get_network(target: JujuUnitName, model: Optional[str], endpoint: str) -> Ne
 
 def get_secrets(
     target: JujuUnitName,
-    model: Optional[str],
-    metadata: Dict,
-    relations: Tuple[str, ...] = (),
+    model: str | None,
+    metadata: dict,
+    relations: tuple[str, ...] = (),
 ) -> frozenset[Secret]:
     """Get Secret list from the charm."""
     logger.warning("Secrets snapshotting not implemented yet. Also, are you *sure*?")
@@ -291,10 +286,10 @@ def get_secrets(
 
 def get_networks(
     target: JujuUnitName,
-    model: Optional[str],
-    metadata: Dict,
+    model: str | None,
+    metadata: dict,
     include_dead: bool = False,
-    relations: Tuple[str, ...] = (),
+    relations: tuple[str, ...] = (),
 ) -> frozenset[Network]:
     """Get all Networks from this unit."""
     logger.info("getting networks...")
@@ -344,7 +339,7 @@ class RemotePebbleClient:
         self,
         container: str,
         target: JujuUnitName,
-        model: Optional[str] = None,
+        model: str | None = None,
         dry_run: bool = False,
     ):
         self.socket_path = f"/charm/containers/{container}/pebble.socket"
@@ -382,7 +377,7 @@ class RemotePebbleClient:
             f"stderr = {proc.stderr}",
         )
 
-    def run(self, command: List[str]):
+    def run(self, command: list[str]):
         """Run a command on this pebble."""
         return self._run(shlex.join(command))
 
@@ -404,24 +399,24 @@ class RemotePebbleClient:
         self,
         path: str,
         *,
-        encoding: Optional[str] = "utf-8",
-    ) -> Union[BinaryIO, TextIO]:
+        encoding: str | None = "utf-8",
+    ) -> BinaryIO | TextIO:
         raise NotImplementedError()
 
     def list_files(
         self,
         path: str,
         *,
-        pattern: Optional[str] = None,
+        pattern: str | None = None,
         itself: bool = False,
-    ) -> List[ops.pebble.FileInfo]:
+    ) -> list[ops.pebble.FileInfo]:
         raise NotImplementedError()
 
     def get_checks(
         self,
-        level: Optional[ops.pebble.CheckLevel] = None,
-        names: Optional[Iterable[str]] = None,
-    ) -> List[ops.pebble.CheckInfo]:
+        level: ops.pebble.CheckLevel | None = None,
+        names: Iterable[str] | None = None,
+    ) -> list[ops.pebble.CheckInfo]:
         _level = f" --level={level}" if level else ""
         _names = (" " + " ".join(names)) if names else ""
         out = self._run(f"checks{_level}{_names}")
@@ -432,12 +427,12 @@ class RemotePebbleClient:
 
 def get_mounts(
     target: JujuUnitName,
-    model: Optional[str],
+    model: str | None,
     container_name: str,
-    container_meta: Dict,
-    fetch_files: Optional[Dict[Path, Path]] = None,
+    container_meta: dict,
+    fetch_files: list[Path] | None = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
-) -> Dict[str, Mount]:
+) -> dict[str, Mount]:
     """Get named Mounts from a container's metadata, and download specified files from the unit."""
     mount_meta = container_meta.get("mounts")
 
@@ -459,8 +454,12 @@ def get_mounts(
     for remote_path in fetch_files or ():
         found = None
         for mn, mt in mount_spec.items():
-            if str(remote_path).startswith(mt):
-                found = mn, mt
+            location = Path(mt)
+            if not remote_path.is_relative_to(location):
+                continue
+            # Pick the most specific mount location for remote_path.
+            if found is None or len(location.parts) > len(found[1].parts):
+                found = mn, location
 
         if not found:
             logger.error(
@@ -469,19 +468,28 @@ def get_mounts(
             )
             continue
 
-        mount_name, src = found
+        mount_name, mount_location = found
         mount = mounts.get(mount_name)
         if not mount:
             # create the mount obj and tempdir
-            location = tempfile.TemporaryDirectory(dir=str(temp_dir_base_path)).name
-            mount = Mount(source=src, location=location)
+            local_mount_loc = tempfile.TemporaryDirectory(dir=str(temp_dir_base_path)).name
+            mount = Mount(source=local_mount_loc, location=mount_location)
             mounts[mount_name] = mount
 
         # populate the local tempdir
-        filepath = Path(mount.location).joinpath(*remote_path.parts[1:])
+        # The file will be stored relative to the local tempdir,
+        # identical to how it is relative to the mount location in the container.
+        #
+        # For example: postgresql-k8s has a mount called `data`` at /var/lib/data
+        # in the charm container. We want to fetch `/var/lib/data/boo/test.yaml`.
+        # The file will be stored locally into `<temp_dir_base_path>/boo/test.yaml`.
+        # In this case Mount.location is `/var/lib/data`. Mount.source is `<temp_dir_base_path>`.
+        # Each mount will have a different <temp_dir_base_path>, and the returns State object
+        # will always point to the same <temp_dir_base_path>s that it was generated against.
+        filepath = Path(mount.source) / remote_path.relative_to(mount.location)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         try:
-            fetch_file(
+            fetch_blob(
                 unit=target,
                 container_name=container_name,
                 model=model,
@@ -490,17 +498,20 @@ def get_mounts(
             )
 
         except RuntimeError:
-            logger.exception()
+            logger.exception(
+                f"failed to fetch {remote_path!r} from {target} (container "
+                f"{container_name}, model {model!r})",
+            )
 
     return mounts
 
 
 def get_container(
     target: JujuUnitName,
-    model: Optional[str],
+    model: str | None,
     container_name: str,
-    container_meta: Dict,
-    fetch_files: Optional[List[Path]] = None,
+    container_meta: dict,
+    fetch_files: list[Path] | None = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
 ) -> Container:
     """Get container data structure from the target."""
@@ -525,11 +536,11 @@ def get_container(
 
 def get_containers(
     target: JujuUnitName,
-    model: Optional[str],
-    metadata: Optional[Dict],
-    fetch_files: Dict[str, List[Path]] = None,
+    model: str | None,
+    metadata: dict | None,
+    fetch_files: dict[str, list[Path]] | None = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
-) -> List[Container]:
+) -> list[Container]:
     """Get all containers from this unit."""
     fetch_files = fetch_files or {}
     logger.info("getting containers...")
@@ -552,7 +563,7 @@ def get_containers(
     return containers
 
 
-def get_juju_status(model: Optional[str]) -> Dict:
+def get_juju_status(model: str | None) -> dict:
     """Return juju status as json."""
     logger.info("getting status...")
     return _juju_run("status --relations", model=model)
@@ -565,7 +576,7 @@ class Status:
     workload_version: str
 
 
-def get_status(juju_status: Dict, target: JujuUnitName) -> Status:
+def get_status(juju_status: dict, target: JujuUnitName) -> Status:
     """Parse `juju status` to get the Status data structure and some relation information."""
     app = juju_status["applications"][target.app_name]
 
@@ -583,7 +594,7 @@ def get_status(juju_status: Dict, target: JujuUnitName) -> Status:
     )
 
 
-def get_endpoints(juju_status: Dict, target: JujuUnitName) -> Tuple[str, ...]:
+def get_endpoints(juju_status: dict, target: JujuUnitName) -> tuple[str, ...]:
     """Parse `juju status` to get the relation names owned by the target."""
     app = juju_status["applications"][target.app_name]
     relations_raw = app.get("relations", None)
@@ -595,8 +606,8 @@ def get_endpoints(juju_status: Dict, target: JujuUnitName) -> Tuple[str, ...]:
 
 def get_opened_ports(
     target: JujuUnitName,
-    model: Optional[str],
-) -> List[Port]:
+    model: str | None,
+) -> list[Port]:
     """Get opened ports list from target."""
     logger.info("getting opened ports...")
 
@@ -617,8 +628,8 @@ def get_opened_ports(
 
 def get_config(
     target: JujuUnitName,
-    model: Optional[str],
-) -> Dict[str, Union[str, int, float, bool]]:
+    model: str | None,
+) -> dict[str, str | int | float | bool]:
     """Get config dict from target."""
 
     logger.info("getting config...")
@@ -653,7 +664,7 @@ def get_config(
     return cfg
 
 
-def _get_interface_from_metadata(endpoint: str, metadata: Dict) -> Optional[str]:
+def _get_interface_from_metadata(endpoint: str, metadata: dict) -> str | None:
     """Get the name of the interface used by endpoint."""
     for role in ["provides", "requires"]:
         for ep, ep_meta in metadata.get(role, {}).items():
@@ -664,7 +675,7 @@ def _get_interface_from_metadata(endpoint: str, metadata: Dict) -> Optional[str]
     return None
 
 
-def _get_local_relation_data(relation_id: int, target: JujuUnitName, model: str):
+def _get_local_relation_data(relation_id: int, target: JujuUnitName, model: str | None):
     local_unit_data_raw = _juju_exec(
         target,
         model,
@@ -682,10 +693,10 @@ def _get_local_relation_data(relation_id: int, target: JujuUnitName, model: str)
 
 def get_relations(
     target: JujuUnitName,
-    model: Optional[str],
-    metadata: Dict,
+    model: str | None,
+    metadata: dict,
     include_juju_relation_data=False,
-) -> List[Relation]:
+) -> list[Relation]:
     """Get the list of relations active for this target."""
     logger.info("getting relations...")
 
@@ -699,8 +710,7 @@ def get_relations(
             return relation_data
         else:
             for key in JUJU_RELATION_KEYS:
-                if key in relation_data:
-                    del relation_data[key]
+                relation_data.pop(key, None)
         return relation_data
 
     relations = []
@@ -761,7 +771,7 @@ def get_relations(
     return relations
 
 
-def get_model(name: str = None) -> Model:
+def get_model(name: str | None = None) -> Model:
     """Get the Model data structure."""
     logger.info("getting model...")
 
@@ -780,7 +790,7 @@ def get_model(name: str = None) -> Model:
     return Model(name=model_name, uuid=model_uuid, type=model_type)
 
 
-def try_guess_charm_type_name() -> Optional[str]:
+def try_guess_charm_type_name() -> str | None:
     """If we are running this from a charm project root, get the charm type name from charm.py."""
     try:
         charm_path = Path(os.getcwd()) / "src" / "charm.py"
@@ -808,12 +818,12 @@ class FormatOption(
     pytest = "pytest"
 
 
-def get_juju_version(juju_status: Dict) -> str:
+def get_juju_version(juju_status: dict) -> str:
     """Get juju agent version from juju status output."""
     return juju_status["model"]["version"]
 
 
-def get_charm_version(target: JujuUnitName, juju_status: Dict) -> str:
+def get_charm_version(target: JujuUnitName, juju_status: dict) -> str:
     """Get charm version info from juju status output."""
     app_info = juju_status["applications"][target.app_name]
     channel = app_info.get("charm-channel", "<local charm>")
@@ -828,14 +838,14 @@ def get_charm_version(target: JujuUnitName, juju_status: Dict) -> str:
 
 
 class _BasicStorageProtocol(Protocol):
-    def notices(self) -> Sequence[Tuple[str, str, str]]: ...
+    def notices(self) -> Sequence[tuple[str, str, str]]: ...
     def load_snapshot(self, key: str) -> Any: ...
 
 
 class _RemoteControllerStorage:
     notices_key = "#notices#"
 
-    def __init__(self, model: Optional[str], target: JujuUnitName):
+    def __init__(self, model: str | None, target: JujuUnitName):
         self._model = model
         self._target = target
 
@@ -860,8 +870,8 @@ class _RemoteControllerStorage:
     def load_snapshot(self, key: str):
         return self._state_get(key)
 
-    def get_stored_states(self) -> List[StoredState]:
-        stored_states: List[StoredState] = []
+    def get_stored_states(self) -> list[StoredState]:
+        stored_states: list[StoredState] = []
         state_get_val = self._state_get()
         if state_get_val is None:
             return []
@@ -870,7 +880,10 @@ class _RemoteControllerStorage:
             if key == self.notices_key:
                 continue
             stored_state_key_re = re.compile(r"(\S+)\[(\S+)]")
-            path, name = stored_state_key_re.match(key).groups()
+            match = stored_state_key_re.match(key)
+            if match is None:
+                continue
+            path, name = match.groups()
             ss = StoredState(name=name, owner_path=path, content=self._py_parse(val))
             stored_states.append(ss)
         return stored_states
@@ -879,14 +892,14 @@ class _RemoteControllerStorage:
 class RemoteUnitStateDB:
     """Represents a remote unit's state db."""
 
-    def __init__(self, model: Optional[str], target: JujuUnitName, is_k8s: bool = True):
+    def __init__(self, model: str | None, target: JujuUnitName, is_k8s: bool = True):
         self._model = model
         self._target = target
         self._is_k8s = is_k8s
 
         self._tempfile = tempfile.NamedTemporaryFile()
         self._db_path = Path(self._tempfile.name)
-        self._db: Union[_RemoteControllerStorage, SQLiteStorage] = self.get_db()
+        self._db: _RemoteControllerStorage | SQLiteStorage = self.get_db()
 
     def _fetch_state(self):
         fetch_blob(
@@ -902,7 +915,7 @@ class RemoteUnitStateDB:
         """Whether the state file exists."""
         return self._db_path.exists() and self._db_path.read_bytes()
 
-    def get_db(self) -> Union[_RemoteControllerStorage, SQLiteStorage]:
+    def get_db(self) -> _RemoteControllerStorage | SQLiteStorage:
         if not self._has_state:
             try:
                 self._fetch_state()
@@ -923,7 +936,7 @@ class RemoteUnitStateDB:
             if EVENT_REGEX.match(handle):
                 try:
                     snapshot_data = db.load_snapshot(handle)
-                except ops.storage.NoSnapshotError:
+                except NoSnapshotError:
                     snapshot_data: dict[str, Any] = {}
 
                 event = DeferredEvent(
@@ -951,14 +964,14 @@ def get_scenario_version():
 
 def _snapshot(
     target: str,
-    model: Optional[str] = None,
+    model: str | None = None,
     pprint: bool = True,
-    include: Optional[str] = None,
+    include: str | None = None,
     include_juju_relation_data=False,
     include_dead_relation_networks=False,
-    format_: FormatOption = "state",
-    event_name: Optional[str] = None,
-    fetch_files: Optional[Dict[str, Dict[Path, Path]]] = None,
+    format_: FormatOption = FormatOption.state,
+    event_name: str | None = None,
+    fetch_files: dict[str, list[Path]] | None = None,
     temp_dir_base_path: Path = SNAPSHOT_OUTPUT_DIR,
 ):
     """see snapshot's docstring"""
@@ -992,7 +1005,7 @@ def _snapshot(
     if not metadata:
         logger.critical(
             "could not fetch metadata from %s. Does %s exist in your model?",
-            target, 
+            target,
             target,
         )
         sys.exit(1)
@@ -1122,7 +1135,7 @@ def _snapshot(
 
 def snapshot(
     target: str = typer.Argument(..., help="Target unit."),
-    model: Optional[str] = typer.Option(
+    model: str | None = typer.Option(
         None,
         "-m",
         "--model",
@@ -1169,7 +1182,7 @@ def snapshot(
         "ingress-address, private-address).",
         is_flag=True,
     ),
-    fetch: Path = typer.Option(
+    fetch: Path | None = typer.Option(
         None,
         "--fetch",
         help="Path to a local file containing a json spec of files to be fetched from the unit. "
@@ -1190,8 +1203,21 @@ def snapshot(
 
     Usage: snapshot myapp/0 > ./tests/scenario/case1.py
     """
+    # output_dir is only used to store fetched files, so only require it then.
+    if fetch is not None:
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True, exist_ok=True)
+        elif not output_dir.is_dir():
+            logger.critical(f"output directory {output_dir} exists but is not a directory.")
+            sys.exit(1)
 
-    fetch_files = json.loads(fetch.read_text()) if fetch else None
+    fetch_files: dict[str, list[Path]] | None = None
+    if fetch is not None:
+        fetch_file_json = json.loads(fetch.read_text())
+
+        fetch_files = {}
+        for container_name, paths in fetch_file_json.items():
+            fetch_files[container_name] = [Path(p) for p in paths]
 
     return _snapshot(
         target=target,

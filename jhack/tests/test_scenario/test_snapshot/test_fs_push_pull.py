@@ -2,6 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
+import pytest
 from ops.storage import SQLiteStorage
 from scenario import Container, Mount
 
@@ -10,7 +11,7 @@ from jhack.scenario.state_apply import _gather_push_file_calls
 from jhack.scenario.utils import JujuUnitName
 
 
-def _fetch_file(*args, **kwargs):
+def _fetch_blob(*args, **kwargs):
     local_path = kwargs["local_path"]
     Path(local_path).write_text("hello world")
 
@@ -19,7 +20,7 @@ def _get_plan(*args, **kwargs):
     return {"foo": "bar"}
 
 
-@patch("jhack.scenario.snapshot.fetch_file", new=_fetch_file)
+@patch("jhack.scenario.snapshot.fetch_blob", new=_fetch_blob)
 @patch("jhack.scenario.snapshot.RemotePebbleClient.get_plan", new=_get_plan)
 @patch("jhack.scenario.snapshot.RemotePebbleClient.can_connect", return_value=True)
 def test_get_container(can_connect):
@@ -32,15 +33,86 @@ def test_get_container(can_connect):
         "workload",
         {
             "type": "oci-image",
-            "mounts": [{"type": "filesystem", "storage": "opt", "location": "/opt/"}],
+            "mounts": [
+                {
+                    "type": "filesystem",
+                    "storage": "opt",
+                    "location": "/opt/",
+                },
+                {
+                    "type": "filesystem",
+                    "storage": "data",
+                    "location": "/data/",
+                },
+            ],
         },
-        [Path("/opt/foo/bar.txt")],
+        [
+            Path("/opt/foo/bar.txt"),
+            Path("/opt/foo/boo/something.txt"),
+            Path("/data/data.txt"),
+        ],
         temp_dir_base_path=local_storage,
     )
 
-    mount_location = container.mounts["opt"].location
-    local_file = Path(mount_location) / "opt" / "foo" / "bar.txt"
-    assert local_file.read_text() == "hello world"
+    assert len(container.mounts) == 2
+
+    # We patch fetch_blob to only write one string so all file
+    # here has the same content. We only care about their
+    # directory structure.
+    opt_mount = container.mounts["opt"]
+    assert Path(opt_mount.location) == Path("/opt/")
+    bar_file = Path(opt_mount.source) / "foo" / "bar.txt"
+    assert bar_file.read_text() == "hello world"
+    something_file = Path(opt_mount.source) / "foo" / "boo" / "something.txt"
+    assert something_file.read_text() == "hello world"
+
+    data_mount = container.mounts["data"]
+    assert Path(data_mount.location) == Path("/data/")
+    data_file = Path(data_mount.source) / "data.txt"
+    assert data_file.read_text() == "hello world"
+
+
+@patch("jhack.scenario.snapshot.fetch_blob")
+@patch("jhack.scenario.snapshot.RemotePebbleClient.get_plan", new=_get_plan)
+@patch("jhack.scenario.snapshot.RemotePebbleClient.can_connect", return_value=True)
+@pytest.mark.parametrize(
+    "fetch_files",
+    [
+        None,
+        [],
+        [Path("/not-a-mount/not-a-mount.txt")],
+    ],
+)
+def test_get_container_on_invalid_fetch_files(
+    fetch_blob,
+    can_connect,
+    fetch_files: list[Path] | None,
+):
+    tempdir = TemporaryDirectory()
+
+    local_storage = Path(tempdir.name)
+    container = get_container(
+        JujuUnitName("foo/0"),
+        None,
+        "workload",
+        {
+            "type": "oci-image",
+            "mounts": [
+                {
+                    "type": "filesystem",
+                    "storage": "opt",
+                    "location": "/opt/",
+                },
+            ],
+        },
+        fetch_files=fetch_files,
+        temp_dir_base_path=local_storage,
+    )
+
+    # get_container skips gracefully on invalid fetch_files
+    # and should not populate the local storage with anything.
+    assert len(container.mounts) == 0
+    assert not any(local_storage.iterdir())
 
 
 def test_gather_push_file_calls():
@@ -72,9 +144,7 @@ def _make_unit_state_db(path: Path):
     storage = SQLiteStorage(path)
     event_handle = "MyCharm/on/update_status[1]"
     storage.save_notice(event_handle, "MyCharm", "_on_update_status")
-    storage.save_snapshot(
-        "MyCharm/StoredStateData[_stored]", {"counter": 5, "msg": "hi"}
-    )
+    storage.save_snapshot("MyCharm/StoredStateData[_stored]", {"counter": 5, "msg": "hi"})
     storage.commit()
     storage.close()
 
